@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Вход</h2>
+
+    <form method="POST" action="{{ url_for('login') }}{{ '?next=' + request.args.get('next', '') if request.args.get('next') else '' }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.username.label(class="form-label") }}
+            {{ form.username(class="form-control", size=30, placeholder="Ваш ник") }}
+            {% if form.username.errors %}
+                <span class="error">[{{ ', '.join(form.username.errors) }}]</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.password.label(class="form-label") }}
+            {{ form.password(class="form-control", size=30, placeholder="******") }}
+            {% if form.password.errors %}
+                 <span class="error">[{{ ', '.join(form.password.errors) }}]</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.submit() }}
+        </div>
+    </form>
+
+    <p>
+        Еще нет аккаунта? <a href="{{ url_for('register') }}">Зарегистрироваться</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

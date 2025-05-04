@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Редактировать профиль</h2>
+
+    <form method="POST" action="{{ url_for('edit_profile') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.avatar_url.label(class="form-label") }}
+            {{ form.avatar_url(class="form-control", placeholder="https://example.com/avatar.png", size=40) }}
+            <span class="form-help-text">Введите полный URL картинки (например, с Imgur, VK, Discord). Оставьте пустым, чтобы использовать стандартный аватар.</span>
+            {% if form.avatar_url.errors %}
+                {% for error in form.avatar_url.errors %}
+                    <span class="error">[{{ error }}]</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.social_link.label(class="form-label") }}
+            {{ form.social_link(class="form-control", placeholder="https://vk.com/YourID", size=40) }}
+            <span class="form-help-text">Ссылка на вашу основную страницу в соцсети или другой ресурс. Оставьте пустым, если не хотите указывать.</span>
+            {% if form.social_link.errors %}
+                {% for error in form.social_link.errors %}
+                    <span class="error">[{{ error }}]</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.about_me.label(class="form-label") }}
+            {{ form.about_me(class="form-control", rows="4", placeholder="Расскажите немного о себе (до 500 символов)...") }}
+            <span class="form-help-text">Краткая информация, которая будет видна в вашем профиле.</span>
+             {% if form.about_me.errors %}
+                <span class="error">[{{ ', '.join(form.about_me.errors) }}]</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.submit() }}
+        </div>
+    </form>
+
+     <p style="text-align: center; margin-top: 20px;">
+        <a href="{{ url_for('profile', username=g.user.username) }}">Вернуться в профиль</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

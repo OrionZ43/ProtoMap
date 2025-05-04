@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <title>{{ title or 'ProtoMap' }}</title>
+
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+
+    <link rel="icon" href="{{ url_for('static', filename='protogen_pin.svg') }}" type="image/svg+xml">
+    {% block head_extra %}{% endblock %}
+
+</head>
+<body>
+    <nav class="main-nav">
+            <div class="nav-left">
+                <a class="nav-brand" href="{{ url_for('index') }}">ProtoMap</a>
+                <span class="nav-byline">
+                    by <a href="https://t.me/Orion_Z43" target="_blank" rel="noopener noreferrer">Orion_Z43</a>
+                </span>
+            </div>
+
+            <div class="nav-links">
+                {% if g.user %}
+                    <span class="nav-user desktop-only">Привет, <a href="{{ url_for('profile', username=g.user.username) }}">{{ g.user.username }}</a>!</span>
+                    <a class="desktop-only" href="{{ url_for('logout') }}">Выйти</a>
+
+                    <button id="user-menu-button" class="mobile-only user-menu-toggle-btn">
+                         Профиль
+                    </button>
+
+                    <div id="user-dropdown-menu" class="user-dropdown" style="display: none;">
+                         <div class="dropdown-user-info">Привет, {{ g.user.username }}!</div>
+                         <a href="{{ url_for('profile', username=g.user.username) }}">Мой профиль</a>
+                         <a href="{{ url_for('edit_profile') }}">Редактировать</a>
+                         <hr>
+                         <a href="{{ url_for('logout') }}">Выйти</a>
+                    </div>
+
+                {% else %}
+                    <a href="{{ url_for('login') }}">Войти</a>
+                    <a href="{{ url_for('register') }}">Регистрация</a>
+                {% endif %}
+            </div>
+    </nav>
+
+    <main class="content-wrapper">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category or 'info' }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    {% block scripts %}{% endblock %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userMenuButton = document.getElementById('user-menu-button');
+            const userDropdownMenu = document.getElementById('user-dropdown-menu');
+
+            if (!userMenuButton) { console.error("!!! ОШИБКА: Кнопка user-menu-button не найдена!"); }
+            if (!userDropdownMenu) { console.error("!!! ОШИБКА: Меню user-dropdown-menu не найдено!"); }
+            if (userMenuButton && userDropdownMenu) {
+                console.log("!!! DEBUG: Элементы меню найдены, назначаем обработчик.");
+                userMenuButton.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    const isShown = userDropdownMenu.style.display === 'block';
+                    userDropdownMenu.style.display = isShown ? 'none' : 'block';
+                     console.log("!!! DEBUG: Меню переключено. display =", userDropdownMenu.style.display);
+                });
+
+                document.addEventListener('click', function(event) {
+                    if (userDropdownMenu.style.display === 'block') {
+                        if (!userDropdownMenu.contains(event.target) && event.target !== userMenuButton) {
+                            console.log("!!! DEBUG: Клик вне меню, закрываем.");
+                            userDropdownMenu.style.display = 'none';
+                        } else {
+                             console.log("!!! DEBUG: Клик внутри меню или по кнопке.");
+                        }
+                    }
+                });
+                 console.log("!!! DEBUG: Обработчики для меню пользователя установлены.");
+            } else {
+                 console.log("!!! DEBUG: Не удалось установить обработчики меню (элементы не найдены).");
+            }
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.flash-messages-container .alert');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    alert.classList.add('fade-out');
+                    setTimeout(function() {
+                         if (alert.parentNode) { alert.parentNode.removeChild(alert); }
+                    }, 600);
+                }, 5000);
+            });
+        });
+    </script>
+
+</body>
+</html>

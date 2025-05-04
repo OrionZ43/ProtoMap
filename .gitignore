@@ -1,0 +1,8 @@
+venv/
+.venv/
+*.pyc
+__pycache__/
+.env
+locations.db
+instance/
+.idea/

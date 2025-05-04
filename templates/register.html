@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Регистрация</h2>
+
+    <form method="POST" action="{{ url_for('register') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.username.label(class="form-label") }}
+            {{ form.username(class="form-control", size=30, placeholder="Придумайте ник (4-25 символов)") }}
+            {% if form.username.errors %}
+                <span class="error">[{{ ', '.join(form.username.errors) }}]</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.password.label(class="form-label") }}
+            {{ form.password(class="form-control", size=30, placeholder="Придумайте пароль (минимум 6 символов)") }}
+            {% if form.password.errors %}
+                 <span class="error">[{{ ', '.join(form.password.errors) }}]</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.confirm_password.label(class="form-label") }}
+            {{ form.confirm_password(class="form-control", size=30, placeholder="Повторите пароль") }}
+             {% if form.confirm_password.errors %}
+                 <span class="error">[{{ ', '.join(form.confirm_password.errors) }}]</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.submit() }}
+        </div>
+    </form>
+
+    <p>
+        Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

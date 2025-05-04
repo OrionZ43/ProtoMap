@@ -1,0 +1,549 @@
+:root {
+    --bg-gradient-start: #1f2125;  /* Темно-серый/синий старт градиента */
+    --bg-gradient-end: #101214;    /* Почти черный конец градиента */
+    --secondary-bg-color: #20232a;
+    --glass-bg: rgba(38, 41, 48, 0.65); /* Полупрозрачный фон для "стекла" */
+    --glass-border: rgba(255, 255, 255, 0.12); /* Очень тонкая светлая граница */
+    --blur-intensity: 8px;        /* Интенсивность размытия */
+    --text-color: #e8e8e8;        /* Основной текст (чуть светлее) */
+    --text-muted-color: #909dab;  /* Приглушенный текст */
+    --primary-color: #00bfff;     /* Ярко-голубой (Deep Sky Blue) */
+    --primary-hover-bg: #00a8e6;  /* Чуть темнее для hover фона кнопки */
+    --primary-text-color: #ffffff;/* Белый текст на цветных кнопках */
+    --border-color: #3a3f47;      /* Цвет для не-стеклянных рамок */
+    --input-bg-color: rgba(16, 18, 20, 0.5); /* Полупрозрачный фон поля ввода */
+    --input-border-color: var(--border-color);
+    --link-hover-color: #ffffff;
+    --border-radius-main: 8px;     /* Основное скругление */
+    --border-radius-large: 12px;   /* Для крупных панелей */
+    --box-shadow-soft: 0 6px 12px rgba(0, 0, 0, 0.2); /* Мягкая тень для панелей */
+    --box-shadow-focus: 0 0 0 3px rgba(0, 191, 255, 0.35); /* Тень для фокуса */
+
+    /* Flash сообщения */
+    --success-bg: rgba(46, 125, 50, 0.7); --success-border: #4caf50; --success-text: #e8f5e9;
+    --danger-bg: rgba(198, 40, 40, 0.7); --danger-border: #f44336; --danger-text: #ffebee;
+    --info-bg: rgba(25, 118, 210, 0.7); --info-border: #2196f3; --info-text: #e3f2fd;
+    --warning-bg: rgba(251, 140, 0, 0.7); --warning-border: #ff9800; --warning-text: #fff8e1;
+}
+
+/* --- Общие стили --- */
+html { box-sizing: border-box; scroll-behavior: smooth; }
+*, *:before, *:after { box-sizing: inherit; }
+
+body {
+    font-family: 'Inter', sans-serif; /* Новый шрифт */
+    background: linear-gradient(145deg, var(--bg-gradient-start), var(--bg-gradient-end));
+    background-attachment: fixed; /* Градиент не скроллится */
+    color: var(--text-color);
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column;
+    min-height: 100vh;
+    font-size: 16px;
+    line-height: 1.7; /* Чуть больше межстрочный интервал */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 { color: #ffffff; margin-top: 1.5em; margin-bottom: 1em; font-weight: 700; }
+h2 { font-size: 1.9em; } h3 { font-size: 1.5em; }
+
+a { color: var(--primary-color); text-decoration: none; transition: color 0.25s ease; }
+a:hover { color: var(--primary-hover-color); } /* Слегка меняем цвет при наведении */
+
+.nav-byline {
+    font-size: 0.8em; /* <<< ЕЩЕ МЕНЬШЕ ШРИФТ */
+    color: var(--text-muted-color);
+    font-weight: 400;
+    margin-left: 5px;
+    white-space: nowrap; /* Предотвращаем перенос строки */
+}
+
+/* Стиль для ССЫЛКИ внутри байлайна */
+.nav-byline a {
+    color: var(--text-muted-color); /* Наследуем приглушенный цвет */
+    font-weight: 700; /* Делаем ник жирнее */
+    transition: color 0.2s ease; /* Плавный переход цвета */
+}
+
+.nav-byline a:hover {
+    color: var(--primary-color); /* Подсвечиваем акцентным цветом при наведении */
+    text-decoration: none; /* Убираем подчеркивание */
+}
+
+/* --- Навигационная панель (Glassmorphism) --- */
+.main-nav {
+    background-color: var(--glass-bg);
+    backdrop-filter: blur(var(--blur-intensity));
+    -webkit-backdrop-filter: blur(var(--blur-intensity));
+    padding: 12px 30px;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    position: sticky; /* Или relative, если sticky не нужен */
+    top: 0;
+    z-index: 1050; /* Важно для контекста z-index меню */
+}
+.nav-left {display: flex; align-items: baseline; gap: 8px;}
+.nav-brand { font-size: 1.6em; font-weight: 700; color: #ffffff; transition: color 0.2s ease; }
+.nav-brand:hover { color: var(--primary-color); }
+.nav-links a { margin-left: 25px; font-size: 1em; padding: 6px 10px; border-radius: var(--border-radius-main); transition: background-color 0.2s ease, color 0.2s ease; }
+.nav-links a:hover { color: var(--link-hover-color); background-color: rgba(255, 255, 255, 0.1); } /* Подсветка фона при наведении */
+.nav-user { margin-left: 28px; color: var(--text-muted-color); }
+.nav-user a { font-weight: 700; margin-left: 6px; color: var(--text-color); transition: color 0.2s ease; }
+.nav-user a:hover { color: var(--link-hover-color); }
+
+/* --- Основной контент --- */
+.content-wrapper { flex-grow: 1; display: flex; flex-direction: column; }
+
+/* --- Flash сообщения (Glassmorphism) --- */
+@keyframes fadeSlideIn { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
+.flash-messages-container { padding: 0 30px; max-width: 1200px; width: 100%; margin: 20px auto 0 auto; box-sizing: border-box; }
+.alert {
+    padding: 15px 25px; margin-bottom: 20px;
+    border: 1px solid; /* Граница задается цветом ниже */
+    border-radius: var(--border-radius-main);
+    position: relative; animation: fadeSlideIn 0.4s ease-out;
+    background-color: var(--glass-bg); /* Стекло */
+    backdrop-filter: blur(var(--blur-intensity));
+    -webkit-backdrop-filter: blur(var(--blur-intensity));
+    box-shadow: var(--box-shadow-soft);
+    /* Переход для плавного исчезновения */
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out, margin 0.5s ease-out, padding 0.5s ease-out, height 0.5s ease-out, border-width 0.5s ease-out;
+    overflow: hidden;
+}
+.alert.fade-out { opacity: 0; transform: translateY(-15px); margin-top: 0 !important; margin-bottom: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; border-width: 0; height: 0; }
+.alert-success { color: var(--success-text); border-color: var(--success-border); }
+.alert-danger { color: var(--danger-text); border-color: var(--danger-border); }
+.alert-info { color: var(--info-text); border-color: var(--info-border); }
+.alert-warning { color: var(--warning-text); border-color: var(--warning-border); }
+
+/* --- Кнопки (Современный стиль) --- */
+button, input[type="submit"] {
+    display: inline-block; padding: 11px 24px; /* Немного крупнее */
+    background: var(--primary-color); /* Градиентный фон */
+    color: var(--primary-text-color); /* Белый текст */
+    border: none; /* Без рамки */
+    border-radius: 10px;
+    cursor: pointer; font-size: 1em; font-weight: 700;
+    text-align: center; line-height: normal;
+    box-shadow: 0 3px 8px rgba(79, 195, 247, 0.25); /* Тень цвета акцента */
+    transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
+}
+button:hover, input[type="submit"]:hover {
+    /* background-color: var(--primary-hover-color); */ /* Комментируем или удаляем */
+    background-color: #29b6f6; /* <<< ЯВНО УКАЗЫВАЕМ ЦВЕТ */
+    color: var(--primary-text-color);
+    border-color: var(--primary-color); /* Убедимся, что рамка остается (если она была) */
+    box-shadow: 0 4px 10px rgba(79, 195, 247, 0.3);
+    transform: translateY(-1px);
+}
+button:active, input[type="submit"]:active { transform: translateY(0px); box-shadow: 0 2px 5px rgba(79, 195, 247, 0.2); }
+button:disabled, input[type="submit"]:disabled {
+    background: #3a3f47; /* Темно-серый для неактивных */
+    color: var(--text-muted-color);
+    cursor: default; box-shadow: none; transform: none; border: none;
+}
+
+/* --- Стили для мобильной кнопки и меню --- */
+.user-menu-toggle-btn { /* Кнопка "Профиль" на мобильных */
+    display: none; /* Скрыта по умолчанию */
+    background: none; border: 1px solid var(--border-color); color: var(--text-muted-color);
+    padding: 6px 12px; font-size: 0.9em; box-shadow: none;
+}
+.user-menu-toggle-btn:hover { background-color: rgba(255, 255, 255, 0.05); color: var(--text-color); border-color: var(--text-muted-color); transform: none; box-shadow: none; }
+
+.user-dropdown {
+    position: absolute; /* Позиционируем относительно .nav-links */
+    top: calc(100% + 8px); /* Под родителем + отступ */
+    right: 0; /* Прижимаем к правому краю родителя (.nav-links) */
+    background-color: var(--secondary-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: var(--box-shadow-soft);
+    z-index: 1100 !important; /* <<< ВЫСОКИЙ Z-INDEX */
+    min-width: 180px;
+    padding: 10px 0;
+    margin-top: 0; /* Убираем, т.к. есть top */
+    /* Скрываем через JS, поэтому display: none тут не нужен */
+}
+.user-dropdown a {
+    display: block;
+    padding: 9px 20px; /* <<< Немного увеличим вертикальный padding для "воздуха" */
+    color: var(--text-color);
+    white-space: nowrap;
+    border-bottom: none;
+    font-size: 0.95em;
+    transition: background-color 0.15s ease, color 0.15s ease; /* Плавный переход для hover */
+}
+.user-dropdown a:hover {
+    background-color: rgba(79, 195, 247, 0.1); /* Легкая подсветка фона */
+    color: var(--link-hover-color);
+}
+.user-dropdown hr { /* Стилизуем разделитель */
+    border: none;
+    border-top: 1px solid var(--border-color); /* Тонкая линия цвета рамки */
+    margin: 8px 0; /* Отступы сверху/снизу */
+}
+.dropdown-user-info { /* Текст "Привет..." */
+     padding: 8px 20px 12px 20px; /* <<< УВЕЛИЧИМ НИЖНИЙ ОТСТУП */
+     color: var(--text-muted-color);
+     font-size: 0.9em;
+     font-weight: bold;
+     cursor: default; /* Показываем, что это не кликабельно */
+}
+
+
+/* --- Формы (Стеклянный контейнер, чистые поля) --- */
+.form-container {
+    padding: 40px 45px; max-width: 500px; margin: 50px auto; /* Больше отступы */
+    background: var(--glass-bg); backdrop-filter: blur(var(--blur-intensity)); -webkit-backdrop-filter: blur(var(--blur-intensity));
+    border: 1px solid var(--glass-border); border-radius: var(--border-radius-large); /* Больше скругление */
+    box-shadow: var(--box-shadow-soft);
+}
+.form-container h2 { text-align: center; margin-top: 0; margin-bottom: 35px; color: #ffffff; font-size: 1.9em; }
+.form-group { margin-bottom: 28px; }
+.form-group label { display: block; margin-bottom: 10px; font-weight: 700; color: var(--text-color); font-size: 0.9em; text-align: left;}
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="url"] {
+    width: 100%; padding: 13px 10px; /* Увеличим поле */
+    border: none; /* Без рамки по умолчанию */
+    border-bottom: 1px solid var(--input-border-color); /* Только нижняя граница */
+    border-radius: 0; /* Без скругления */
+    background-color: transparent; /* Полностью прозрачный фон */
+    color: var(--text-color); box-sizing: border-box; font-size: 1.05em; /* Крупнее шрифт в поле */
+    transition: border-color 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
+}
+.form-group input:focus {
+    outline: none; border-bottom-color: var(--primary-color); /* Подсветка нижней границы */
+    box-shadow: none; /* Без внешней тени */
+}
+.form-group .error { color: #ff8a80; font-size: 0.9em; display: block; margin-top: 8px; text-align: left;}
+.form-group .form-help-text { font-size: 0.85em; color: var(--text-muted-color); margin-top: 8px; display: block; text-align: left;}
+.form-group input[type="submit"] { width: 100%; margin-top: 20px; padding: 13px 20px; font-size: 1.1em; } /* Крупнее кнопка */
+.form-container p { text-align: center; margin-top: 30px; color: var(--text-muted-color); }
+.form-container p a { font-weight: 700; }
+
+/* --- Карта и инфо-панель --- */
+#map-info { /* Стеклянная панель */
+    padding: 10px 30px; background: var(--glass-bg); backdrop-filter: blur(var(--blur-intensity)); -webkit-backdrop-filter: blur(var(--blur-intensity));
+    display: flex; align-items: center; justify-content: space-between; gap: 15px;
+    height: 60px; box-sizing: border-box; border-bottom: 1px solid var(--glass-border);
+    color: var(--text-muted-color); font-size: 0.95em;
+}
+#map-info span a { font-weight: 700; }
+#map-info span a:hover { text-decoration: underline; color: var(--link-hover-color); }
+#find-me-btn { /* Кнопка "Найти меня" - наследует стили button */ font-size: 0.9em; padding: 8px 18px; font-weight: 700; }
+#map { flex-grow: 1; width: 100%; min-height: 450px; height: 100%; background-color: var(--bg-color); } /* Фон под картой */
+.leaflet-container { height: 100%; width: 100%; background-color: transparent; } /* Карта прозрачна до загрузки тайлов */
+
+/* --- Темная тема для Leaflet (Glassmorphism) --- */
+.leaflet-control-zoom a, .leaflet-control-attribution, .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+    background-color: var(--glass-bg) !important; /* Применяем стекло ко всем */
+    backdrop-filter: blur(var(--blur-intensity)) !important;
+    -webkit-backdrop-filter: blur(var(--blur-intensity)) !important;
+    color: var(--text-color) !important;
+    box-shadow: var(--box-shadow-soft) !important;
+    border: 1px solid var(--glass-border) !important;
+}
+.leaflet-control-zoom a {
+    background-color: rgba(32, 35, 42, 0.92) !important; /* Фон */
+    color: var(--text-color) !important;                 /* Цвет иконки +/- */
+    width: 30px !important;  /* <<< ЗАПОМИНАЕМ ШИРИНУ */
+    height: 30px !important; /* <<< ЗАПОМИНАЕМ ВЫСОТУ */
+    line-height: 30px !important; /* <<< ЗАПОМИНАЕМ ВЫСОТУ СТРОКИ */
+    border-bottom: 1px solid var(--border-color) !important; /* Разделитель */
+    text-align: center;
+    text-decoration: none;
+    font-size: 18px; /* Размер иконки +/- */
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+.leaflet-control-zoom a:last-child { border-bottom: none !important; }
+.leaflet-control-zoom a:hover { background-color: #3a3f47 !important; color: #fff !important; }
+
+
+/* --- Стили для кастомной кнопки геолокации (ИЗМЕНЕНЫ) --- */
+.leaflet-control-custom.geolocation-button {
+    /* Контейнер наследует стили .leaflet-bar, рамки/фон не нужны */
+     background: none !important;
+     border: none !important;
+     box-shadow: none !important; /* Убираем лишние стили у контейнера */
+     margin-top: 10px; /* <<< ДОБАВЛЯЕМ ОТСТУП СВЕРХУ от кнопок зума */
+}
+.leaflet-control-custom.geolocation-button a {
+    background-color: rgba(32, 35, 42, 0.92) !important; /* <<< ТОТ ЖЕ ФОН, что у зума */
+    border-radius: var(--border-radius); /* Сохраняем скругление (или убираем, если у зума нет) */
+    width: 30px !important;  /* <<< ТАКАЯ ЖЕ ШИРИНА, как у зума */
+    height: 30px !important; /* <<< ТАКАЯ ЖЕ ВЫСОТА, как у зума */
+    display: flex; justify-content: center; align-items: center; /* Центрируем иконку */
+    cursor: pointer; text-decoration: none;
+    transition: background-color 0.2s ease;
+    border: none !important; /* У кнопки нет внутренней рамки, она в .leaflet-bar */
+    box-shadow: none !important; /* Убираем лишние тени */
+}
+.leaflet-control-custom.geolocation-button a:hover {
+    background-color: #3a3f47 !important; /* <<< ТОТ ЖЕ HOVER, что у зума */
+}
+.leaflet-control-custom.geolocation-button i { /* Иконка внутри кнопки */
+    font-size: 16px; /* <<< РАЗМЕР ИКОНКИ (подбираем) */
+    color: var(--primary-color); /* Цвет иконки */
+    /* line-height больше не нужен из-за flex */
+    transition: color 0.2s ease, transform 0.5s ease;
+}
+.leaflet-control-custom.geolocation-button a:hover i {
+     color: var(--link-hover-color); /* Цвет иконки при наведении */
+}
+
+/* Стиль во время загрузки (вращение иконки) */
+.leaflet-control-custom.geolocation-button.loading a {
+    cursor: wait;
+    background-color: #3a3f47 !important; /* Фон как при hover */
+}
+.leaflet-control-custom.geolocation-button.loading i {
+    color: var(--text-muted-color); /* Серая иконка */
+    animation: spin 1s linear infinite;
+}
+
+/* Анимация вращения */
+@keyframes spin { /* ... без изменений ... */ }
+
+/* Кнопка удаления в попапе */
+.delete-marker-btn {
+    /* Использует общие стили button, но можно переопределить */
+    background: linear-gradient(145deg, #e53935, #c62828); /* Красный градиент */
+    color: white; border: none; box-shadow: 0 2px 6px rgba(229, 57, 53, 0.3);
+    padding: 6px 10px; font-size: 0.8em; border-radius: 4px; margin-top: 10px; width: 100%;
+}
+.delete-marker-btn:hover {
+    background: linear-gradient(145deg, #c62828, #b71c1c);
+    box-shadow: 0 4px 10px rgba(229, 57, 53, 0.4); transform: translateY(-1px);
+}
+.delete-marker-btn:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(229, 57, 53, 0.3); }
+.delete-marker-btn:disabled { background: #444a54; color: #888; border: none; box-shadow: none; transform: none;}
+
+/* Кластеры MarkerCluster */
+.marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+	background-color: rgba(32, 35, 42, 0.8); /* Стеклянный фон */
+    border: 2px solid var(--primary-color);
+    border-radius: 50%; box-shadow: 0 0 14px rgba(79, 195, 247, 0.5);
+    transition: background-color 0.2s ease;
+}
+.marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
+	background-color: rgba(79, 195, 247, 0.9); /* Центр кластера */
+	color: var(--primary-text-color); font-weight: 700; text-shadow: none; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; margin-left: 5px; margin-top: 5px; font-size: 13px;
+}
+.marker-cluster:hover { background-color: rgba(40, 44, 52, 0.9); }
+
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="url"],
+.form-group textarea { /* <<< ДОБАВЛЕН textarea >>> */
+    width: 100%; padding: 12px 15px; border: 1px solid var(--input-border-color);
+    border-radius: var(--border-radius); background-color: var(--input-bg-color);
+    color: var(--text-color); box-sizing: border-box; font-size: 1em;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    font-family: inherit; /* Наследуем шрифт */
+    line-height: 1.6; /* Улучшаем читаемость */
+}
+/* Стиль :focus также применится к textarea */
+.form-group input:focus,
+.form-group textarea:focus { /* <<< ДОБАВЛЕН textarea >>> */
+    outline: none; border-color: var(--primary-color); box-shadow: var(--box-shadow-focus);
+}
+
+/* --- Стили для страницы профиля (Glassmorphism) --- */
+.profile-container {
+    padding: 40px 45px; max-width: 600px; margin: 50px auto;
+    background: var(--glass-bg); backdrop-filter: blur(var(--blur-intensity)); -webkit-backdrop-filter: blur(var(--blur-intensity));
+    border: 1px solid var(--glass-border); border-radius: var(--border-radius-large);
+    box-shadow: var(--box-shadow-soft); text-align: center;
+}
+.profile-avatar { margin-bottom: 25px; }
+.profile-avatar img {
+    width: 130px; height: 130px; border-radius: 50%; object-fit: cover;
+    border: 4px solid rgba(255, 255, 255, 0.2); /* Полупрозрачная светлая рамка */
+    display: block; margin: 0 auto; background-color: var(--input-bg-color);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+.profile-avatar img.default { background-color: var(--secondary-bg-color); border-color: var(--border-color); }
+.profile-info h2 { margin: 15px 0 20px 0; font-size: 2.2em; color: #ffffff; word-break: break-all; }
+.profile-info p { margin: 12px 0; color: var(--text-color); font-size: 1.1em; line-height: 1.6; }
+.profile-info p a { color: var(--primary-color); text-decoration: none; word-break: break-all; border-bottom: 1px solid transparent; transition: color 0.2s ease, border-color 0.2s ease; padding-bottom: 2px;}
+.profile-info p a:hover { color: var(--link-hover-color); border-bottom-color: var(--primary-color); }
+.profile-actions { margin-top: 35px; }
+/* Кнопка Редактировать использует общие стили button */
+.no-link-info { color: var(--text-muted-color); font-style: italic; font-size: 1em; }
+@media (max-width: 767.98px) {
+
+    body {
+        font-size: 15px; /* Немного уменьшим базовый шрифт */
+    }
+
+    h2 { font-size: 1.6em; }
+    h3 { font-size: 1.3em; }
+
+    /* --- Навигация --- */
+    .main-nav {
+        padding: 10px 15px; /* Уменьшаем боковые отступы навбара */
+        position: static; /* Отменяем sticky для простоты на мобильных */
+    }
+    .nav-container { /* Если используется (Вариант 1) */
+         padding: 0 15px;
+    }
+     .nav-left { /* Центрируем бренд+байлайн, если правые ссылки скрыты */
+        /* Можно добавить flex-grow: 1; text-align: center; если правая часть скрывается в бургер */
+        /* Пока оставим как есть */
+         gap: 6px;
+    }
+     .nav-brand { font-size: 1.3em; }
+     .nav-byline { font-size: 0.65em; margin-left: 3px; }
+
+    /* Скрываем обычные ссылки справа (подготовка к бургер-меню, пока просто скрываем) */
+    .nav-links {
+        /* display: none; */ /* Раскомментировать, если будем делать бургер */
+         /* Пока уменьшим отступы */
+         margin-left: 0;
+    }
+    .nav-links a, .nav-user {
+         margin-left: 15px; /* Меньше отступ */
+         font-size: 0.95em;
+    }
+     .nav-user a { margin-left: 4px; }
+
+
+    /* --- Контейнеры контента --- */
+    .flash-messages-container { padding: 0 15px; margin-top: 15px; }
+    .form-container {
+        padding: 25px 20px; /* Уменьшаем падинги */
+        margin: 25px 15px; /* Уменьшаем внешние отступы, добавляем боковые */
+        max-width: none; /* Снимаем ограничение ширины */
+    }
+     .profile-container {
+         padding: 20px 15px; margin: 25px 15px; max-width: none;
+     }
+
+
+    /* --- Flash сообщения --- */
+    .alert { padding: 12px 18px; margin-bottom: 15px; }
+
+    /* --- Формы --- */
+    .form-container h2 { font-size: 1.6em; margin-bottom: 25px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group input[type="text"],
+    .form-group input[type="password"],
+    .form-group input[type="url"],
+    .form-group textarea { padding: 11px 12px; font-size: 1em; }
+    .form-group input[type="submit"] { padding: 11px 18px; font-size: 1em; }
+
+     /* --- Профиль --- */
+     .profile-avatar img { width: 100px; height: 100px; }
+     .profile-info h2 { font-size: 1.7em; }
+     .profile-info p { font-size: 1em; }
+     .profile-about { margin-top: 20px; padding-top: 15px; font-size: 0.95em; }
+     .profile-actions a { padding: 9px 18px; font-size: 0.95em; }
+
+
+    /* --- Карта и инфо-панель --- */
+    #map-info {
+        padding: 8px 15px; /* Уменьшаем падинги */
+        height: auto; /* Авто высота, если текст или кнопка не влезают */
+        min-height: 50px;
+        flex-direction: column; /* Элементы друг под другом */
+        align-items: flex-start; /* Выравнивание по левому краю */
+        gap: 5px; /* Уменьшаем зазор */
+        text-align: left; /* Текст слева */
+    }
+     #map-info span { font-size: 0.9em; }
+     #find-me-btn { /* Кнопка на мобильных */
+         align-self: flex-start; /* Прижимаем к левому краю */
+         padding: 7px 15px;
+         margin-top: 5px; /* Небольшой отступ сверху */
+    }
+    #map { min-height: 300px; } /* Уменьшаем минимальную высоту карты */
+
+    /* Уменьшаем контролы Leaflet */
+    .leaflet-control-zoom a {
+         width: 26px !important; height: 26px !important; line-height: 26px !important;
+     }
+     .leaflet-control-attribution { font-size: 10px; }
+
+    /* Уменьшаем попапы */
+    .leaflet-popup-content-wrapper { max-width: 280px; /* Ограничиваем ширину попапа */ }
+    .leaflet-popup-content { margin: 12px 18px; font-size: 0.9em; }
+
+}
+
+@media (max-width: 767.98px) {
+    .desktop-only { display: none !important; } /* Скрываем текст и кнопку Выйти */
+    .mobile-only { display: inline-block !important; } /* Показываем кнопку Профиль */
+
+    .main-nav { padding: 10px 15px; } /* Уменьшаем падинги навбара */
+     .nav-container { padding: 0; } /* Если используется Вариант 1 HTML */
+     .nav-links { /* Контейнер справа */
+         position: static; /* Убираем абсолютное позиционирование, если было */
+         margin-left: auto; /* Прижимаем к правому краю */
+         gap: 10px; /* Уменьшаем gap */
+     }
+     /* Ссылки Войти/Регистрация на мобильных */
+     .nav-links a:not(.mobile-only) {
+         font-size: 0.95em;
+         margin-left: 10px;
+     }
+
+      #map-info { /* Панель под картой */
+          padding: 8px 15px; height: auto; min-height: 50px;
+          flex-direction: column; align-items: flex-start; gap: 5px; text-align: left;
+      }
+      #find-me-btn { /* Убираем эту кнопку, т.к. она будет на карте */
+           display: none !important;
+      }
+      #map-info span { font-size: 0.9em; }
+
+}
+
+/* --- Совсем маленькие экраны (меньше 480px) --- */
+@media (max-width: 479.98px) {
+    body {
+        font-size: 14px; /* Еще меньше шрифт */
+    }
+     h2 { font-size: 1.4em; }
+     h3 { font-size: 1.2em; }
+
+    .nav-container { padding: 0 15px; } /* Сохраняем отступы */
+    .nav-left { gap: 4px; }
+    .nav-brand { font-size: 1.15em; }
+    .nav-links a, .nav-user { margin-left: 10px; font-size: 0.9em; }
+    .nav-user a { margin-left: 3px; }
+
+    .flash-messages-container { padding: 0 10px; margin-top: 10px; }
+    .alert { padding: 10px 15px; margin-bottom: 10px; }
+
+    .form-container { padding: 20px 15px; margin: 20px 10px; }
+    .form-container h2 { font-size: 1.4em; margin-bottom: 20px; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { margin-bottom: 6px; font-size: 0.9em; }
+    .form-group input[type="text"], .form-group input[type="password"], .form-group input[type="url"], .form-group textarea { padding: 10px 12px; font-size: 0.95em; }
+    .form-group input[type="submit"] { padding: 10px 15px; font-size: 0.95em; }
+
+     .profile-container { padding: 15px; margin: 20px 10px; }
+     .profile-avatar img { width: 80px; height: 80px; }
+     .profile-info h2 { font-size: 1.5em; }
+     .profile-info p { font-size: 0.95em; }
+     .profile-about { font-size: 0.9em; }
+     .profile-actions a { padding: 8px 15px; font-size: 0.9em; }
+
+    #map-info { padding: 8px 15px; height: auto; min-height: 45px; }
+     #map-info span { font-size: 0.85em; }
+     #find-me-btn { padding: 6px 12px; font-size: 0.85em; }
+    #map { min-height: 250px; }
+
+    .leaflet-popup-content-wrapper { max-width: 240px; }
+    .leaflet-popup-content { margin: 10px 15px; font-size: 0.85em; }
+    .delete-marker-btn { padding: 4px 6px; font-size: 0.75em;}
+
+}

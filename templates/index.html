@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        #map-info { padding: 10px 20px; background-color: var(--secondary-color); display: flex; align-items: center; justify-content: space-between; gap: 15px; height: 50px; box-sizing: border-box; border-bottom: 1px solid var(--border-color); color: var(--text-color); }
+        #map-info span a { font-weight: bold; }
+        #map-info span a:hover { text-decoration: underline; }
+        #find-me-btn { font-size: 0.9em; padding: 8px 15px; }
+        #map { flex-grow: 1; width: 100%; min-height: 400px; height: 100%; background-color: #101214; }
+         .leaflet-container { height: 100%; width: 100%; background-color: var(--bg-color); }
+         .delete-marker-btn { background-color: #dc3545; color: white; border: none; padding: 5px 8px; font-size: 0.85em; border-radius: 3px; cursor: pointer; margin-top: 8px; display: block; text-align: center; transition: background-color 0.2s ease; }
+         .delete-marker-btn:hover { background-color: #c82333; }
+         .delete-marker-btn:disabled { background-color: #6c757d; cursor: not-allowed; }
+         .leaflet-control-custom.geolocation-button a { background-color: var(--secondary-bg-color); border-radius: var(--border-radius); width: 34px; height: 34px; display: flex; justify-content: center; align-items: center; cursor: pointer; text-decoration: none; transition: background-color 0.2s ease; border: 1px solid var(--border-color); }
+         .leaflet-control-custom.geolocation-button a:hover { background-color: #3a3f47; }
+         .leaflet-control-custom.geolocation-button i { font-size: 16px; color: var(--primary-color); line-height: 32px; transition: color 0.2s ease, transform 0.5s ease; }
+         .leaflet-control-custom.geolocation-button a:hover i { color: var(--link-hover-color); }
+         .leaflet-control-custom.geolocation-button.loading a { cursor: wait; }
+         .leaflet-control-custom.geolocation-button.loading i { color: var(--text-muted-color); animation: spin 1s linear infinite; }
+         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+         @media (max-width: 767.98px) { #find-me-btn { display: none !important; } }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div id="map-info">
+         {% if g.user %}
+             <span>Кликни на карту или используй кнопку <i class="fas fa-map-marker-alt" style="color: var(--primary-color); font-size: 0.9em;"></i> на карте, чтобы добавить/переместить метку.</span>
+             <button id="find-me-btn" >Добавить/Переместить мою метку (ПК)</button>
+         {% else %}
+             <span>Чтобы добавить метку, пожалуйста, <a href="{{ url_for('login', next=request.url) }}">войдите</a> или <a href="{{ url_for('register') }}">зарегистрируйтесь</a>.</span>
+         {% endif %}
+    </div>
+    <div id="map"></div>
+{% endblock %}
+
+
+{% block scripts %}
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script>
+        console.log("!!! DEBUG: Скрипт index.html старт.");
+
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log("!!! DEBUG: DOMContentLoaded.");
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : null;
+            if (!csrfToken) {
+                 console.error("!!! ОШИБКА: CSRF токен НЕ НАЙДЕН в мета-теге! Проверьте base.html.");
+                 alert("Критическая ошибка безопасности (CSRF). Действия могут быть заблокированы.");
+            } else {
+                 console.log("!!! DEBUG: CSRF Token из мета-тега получен.");
+            }
+
+            if (typeof L === 'undefined') { console.error("!!! L is not defined!"); return; }
+            console.log("!!! DEBUG: Leaflet L найден.");
+
+            let map; try { map = L.map('map').setView([54.5, 30.0], 4); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© <a href="http://www.openstreetmap.org/copyright">OSM</a> contributors' }).addTo(map); } catch (e) { console.error("!!! Ошибка карты:", e); return; }
+            let markers; try { markers = L.markerClusterGroup(); map.addLayer(markers); } catch (e) { console.error("!!! Ошибка кластера:", e); }
+            console.log("!!! DEBUG: Карта и кластеры готовы.");
+
+            const protoIcon = L.icon({ iconUrl: "{{ url_for('static', filename='protogen_pin_map.svg') }}", iconSize: [38, 38], iconAnchor: [19, 38], popupAnchor: [0, -40] });
+            console.log("!!! DEBUG: protoIcon определена.");
+
+            const userMarkers = {}; console.log("!!! DEBUG: userMarkers создан.");
+
+            function createPopupContent(username, city) {
+                const profileUrl = "{{ url_for('profile', username='__USERNAME__') }}".replace('__USERNAME__', encodeURIComponent(username));
+                let popupHTML = `Протоген <a href="${profileUrl}" target="_blank">${username}</a> в: ${city || 'Неизвестно'}`;
+                {% if g.user %}
+                if (username === "{{ g.user.username }}") {
+                    popupHTML += `<br><button class="delete-marker-btn" data-username="${username}">Удалить мою метку</button>`;
+                }
+                {% endif %}
+                return popupHTML;
+            }
+            console.log("!!! DEBUG: createPopupContent определена.");
+
+            function addOrUpdateMarker(username, lat, lng, city) {
+                 console.log(`!!! DEBUG: addOrUpdateMarker для ${username} (${lat}, ${lng})`);
+                 try {
+                    const popupContent = createPopupContent(username, city);
+                    if (userMarkers[username]) {
+                        console.log(`   -> Обновляем маркер ${username}`);
+                        userMarkers[username].setLatLng([lat, lng]).setPopupContent(popupContent);
+                    } else {
+                        console.log(`   -> Создаем маркер ${username}`);
+                        const newMarker = L.marker([lat, lng], { icon: protoIcon }).bindPopup(popupContent);
+                        if (markers) { markers.addLayer(newMarker); } else if (map) { map.addLayer(newMarker); }
+                        userMarkers[username] = newMarker;
+                    }
+                 } catch(e) { console.error(`!!! ОШИБКА в addOrUpdateMarker для ${username}:`, e); }
+            }
+            console.log("!!! DEBUG: addOrUpdateMarker определена.");
+
+            let existingLocations = [];
+            try {
+                const raw = {{ locations_json|safe }};
+                if (Array.isArray(raw)) { existingLocations = raw; }
+                console.log(`!!! DEBUG: Загружено ${existingLocations.length} меток.`);
+            } catch (e) { console.error("Ошибка locations_json:", e); }
+            existingLocations.forEach(loc => {
+                if (loc.user && typeof loc.lat ==='number' && typeof loc.lng === 'number') {
+                    addOrUpdateMarker(loc.user, loc.lat, loc.lng, loc.city);
+                }
+            });
+
+            {% if g.user %}
+             console.log("!!! DEBUG: Блок JS для авторизованных.");
+             const currentUsername = "{{ g.user.username }}";
+
+            function sendLocationToServer(lat, lng) {
+                 console.log(`!!! DEBUG: sendLocationToServer (${lat}, ${lng})`);
+                 if (typeof lat!=='number' || typeof lng!=='number' || isNaN(lat) || isNaN(lng)) { console.error("Координаты некорректны"); alert("Ошибка координат"); return; }
+                 if (!csrfToken) { alert("Ошибка безопасности (CSRF)."); return; }
+                 if (confirm(`Добавить/переместить метку для (${lat.toFixed(4)}, ${lng.toFixed(4)})?`)) {
+                    const dataToSend = { lat: lat, lng: lng };
+                    const btnMap = document.querySelector('.geolocation-button'); if(btnMap) L.DomUtil.addClass(btnMap, 'loading');
+                    const btnPanel = document.getElementById('find-me-btn'); if(btnPanel) btnPanel.disabled = true;
+
+                    fetch("{{ url_for('add_or_update_location') }}", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                        body: JSON.stringify(dataToSend)
+                    })
+                    .then(res => { if (!res.ok) { return res.json().then(err => { throw new Error(err.message || `Error ${res.status}`); }).catch(() => { throw new Error(`Error ${res.status}`); }); } return res.json(); })
+                    .then(d => {
+                        console.log('!!! DEBUG: Ответ (Add/Update):', d);
+                        if (d.status === 'success') {
+                            const city = d.foundCity || "?"; const pLat = d.placeLat; const pLng = d.placeLng;
+                            if (typeof pLat === 'number' && typeof pLng === 'number') { addOrUpdateMarker(currentUsername, pLat, pLng, city); if (userMarkers[currentUsername]) { userMarkers[currentUsername].openPopup(); } }
+                            else { console.error("Не пришли координаты места"); alert("Ошибка: нет координат места."); }
+                            alert(d.message || 'Готово!');
+                        } else { alert(`Ошибка: ${d.message || 'Не удалось.'}`); }
+                    })
+                    .catch(err => { console.error('!!! ОШИБКА Fetch Add/Update:', err); if (err.message.includes("401")) alert("Нужно войти."); else alert(`Ошибка: ${err.message || '?'}`); })
+                    .finally(() => { if(btnMap) L.DomUtil.removeClass(btnMap, 'loading'); if(btnPanel) btnPanel.disabled = false; });
+                 } else { const btnMap = document.querySelector('.geolocation-button'); if(btnMap) L.DomUtil.removeClass(btnMap, 'loading'); const btnPanel = document.getElementById('find-me-btn'); if(btnPanel) btnPanel.disabled = false; }
+            }
+
+            if (map) { map.on('click', e => { console.log("Клик:", e.latlng); sendLocationToServer(e.latlng.lat, e.latlng.lng); }); console.log("!!! DEBUG: map.on('click') установлен."); }
+
+            const GeolocationControl = L.Control.extend({ options: { position: 'topleft' }, onAdd: function (map) { const c = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom geolocation-button'); c.title = 'Добавить/Переместить по геолокации'; c.innerHTML = '<a href="#" role="button"><i class="fas fa-map-marker-alt"></i></a>'; const b = c.firstChild; L.DomEvent.disableClickPropagation(c); L.DomEvent.disableScrollPropagation(c); L.DomEvent.on(b, 'click', function(ev) { L.DomEvent.stop(ev); triggerGeolocation(c); }); console.log("!!! DEBUG: Гео-кнопка создана."); return c; }});
+            function triggerGeolocation(btnContainer) { if ('geolocation' in navigator) { console.log("!!! Запрос гео..."); if(btnContainer) L.DomUtil.addClass(btnContainer, 'loading'); navigator.geolocation.getCurrentPosition( p => { console.log("!!! Гео OK."); if(btnContainer) L.DomUtil.removeClass(btnContainer, 'loading'); const rLat=parseFloat(p.coords.latitude.toFixed(3)); const rLng=parseFloat(p.coords.longitude.toFixed(3)); console.log(` -> Шлем ${rLat}, ${rLng}`); sendLocationToServer(rLat, rLng); }, err => { console.error("!!! Гео ОШИБКА:", err); if(btnContainer) L.DomUtil.removeClass(btnContainer, 'loading'); let msg='?'; switch(err.code){ case 1: msg="Запрещено."; break; case 2: msg="Недоступно."; break; case 3: msg="Таймаут."; break; } alert(`Гео Ошибка: ${msg}`);}, { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 } ); } else { alert('Геолокация не поддерживается.'); } }
+            if (map) { map.addControl(new GeolocationControl()); console.log("!!! DEBUG: Гео-контрол добавлен."); }
+
+             const findMeButtonOld = document.getElementById('find-me-btn');
+             if (findMeButtonOld) {
+                 console.log("!!! DEBUG: Старая кнопка найдена.");
+                 findMeButtonOld.addEventListener('click', () => {
+                     console.log("!!! DEBUG: Клик по старой кнопке.");
+                     const mapButtonContainer = document.querySelector('.geolocation-button'); triggerGeolocation(mapButtonContainer);
+                 });
+             } else { console.log("!!! DEBUG: Старая кнопка не найдена."); }
+
+            if (map && markers) {
+                 console.log("!!! DEBUG: Установка обработчика popupopen.");
+                markers.on('popupopen', e => {
+                    const popupNode = e.popup._contentNode; console.log("!!! DEBUG: popupopen сработал.");
+                    const deleteButton = popupNode.querySelector('.delete-marker-btn');
+                    if (deleteButton) {
+                         console.log("!!! DEBUG: Кнопка удаления найдена.");
+                        deleteButton.addEventListener('click', function(ev){
+                             console.log("!!! DEBUG: Клик УДАЛИТЬ."); ev.preventDefault();
+                             const user = this.getAttribute('data-username');
+                            if (user === currentUsername && confirm("Удалить метку?")) {
+                                 if (!csrfToken) { alert("Ошибка безопасности (CSRF)."); this.disabled = false; this.textContent = "Удалить"; return; }
+                                 console.log(`   -> Удаляем ${user}. Запрос...`); this.textContent = "..."; this.disabled = true;
+                                fetch("{{ url_for('delete_location') }}", {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+                                })
+                                .then(res => { if (!res.ok) { return res.json().then(err => { throw new Error(err.message || `Error ${res.status}`); }); } return res.json(); })
+                                .then(d => {
+                                     console.log("!!! DEBUG: Ответ (Delete):", d);
+                                    if (d.status === 'success') {
+                                        console.log(`   -> Успех удаления ${user}.`);
+                                        if (userMarkers[user]) { markers.removeLayer(userMarkers[user]); delete userMarkers[user]; map.closePopup(); alert(d.message || "Удалено."); }
+                                        else { console.warn(`   -> Маркер ${user} не найден.`);}
+                                    } else { alert(`Ошибка: ${d.message}`); /* this.textContent = "Удалить"; this.disabled = false; */ }
+                                })
+                                .catch(err => { console.error('!!! ОШИБКА Fetch Delete:', err); alert(`Ошибка: ${err.message}`); /* this.textContent = "Удалить"; this.disabled = false; */ });
+                            }
+                         }, { once: true });
+                         console.log("!!! DEBUG: Обработчик удаления назначен.");
+                    } else { console.log("!!! DEBUG: Кнопка удаления НЕ найдена."); }
+                });
+                 console.log("!!! DEBUG: Обработчик markers.on('popupopen') установлен.");
+            }
+            {% else %}
+             console.log("!!! DEBUG: Блок JS для НЕ авторизованых.");
+            {% endif %}
+
+             console.log("!!! DEBUG: Скрипт DOMContentLoaded завершен.");
+        });
+         console.log("!!! DEBUG: Скрипт index.html завершен.");
+    </script>
+{% endblock %}
