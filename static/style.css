@@ -249,6 +249,9 @@ button:disabled, input[type="submit"]:disabled {
     box-shadow: var(--box-shadow-soft) !important;
     border: 1px solid var(--glass-border) !important;
 }
+.leaflet-container a {
+    color: #29c2ff;
+}
 .leaflet-control-zoom a {
     background-color: rgba(32, 35, 42, 0.92) !important; /* Фон */
     color: var(--text-color) !important;                 /* Цвет иконки +/- */
