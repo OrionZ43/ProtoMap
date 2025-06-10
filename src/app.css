@@ -1,0 +1,251 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --bg-color-start: #1f2125;
+    --bg-color-end: #101214;
+    --primary-color: #00f0ff;
+    --secondary-bg-color: #1a1d21;
+    --border-color: #30363d;
+    --text-color: #e8e8e8;
+    --text-muted-color: #909dab;
+    --border-radius: 8px;
+}
+
+@keyframes gradient-flow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+body {
+    @apply bg-cyber-bg text-gray-200 font-sans;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23ffffff' fill-opacity='0.02' d='M0 2h2v2H0zM2 0h2v2H2z'/%3E%3C/svg%3E"),
+        radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
+    background-attachment: fixed;
+    overflow: hidden;
+}
+
+.side-panel {
+    @apply fixed top-0 h-full w-16 bg-black/20 hidden lg:flex items-center justify-center;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    z-index: 5;
+}
+.side-panel.left {
+    @apply left-0;
+    border-right: 1px solid var(--border-color);
+}
+.side-panel.right {
+    @apply right-0;
+    border-left: 1px solid var(--border-color);
+}
+
+.v-text {
+    @apply uppercase text-xs tracking-widest text-cyber-yellow/50 select-none;
+    animation: text-pulse 5s infinite ease-in-out;
+}
+
+@keyframes text-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+}
+
+@media (max-width: 640px) {
+    .ui-panel {
+        @apply my-4 mx-4 p-6;
+    }
+}
+
+#map-container, .leaflet-container {
+    position: relative;
+    z-index: 0;
+}
+
+@keyframes light-sweep {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.cyber-panel {
+    position: relative;
+    overflow: hidden;
+}
+
+.cyber-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        var(--cyber-yellow, #fcee0a) 50%,
+        transparent 100%
+    );
+    opacity: 0.5;
+    animation: light-sweep 4s linear infinite;
+    animation-delay: 1s;
+}
+
+.cyber-panel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        var(--cyber-yellow, #fcee0a) 50%,
+        transparent 100%
+    );
+    opacity: 0.5;
+    animation: light-sweep 4s linear infinite reverse;
+}
+
+.leaflet-popup-content-wrapper {
+    background-color: var(--glass-bg, rgba(32, 35, 42, 0.92)) !important;
+    color: var(--text-color, #e1e1e1) !important;
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1)) !important;
+    border-radius: var(--border-radius, 6px) !important;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2), 0 0 15px rgba(0, 240, 255, 0.15) !important;
+    backdrop-filter: blur(var(--blur-intensity, 8px)) !important;
+    -webkit-backdrop-filter: blur(var(--blur-intensity, 8px)) !important;
+}
+
+.leaflet-popup-tip-container {
+    width: 40px;
+    height: 20px;
+}
+.leaflet-popup-tip {
+    background-color: var(--glass-bg, rgba(32, 35, 42, 0.92)) !important;
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1)) !important;
+    border-left: none !important;
+    border-top: none !important;
+    box-shadow: none !important;
+    transform: rotate(45deg);
+    margin: -1px;
+}
+
+.leaflet-popup-content {
+    margin: 14px 20px !important;
+    line-height: 1.6;
+    font-size: 0.95em;
+    font-family: 'Inter', sans-serif;
+}
+
+.leaflet-popup-content a {
+    color: var(--primary-color, #4fc3f7);
+    font-weight: 700;
+    transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+.leaflet-popup-content a:hover {
+    color: var(--link-hover-color, #ffffff);
+    text-shadow: 0 0 5px var(--primary-color, #4fc3f7);
+}
+
+.leaflet-popup-close-button {
+    color: var(--text-muted-color, #8899a6) !important;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+.leaflet-popup-close-button:hover {
+    color: #fff !important;
+    transform: scale(1.2);
+}
+
+.delete-marker-btn {
+    @apply w-full mt-3 px-3 py-1.5 text-xs uppercase tracking-widest;
+    background: transparent;
+    border: 1px solid var(--cyber-red, #ff003c);
+    color: var(--cyber-red, #ff003c);
+    border-radius: var(--border-radius);
+    transition: all 0.2s ease-in-out;
+}
+.delete-marker-btn:hover:not(:disabled) {
+    background: var(--cyber-red, #ff003c);
+    color: white;
+    box-shadow: 0 0 10px var(--cyber-red, #ff003c);
+    transform: translateY(-1px);
+}
+.delete-marker-btn:disabled {
+    border-color: #555;
+    color: #555;
+    background: #222;
+    cursor: wait;
+}
+
+.leaflet-control-zoom a,
+.leaflet-control-custom.geolocation-button a {
+    background-color: var(--secondary-bg-color, #20232a) !important;
+    color: var(--text-muted-color, #8899a6) !important;
+    border-radius: var(--border-radius, 6px) !important;
+    border: 1px solid var(--border-color, #30363d) !important;
+    width: 34px !important;
+    height: 34px !important;
+    line-height: 34px !important;
+    text-align: center;
+    text-decoration: none;
+    font-size: 1.3rem;
+    font-weight: bold;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.leaflet-control-zoom a:hover,
+.leaflet-control-custom.geolocation-button a:hover {
+    background-color: var(--border-color, #30363d) !important;
+    color: var(--text-color, #e1e1e1) !important;
+}
+
+.leaflet-control-zoom {
+    border: none !important;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow-soft, 0 4px 6px rgba(0, 0, 0, 0.15));
+}
+.leaflet-control-zoom a:first-child {
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+}
+.leaflet-control-zoom a:last-child {
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+    border-bottom: none !important;
+}
+
+.leaflet-control-custom.geolocation-button i {
+    font-size: 16px;
+    color: var(--primary-color, #4fc3f7);
+    line-height: 32px;
+    transition: color 0.2s ease, transform 0.5s ease;
+}
+.leaflet-control-custom.geolocation-button a:hover i {
+     color: var(--link-hover-color, #ffffff);
+}
+
+.leaflet-control-custom.geolocation-button.loading a {
+    cursor: wait;
+    background-color: var(--border-color, #30363d) !important;
+}
+.leaflet-control-custom.geolocation-button.loading i {
+    color: var(--text-muted-color, #8899a6);
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.leaflet-control-custom.geolocation-button {
+    margin-top: 10px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow-soft);
+}
