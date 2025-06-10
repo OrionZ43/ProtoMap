@@ -11,7 +11,8 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
-const ALLOWED_ORIGINS = ["http://localhost:5173"];
+const ALLOWED_ORIGINS = ["http://localhost:5173",
+    "https://proto-map.vercel.app" ];
 
 /**
  * Вызываемая HTTP-функция для проверки, доступно ли имя пользователя.
