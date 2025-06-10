@@ -25,6 +25,9 @@ body {
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23ffffff' fill-opacity='0.02' d='M0 2h2v2H0zM2 0h2v2H2z'/%3E%3C/svg%3E"),
         radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
     background-attachment: fixed;
+}
+
+.no-scroll {
     overflow: hidden;
 }
 

@@ -19,6 +19,6 @@
     }
 </script>
 
-<div class="flex-grow w-full h-[calc(100vh-60px)] relative">
+<div class="flex-grow w-full h-[calc(100vh-64px)] relative overflow-hidden">
     <div id="map-container" class="w-full h-full"></div>
 </div>

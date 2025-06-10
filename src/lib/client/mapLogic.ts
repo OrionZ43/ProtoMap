@@ -15,7 +15,17 @@ const protoIcon = L.icon({
 export function initMap(containerId: string) {
     console.log("Инициализация карты в контейнере:", containerId);
 
-    const map = L.map(containerId).setView([54.5, 30.0], 4);
+    const southWest = L.latLng(-90, -180);
+    const northEast = L.latLng(90, 180);
+    const bounds = L.latLngBounds(southWest, northEast);
+
+    const map = L.map(containerId, {
+        center: [54.5, 30.0],
+        zoom: 4,
+        maxBounds: bounds,
+        maxBoundsViscosity: 1.0,
+        minZoom: 2
+    });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
