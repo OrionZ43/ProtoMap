@@ -27,6 +27,10 @@ export function initMap(containerId: string) {
         minZoom: 2
     });
 
+if (map.attributionControl) {
+        map.attributionControl.setPrefix('<a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a>');
+    }
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
         attribution: '© <a href="http://www.openstreetmap.org/copyright">OSM</a> contributors'
