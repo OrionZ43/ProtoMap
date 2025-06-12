@@ -2,7 +2,6 @@
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
-
     const opacity = tweened(0, { duration: 400, easing: quintOut });
     onMount(() => {
         opacity.set(1);

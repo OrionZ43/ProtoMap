@@ -2,7 +2,7 @@ import { firestoreAdmin } from '$lib/server/firebase.admin';
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, setHeaders }) => {
     const username = params.username;
 
     const usersRef = firestoreAdmin.collection('users');
@@ -14,6 +14,10 @@ export const load: PageServerLoad = async ({ params }) => {
 
     const userProfileData = snapshot.docs[0].data();
     const userProfileId = snapshot.docs[0].id;
+
+    setHeaders({
+        'Cache-Control': 'public, s-maxage=900, stale-while-revalidate=60'
+    });
 
     return {
         profile: {
