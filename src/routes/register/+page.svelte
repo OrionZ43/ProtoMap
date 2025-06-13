@@ -22,11 +22,12 @@
     });
 
     async function isUsernameAvailable(name: string): Promise<boolean> {
-        if (name.length < 4) return false;
+        const trimmedName = name.trim();
+        if (trimmedName.length < 4) return false;
         try {
             const functions = getFunctions();
             const checkUsernameFunc = httpsCallable(functions, 'checkUsername');
-            const result = await checkUsernameFunc({ username: name });
+            const result = await checkUsernameFunc({ username: trimmedName });
             return (result.data as { isAvailable: boolean }).isAvailable;
         } catch (e) {
             console.error("Ошибка вызова Cloud Function 'checkUsername':", e);
@@ -36,21 +37,30 @@
     }
 
     async function handleRegister() {
-        if (!email || !password || !username) { error = "Пожалуйста, заполните все поля."; return; }
+        const finalEmail = email.trim();
+        const finalUsername = username.trim();
+        if (!finalEmail || !password || !finalUsername) { error = "Пожалуйста, заполните все поля."; return; }
+        if (finalUsername.length < 4) {
+             error = "Имя пользователя должно быть не менее 4 символов.";
+             return;
+        }
+
         loading = true; error = "";
-        const usernameIsAvailable = await isUsernameAvailable(username);
+
+        const usernameIsAvailable = await isUsernameAvailable(finalUsername);
         if (!usernameIsAvailable) {
             error = "Это имя пользователя уже занято или недоступно.";
             loading = false;
             return;
         }
+
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, finalEmail, password);
             const user = userCredential.user;
-            await updateProfile(user, { displayName: username });
+            await updateProfile(user, { displayName: finalUsername });
             const userDocRef = doc(db, "users", user.uid);
             await setDoc(userDocRef, {
-                username: username, email: user.email, about_me: "",
+                username: finalUsername, email: user.email, about_me: "",
                 avatar_url: "", social_link: "", createdAt: serverTimestamp()
             });
             console.log("Пользователь зарегистрирован:", user.uid);

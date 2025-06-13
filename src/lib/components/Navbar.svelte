@@ -25,6 +25,12 @@
         await signOut(auth);
         closeMenu();
     }
+
+    function getEncodedUsername(username: string | undefined | null): string {
+        if (!username) return ''; // Возвращаем пустую строку, если username не определен
+        return encodeURIComponent(username.trim());
+    }
+
 </script>
 
 <nav class="bg-gray-900/50 backdrop-blur-sm sticky top-0 z-50 border-b border-cyber-yellow/20">

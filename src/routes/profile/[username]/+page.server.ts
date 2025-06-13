@@ -8,7 +8,10 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
     const usersRef = firestoreAdmin.collection('users');
     const snapshot = await usersRef.where('username', '==', username).limit(1).get();
 
-    if (snapshot.empty) {
+     if (snapshot.empty) {
+        setHeaders({
+            'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=5'
+        });
         throw error(404, 'Профиль не найден');
     }
 

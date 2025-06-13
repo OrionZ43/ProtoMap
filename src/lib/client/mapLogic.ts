@@ -42,11 +42,11 @@ if (map.attributionControl) {
     const userMarkers: { [key: string]: L.Marker } = {};
 
     function createPopupContent(username: string, city: string): string {
+        const trimmedUsername = username.trim();
         const profileUrl = `/profile/${encodeURIComponent(username)}`;
         let popupHTML = `Протоген <a href="${profileUrl}" target="_blank">${username}</a> в: ${city || 'Неизвестно'}`;
-
         const currentUser = get(userStore).user;
-        if (currentUser && username === currentUser.username) {
+        if (currentUser && trimmedUsername === (currentUser.username ? currentUser.username.trim() : '')) { 
             popupHTML += `<br><button class="delete-marker-btn" data-username="${username}">Удалить мою метку</button>`;
         }
         return popupHTML;
