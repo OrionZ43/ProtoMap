@@ -30,6 +30,7 @@
         <p>
             Если у вас есть идеи, предложения или вы нашли баг (что вполне вероятно!), не стесняйтесь писать мне или в наш чатик. Обратная связь — это важно для развития ProtoMap.
         </p>
+        <hr class="separator" />
         <p class="mb-4">
             <span class="highlight">[COMM_LINK_ESTABLISHED]</span> Присоединяйтесь к нашему <a href="https://t.me/proto_map" target="_blank" class="author-link">Telegram-чату</a>, чтобы общаться с другими участниками, делиться идеями и быть в курсе новостей проекта!
         </p>
