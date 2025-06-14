@@ -239,25 +239,49 @@ export const addOrUpdateLocation = onRequest(
 export const getLocations = onRequest(
   { cors: ALLOWED_ORIGINS },
   async (request, response) => {
-      response.set('Access-Control-Allow-Origin', ALLOWED_ORIGINS.includes(request.headers.origin as string) ? request.headers.origin : "");
-    response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      // Установка заголовков CORS
+      const origin = request.headers.origin as string;
+      if (ALLOWED_ORIGINS.includes(origin)) {
+          response.set('Access-Control-Allow-Origin', origin);
+      } else {
+          // Если источник не разрешен, можно не устанавливать заголовок или установить специфическое значение
+          // В данном случае, если не разрешен, заголовок не будет установлен, что может вызвать проблемы
+          // Если хочешь строгую проверку, лучше вернуть ошибку, если origin не в списке
+      }
+      response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // OPTIONS нужен для preflight-запросов
+      response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+      // Обработка preflight-запроса (OPTIONS)
+      if (request.method === 'OPTIONS') {
+          response.status(204).send('');
+          return;
+      }
+
     try {
       const locationsSnapshot = await db.collection("locations").get();
       if (locationsSnapshot.empty) {
         response.status(200).json({ data: [] });
         return;
       }
-      const userIds = [...new Set(locationsSnapshot.docs.map((doc) => doc.data().user_id))];
+
+      // Собираем все уникальные user_id из меток
+      const userIds: string[] = [];
+      locationsSnapshot.forEach((doc) => {
+          const userId = doc.data().user_id;
+          if (userId && !userIds.includes(userId)) {
+              userIds.push(userId);
+          }
+      });
 
       if (userIds.length === 0) {
         response.status(200).json({ data: [] });
         return;
       }
 
+      // Загружаем данные всех нужных пользователей одним запросом
       const usersSnapshot = await db.collection("users").where(admin.firestore.FieldPath.documentId(), "in", userIds).get();
 
-      const usersMap = new Map();
+      const usersMap = new Map<string, any>(); // Типизируем Map
       usersSnapshot.forEach((doc) => {
         usersMap.set(doc.id, doc.data());
       });
@@ -265,13 +289,19 @@ export const getLocations = onRequest(
       const results = locationsSnapshot.docs.map((doc) => {
         const locationData = doc.data();
         const userData = usersMap.get(locationData.user_id);
+
         return {
           lat: locationData.latitude,
           lng: locationData.longitude,
           city: locationData.city,
           user: userData ? userData.username : "неизвестно",
+          // ИЗМЕНЕНИЕ: Добавляем avatar_url
+          // Если у пользователя нет avatar_url в Firestore, или поле отсутствует,
+          // userData.avatar_url будет undefined, и мы передадим null (или пустую строку).
+          // Клиентская логика в mapLogic.ts уже умеет это обрабатывать и подставлять DiceBear.
+          avatar_url: userData ? (userData.avatar_url || null) : null,
         };
-      });
+      }).filter(item => item.user !== "неизвестно"); // Опционально: отфильтровать метки без пользователя
 
       response.status(200).json({ data: results });
 

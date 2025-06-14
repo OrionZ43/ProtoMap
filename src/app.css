@@ -252,3 +252,19 @@ body {
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow-soft);
 }
+
+.custom-leaflet-div-icon {
+    background: transparent !important; /* Убираем фон по умолчанию от Leaflet */
+    border: none !important; /* Убираем рамку по умолчанию */
+}
+
+.user-avatar-marker {
+    box-shadow: 0 0 8px rgba(252, 238, 10, 0.7);
+    transition: transform 0.2s ease-out;
+    border-radius: 50%; /* Чтобы тень была круглой, если сама картинка не загрузится */
+    overflow: hidden; /* Чтобы обрезать картинку по кругу, если она квадратная */
+}
+
+.user-avatar-marker:hover {
+    transform: scale(1.1);
+}
