@@ -1,11 +1,9 @@
-// functions/src/index.ts
-
 import { onRequest } from "firebase-functions/v2/https";
-import { onCall, HttpsError } from "firebase-functions/v2/https"; // Импортируем onCall и HttpsError
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import fetch from "node-fetch";
+import { v2 as cloudinary } from "cloudinary";
 
-// Инициализируем Firebase Admin SDK один раз
 if (!admin.apps.length) {
     admin.initializeApp();
 }
@@ -14,58 +12,43 @@ const db = admin.firestore();
 const ALLOWED_ORIGINS = ["http://localhost:5173",
     "https://proto-map.vercel.app" ];
 
-/**
- * Вызываемая HTTP-функция для проверки, доступно ли имя пользователя.
- */
 export const checkUsername = onRequest(
-  { cors: ALLOWED_ORIGINS }, // Разрешаем запросы с любого домена
+  { cors: ALLOWED_ORIGINS },
   async (request, response) => {
       response.set('Access-Control-Allow-Origin', ALLOWED_ORIGINS.includes(request.headers.origin as string) ? request.headers.origin : "");
     response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    // Проверяем метод запроса
     if (request.method !== "POST") {
       response.status(405).send("Method Not Allowed");
       return;
     }
 
-    // Получаем username из тела запроса, обернутого в 'data'
     const username = request.body.data.username;
 
-    // Валидация входных данных
     if (!username || typeof username !== "string" || username.length < 4) {
       response.status(400).json({ error: { message: "Имя пользователя не предоставлено или слишком короткое" } });
       return;
     }
 
     try {
-      // Ищем пользователя в коллекции 'users'
       const usersRef = db.collection("users");
       const snapshot = await usersRef.where("username", "==", username).limit(1).get();
-
-      // Формируем результат
       const resultData = {
         isAvailable: snapshot.empty,
       };
 
-      // Отправляем успешный JSON-ответ с полем "data"
       response.status(200).json({ data: resultData });
 
     } catch (error) {
       console.error("Error checking username:", error);
-      // Отправляем ошибку в правильном JSON-формате
       response.status(500).json({ error: { message: "Internal server error" } });
     }
   },
 );
 
-/**
- * Вспомогательная функция для геокодирования
- */
 async function getDistrictCenterCoords(lat: number, lng: number): Promise<[string, number, number] | null> {
-    const userAgent = process.env.NOMINATIM_USER_AGENT || 'ProtoMap/1.0 (contact@example.com)';
+    const userAgent = process.env.NOMINATIM_USER_AGENT || 'ProtoMap/1.0 (kovalevd418@gmail.com)';
 
-    // Этап 1: Reverse Geocoding
     const reverseGeocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru`;
 
     let placeNameFound: string | null = null;
@@ -102,10 +85,8 @@ async function getDistrictCenterCoords(lat: number, lng: number): Promise<[strin
         return null;
     }
 
-    // Пауза перед вторым запросом
     await new Promise(resolve => setTimeout(resolve, 1100));
 
-    // Этап 2: Forward Geocoding
     try {
         const queryParts = [placeNameFound, cityContext && cityContext !== placeNameFound ? cityContext : null, countryContext].filter(Boolean);
         const query = queryParts.join(', ');
@@ -151,10 +132,6 @@ async function getDistrictCenterCoords(lat: number, lng: number): Promise<[strin
     }
 }
 
-
-/**
- * Вызываемая HTTP-функция для добавления/обновления метки пользователя.
- */
 export const addOrUpdateLocation = onRequest(
   { cors: ALLOWED_ORIGINS },
   async (request, response) => {
@@ -232,10 +209,6 @@ export const addOrUpdateLocation = onRequest(
   }
 );
 
-
-/**
- * Вызываемая HTTP-функция для получения всех меток с данными их пользователей.
- */
 export const getLocations = onRequest(
   { cors: ALLOWED_ORIGINS },
   async (request, response) => {
@@ -244,14 +217,10 @@ export const getLocations = onRequest(
       if (ALLOWED_ORIGINS.includes(origin)) {
           response.set('Access-Control-Allow-Origin', origin);
       } else {
-          // Если источник не разрешен, можно не устанавливать заголовок или установить специфическое значение
-          // В данном случае, если не разрешен, заголовок не будет установлен, что может вызвать проблемы
-          // Если хочешь строгую проверку, лучше вернуть ошибку, если origin не в списке
       }
-      response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // OPTIONS нужен для preflight-запросов
+      response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
       response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-      // Обработка preflight-запроса (OPTIONS)
       if (request.method === 'OPTIONS') {
           response.status(204).send('');
           return;
@@ -264,7 +233,6 @@ export const getLocations = onRequest(
         return;
       }
 
-      // Собираем все уникальные user_id из меток
       const userIds: string[] = [];
       locationsSnapshot.forEach((doc) => {
           const userId = doc.data().user_id;
@@ -278,10 +246,9 @@ export const getLocations = onRequest(
         return;
       }
 
-      // Загружаем данные всех нужных пользователей одним запросом
       const usersSnapshot = await db.collection("users").where(admin.firestore.FieldPath.documentId(), "in", userIds).get();
 
-      const usersMap = new Map<string, any>(); // Типизируем Map
+      const usersMap = new Map<string, any>();
       usersSnapshot.forEach((doc) => {
         usersMap.set(doc.id, doc.data());
       });
@@ -295,13 +262,9 @@ export const getLocations = onRequest(
           lng: locationData.longitude,
           city: locationData.city,
           user: userData ? userData.username : "неизвестно",
-          // ИЗМЕНЕНИЕ: Добавляем avatar_url
-          // Если у пользователя нет avatar_url в Firestore, или поле отсутствует,
-          // userData.avatar_url будет undefined, и мы передадим null (или пустую строку).
-          // Клиентская логика в mapLogic.ts уже умеет это обрабатывать и подставлять DiceBear.
           avatar_url: userData ? (userData.avatar_url || null) : null,
         };
-      }).filter(item => item.user !== "неизвестно"); // Опционально: отфильтровать метки без пользователя
+      }).filter(item => item.user !== "неизвестно");
 
       response.status(200).json({ data: results });
 
@@ -312,15 +275,9 @@ export const getLocations = onRequest(
   },
 );
 
-
-/**
- * Вызываемая HTTP-функция для удаления метки пользователя.
- */
 export const deleteLocation = onCall(
-  { cors: ALLOWED_ORIGINS }, // cors можно оставить для совместимости
+  { cors: ALLOWED_ORIGINS },
   async (request) => {
-    // 1. Проверяем авторизацию. onCall делает это проще.
-    // Если токен невалидный или отсутствует, Firebase сам вернет ошибку 'unauthenticated'.
     if (!request.auth) {
       console.log("Вызов deleteLocation без аутентификации.");
       throw new HttpsError(
@@ -339,7 +296,6 @@ export const deleteLocation = onCall(
         const docId = querySnapshot.docs[0].id;
         await db.collection("locations").doc(docId).delete();
         console.log(`Метка для UserID=${user_id} удалена.`);
-        // 2. Возвращаем объект с результатом
         return { status: 'success', message: 'Ваша метка удалена.' };
       } else {
         console.log(`Метка для UserID=${user_id} не найдена.`);
@@ -347,8 +303,67 @@ export const deleteLocation = onCall(
       }
     } catch (error) {
       console.error("Ошибка удаления метки:", error);
-      // 3. Выбрасываем стандартизированную ошибку
       throw new HttpsError('internal', 'Ошибка сервера при удалении метки.');
+    }
+  }
+);
+
+interface UploadAvatarData {
+    imageBase64: string;
+}
+
+export const uploadAvatar = onCall<UploadAvatarData>(
+  {secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"],},
+  async (request) => {
+    if (!request.auth) {
+      console.log("uploadAvatar: Unauthenticated call.");
+      throw new HttpsError("unauthenticated", "Необходимо войти в систему для загрузки аватара.");
+    }
+
+    const uid = request.auth.uid;
+
+    const imageBase64 = request.data.imageBase64;
+    if (!imageBase64 || typeof imageBase64 !== 'string' || !imageBase64.startsWith('data:image/')) {
+        console.log(`uploadAvatar: Invalid imageBase64 data for UID ${uid}. Data:`, imageBase64);
+        throw new HttpsError("invalid-argument", "Не предоставлены корректные данные изображения в формате base64 Data URL.");
+    }
+
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+        console.error("uploadAvatar: Cloudinary environment variables are not set!");
+        throw new HttpsError("internal", "Ошибка конфигурации сервера.");
+    }
+
+    cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+        secure: true,
+    });
+
+    try {
+        console.log(`uploadAvatar: Attempting to upload avatar for UID ${uid}...`);
+        const uploadResult = await cloudinary.uploader.upload(imageBase64, {
+            folder: "protomap_avatars",
+            public_id: uid,
+            overwrite: true,
+            format: "webp",
+            transformation: [{ width: 256, height: 256, crop: "fill", gravity: "face" }]
+        });
+
+        console.log(`Cloudinary upload successful for UID ${uid}: ${uploadResult.secure_url}`);
+        return { avatarUrl: uploadResult.secure_url };
+
+    } catch (error: any) {
+        console.error(`Cloudinary upload error for UID ${uid}:`, error);
+        let errorMessage = "Ошибка загрузки изображения на сервер.";
+        if (error.message) errorMessage += ` Детали: ${error.message}`;
+        if (error.http_code) errorMessage += ` HTTP Code: ${error.http_code}`;
+
+        if (error.error && error.error.message) {
+            console.error("Cloudinary specific error:", error.error.message);
+        }
+
+        throw new HttpsError("internal", errorMessage, error.toString());
     }
   }
 );
