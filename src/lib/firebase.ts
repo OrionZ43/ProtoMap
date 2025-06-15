@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
+//import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 
 
 const firebaseConfig = {
@@ -21,12 +21,19 @@ if (!getApps().length) {
     app = getApp();
 }
 
+/* Закомментируем этот блок
 if (typeof window !== 'undefined') {
+    // Лог для проверки переменных окружения на Vercel (оставь на время теста)
+    console.log("Vercel Env - DEV:", import.meta.env.DEV);
+    console.log("Vercel Env - RECAPTCHA_SITE_KEY:", import.meta.env.VITE_RECAPTCHA_SITE_KEY);
+
     const appCheck = initializeAppCheck(app, {
-        provider: new ReCaptchaEnterpriseProvider(import.meta.env.VITE_RECAPTCHA_SITE_KEY),
+        provider: new ReCaptchaEnterpriseProvider(import.meta.env.VITE_RECAPTCHA_SITE_KEY!), // Добавил '!' для уверенности TS, если ключ точно есть
         isTokenAutoRefreshEnabled: true
     });
+    console.log("Firebase AppCheck initialized with ReCaptchaEnterpriseProvider on Vercel.");
 }
+*/
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
