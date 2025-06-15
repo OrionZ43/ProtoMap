@@ -120,10 +120,6 @@
 </svelte:head>
 
 <div class="form-container cyber-panel pb-12" style="opacity: {$opacity}">
-    <div class="corner top-left"></div>
-    <div class="corner top-right"></div>
-    <div class="corner bottom-left"></div>
-    <div class="corner bottom-right"></div>
 
     <h2 class="form-title font-display">РЕДАКТИРОВАНИЕ ПРОФИЛЯ</h2>
 

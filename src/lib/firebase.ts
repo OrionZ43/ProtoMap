@@ -19,22 +19,7 @@ if (!getApps().length) {
     app = getApp();
 }
 
-if (typeof window !== 'undefined') {
-    const siteKeyV3 = import.meta.env.VITE_RECAPTCHA_V3_SITE_KEY;
-    if (!siteKeyV3) {
-        console.error("Firebase AppCheck: VITE_RECAPTCHA_V3_SITE_KEY is not set!");
-    } else {
-        try {
-            initializeAppCheck(app, {
-                provider: new ReCaptchaV3Provider(siteKeyV3),
-                isTokenAutoRefreshEnabled: true
-            });
-            console.log("Firebase AppCheck initialized with ReCaptchaV3Provider.");
-        } catch (e) {
-            console.error("Firebase AppCheck: Error initializing with ReCaptchaV3Provider:", e);
-        }
-    }
-}
+
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
