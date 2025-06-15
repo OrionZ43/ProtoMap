@@ -1,8 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-//import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
-
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,7 +12,6 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-
 let app;
 if (!getApps().length) {
     app = initializeApp(firebaseConfig);
@@ -21,19 +19,24 @@ if (!getApps().length) {
     app = getApp();
 }
 
-/* Закомментируем этот блок
 if (typeof window !== 'undefined') {
-    // Лог для проверки переменных окружения на Vercel (оставь на время теста)
-    console.log("Vercel Env - DEV:", import.meta.env.DEV);
-    console.log("Vercel Env - RECAPTCHA_SITE_KEY:", import.meta.env.VITE_RECAPTCHA_SITE_KEY);
+    const siteKeyV3 = import.meta.env.VITE_RECAPTCHA_V3_SITE_KEY;
+    console.log("Firebase Init - V3 Site Key from env:", siteKeyV3);
 
-    const appCheck = initializeAppCheck(app, {
-        provider: new ReCaptchaEnterpriseProvider(import.meta.env.VITE_RECAPTCHA_SITE_KEY!), // Добавил '!' для уверенности TS, если ключ точно есть
-        isTokenAutoRefreshEnabled: true
-    });
-    console.log("Firebase AppCheck initialized with ReCaptchaEnterpriseProvider on Vercel.");
+    if (!siteKeyV3) {
+        console.error("Firebase AppCheck: Переменная окружения VITE_RECAPTCHA_V3_SITE_KEY не установлена!");
+    } else {
+        try {
+            initializeAppCheck(app, {
+                provider: new ReCaptchaV3Provider(siteKeyV3), // Используем переменную
+                isTokenAutoRefreshEnabled: true
+            });
+            console.log("Firebase AppCheck успешно инициализирован с ReCaptchaV3Provider.");
+        } catch (e) {
+            console.error("Firebase AppCheck: Ошибка при инициализации с ReCaptchaV3Provider:", e);
+        }
+    }
 }
-*/
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
