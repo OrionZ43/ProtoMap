@@ -254,17 +254,81 @@ body {
 }
 
 .custom-leaflet-div-icon {
-    background: transparent !important; /* Убираем фон по умолчанию от Leaflet */
-    border: none !important; /* Убираем рамку по умолчанию */
+    background: transparent !important;
+    border: none !important;
 }
 
 .user-avatar-marker {
     box-shadow: 0 0 8px rgba(252, 238, 10, 0.7);
     transition: transform 0.2s ease-out;
-    border-radius: 50%; /* Чтобы тень была круглой, если сама картинка не загрузится */
-    overflow: hidden; /* Чтобы обрезать картинку по кругу, если она квадратная */
+    border-radius: 50%;
+    overflow: hidden;
 }
 
 .user-avatar-marker:hover {
     transform: scale(1.1);
+}
+
+.cyber-layers-control.leaflet-control-layers {
+    background: rgba(10, 10, 10, 0.7);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    border-radius: 0;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+}
+
+.cyber-layers-control.leaflet-control-layers a.leaflet-control-layers-toggle {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="%2300f0ff"><path d="M10 3.75L2 8.25l8 4.5l8-4.5L10 3.75z" /><path d="M2 10.16V12l8 4.5l8-4.5v-1.84l-8 4.5l-8-4.5z" /><path d="M2 14.66V16l8 4.5l8-4.5v-1.34l-8 4.5l-8-4.5z" /></svg>');
+    background-size: 20px 20px;
+    width: 36px;
+    height: 36px;
+}
+
+.cyber-layers-control.leaflet-control-layers-expanded {
+    clip-path: polygon(0 5px, 5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%);
+}
+
+.cyber-layers-control .leaflet-control-layers-base {
+    background: transparent;
+}
+
+.cyber-layers-control .leaflet-control-layers-base label {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    font-family: 'Chakra Petch', sans-serif;
+    color: #b0c4de;
+    transition: all 0.2s ease-in-out;
+}
+
+.cyber-layers-control .leaflet-control-layers-base label:hover {
+    background: rgba(0, 240, 255, 0.1);
+    color: #ffffff;
+}
+
+.cyber-layers-control .leaflet-control-layers-base input[type="radio"] {
+    display: none;
+}
+
+.cyber-layers-control .leaflet-control-layers-base label span {
+    display: inline-flex;
+    align-items: center;
+}
+
+.cyber-layers-control .leaflet-control-layers-base .custom-radio-span::before {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 10px;
+    border: 2px solid var(--cyber-cyan, #00f0ff);
+    background-color: transparent;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.cyber-layers-control input[type="radio"]:checked + .custom-radio-span::before {
+    background-color: var(--cyber-cyan, #00f0ff);
+    box-shadow: 0 0 8px var(--cyber-cyan, #00f0ff);
 }

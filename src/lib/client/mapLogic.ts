@@ -1,3 +1,5 @@
+// src/lib/client/mapLogic.ts
+
 import L from 'leaflet';
 import 'leaflet.markercluster';
 import { auth } from '$lib/firebase';
@@ -45,10 +47,48 @@ export function initMap(containerId: string) {
         map.attributionControl.setPrefix('<a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a>');
     }
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-        attribution: '© <a href="http://www.openstreetmap.org/copyright">OSM</a> contributors'
-    }).addTo(map);
+    const cartoDarkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+    });
+
+    const cartoPositron = L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}{r}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+    });
+
+    const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+
+    cartoDarkMatter.addTo(map);
+
+    const baseLayers = {
+        "Стандартная (OSM)": osmStandard,
+        "Кибер-карта (Dark)": cartoDarkMatter,
+        "Нейтральная (Wikimedia)": cartoPositron,
+
+    };
+
+    const layersControl = L.control.layers(baseLayers);
+    layersControl.addTo(map);
+
+const controlContainer = layersControl.getContainer();
+if (controlContainer) {
+    controlContainer.classList.add('cyber-layers-control');
+    setTimeout(() => {
+        const inputs = controlContainer.querySelectorAll('.leaflet-control-layers-base input[type="radio"]');
+        inputs.forEach(input => {
+            const nextElement = input.nextElementSibling;
+            if (nextElement && nextElement.tagName === 'SPAN') {
+                nextElement.classList.add('custom-radio-span');
+            }
+        });
+    }, 0);
+}
 
     const markers = L.markerClusterGroup();
     map.addLayer(markers);
@@ -135,7 +175,7 @@ export function initMap(containerId: string) {
             }
         } catch (error: any) {
             console.error("Ошибка при добавлении/обновлении метки:", error);
-            const errorMessage = (error as any)?.message || 'Произошла неизвестная ошибка.';
+            const errorMessage = error?.message || 'Произошла неизвестная ошибка.';
             modal.error("Ошибка сохранения", `Не удалось сохранить метку. <br><small class="text-gray-400">Детали: ${errorMessage}</small>`);
         } finally {
             if (geoButton) L.DomUtil.removeClass(geoButton, 'loading');
@@ -147,17 +187,17 @@ export function initMap(containerId: string) {
         map.off('click');
 
         if (currentUser) {
-            map.on('click', (e) => {
-    modal.confirm(
-        "Подтверждение",
-        "Добавить или переместить вашу метку в эту точку?",
-        () => {
-            sendLocationToServer(e.latlng.lat, e.latlng.lng, currentUser);
-        }
-    );
-});
+            map.on('click', (e: L.LeafletMouseEvent) => {
+                modal.confirm(
+                    "Подтверждение",
+                    "Добавить или переместить вашу метку в эту точку?",
+                    () => {
+                        sendLocationToServer(e.latlng.lat, e.latlng.lng, currentUser);
+                    }
+                );
+            });
 
-            if (!map.geocontrol || !map.hasControl(map.geocontrol)) {
+            if (!(map as any).geocontrol || !map.hasControl((map as any).geocontrol)) {
                 const GeolocationControl = L.Control.extend({
                     options: { position: 'topleft' as L.ControlPosition },
                     onAdd: function (mapInstance: L.Map) {
@@ -179,7 +219,7 @@ export function initMap(containerId: string) {
                                     },
                                     (geoError) => {
                                         L.DomUtil.removeClass(container, 'loading');
-                                        modal.error("Ошибка геолокации", error.message || "Не удалось определить ваше местоположение.");
+                                        modal.error("Ошибка геолокации", geoError.message || "Не удалось определить ваше местоположение.");
                                     }
                                 );
                             } else { modal.warning("Не поддерживается", "Ваш браузер не поддерживает геолокацию."); }
@@ -187,62 +227,59 @@ export function initMap(containerId: string) {
                         return container;
                     }
                 });
-                map.geocontrol = new GeolocationControl();
-                map.addControl(map.geocontrol);
+                (map as any).geocontrol = new GeolocationControl();
+                map.addControl((map as any).geocontrol);
             }
 
 
             markers.on('popupopen', (e: L.LeafletEvent & { popup: L.Popup }) => {
-    const popupNode = e.popup._contentNode as HTMLElement;
-    const deleteButton = popupNode.querySelector('.delete-marker-btn') as HTMLButtonElement | null;
+                const popupNode = e.popup._contentNode as HTMLElement;
+                const deleteButton = popupNode.querySelector('.delete-marker-btn') as HTMLButtonElement | null;
 
-    if (deleteButton && currentUser && currentUser.username) {
-        deleteButton.addEventListener('click', function(this: HTMLButtonElement, ev: MouseEvent) {
-            ev.preventDefault();
-            const usernameToDelete = this.getAttribute('data-username');
+                if (deleteButton && currentUser && currentUser.username) {
+                    deleteButton.addEventListener('click', function(this: HTMLButtonElement, ev: MouseEvent) {
+                        ev.preventDefault();
+                        const usernameToDelete = this.getAttribute('data-username');
+                        if (usernameToDelete && usernameToDelete === currentUser.username.trim()) {
+                            modal.confirm(
+                                "Удаление метки",
+                                "Вы уверены, что хотите безвозвратно удалить свою метку с карты?",
+                                async () => {
+                                    this.textContent = "Удаление...";
+                                    this.disabled = true;
+                                    try {
+                                        const functions = getFunctions();
+                                        const deleteLocationFunc = httpsCallable(functions, 'deleteLocation');
+                                        const result = await deleteLocationFunc();
+                                        const data = result.data as any;
 
-            if (usernameToDelete && usernameToDelete === currentUser.username.trim()) {
-                modal.confirm(
-                    "Удаление метки",
-                    "Вы уверены, что хотите удалить свою метку с карты?",
-                    async () => {
-                        this.textContent = "Удаление...";
-                        this.disabled = true;
-
-                        try {
-                            const functions = getFunctions();
-                            const deleteLocationFunc = httpsCallable(functions, 'deleteLocation');
-                            const result = await deleteLocationFunc();
-                            const data = result.data as any;
-
-                            if (data.status === 'success') {
-                                if (userMarkers[usernameToDelete]) {
-                                    markers.removeLayer(userMarkers[usernameToDelete]);
-                                    delete userMarkers[usernameToDelete];
+                                        if (data.status === 'success') {
+                                            if (userMarkers[usernameToDelete]) {
+                                                markers.removeLayer(userMarkers[usernameToDelete]);
+                                                delete userMarkers[usernameToDelete];
+                                            }
+                                            map.closePopup();
+                                            modal.success("Успешно", data.message || "Ваша метка была удалена.");
+                                        } else {
+                                            throw new Error(data.message || 'Ошибка удаления на сервере');
+                                        }
+                                    } catch (delError: any) {
+                                        console.error("Ошибка удаления метки:", delError);
+                                        modal.error("Ошибка", `Не удалось удалить метку: ${delError.message}`);
+                                    }
                                 }
-                                map.closePopup();
-                                modal.success("Успешно", data.message || "Ваша метка была удалена.");
-                            } else {
-                                throw new Error(data.message || 'Ошибка удаления на сервере');
-                            }
-                        } catch (delError: any) {
-                            console.error("Ошибка удаления метки:", delError);
-                            modal.error("Ошибка", `Не удалось удалить метку: ${delError.message || delError}`);
-                        } finally {
+                            );
                         }
-                    }
-                );
-            }
-        }, { once: true });
-    }
-});
+                    }, { once: true });
+                }
+            });
 
         } else {
             map.on('click', () => {
-    modal.warning("Требуется авторизация", "Пожалуйста, войдите в систему, чтобы добавить свою метку на карту.");
+                modal.warning("Требуется авторизация", "Пожалуйста, войдите в систему, чтобы добавить свою метку на карту.");
             });
-            if (map.geocontrol && map.hasControl(map.geocontrol)) {
-                map.removeControl(map.geocontrol);
+            if ((map as any).geocontrol && map.hasControl((map as any).geocontrol)) {
+                map.removeControl((map as any).geocontrol);
                 (map as any).geocontrol = null;
             }
         }
