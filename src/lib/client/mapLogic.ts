@@ -64,7 +64,7 @@ export function initMap(containerId: string) {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     });
 
-    cartoDarkMatter.addTo(map);
+    osmStandard.addTo(map);
 
     const baseLayers = {
         "Стандартная (OSM)": osmStandard,
