@@ -4,6 +4,7 @@ import { auth } from '$lib/firebase';
 import { userStore, type UserProfile } from '$lib/stores';
 import { get } from 'svelte/store';
 import { getFunctions, httpsCallable } from "firebase/functions";
+import { modal } from '$lib/stores/modalStore';
 
 function createUserAvatarIcon(avatarUrl: string | null | undefined, username: string): L.DivIcon {
     const defaultAvatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(username.trim())}`;
@@ -128,13 +129,14 @@ export function initMap(containerId: string) {
                 if (userMarkers[trimmedUsernameKey]) {
                     userMarkers[trimmedUsernameKey].openPopup();
                 }
-                alert(data.message);
+                modal.success("Готово!", data.message || "Ваша метка успешно обновлена!");
             } else {
                 throw new Error(data.message || 'Ошибка ответа сервера');
             }
         } catch (error: any) {
             console.error("Ошибка при добавлении/обновлении метки:", error);
-            alert(`Не удалось сохранить метку. ${error.message || error}`);
+            const errorMessage = (error as any)?.message || 'Произошла неизвестная ошибка.';
+            modal.error("Ошибка сохранения", `Не удалось сохранить метку. <br><small class="text-gray-400">Детали: ${errorMessage}</small>`);
         } finally {
             if (geoButton) L.DomUtil.removeClass(geoButton, 'loading');
         }
@@ -145,11 +147,15 @@ export function initMap(containerId: string) {
         map.off('click');
 
         if (currentUser) {
-            map.on('click', (e: L.LeafletMouseEvent) => {
-                if (confirm(`Добавить/переместить метку здесь?`)) {
-                    sendLocationToServer(e.latlng.lat, e.latlng.lng, currentUser);
-                }
-            });
+            map.on('click', (e) => {
+    modal.confirm(
+        "Подтверждение",
+        "Добавить или переместить вашу метку в эту точку?",
+        () => {
+            sendLocationToServer(e.latlng.lat, e.latlng.lng, currentUser);
+        }
+    );
+});
 
             if (!map.geocontrol || !map.hasControl(map.geocontrol)) {
                 const GeolocationControl = L.Control.extend({
@@ -173,10 +179,10 @@ export function initMap(containerId: string) {
                                     },
                                     (geoError) => {
                                         L.DomUtil.removeClass(container, 'loading');
-                                        alert("Ошибка геолокации: " + geoError.message);
+                                        modal.error("Ошибка геолокации", error.message || "Не удалось определить ваше местоположение.");
                                     }
                                 );
-                            } else { alert('Геолокация не поддерживается.'); }
+                            } else { modal.warning("Не поддерживается", "Ваш браузер не поддерживает геолокацию."); }
                         });
                         return container;
                     }
@@ -187,47 +193,53 @@ export function initMap(containerId: string) {
 
 
             markers.on('popupopen', (e: L.LeafletEvent & { popup: L.Popup }) => {
-                const popupNode = e.popup._contentNode as HTMLElement;
-                const deleteButton = popupNode.querySelector('.delete-marker-btn') as HTMLButtonElement | null;
+    const popupNode = e.popup._contentNode as HTMLElement;
+    const deleteButton = popupNode.querySelector('.delete-marker-btn') as HTMLButtonElement | null;
 
-                if (deleteButton && currentUser && currentUser.username) {
-                    deleteButton.addEventListener('click', async function(this: HTMLButtonElement, ev: MouseEvent) {
-                        ev.preventDefault();
-                        const usernameToDelete = this.getAttribute('data-username');
-                        if (usernameToDelete && usernameToDelete === currentUser.username.trim() && confirm("Вы уверены, что хотите удалить свою метку?")) {
-                            this.textContent = "Удаление...";
-                            this.disabled = true;
-                            try {
-                                const functions = getFunctions();
-                                const deleteLocationFunc = httpsCallable(functions, 'deleteLocation');
-                                const result = await deleteLocationFunc();
-                                const data = result.data as any;
+    if (deleteButton && currentUser && currentUser.username) {
+        deleteButton.addEventListener('click', function(this: HTMLButtonElement, ev: MouseEvent) {
+            ev.preventDefault();
+            const usernameToDelete = this.getAttribute('data-username');
 
-                                if (data.status === 'success') {
-                                    if (userMarkers[usernameToDelete]) {
-                                        markers.removeLayer(userMarkers[usernameToDelete]);
-                                        delete userMarkers[usernameToDelete];
-                                    }
-                                    map.closePopup();
-                                    alert(data.message);
-                                } else {
-                                    throw new Error(data.message || 'Ошибка удаления на сервере');
+            if (usernameToDelete && usernameToDelete === currentUser.username.trim()) {
+                modal.confirm(
+                    "Удаление метки",
+                    "Вы уверены, что хотите безвозвратно удалить свою метку с карты?",
+                    async () => {
+                        this.textContent = "Удаление...";
+                        this.disabled = true;
+
+                        try {
+                            const functions = getFunctions();
+                            const deleteLocationFunc = httpsCallable(functions, 'deleteLocation');
+                            const result = await deleteLocationFunc();
+                            const data = result.data as any;
+
+                            if (data.status === 'success') {
+                                if (userMarkers[usernameToDelete]) {
+                                    markers.removeLayer(userMarkers[usernameToDelete]);
+                                    delete userMarkers[usernameToDelete];
                                 }
-                            } catch (delError: any) {
-                                console.error("Ошибка удаления метки:", delError);
-                                alert(`Не удалось удалить метку: ${delError.message || delError}`);
-                            } finally {
-                                this.textContent = "Удалить мою метку";
-                                this.disabled = false;
+                                map.closePopup();
+                                modal.success("Успешно", data.message || "Ваша метка была удалена.");
+                            } else {
+                                throw new Error(data.message || 'Ошибка удаления на сервере');
                             }
+                        } catch (delError: any) {
+                            console.error("Ошибка удаления метки:", delError);
+                            modal.error("Ошибка", `Не удалось удалить метку: ${delError.message || delError}`);
+                        } finally {
                         }
-                    }, { once: true });
-                }
-            });
+                    }
+                );
+            }
+        }, { once: true });
+    }
+});
 
         } else {
             map.on('click', () => {
-                alert("Пожалуйста, войдите, чтобы добавить свою метку.");
+    modal.warning("Требуется авторизация", "Пожалуйста, войдите в систему, чтобы добавить свою метку на карту.");
             });
             if (map.geocontrol && map.hasControl(map.geocontrol)) {
                 map.removeControl(map.geocontrol);

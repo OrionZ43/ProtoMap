@@ -61,7 +61,6 @@
 
     .title {
         @apply text-3xl lg:text-4xl font-bold text-center text-white mb-8;
-        text-shadow: 0 0 8px var(--cyber-cyan, #00f0ff);
     }
 
     .content-text {
