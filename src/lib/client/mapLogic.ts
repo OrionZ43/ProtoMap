@@ -204,7 +204,7 @@ export function initMap(containerId: string) {
             if (usernameToDelete && usernameToDelete === currentUser.username.trim()) {
                 modal.confirm(
                     "Удаление метки",
-                    "Вы уверены, что хотите безвозвратно удалить свою метку с карты?",
+                    "Вы уверены, что хотите удалить свою метку с карты?",
                     async () => {
                         this.textContent = "Удаление...";
                         this.disabled = true;
