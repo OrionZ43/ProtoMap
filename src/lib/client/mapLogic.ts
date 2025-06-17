@@ -53,12 +53,6 @@ export function initMap(containerId: string) {
         maxZoom: 20
     });
 
-    const cartoPositron = L.tileLayer('https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}{r}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20
-    });
-
     const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -67,10 +61,8 @@ export function initMap(containerId: string) {
     osmStandard.addTo(map);
 
     const baseLayers = {
-        "Стандартная (OSM)": osmStandard,
+        "Стандартная (White)": osmStandard,
         "Кибер-карта (Dark)": cartoDarkMatter,
-        "Нейтральная (Wikimedia)": cartoPositron,
-
     };
 
     const layersControl = L.control.layers(baseLayers);
