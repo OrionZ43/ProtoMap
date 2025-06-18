@@ -1,5 +1,3 @@
-// src/lib/client/mapLogic.ts
-
 import L from 'leaflet';
 import 'leaflet.markercluster';
 import { auth } from '$lib/firebase';
@@ -82,7 +80,49 @@ if (controlContainer) {
     }, 0);
 }
 
-    const markers = L.markerClusterGroup();
+    const createClusterIcon = function (cluster: L.MarkerCluster) {
+    const count = cluster.getChildCount();
+    let sizeClass = 'small';
+    let powerLevel = Math.min(count, 100);
+
+    if (count >= 10) sizeClass = 'medium';
+    if (count >= 50) sizeClass = 'large';
+
+    const chargeAngle = Math.round((powerLevel / 100) * 360);
+
+    const html = `
+        <div class="reactor-cluster ${sizeClass}">
+            <div class="reactor-glow"></div>
+            <div class="reactor-ring outer"></div>
+            <div class="reactor-ring middle"></div>
+
+            <!-- Индикатор заряда/мощности -->
+            <div class="reactor-charge-indicator" style="--charge-angle: ${chargeAngle}deg;"></div>
+
+            <div class="reactor-core">
+                <span class="count">${count}</span>
+            </div>
+
+            <!-- Частицы, которые появляются при наведении -->
+            <div class="particle p1"></div>
+            <div class="particle p2"></div>
+            <div class="particle p3"></div>
+            <div class="particle p4"></div>
+        </div>
+    `;
+
+    return L.divIcon({
+        html: html,
+        className: 'custom-cluster-icon-wrapper',
+        iconSize: L.point(80, 80, true)
+    });
+}
+
+// Инициализация группы маркеров
+const markers = L.markerClusterGroup({
+    iconCreateFunction: createClusterIcon
+});
+
     map.addLayer(markers);
 
     const userMarkers: { [key: string]: L.Marker } = {};

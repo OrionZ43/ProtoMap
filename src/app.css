@@ -332,3 +332,151 @@ body {
     background-color: var(--cyber-cyan, #00f0ff);
     box-shadow: 0 0 8px var(--cyber-cyan, #00f0ff);
 }
+
+.custom-cluster-icon-wrapper {
+    background: transparent;
+    border: none;
+}
+
+.reactor-cluster {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.4s ease;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.5));
+}
+.reactor-cluster:hover {
+    transform: scale(1.15);
+}
+
+.reactor-core {
+    position: relative;
+    z-index: 10;
+    width: 50%;
+    height: 50%;
+    border-radius: 50%;
+    background: #10121a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 700;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 10px 2px black, inset 0 0 5px 1px rgba(0,0,0,0.5);
+}
+
+.reactor-core .count {
+    font-size: 1.5em;
+    line-height: 1;
+    text-shadow:
+        0 0 8px currentColor,
+        0 0 3px black;
+    transition: color 0.3s ease;
+}
+.small .reactor-core .count {
+    color: var(--cyber-cyan, #00f0ff);
+}
+.medium .reactor-core .count {
+    color: var(--cyber-yellow, #fcee0a);
+}
+.large .reactor-core .count {
+    color: var(--cyber-red, #ff003c);
+}
+
+.reactor-ring {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 50%;
+    border-style: solid;
+    border-color: transparent;
+    animation: rotate-opposite 10s linear infinite;
+    transition: all 0.4s ease;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.7));
+}
+.reactor-ring.outer {
+    width: 100%;
+    height: 100%;
+    border-width: 1px;
+    animation-duration: 20s;
+}
+.reactor-ring.middle {
+    width: 75%;
+    height: 75%;
+    top: 12.5%; left: 12.5%;
+    border-width: 2px;
+    animation-duration: 15s;
+    animation-direction: reverse;
+}
+.small .reactor-ring { border-top-color: var(--cyber-cyan); border-right-color: var(--cyber-cyan); }
+.medium .reactor-ring { border-top-color: var(--cyber-yellow); border-right-color: var(--cyber-yellow); }
+.large .reactor-ring { border-top-color: var(--cyber-red); border-right-color: var(--cyber-red); }
+
+@keyframes rotate-opposite { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.reactor-charge-indicator {
+    position: absolute;
+    width: 62.5%;
+    height: 62.5%;
+    top: 18.75%; left: 18.75%;
+    border-radius: 50%;
+    z-index: 5;
+    transition: all 0.3s ease;
+    background: conic-gradient(
+        currentColor 0deg var(--charge-angle, 0deg),
+        rgba(255, 255, 255, 0.1) var(--charge-angle, 0deg) 360deg
+    );
+    -webkit-mask-image: radial-gradient(transparent 70%, black 71%);
+    mask-image: radial-gradient(transparent 70%, black 71%);
+}
+.small .reactor-charge-indicator { color: var(--cyber-cyan); }
+.medium .reactor-charge-indicator { color: var(--cyber-yellow); }
+.large .reactor-charge-indicator { color: var(--cyber-red); }
+
+.reactor-glow {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    z-index: 0;
+    opacity: 0.4;
+    transition: all 0.4s ease;
+}
+.small .reactor-glow { background: var(--cyber-cyan); box-shadow: 0 0 20px 5px var(--cyber-cyan); }
+.medium .reactor-glow { background: var(--cyber-yellow); box-shadow: 0 0 25px 7px var(--cyber-yellow); }
+.large .reactor-glow { background: var(--cyber-red); box-shadow: 0 0 30px 10px var(--cyber-red); }
+
+.particle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    margin: -2px 0 0 -2px;
+    border-radius: 50%;
+    background-color: currentColor;
+    z-index: 20;
+    opacity: 0;
+}
+.small .particle { color: var(--cyber-cyan); }
+.medium .particle { color: var(--cyber-yellow); }
+.large .particle { color: var(--cyber-red); }
+
+.reactor-cluster:hover .particle {
+    animation-name: fly-out-final;
+    animation-duration: 1.2s;
+    animation-timing-function: ease-out;
+    animation-iteration-count: infinite;
+}
+
+.reactor-cluster:hover .p2 { animation-delay: 0.3s; }
+.reactor-cluster:hover .p3 { animation-delay: 0.6s; }
+.reactor-cluster:hover .p4 { animation-delay: 0.9s; }
+
+.p1 { transform: rotate(45deg); }
+.p2 { transform: rotate(135deg); }
+.p3 { transform: rotate(225deg); }
+.p4 { transform: rotate(315deg); }

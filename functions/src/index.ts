@@ -49,85 +49,80 @@ export const checkUsername = onRequest(
 async function getDistrictCenterCoords(lat: number, lng: number): Promise<[string, number, number] | null> {
     const userAgent = process.env.NOMINATIM_USER_AGENT || 'ProtoMap/1.0 (kovalevd418@gmail.com)';
 
-    const reverseGeocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru`;
-
-    let placeNameFound: string | null = null;
-    let cityContext: string | null = null;
-    let countryContext: string | null = null;
-
     try {
+        const reverseGeocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru&zoom=18`;
         console.log(`Этап 1: Запрос к Nominatim для (${lat}, ${lng})`);
-        const reverseResponse = await fetch(reverseGeocodeUrl, {
-          headers: { 'User-Agent': userAgent },
-        });
-        if (!reverseResponse.ok) throw new Error(`Nominatim reverse API failed with status ${reverseResponse.status}`);
+
+        const reverseResponse = await fetch(reverseGeocodeUrl, { headers: { 'User-Agent': userAgent } });
+        if (!reverseResponse.ok) throw new Error(`Nominatim reverse API failed`);
         const reverseData = await reverseResponse.json() as any;
-        const address = reverseData.address;
 
-        if (!address) {
-          console.error("Этап 1: Nominatim не вернул 'address' в ответе.");
-          return null;
-        }
-        console.log("Этап 1: Ответ от Nominatim:", address);
-
-        placeNameFound = address.suburb || address.city_district || address.county || address.city || address.town || address.village || address.state;
-        cityContext = address.city || address.town || address.village;
-        countryContext = address.country;
-
-        if (!placeNameFound) {
-          console.error("Этап 1: Не удалось определить подходящее название места.");
-          return null;
-        }
-        console.log(`Этап 1: Найдено место для поиска центра: '${placeNameFound}'`);
-
-    } catch (error) {
-        console.error("Этап 1: Ошибка:", error);
-        return null;
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 1100));
-
-    try {
-        const queryParts = [placeNameFound, cityContext && cityContext !== placeNameFound ? cityContext : null, countryContext].filter(Boolean);
-        const query = queryParts.join(', ');
-        const forwardGeocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=ru`;
-
-        console.log(`Этап 2: Запрос к Nominatim по названию: '${query}'`);
-        const forwardResponse = await fetch(forwardGeocodeUrl, {
-          headers: { 'User-Agent': userAgent },
-        });
-        if (!forwardResponse.ok) throw new Error(`Nominatim forward API failed with status ${forwardResponse.status}`);
-        const forwardData = await forwardResponse.json() as any[];
-
-        if (forwardData && forwardData.length > 0) {
-            const placeLocation = forwardData[0];
-            const placeLat = parseFloat(placeLocation.lat);
-            const placeLng = parseFloat(placeLocation.lon);
-            console.log(`Этап 2: Найдены координаты для '${query}': ${placeLat}, ${placeLng}`);
-            return [placeNameFound, placeLat, placeLng];
-        } else {
-            console.warn(`Этап 2: Координаты для '${query}' не найдены.`);
-            if (cityContext && placeNameFound !== cityContext) {
-                await new Promise(resolve => setTimeout(resolve, 1100));
-                const cityQuery = `${cityContext}, ${countryContext || ''}`.trim();
-                const cityForwardUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityQuery)}&limit=1&accept-language=ru`;
-                console.log(`Этап 2 (Fallback): Запрос по городу: '${cityQuery}'`);
-                const cityForwardResponse = await fetch(cityForwardUrl, { headers: { 'User-Agent': userAgent } });
-                if (cityForwardResponse.ok) {
-                    const cityForwardData = await cityForwardResponse.json() as any[];
-                    if (cityForwardData && cityForwardData.length > 0) {
-                        const cityLocation = cityForwardData[0];
-                        const cityLat = parseFloat(cityLocation.lat);
-                        const cityLng = parseFloat(cityLocation.lon);
-                        console.log(`Этап 2 (Fallback): Найдены координаты города: ${cityLat}, ${cityLng}`);
-                        return [placeNameFound, cityLat, cityLng];
-                    }
-                }
-            }
+        if (!reverseData || !reverseData.address) {
+            console.error("Этап 1: Nominatim не вернул 'address' в ответе.");
             return null;
         }
+
+        const address = reverseData.address;
+        console.log("Этап 1: Получен адрес:", address);
+
+        const locationHierarchy = {
+            microdistrict: address.suburb || address.quarter || address.neighbourhood,
+            district: address.city_district || address.borough,
+            city: address.city || address.town || address.village,
+            country: address.country
+        };
+
+        const searchAttempts = [
+            { level: 'Микрорайон', query: locationHierarchy.microdistrict },
+            { level: 'Район города', query: locationHierarchy.district },
+            { level: 'Город/НП', query: locationHierarchy.city }
+        ];
+
+        for (const attempt of searchAttempts) {
+            if (!attempt.query) {
+                console.log(`Пропускаем уровень '${attempt.level}', так как он не определен.`);
+                continue;
+            }
+
+            const queryParts = [
+                attempt.query,
+                locationHierarchy.city,
+                locationHierarchy.country
+            ].filter((part, index, self) => part && self.indexOf(part) === index);
+
+            const searchQuery = queryParts.join(', ');
+
+            console.log(`Попытка поиска для уровня '${attempt.level}' по строке: "${searchQuery}"`);
+
+            const forwardUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=ru&q=${encodeURIComponent(searchQuery)}`;
+
+            await new Promise(resolve => setTimeout(resolve, 1100));
+
+            const forwardResponse = await fetch(forwardUrl, { headers: { 'User-Agent': userAgent } });
+            if (!forwardResponse.ok) {
+                console.warn(`Запрос для уровня '${attempt.level}' не удался, пробую следующий...`);
+                continue;
+            }
+
+            const forwardData = await forwardResponse.json() as any[];
+
+            if (forwardData && forwardData.length > 0) {
+                const placeLocation = forwardData[0];
+                const placeLat = parseFloat(placeLocation.lat);
+                const placeLng = parseFloat(placeLocation.lon);
+                console.log(`УСПЕХ на уровне '${attempt.level}'! Найдены координаты: ${placeLat}, ${placeLng}`);
+
+                return [attempt.query, placeLat, placeLng];
+            } else {
+                console.log(`На уровне '${attempt.level}' ничего не найдено, пробую следующий...`);
+            }
+        }
+
+        console.error("Все попытки геокодирования провалились.");
+        return null;
+
     } catch (error) {
-        console.error("Этап 2: Ошибка:", error);
+        console.error("Глобальная ошибка в getDistrictCenterCoords:", error);
         return null;
     }
 }
@@ -212,11 +207,9 @@ export const addOrUpdateLocation = onRequest(
 export const getLocations = onRequest(
   { cors: ALLOWED_ORIGINS },
   async (request, response) => {
-      // Установка заголовков CORS
       const origin = request.headers.origin as string;
       if (ALLOWED_ORIGINS.includes(origin)) {
           response.set('Access-Control-Allow-Origin', origin);
-      } else {
       }
       response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
       response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -233,25 +226,32 @@ export const getLocations = onRequest(
         return;
       }
 
-      const userIds: string[] = [];
-      locationsSnapshot.forEach((doc) => {
-          const userId = doc.data().user_id;
-          if (userId && !userIds.includes(userId)) {
-              userIds.push(userId);
-          }
-      });
+      const userIds = [...new Set(locationsSnapshot.docs.map((doc) => doc.data().user_id).filter(Boolean))];
 
       if (userIds.length === 0) {
         response.status(200).json({ data: [] });
         return;
       }
 
-      const usersSnapshot = await db.collection("users").where(admin.firestore.FieldPath.documentId(), "in", userIds).get();
-
       const usersMap = new Map<string, any>();
-      usersSnapshot.forEach((doc) => {
-        usersMap.set(doc.id, doc.data());
-      });
+      const chunkPromises: Promise<void>[] = [];
+
+      for (let i = 0; i < userIds.length; i += 30) {
+          const chunk = userIds.slice(i, i + 30);
+
+          const promise = db.collection("users")
+              .where(admin.firestore.FieldPath.documentId(), "in", chunk)
+              .get()
+              .then(usersSnapshot => {
+                  usersSnapshot.forEach((doc) => {
+                      usersMap.set(doc.id, doc.data());
+                  });
+              });
+
+          chunkPromises.push(promise);
+      }
+
+      await Promise.all(chunkPromises);
 
       const results = locationsSnapshot.docs.map((doc) => {
         const locationData = doc.data();
