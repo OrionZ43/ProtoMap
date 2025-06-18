@@ -45,26 +45,48 @@ export function initMap(containerId: string) {
         map.attributionControl.setPrefix('<a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a>');
     }
 
+     const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+
     const cartoDarkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 20
     });
 
-    const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    });
-
-    osmStandard.addTo(map);
-
     const baseLayers = {
-        "Стандартная (White)": osmStandard,
-        "Кибер-карта (Dark)": cartoDarkMatter,
+        "Стандартная": osmStandard,
+        "Тёмная": cartoDarkMatter
     };
+
+    const defaultLayerName = "Стандартная";
+    const storageKey = 'protomap-selected-theme';
+    
+    let savedLayerName = defaultLayerName;
+    try {
+        const storedName = localStorage.getItem(storageKey);
+        if (storedName && baseLayers[storedName]) {
+            savedLayerName = storedName;
+            console.log(`Загружена сохраненная тема карты: ${savedLayerName}`);
+        }
+    } catch (e) {
+        console.error("Не удалось получить доступ к localStorage", e);
+    }
+
+    baseLayers[savedLayerName].addTo(map);
 
     const layersControl = L.control.layers(baseLayers);
     layersControl.addTo(map);
+    map.on('baselayerchange', function (e: L.LayersControlEvent) {
+        console.log(`Тема карты изменена на: ${e.name}`);
+        try {
+            localStorage.setItem(storageKey, e.name);
+        } catch (error) {
+            console.error("Не удалось сохранить тему карты в localStorage", error);
+        }
+    });
 
 const controlContainer = layersControl.getContainer();
 if (controlContainer) {
@@ -118,7 +140,6 @@ if (controlContainer) {
     });
 }
 
-// Инициализация группы маркеров
 const markers = L.markerClusterGroup({
     iconCreateFunction: createClusterIcon
 });
