@@ -9,7 +9,6 @@
         if (browser) {
             const mapModule = await import('$lib/client/mapLogic');
             const mapInstance = mapModule.initMap('map-container');
-            // Сохраняем ссылку на функцию
             updateUserInteraction = mapInstance.updateUserInteraction;
         }
     });

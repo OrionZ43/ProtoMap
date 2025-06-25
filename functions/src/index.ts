@@ -2,6 +2,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import fetch from "node-fetch";
+import { FieldValue } from "firebase-admin/firestore";
 import { v2 as cloudinary } from "cloudinary";
 
 if (!admin.apps.length) {
@@ -308,23 +309,94 @@ export const deleteLocation = onCall(
   }
 );
 
+interface ProfileData {
+    about_me: string;
+    socials: {
+        telegram: string;
+        discord: string;
+        vk: string;
+        twitter: string;
+        website: string;
+    }
+}
+
+export const updateProfileData = onCall<ProfileData>(
+    {},
+    async (request) => {
+        if (!request.auth) {
+            throw new HttpsError("unauthenticated", "Необходимо войти в систему для обновления профиля.");
+        }
+
+        const uid = request.auth.uid;
+        const data = request.data;
+
+        if (!data) {
+            throw new HttpsError("invalid-argument", "Данные для обновления не предоставлены.");
+        }
+
+        const fieldsToUpdate: { [key: string]: any } = {};
+
+        if (typeof data.about_me === 'string') {
+            fieldsToUpdate.about_me = data.about_me.trim();
+        }
+
+        if (data.socials && typeof data.socials === 'object') {
+            for (const [key, rawValue] of Object.entries(data.socials)) {
+
+                if (['telegram', 'discord', 'vk', 'twitter', 'website'].includes(key)) {
+
+                    if (typeof rawValue === 'string') {
+                        let cleanedValue = rawValue.trim();
+
+                        if (key === 'vk' || key === 'twitter') {
+                            cleanedValue = cleanedValue.replace(/\s/g, '');
+                        }
+                        if (key === 'telegram') {
+                            cleanedValue = cleanedValue.replace(/\s/g, '').replace(/^@/, '');
+                        }
+
+                        if (cleanedValue) {
+                            fieldsToUpdate[`socials.${key}`] = cleanedValue;
+                        } else {
+                            fieldsToUpdate[`socials.${key}`] = FieldValue.delete();
+                        }
+                    }
+                }
+            }
+        }
+
+        if (Object.keys(fieldsToUpdate).length === 0) {
+            console.log(`Нет данных для обновления для UID ${uid}.`);
+            return { message: "Нет изменений для сохранения." };
+        }
+
+        try {
+            await db.collection('users').doc(uid).update(fieldsToUpdate);
+            console.log(`Текстовые данные для UID ${uid} успешно обновлены.`, fieldsToUpdate);
+            return { message: "Профиль успешно обновлен!" };
+        } catch (error) {
+            console.error("Ошибка обновления профиля в Firestore:", error);
+            throw new HttpsError("internal", "Ошибка сервера при сохранении профиля.");
+        }
+    }
+);
 interface UploadAvatarData {
     imageBase64: string;
 }
 
 export const uploadAvatar = onCall<UploadAvatarData>(
-  {secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"],},
+  {
+    secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"],
+  },
   async (request) => {
+    // 1. Проверяем аутентификацию пользователя
     if (!request.auth) {
-      console.log("uploadAvatar: Unauthenticated call.");
       throw new HttpsError("unauthenticated", "Необходимо войти в систему для загрузки аватара.");
     }
-
     const uid = request.auth.uid;
 
     const imageBase64 = request.data.imageBase64;
     if (!imageBase64 || typeof imageBase64 !== 'string' || !imageBase64.startsWith('data:image/')) {
-        console.log(`uploadAvatar: Invalid imageBase64 data for UID ${uid}. Data:`, imageBase64);
         throw new HttpsError("invalid-argument", "Не предоставлены корректные данные изображения в формате base64 Data URL.");
     }
 
@@ -341,7 +413,6 @@ export const uploadAvatar = onCall<UploadAvatarData>(
     });
 
     try {
-        console.log(`uploadAvatar: Attempting to upload avatar for UID ${uid}...`);
         const uploadResult = await cloudinary.uploader.upload(imageBase64, {
             folder: "protomap_avatars",
             public_id: uid,
@@ -350,20 +421,25 @@ export const uploadAvatar = onCall<UploadAvatarData>(
             transformation: [{ width: 256, height: 256, crop: "fill", gravity: "face" }]
         });
 
-        console.log(`Cloudinary upload successful for UID ${uid}: ${uploadResult.secure_url}`);
-        return { avatarUrl: uploadResult.secure_url };
+        const newAvatarUrl = uploadResult.secure_url;
+        console.log(`Cloudinary upload successful for UID ${uid}. URL: ${newAvatarUrl}`);
+
+        await db.collection('users').doc(uid).update({
+            avatar_url: newAvatarUrl
+        });
+        console.log(`Firestore updated successfully for UID ${uid}.`);
+
+        return { avatarUrl: newAvatarUrl };
 
     } catch (error: any) {
-        console.error(`Cloudinary upload error for UID ${uid}:`, error);
-        let errorMessage = "Ошибка загрузки изображения на сервер.";
-        if (error.message) errorMessage += ` Детали: ${error.message}`;
-        if (error.http_code) errorMessage += ` HTTP Code: ${error.http_code}`;
+        console.error(`Cloudinary/Firestore error for UID ${uid}:`, error);
 
-        if (error.error && error.error.message) {
-            console.error("Cloudinary specific error:", error.error.message);
+        let errorMessage = "Ошибка обработки аватара.";
+        if (error.message) {
+            console.error("Detailed error:", error.message);
         }
 
-        throw new HttpsError("internal", errorMessage, error.toString());
+        throw new HttpsError("internal", errorMessage, "Server-side processing failed.");
     }
   }
 );
