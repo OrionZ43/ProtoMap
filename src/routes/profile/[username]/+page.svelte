@@ -1,13 +1,16 @@
 <script lang="ts">
     import { userStore } from '$lib/stores';
-    import type { PageData } from './$types';
+    import type { ActionData, PageData } from './$types';
     import NeonButton from '$lib/components/NeonButton.svelte';
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
+    import { enhance } from '$app/forms';
+    import { fade, fly } from 'svelte/transition';
 
     export let data: PageData;
+    export let form: ActionData;
 
     let loading = true;
     let statusText = "ПОДКЛЮЧЕНИЕ К ХОСТУ...";
@@ -43,6 +46,25 @@
                 console.error('Could not copy text: ', err);
             });
         }
+    }
+    let commentText = '';
+
+    $: if (form?.addCommentSuccess) {
+        commentText = '';
+    }
+    function formatTimeAgo(date: Date): string {
+        const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+        let interval = seconds / 31536000;
+        if (interval > 1) return Math.floor(interval) + " г. назад";
+        interval = seconds / 2592000;
+        if (interval > 1) return Math.floor(interval) + " мес. назад";
+        interval = seconds / 86400;
+        if (interval > 1) return Math.floor(interval) + " д. назад";
+        interval = seconds / 3600;
+        if (interval > 1) return Math.floor(interval) + " ч. назад";
+        interval = seconds / 60;
+        if (interval > 1) return Math.floor(interval) + " мин. назад";
+        return "только что";
     }
 </script>
 
@@ -380,6 +402,80 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
             </div>
         </div>
     </div>
+
+<div class="profile-section comments-section max-w-4xl mx-auto">
+            <h4 class="font-display">// КОММЕНТАРИИ ({data.comments.length})</h4>
+
+            <!-- Форма добавления комментария (только для залогиненных) -->
+            {#if $userStore.user}
+                <form
+                    method="POST"
+                    action="?/addComment"
+                    use:enhance
+                    class="add-comment-form"
+                >
+                    <img
+                        src={$userStore.user.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user.username}`}
+                        alt="Ваш аватар"
+                        class="comment-avatar"
+                    />
+                    <div class="flex-grow">
+                        <textarea
+                            name="commentText"
+                            bind:value={commentText}
+                            placeholder="Оставить комментарий..."
+                            class="input-field"
+                            rows="3"
+                        ></textarea>
+                        {#if form?.addCommentError}
+                            <p class="error-message-small">{form.addCommentError}</p>
+                        {/if}
+                    </div>
+                    <NeonButton type="submit" extraClass="self-start">Отправить</NeonButton>
+                </form>
+            {:else}
+                <p class="text-center text-gray-400 py-4">
+                    <a href="/login" class="text-cyber-yellow hover:underline">Войдите</a>, чтобы оставлять комментарии.
+                </p>
+            {/if}
+
+            <!-- Список комментариев -->
+            <div class="comments-list">
+                {#if data.comments.length > 0}
+                    {#each data.comments as comment (comment.id)}
+                        <div class="comment-card" transition:fade>
+                            <a href={`/profile/${comment.author_username}`} class="shrink-0">
+                                <img
+                                    src={comment.author_avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${comment.author_username}`}
+                                    alt="Аватар {comment.author_username}"
+                                    class="comment-avatar"
+                                />
+                            </a>
+                            <div class="flex-grow">
+                                <div class="comment-header">
+                                    <a href={`/profile/${comment.author_username}`} class="comment-author">{comment.author_username}</a>
+                                    <span class="comment-time">{formatTimeAgo(comment.createdAt)}</span>
+                                </div>
+                                <p class="comment-text">{comment.text}</p>
+                                <div class="comment-actions">
+                                    <!-- Кнопка удаления (только для автора) -->
+                                    {#if $userStore.user && comment.author_uid === $userStore.user.uid}
+                                        <form method="POST" action="?/deleteComment" use:enhance class="inline">
+                                            <input type="hidden" name="commentId" value={comment.id} />
+                                            <input type="hidden" name="profileUid" value={data.profile.uid} />
+                                            <button type="submit" class="action-btn">Удалить</button>
+                                        </form>
+                                    {/if}
+                                    <!-- TODO: Кнопка "Пожаловаться" будет здесь -->
+                                </div>
+                            </div>
+                        </div>
+                    {/each}
+                {:else}
+                    <p class="text-center text-gray-500 py-8">Здесь пока нет комментариев. Станьте первым!</p>
+                {/if}
+            </div>
+        </div>
 {/if}
 
 
@@ -507,5 +603,69 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
         border-color: var(--cyber-yellow, #fcee0a);
         transform: scale(1.1);
         box-shadow: 0 0 15px var(--cyber-yellow, #fcee0a);
+    }
+.comments-section {
+        padding-top: 1.5rem;
+    }
+
+    .add-comment-form {
+        @apply flex items-start gap-4 mb-8;
+    }
+
+    .comment-avatar {
+        @apply w-12 h-12 rounded-full object-cover border-2 border-gray-600 shrink-0;
+    }
+    .add-comment-form .comment-avatar {
+        @apply border-cyber-yellow;
+    }
+
+    .input-field {
+        @apply block w-full p-2 bg-transparent text-gray-200 resize-none;
+        border: none;
+        border-bottom: 1px solid var(--border-color, #30363d);
+        border-radius: 0;
+        font-family: 'Inter', sans-serif;
+        font-size: 1em;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .input-field:focus {
+        @apply outline-none;
+        border-bottom-color: var(--cyber-yellow, #fcee0a);
+        box-shadow: 0 1px 0 var(--cyber-yellow, #fcee0a);
+    }
+    .error-message-small {
+        @apply text-red-400 text-sm mt-1;
+    }
+
+    .comments-list {
+        @apply mt-6 space-y-6;
+    }
+
+    .comment-card {
+        @apply flex items-start gap-4;
+    }
+
+    .comment-header {
+        @apply flex items-baseline gap-3 mb-1;
+    }
+
+    .comment-author {
+        @apply font-bold text-white hover:text-cyber-yellow transition-colors;
+    }
+
+    .comment-time {
+        @apply text-xs text-gray-500;
+    }
+
+    .comment-text {
+        @apply text-gray-300 whitespace-pre-wrap;
+    }
+
+    .comment-actions {
+        @apply mt-2;
+    }
+
+    .action-btn {
+        @apply text-xs text-gray-500 hover:text-red-400 transition-colors;
     }
 </style>
