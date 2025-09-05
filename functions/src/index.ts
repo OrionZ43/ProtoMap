@@ -13,12 +13,37 @@ const db = admin.firestore();
 const ALLOWED_ORIGINS = ["http://localhost:5173",
     "https://proto-map.vercel.app" ];
 
+    const handleCors = (request: any, response: any): boolean => {
+    const origin = request.headers.origin as string;
+
+    // ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ
+    console.log(`[CORS] Request received from origin: ${origin}`);
+    console.log(`[CORS] Request method: ${request.method}`);
+    console.log(`[CORS] Allowed origins: ${ALLOWED_ORIGINS.join(', ')}`);
+
+    if (ALLOWED_ORIGINS.includes(origin)) {
+        response.set('Access-Control-Allow-Origin', origin);
+        console.log(`[CORS] Origin '${origin}' is allowed. 'Access-Control-Allow-Origin' header set.`);
+    } else {
+        console.warn(`[CORS] Origin '${origin}' is NOT in the allowed list.`);
+    }
+
+    if (request.method === 'OPTIONS') {
+        console.log('[CORS] Preflight (OPTIONS) request detected. Sending headers and 204 status.');
+        response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        response.status(204).send('');
+        return true;
+    }
+
+    console.log('[CORS] Not a preflight request. Continuing to function logic.');
+    return false;
+};
+
 export const checkUsername = onRequest(
-  { cors: ALLOWED_ORIGINS },
+  { cors: false },
   async (request, response) => {
-      response.set('Access-Control-Allow-Origin', ALLOWED_ORIGINS.includes(request.headers.origin as string) ? request.headers.origin : "");
-    response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (handleCors(request, response)) { return; }
     if (request.method !== "POST") {
       response.status(405).send("Method Not Allowed");
       return;
@@ -129,11 +154,9 @@ async function getDistrictCenterCoords(lat: number, lng: number): Promise<[strin
 }
 
 export const addOrUpdateLocation = onRequest(
-  { cors: ALLOWED_ORIGINS },
+  { cors: false }, // <-- ИЗМЕНЕНИЕ
   async (request, response) => {
-      response.set('Access-Control-Allow-Origin', ALLOWED_ORIGINS.includes(request.headers.origin as string) ? request.headers.origin : "");
-    response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (handleCors(request, response)) { return; }
     const idToken = request.headers.authorization?.split('Bearer ')[1];
     if (!idToken) {
         response.status(401).json({ error: { message: "Unauthorized: No token provided" } });
@@ -206,19 +229,9 @@ export const addOrUpdateLocation = onRequest(
 );
 
 export const getLocations = onRequest(
-  { cors: ALLOWED_ORIGINS },
+  { cors: false }, // <-- ИЗМЕНЕНИЕ
   async (request, response) => {
-      const origin = request.headers.origin as string;
-      if (ALLOWED_ORIGINS.includes(origin)) {
-          response.set('Access-Control-Allow-Origin', origin);
-      }
-      response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-      if (request.method === 'OPTIONS') {
-          response.status(204).send('');
-          return;
-      }
+    if (handleCors(request, response)) { return; }
 
     try {
       const locationsSnapshot = await db.collection("locations").get();
