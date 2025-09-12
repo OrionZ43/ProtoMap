@@ -8,6 +8,7 @@
     import { modal } from '$lib/stores/modalStore';
     import { enhance } from '$app/forms';
     import { fade, fly } from 'svelte/transition';
+    import { getFunctions, httpsCallable } from "firebase/functions";
 
     export let data: PageData;
     export let form: ActionData;
@@ -16,6 +17,21 @@
     let statusText = "ПОДКЛЮЧЕНИЕ К ХОСТУ...";
     const statusMessages = ["ОБХОД БРАНДМАУЭРА...", "РАСШИФРОВКА ДАННЫХ...", "ДОСТУП К ПРОФИЛЮ...", "СОЕДИНЕНИЕ УСТАНОВЛЕНО"];
     const containerOpacity = tweened(0, { duration: 500, easing: quintOut });
+
+    const profileReportReasons = [
+    { id: 'spam', label: 'Спам или реклама', text: 'Спам или реклама' },
+    { id: 'inappropriate_content', label: 'Неприемлемый контент', text: 'Неприемлемый контент (аватар, описание)' },
+    { id: 'impersonation', label: 'Выдача себя за другого', text: 'Выдача себя за другого человека' },
+    { id: 'harassment', label: 'Оскорбления/преследование', text: 'Оскорбления или преследование' },
+    { id: 'other', label: 'Другое', text: 'Другое' }
+    ];
+
+    const commentReportReasons = [
+    { id: 'spam', label: 'Спам или реклама', text: 'Спам или реклама' },
+    { id: 'inappropriate_comment', label: 'Неприемлемый текст', text: 'Неприемлемый или оскорбительный текст' },
+    { id: 'harassment', label: 'Преследование/угрозы', text: 'Преследование или угрозы' },
+    { id: 'other', label: 'Другое', text: 'Другое' }
+    ];
 
     onMount(() => {
         let messageIndex = 0;
@@ -35,6 +51,97 @@
     $: isOwner = $userStore.user && $userStore.user.uid === data.profile.uid;
     $: socials = data.profile.socials || {};
     $: hasSocials = Object.values(socials).some(link => !!link);
+
+    async function handleReportProfile() {
+    if (!$userStore.user) {
+        modal.warning("Требуется авторизация", "Войдите, чтобы отправлять жалобы.");
+        return;
+    }
+
+    // Вызываем наше модальное окно с выбором причин
+    modal.report(
+        "Жалоба на профиль",
+        `Пожалуйста, выберите причину жалобы на пользователя <strong>${data.profile.username}</strong>.`,
+        profileReportReasons, // Убедись, что массив profileReportReasons определен выше
+        async (selectedReasonId) => {
+            // Этот коллбэк выполнится, когда пользователь нажмет "Отправить жалобу"
+
+            // Находим полный объект причины, чтобы получить ее текст для отправки
+            const reasonObject = profileReportReasons.find(r => r.id === selectedReasonId);
+            if (!reasonObject) {
+                modal.error("Ошибка", "Выбранная причина не найдена.");
+                return;
+            }
+
+            try {
+                const functions = getFunctions();
+                const reportContentFunc = httpsCallable(functions, 'reportContent');
+
+                modal.info("Отправка...", "Отправляем вашу жалобу на рассмотрение...");
+
+                await reportContentFunc({
+                    type: 'profile',
+                    reportedContentId: data.profile.uid,
+                    profileOwnerUid: data.profile.uid, // Для профиля это одно и то же
+                    reason: reasonObject.text, // <-- Отправляем полный текст причины
+                    // Отправляем имена для удобства в Telegram-уведомлении
+                    reportedUsername: data.profile.username,
+                    reporterUsername: $userStore.user?.username || 'неизвестен'
+                });
+
+                modal.success("Жалоба отправлена", "Спасибо! Мы рассмотрим вашу жалобу в ближайшее время.");
+            } catch (error: any) {
+                console.error("Ошибка отправки жалобы на профиль:", error);
+                modal.error("Ошибка", error.message || "Не удалось отправить жалобу.");
+            }
+        }
+    );
+}
+
+    async function handleReportComment(commentId: string, commentAuthorUsername: string) {
+    if (!$userStore.user) {
+        modal.warning("Требуется авторизация", "Войдите, чтобы отправлять жалобы.");
+        return;
+    }
+
+    // Вызываем модальное окно с выбором причин для комментария
+    modal.report(
+        "Жалоба на комментарий",
+        `Пожалуйста, выберите причину жалобы на комментарий от <strong>${commentAuthorUsername}</strong>.`,
+        commentReportReasons, // Убедись, что массив commentReportReasons определен выше
+        async (selectedReasonId) => {
+            // Находим полный объект причины, чтобы получить ее текст
+            const reasonObject = commentReportReasons.find(r => r.id === selectedReasonId);
+            if (!reasonObject) {
+                modal.error("Ошибка", "Выбранная причина не найдена.");
+                return;
+            }
+
+            try {
+                const functions = getFunctions();
+                const reportContentFunc = httpsCallable(functions, 'reportContent');
+
+                modal.info("Отправка...", "Отправляем вашу жалобу...");
+
+                await reportContentFunc({
+                    type: 'comment',
+                    reportedContentId: commentId,
+                    profileOwnerUid: data.profile.uid, // UID владельца профиля, где оставлен коммент
+                    reason: reasonObject.text, // <-- Отправляем полный текст причины
+                    // Отправляем имена для удобства в Telegram-уведомлении
+                    profileOwnerUsername: data.profile.username,
+                    reportedUsername: commentAuthorUsername,
+                    reporterUsername: $userStore.user?.username || 'неизвестен'
+                });
+
+                modal.success("Жалоба отправлена", "Спасибо! Администрация рассмотрит вашу жалобу.");
+            } catch (error: any) {
+                console.error("Ошибка отправки жалобы на комментарий:", error);
+                modal.error("Ошибка", error.message || "Не удалось отправить жалобу.");
+            }
+        }
+    );
+}
 
     function copyDiscordTag() {
         const tag = socials.discord;
@@ -86,6 +193,19 @@
         <div class="top-bar">
             <span class="pl-6">USER ID: {data.profile.uid.substring(0, 18).toUpperCase()}...</span>
         </div>
+
+                <!-- Кнопки действий профиля -->
+        <div class="profile-actions">
+               <div class="absolute top-2 right-2 z-20">
+        {#if $userStore.user && !isOwner}
+            <button on:click={handleReportProfile} class="report-icon-btn" title="Пожаловаться на профиль">
+                <!-- SVG иконка -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+            </button>
+        {/if}
+    </div>
 
         <div class="profile-header">
             <img
@@ -387,99 +507,105 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
                     <p class="about-me-text">{data.profile.about_me}</p>
                 </div>
             {/if}
-        </div>
+        </div> <!-- Конец .profile-content -->
+</div>
 
-        {#if isOwner}
-            <div class="profile-actions">
-                <NeonButton href="/profile/edit">РЕДАКТИРОВАТЬ</NeonButton>
-            </div>
-        {/if}
-
+        <!-- Бегущая строка -->
         <div class="ticker-wrap">
             <div class="ticker">
                 <span>СТАТУС: ОНЛАЙН // УРОВЕНЬ ЗАЩИЩЕННОСТИ: 5 // БИОМЕТРИЯ: СИНХРОНИЗИРОВАНА // ДАТА ПОСЛЕДНЕГО ОБНОВЛЕНИЯ: {new Date().toLocaleDateString()} // ДОБРО ПОЖАЛОВАТЬ, ПОЛЬЗОВАТЕЛЬ. </span>
                 <span>СТАТУС: ОНЛАЙН // УРОВЕНЬ ЗАЩИЩЕННОСТИ: 5 // БИОМЕТРИЯ: СИНХРОНИЗИРОВАНА // ДАТА ПОСЛЕДНЕГО ОБНОВЛЕНИЯ: {new Date().toLocaleDateString()} // ДОБРО ПОЖАЛОВАТЬ, ПОЛЬЗОВАТЕЛЬ. </span>
             </div>
         </div>
+
+    </div> <!-- <-- ЗАКРЫВАЮЩИЙ ТЕГ ДЛЯ .profile-container -->
+
+    <!-- СЕКЦИЯ КОММЕНТАРИЕВ (ОТДЕЛЬНЫЙ БЛОК) -->
+    <div class="comments-container max-w-4xl mx-auto mt-12">
+        <h4 class="font-display text-2xl text-cyber-yellow mb-6 text-center">// КОММЕНТАРИИ ({data.comments.length})</h4>
+
+        <!-- Форма добавления комментария (только для залогиненных) -->
+        {#if $userStore.user}
+            <form
+                method="POST"
+                action="?/addComment"
+                use:enhance
+                class="add-comment-form"
+            >
+                <img
+                    src={$userStore.user.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user.username}`}
+                    alt="Ваш аватар"
+                    class="comment-avatar"
+                />
+                <div class="flex-grow">
+                    <textarea
+                        name="commentText"
+                        bind:value={commentText}
+                        placeholder="Оставить комментарий..."
+                        class="input-field"
+                        rows="3"
+                    ></textarea>
+                    {#if form?.addCommentError}
+                        <p class="error-message-small">{form.addCommentError}</p>
+                    {/if}
+                </div>
+                <NeonButton type="submit" extraClass="self-start">Отправить</NeonButton>
+            </form>
+        {:else}
+            <p class="text-center text-gray-400 py-4">
+                <a href="/login" class="text-cyber-yellow hover:underline">Войдите</a>, чтобы оставлять комментарии.
+            </p>
+        {/if}
+
+        <!-- Список комментариев -->
+        <div class="comments-list">
+            {#if data.comments.length > 0}
+                {#each data.comments as comment (comment.id)}
+                    <div class="comment-card" transition:fade>
+                        <a href={`/profile/${comment.author_username}`} class="shrink-0">
+                            <img
+                                src={comment.author_avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${comment.author_username}`}
+                                alt="Аватар {comment.author_username}"
+                                class="comment-avatar"
+                            />
+                        </a>
+                        <div class="flex-grow">
+                            <div class="comment-header">
+                                <a href={`/profile/${comment.author_username}`} class="comment-author">{comment.author_username}</a>
+                                <span class="comment-time">{formatTimeAgo(comment.createdAt)}</span>
+                            </div>
+                            <p class="comment-text">{comment.text}</p>
+                            <div class="comment-actions">
+    {#if $userStore.user}
+        {#if comment.author_uid === $userStore.user.uid}
+            <!-- Пользователь - автор комментария: может только удалить -->
+            <form method="POST" action="?/deleteComment" use:enhance class="inline">
+                <input type="hidden" name="commentId" value={comment.id} />
+                <input type="hidden" name="profileUid" value={data.profile.uid} />
+                <button type="submit" class="action-btn">Удалить</button>
+            </form>
+        {:else}
+            <!-- Пользователь - НЕ автор комментария: может только пожаловаться -->
+            <button on:click={() => handleReportComment(comment.id, comment.author_username)} class="action-btn">
+                Пожаловаться
+            </button>
+        {/if}
+    {/if}
+</div>
+                        </div>
+                    </div>
+                {/each}
+            {:else}
+                <p class="text-center text-gray-500 py-8">Здесь пока нет комментариев. Станьте первым!</p>
+            {/if}
+        </div>
     </div>
 
-<div class="profile-section comments-section max-w-4xl mx-auto">
-            <h4 class="font-display">// КОММЕНТАРИИ ({data.comments.length})</h4>
-
-            <!-- Форма добавления комментария (только для залогиненных) -->
-            {#if $userStore.user}
-                <form
-                    method="POST"
-                    action="?/addComment"
-                    use:enhance
-                    class="add-comment-form"
-                >
-                    <img
-                        src={$userStore.user.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user.username}`}
-                        alt="Ваш аватар"
-                        class="comment-avatar"
-                    />
-                    <div class="flex-grow">
-                        <textarea
-                            name="commentText"
-                            bind:value={commentText}
-                            placeholder="Оставить комментарий..."
-                            class="input-field"
-                            rows="3"
-                        ></textarea>
-                        {#if form?.addCommentError}
-                            <p class="error-message-small">{form.addCommentError}</p>
-                        {/if}
-                    </div>
-                    <NeonButton type="submit" extraClass="self-start">Отправить</NeonButton>
-                </form>
-            {:else}
-                <p class="text-center text-gray-400 py-4">
-                    <a href="/login" class="text-cyber-yellow hover:underline">Войдите</a>, чтобы оставлять комментарии.
-                </p>
-            {/if}
-
-            <!-- Список комментариев -->
-            <div class="comments-list">
-                {#if data.comments.length > 0}
-                    {#each data.comments as comment (comment.id)}
-                        <div class="comment-card" transition:fade>
-                            <a href={`/profile/${comment.author_username}`} class="shrink-0">
-                                <img
-                                    src={comment.author_avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${comment.author_username}`}
-                                    alt="Аватар {comment.author_username}"
-                                    class="comment-avatar"
-                                />
-                            </a>
-                            <div class="flex-grow">
-                                <div class="comment-header">
-                                    <a href={`/profile/${comment.author_username}`} class="comment-author">{comment.author_username}</a>
-                                    <span class="comment-time">{formatTimeAgo(comment.createdAt)}</span>
-                                </div>
-                                <p class="comment-text">{comment.text}</p>
-                                <div class="comment-actions">
-                                    <!-- Кнопка удаления (только для автора) -->
-                                    {#if $userStore.user && comment.author_uid === $userStore.user.uid}
-                                        <form method="POST" action="?/deleteComment" use:enhance class="inline">
-                                            <input type="hidden" name="commentId" value={comment.id} />
-                                            <input type="hidden" name="profileUid" value={data.profile.uid} />
-                                            <button type="submit" class="action-btn">Удалить</button>
-                                        </form>
-                                    {/if}
-                                    <!-- TODO: Кнопка "Пожаловаться" будет здесь -->
-                                </div>
-                            </div>
-                        </div>
-                    {/each}
-                {:else}
-                    <p class="text-center text-gray-500 py-8">Здесь пока нет комментариев. Станьте первым!</p>
-                {/if}
-            </div>
-        </div>
 {/if}
 
 
 <style>
+    /* KEYFRAMES (без изменений) */
     @keyframes typing { from { width: 0 } to { width: 100% } }
     @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: var(--cyber-yellow, #fcee0a); } }
     @keyframes glitch-anim { 0% { clip-path: inset(45% 0 50% 0); } 100% { clip-path: inset(5% 0 90% 0); } }
@@ -488,19 +614,35 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
         0% { transform: translateX(0); }
         100% { transform: translateX(-50%); }
     }
+    @keyframes content-fade-in {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 
+    /* НОВЫЕ KEYFRAMES: для анимации пульсации кнопки жалобы */
+    @keyframes report-pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.7;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 1;
+      }
+    }
+
+    /* ОСНОВНЫЕ СТИЛИ ПРОФИЛЯ */
     .glitch-text { @apply text-xl sm:text-2xl; position: relative; text-shadow: 0 0 5px var(--cyber-yellow); }
     .glitch-text::before, .glitch-text::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color, #16181d); overflow: hidden; }
     .glitch-text::before { left: 2px; text-shadow: -2px 0 #ff00c1; animation: glitch-anim 1.5s infinite linear alternate-reverse; }
     .glitch-text::after { left: -2px; text-shadow: 2px 0 var(--cyber-cyan); animation: glitch-anim-2 1.5s 0.2s infinite linear alternate-reverse; }
 
     .profile-container {
-        @apply max-w-2xl mx-auto my-10 p-1 sm:p-2 rounded-none shadow-2xl relative overflow-hidden;
+        @apply max-w-2xl mx-auto my-10 p-1 sm:p-2 rounded-none shadow-2xl relative;
         background: #0a0a0a;
         border: 1px solid rgba(252, 238, 10, 0.3);
         clip-path: polygon(0 20px, 20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
-        overflow: hidden;
-
+        overflow: hidden; /* Важно, чтобы corner-bg не вылезал */
         background-image:
             linear-gradient(rgba(10, 10, 10, 0.96), rgba(10, 10, 10, 0.96)),
             linear-gradient(rgba(252, 238, 10, 0.1) 1px, transparent 1px),
@@ -508,164 +650,90 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
         background-size: 100% 100%, 30px 30px, 30px 30px;
     }
 
-    .corner-bg {
-        @apply absolute w-16 h-16;
-        background: radial-gradient(circle, var(--cyber-yellow, #fcee0a) 0%, rgba(252, 238, 10, 0) 60%);
-        opacity: 0.15;
-        filter: blur(5px);
-    }
+    .corner-bg { @apply absolute w-16 h-16 opacity-15 blur-sm; background: radial-gradient(circle, var(--cyber-yellow, #fcee0a) 0%, rgba(252, 238, 10, 0) 60%); }
     .top-left { top: -30px; left: -30px; }
     .top-right { top: -30px; right: -30px; }
     .bottom-left { bottom: -30px; left: -30px; }
     .bottom-right { bottom: -30px; right: -30px; }
 
     .top-bar {
-        @apply p-2 text-xs uppercase tracking-widest text-cyber-yellow/70;
+        @apply relative flex items-center justify-between p-2 text-xs uppercase tracking-widest text-cyber-yellow/70;
         border-bottom: 1px solid var(--border-color);
-        position: relative;
+        padding-right: 3.5rem; /* Отступ для кнопки жалобы */
     }
-    .bar-light {
-        @apply absolute top-1/2 left-2 w-2 h-2 rounded-full bg-cyber-yellow;
-        transform: translateY(-50%);
-        box-shadow: 0 0 5px var(--cyber-yellow);
-    }
+    .bar-light { @apply absolute top-1/2 left-2 w-2 h-2 rounded-full bg-cyber-yellow; transform: translateY(-50%); box-shadow: 0 0 5px var(--cyber-yellow); }
 
-    .profile-header, .profile-content, .profile-actions {
-        animation: content-fade-in 0.5s ease-out both;
-    }
+    .profile-header, .profile-content, .profile-actions { animation: content-fade-in 0.5s ease-out both; }
     .profile-content { animation-delay: 0.2s; }
     .profile-actions { animation-delay: 0.4s; }
-
-    @keyframes content-fade-in {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
 
     .profile-header { @apply flex flex-col items-center text-center p-6; }
     .profile-avatar { @apply w-32 h-32 rounded-full object-cover mb-4; border: 4px solid var(--cyber-yellow); box-shadow: 0 0 20px var(--cyber-yellow); }
     .profile-username { @apply text-4xl font-bold text-white break-words; }
-    .profile-content { @apply p-6 space-y-6 text-left; }
-    .profile-section h4 { @apply text-sm font-bold uppercase tracking-widest text-cyber-yellow mb-2; }
-    .social-link { @apply text-cyan-400 hover:text-white break-all transition-colors; }
-    .about-me-text { @apply text-gray-200 whitespace-pre-wrap leading-relaxed; }
-    .profile-actions { @apply p-6 text-center; border-top: 1px solid var(--border-color); }
 
-    .ticker-wrap {
-        @apply absolute bottom-0 left-0 w-full overflow-hidden p-2 text-xs uppercase tracking-wider;
-        background: var(--bg-color);
-        border-top: 1px solid var(--border-color);
-    }
-    .ticker {
-        display: inline-block;
-        white-space: nowrap;
-        animation: ticker-scroll 30s linear infinite;
-    }
-    .profile-section {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding-bottom: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-    .profile-content > .profile-section:last-of-type {
-        border-bottom: none;
-        padding-bottom: 0;
-        margin-bottom: 0;
-    }
-    .profile-section h4 { @apply text-sm font-bold uppercase tracking-widest text-cyber-yellow mb-2; }
+    .profile-content { @apply p-6 text-left; }
+    .profile-section { @apply pb-6 mb-6; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+    .profile-content > .profile-section:last-of-type { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+    .profile-section h4 { @apply mb-2 text-sm font-bold uppercase tracking-widest text-cyber-yellow; }
+    .about-me-text { @apply whitespace-pre-wrap leading-relaxed text-gray-200; }
 
-    .text-center {
-        text-align: center;
+    .social-links-grid { @apply flex flex-wrap justify-center gap-4 mt-4 content-center; }
+    .social-link-btn { @apply w-14 h-14 flex items-center justify-center rounded-full text-gray-400 bg-gray-900/50 border border-gray-700; transition: all 0.2s ease-in-out; }
+    .social-link-btn:hover { @apply text-white border-cyber-yellow scale-110; box-shadow: 0 0 15px var(--cyber-yellow, #fcee0a); }
+
+    .profile-actions { @apply p-6 text-center border-t border-gray-800; }
+
+    .ticker-wrap { @apply absolute bottom-0 left-0 w-full p-2 overflow-hidden text-xs uppercase tracking-wider; background: var(--bg-color); border-top: 1px solid var(--border-color); }
+    .ticker { @apply inline-block whitespace-nowrap; animation: ticker-scroll 30s linear infinite; }
+
+    /* --- СТИЛИ ДЛЯ КОММЕНТАРИЕВ --- */
+    .comments-container { /* Мы переименовали comments-section в comments-container */
+        @apply mt-12 max-w-4xl mx-auto;
+    }
+    .comments-container h4 {
+        @apply text-2xl text-center mb-6;
     }
 
-    .social-links-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1rem; /* 16px */
-    margin-top: 1rem;
-    align-content: center;
-}
+    .add-comment-form { @apply flex items-start gap-4 mb-8; }
+    .comment-avatar { @apply w-12 h-12 rounded-full object-cover border-2 border-gray-600 shrink-0; }
+    .add-comment-form .comment-avatar { @apply border-cyber-yellow; }
 
-    .social-link-btn {
-        width: 3.5rem;
-        height: 3.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 9999px;
-        color: #9ca3af;
-        background-color: rgba(17, 24, 39, 0.5);
-        border-width: 1px;
-        border-color: #374151;
+    .input-field { @apply block w-full p-2 bg-transparent text-gray-200 resize-none rounded-none; border: none; border-bottom: 1px solid var(--border-color, #30363d); font-family: 'Inter', sans-serif; font-size: 1em; transition: border-color 0.3s, box-shadow 0.3s; }
+    .input-field:focus { @apply outline-none border-cyber-yellow; box-shadow: 0 1px 0 var(--cyber-yellow, #fcee0a); }
+
+    .error-message-small { @apply text-red-400 text-sm mt-1; }
+    .comments-list { @apply mt-6 space-y-6; }
+    .comment-card { @apply flex items-start gap-4; }
+    .comment-header { @apply flex items-baseline gap-3 mb-1; }
+    .comment-author { @apply font-bold text-white hover:text-cyber-yellow transition-colors; }
+    .comment-time { @apply text-xs text-gray-500; }
+    .comment-text { @apply whitespace-pre-wrap text-gray-300; }
+    .comment-actions { @apply mt-2; }
+    .action-btn { @apply text-xs text-gray-500 hover:text-red-400 transition-colors; }
+
+    /* --- ФИНАЛЬНЫЙ СТИЛЬ ДЛЯ КНОПКИ ЖАЛОБЫ --- */
+    /* Используем класс, который у тебя в HTML: .report-icon-btn */
+    .report-icon-btn {
+        @apply absolute top-2 right-2 z-20 p-2 rounded-full;
+        /* Используем фоллбэк #ff003c, если --cyber-red не определен глобально */
+        color: var(--cyber-red, #ff003c);
+        animation: report-pulse 2.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
         transition: all 0.2s ease-in-out;
     }
-    .social-link-btn:hover {
-        color: white;
-        border-color: var(--cyber-yellow, #fcee0a);
-        transform: scale(1.1);
-        box-shadow: 0 0 15px var(--cyber-yellow, #fcee0a);
+    .report-icon-btn:hover {
+        background-color: rgba(255, 0, 60, 0.25);
+        color: #ff4d6d;
+        transform: scale(1.2);
+        animation-play-state: paused;
+        box-shadow: 0 0 15px var(--cyber-red, #ff003c);
     }
-.comments-section {
-        padding-top: 1.5rem;
+    .report-icon-btn:focus-visible {
+        @apply outline-none ring-2 ring-offset-2 ring-offset-black ring-red-500;
     }
-
-    .add-comment-form {
-        @apply flex items-start gap-4 mb-8;
-    }
-
-    .comment-avatar {
-        @apply w-12 h-12 rounded-full object-cover border-2 border-gray-600 shrink-0;
-    }
-    .add-comment-form .comment-avatar {
-        @apply border-cyber-yellow;
-    }
-
-    .input-field {
-        @apply block w-full p-2 bg-transparent text-gray-200 resize-none;
-        border: none;
-        border-bottom: 1px solid var(--border-color, #30363d);
-        border-radius: 0;
-        font-family: 'Inter', sans-serif;
-        font-size: 1em;
-        transition: border-color 0.3s, box-shadow 0.3s;
-    }
-    .input-field:focus {
-        @apply outline-none;
-        border-bottom-color: var(--cyber-yellow, #fcee0a);
-        box-shadow: 0 1px 0 var(--cyber-yellow, #fcee0a);
-    }
-    .error-message-small {
-        @apply text-red-400 text-sm mt-1;
-    }
-
-    .comments-list {
-        @apply mt-6 space-y-6;
-    }
-
-    .comment-card {
-        @apply flex items-start gap-4;
-    }
-
-    .comment-header {
-        @apply flex items-baseline gap-3 mb-1;
-    }
-
-    .comment-author {
-        @apply font-bold text-white hover:text-cyber-yellow transition-colors;
-    }
-
-    .comment-time {
-        @apply text-xs text-gray-500;
-    }
-
-    .comment-text {
-        @apply text-gray-300 whitespace-pre-wrap;
-    }
-
-    .comment-actions {
-        @apply mt-2;
-    }
-
-    .action-btn {
-        @apply text-xs text-gray-500 hover:text-red-400 transition-colors;
+    .top-bar::before {
+        content: '';
+        @apply absolute top-1/2 left-2 w-2 h-2 rounded-full bg-cyber-yellow;
+        transform: translateY(-50%);
+        box-shadow: 0 0 5px var(--cyber-yellow);
     }
 </style>

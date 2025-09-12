@@ -3,6 +3,11 @@
     import { quintOut } from 'svelte/easing';
     import { scale, fade } from 'svelte/transition';
     import NeonButton from './NeonButton.svelte';
+
+    let selectedReason = '';
+    $: if ($modal.isOpen && $modal.reportOptions) {
+        selectedReason = $modal.reportOptions[0]?.id || '';
+    }
 </script>
 
 {#if $modal.isOpen}
@@ -58,6 +63,23 @@
                     <p class="modal-message">
                         {@html $modal.message}
                     </p>
+                    {#if $modal.reportOptions && $modal.onReportSubmit}
+                        <div class="report-options-list mt-6 text-left">
+                            {#each $modal.reportOptions as option (option.id)}
+                                <label class="report-option">
+                                    <input
+                                        type="radio"
+                                        name="report-reason"
+                                        value={option.id}
+                                        bind:group={selectedReason}
+                                        on:change={() => $modal.onReportSubmit?.(selectedReason)}
+                                    />
+                                    <span class="custom-radio"></span>
+                                    <span>{option.label}</span>
+                                </label>
+                            {/each}
+                        </div>
+                    {/if}
                 </div>
             </div>
 
@@ -156,5 +178,33 @@
         color: var(--cyber-red, #ff003c);
         text-shadow: 0 0 8px var(--cyber-red, #ff003c);
         transform: translateY(-2px);
+    }
+
+    .report-options-list {
+        @apply space-y-3;
+    }
+
+    .report-option {
+        @apply flex items-center p-3 rounded-md cursor-pointer;
+        background-color: rgba(255, 255, 255, 0.05);
+        transition: background-color 0.2s;
+    }
+    .report-option:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .report-option input[type="radio"] {
+        @apply absolute opacity-0 w-0 h-0;
+    }
+
+    .report-option .custom-radio {
+        @apply w-5 h-5 rounded-full border-2 border-gray-500 mr-4 shrink-0;
+        transition: all 0.2s;
+    }
+
+    .report-option input[type="radio"]:checked + .custom-radio {
+        @apply border-cyber-yellow;
+        background-color: var(--cyber-yellow);
+        box-shadow: 0 0 5px var(--cyber-yellow);
     }
 </style>

@@ -8,12 +8,19 @@ export type ModalAction = {
     class?: string;
 };
 
+export type ReportOption = {
+    id: string;
+    label: string;
+};
+
 export type ModalState = {
     isOpen: boolean;
     title: string;
     message: string;
     actions: ModalAction[];
     type: ModalType;
+    reportOptions?: ReportOption[];
+    onReportSubmit?: (selectedReason: string) => void;
 };
 
 function createModalStore() {
@@ -22,7 +29,9 @@ function createModalStore() {
         title: '',
         message: '',
         actions: [],
-        type: 'info'
+        type: 'info',
+        reportOptions: undefined,
+        onReportSubmit: undefined
     };
 
     const { subscribe, set } = writable<ModalState>(initialState);
@@ -69,6 +78,30 @@ function createModalStore() {
                 { text: 'Отмена', action: close, class: 'secondary' }
             ]
         }),
+        report: (title: string, message: string, options: ReportOption[], onSubmit: (selectedReason: string) => void) => {
+            let selectedReason = options[0]?.id || ''; // Причина по умолчанию
+
+            set({
+                isOpen: true,
+                title,
+                message,
+                type: 'warning', // Жалоба - это предупреждение
+                reportOptions: options.map(opt => ({...opt, selected: selectedReason === opt.id })),
+                onReportSubmit: (reason) => {
+                    selectedReason = reason; // Обновляем выбранную причину
+                },
+                actions: [
+                    {
+                        text: 'Отправить жалобу',
+                        action: () => {
+                            onSubmit(selectedReason);
+                        },
+                        class: 'primary'
+                    },
+                    { text: 'Отмена', action: close, class: 'secondary' }
+                ]
+            });
+        },
         close
     };
 }

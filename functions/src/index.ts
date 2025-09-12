@@ -455,4 +455,145 @@ export const uploadAvatar = onCall<UploadAvatarData>(
         throw new HttpsError("internal", errorMessage, "Server-side processing failed.");
     }
   }
+  );
+
+  function escapeMarkdownV2(text: string): string {
+    // Убедимся, что на входе строка
+    const sourceText = String(text || '');
+    // Список символов, которые нужно экранировать
+    const charsToEscape = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
+    let escapedText = sourceText;
+    for (const char of charsToEscape) {
+        escapedText = escapedText.replace(new RegExp('\\' + char, 'g'), '\\' + char);
+    }
+    return escapedText;
+}
+
+// Интерфейс для данных, которые приходят с жалобой
+interface ReportData {
+    type: 'comment' | 'profile';
+    reportedContentId: string;
+    profileOwnerUid: string;
+    reason: string;
+    // Новые опциональные поля для имен
+    reportedUsername?: string;
+    reporterUsername?: string;
+    profileOwnerUsername?: string;
+}
+
+export const reportContent = onCall<ReportData>(
+  { secrets: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"] },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Необходимо войти в систему, чтобы отправлять жалобы.");
+    }
+
+    const reporterUid = request.auth.uid;
+    const {
+        type,
+        reportedContentId,
+        profileOwnerUid,
+        reason,
+        reportedUsername,
+        reporterUsername,
+        profileOwnerUsername
+    } = request.data;
+
+    if (!type || !reportedContentId || !profileOwnerUid || !reason) {
+        throw new HttpsError("invalid-argument", "Не предоставлены все необходимые данные для жалобы.");
+    }
+    if (type !== 'comment' && type !== 'profile') {
+        throw new HttpsError("invalid-argument", "Неверный тип контента для жалобы.");
+    }
+
+    try {
+        const reportRef = db.collection('reports').doc();
+
+        const newReport: any = {
+            type,
+            reportedContentId,
+            profileOwnerUid,
+            reporterUid,
+            reason,
+            reportedUsername: reportedUsername || null,
+            reporterUsername: reporterUsername || null,
+            profileOwnerUsername: profileOwnerUsername || null,
+            status: 'new',
+            createdAt: FieldValue.serverTimestamp()
+        };
+
+        if (type === 'comment') {
+            const commentDoc = await db.collection('users').doc(profileOwnerUid).collection('comments').doc(reportedContentId).get();
+            if (commentDoc.exists) {
+                newReport.reportedContentText = commentDoc.data()?.text || '[Текст комментария не найден]';
+            }
+        }
+
+        await reportRef.set(newReport);
+        console.log(`Новая жалоба создана: ${reportRef.id}. Тип: ${type}, ID контента: ${reportedContentId}`);
+
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        const chatId = process.env.TELEGRAM_CHAT_ID;
+
+        if (botToken && chatId) {
+            const baseUrl = "https://proto-map.vercel.app/profile/";
+
+            const reporterLink = reporterUsername ? `[${escapeMarkdownV2(reporterUsername)}](${baseUrl}${escapeMarkdownV2(reporterUsername)})` : `\`${reporterUid}\``;
+            const reportedUserLink = reportedUsername ? `[${escapeMarkdownV2(reportedUsername)}](${baseUrl}${escapeMarkdownV2(reportedUsername)})` : `\`${reportedContentId}\``;
+            const profileOwnerLink = profileOwnerUsername ? `[${escapeMarkdownV2(profileOwnerUsername)}](${baseUrl}${escapeMarkdownV2(profileOwnerUsername)})` : `\`${profileOwnerUid}\``;
+
+            let message = `🚨 *Новый репорт на ProtoMap\\!* 🚨
+
+*Кто жалуется:* ${reporterLink}
+*Причина:* ${escapeMarkdownV2(reason)}
+
+`;
+
+            if (type === 'profile') {
+                message += `*На профиль:* ${reportedUserLink}`;
+            } else { // type === 'comment'
+                message += `*На комментарий пользователя* ${reportedUserLink} *в профиле* ${profileOwnerLink}`;
+                if (newReport.reportedContentText) {
+                    message += `
+
+*Текст комментария:*
+\`\`\`
+${escapeMarkdownV2(newReport.reportedContentText)}
+\`\`\``
+                }
+            }
+
+            const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+
+            try {
+                const telegramResponse = await fetch(telegramUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: message,
+                        parse_mode: 'MarkdownV2'
+                    })
+                });
+
+                if (!telegramResponse.ok) {
+                    const errorBody = await telegramResponse.json();
+                    console.error("ОШИБКА от Telegram API:", telegramResponse.status, errorBody);
+                } else {
+                    console.log("Уведомление в Telegram успешно отправлено.");
+                }
+            } catch (telegramError) {
+                console.error("Критическая ошибка при отправке запроса в Telegram:", telegramError);
+            }
+        } else {
+            console.warn("Переменные окружения для Telegram-бота не установлены. Уведомление не отправлено.");
+        }
+
+        return { success: true, message: "Ваша жалоба была отправлена. Спасибо!" };
+
+    } catch (error) {
+        console.error("Ошибка при создании жалобы:", error);
+        throw new HttpsError("internal", "Ошибка сервера при отправке жалобы.");
+    }
+  }
 );
