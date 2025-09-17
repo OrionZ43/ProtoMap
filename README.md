@@ -1,38 +1,41 @@
-# sv
+# ProtoMap
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+**Интерактивная карта для сообщества протогенов.**
 
-## Creating a project
+[![Deployment](https://img.shields.io/badge/Deployment-Vercel-brightgreen?style=for-the-badge&logo=vercel)](https://proto-map.vercel.app)
 
-If you're seeing this, you've probably already done this step. Congrats!
 
-```bash
-# create a new project in the current directory
-npx sv create
+**➡️ Перейти к карте: [proto-map.vercel.app](https://proto-map.vercel.app)**
 
-# create a new project in my-app
-npx sv create my-app
-```
+---
 
-## Developing
+<p align="center">
+  <img src="https://sun9-33.userapi.com/s/v1/if2/ikLWu6HeFDgbSxLxshbmXC0AxdY06-ynrUqGUEGnA3kp6DaFBovTOGZQXYsa5OoGv7Y3zAXtRiyCwnhcKUj45a7b.jpg?quality=95&as=32x16,48x25,72x37,108x56,160x82,240x123,360x185,480x247,540x278,640x329,720x370,1080x555,1280x658,1440x740,1856x954&from=bu&cs=1856x0" alt="ProtoMap Preview" width="80%">
+</p>
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## //: О проекте
 
-```bash
-npm run dev
+**ProtoMap** — это веб-приложение, созданное для объединения сообщества протогенов по всему миру. Оно позволяет пользователям регистрироваться, анонимно отмечать свое местоположение на глобальной карте, кастомизировать профили и общаться друг с другом. Проект выполнен в уникальной киберпанк-эстетике.
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+### Ключевые возможности
 
-## Building
+*   **Интерактивная карта:** Глобальная карта с кастомными, анимированными кластерами и персональными метками-аватарами.
+*   **Регистрация и профили:** Полноценная система аутентификации (Email/Пароль, Google) и редактируемые профили с возможностью загрузки аватаров.
+*   **Приватность:** Координаты меток привязываются к центру района/микрорайона, а не к точному местоположению.
+*   **Социальные функции:** Пользователи могут оставлять комментарии на страницах профилей.
+*   **Система модерации:** Реализована система жалоб на профили и комментарии с уведомлениями администратору в Telegram.
+*   **Кастомный дизайн:** Уникальный киберпанк-стиль с анимированными элементами, неоновыми эффектами и стилизованными уведомлениями.
+*   **Адаптивность:** Сайт полностью адаптирован для использования на мобильных устройствах.
 
-To create a production version of your app:
+## //: Технологический стек
 
-```bash
-npm run build
-```
+Этот проект построен на современном и производительном стеке:
 
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+*   **Фронтенд:** [SvelteKit](https://kit.svelte.dev/)
+*   **Стилизация:** [Tailwind CSS](https://tailwindcss.com/)
+*   **Карта:** [Leaflet.js](https://leafletjs.com/) с плагином [Leaflet.markercluster](https://github.com/Leaflet/Leaflet.markercluster)
+*   **Бэкенд и База данных:** [Firebase](https://firebase.google.com/) (Authentication, Firestore, Cloud Functions)
+*   **Хостинг:**
+    *   Фронтенд: [Vercel](https://vercel.com/)
+    *   Бэкенд: [Firebase Hosting](https://firebase.google.com/docs/hosting)
+*   **Хранение изображений:** [Cloudinary](https://cloudinary.com/) (для аватаров пользователей)

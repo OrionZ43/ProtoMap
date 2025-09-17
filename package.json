@@ -22,6 +22,7 @@
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
 		"@types/leaflet": "^1.9.18",
 		"@types/leaflet.markercluster": "^1.5.5",
+		"@types/three": "^0.180.0",
 		"autoprefixer": "^10.4.20",
 		"eslint": "^9.29.0",
 		"eslint-config-prettier": "^10.0.1",
@@ -45,6 +46,7 @@
 		"leaflet.markercluster": "^1.5.3",
 		"node-fetch": "^2.7.0",
 		"pixi.js": "^8.10.1",
-		"svelte-icons": "^2.1.0"
+		"svelte-icons": "^2.1.0",
+		"three": "^0.180.0"
 	}
 }
