@@ -39,3 +39,10 @@
     *   Фронтенд: [Vercel](https://vercel.com/)
     *   Бэкенд: [Firebase Hosting](https://firebase.google.com/docs/hosting)
 *   **Хранение изображений:** [Cloudinary](https://cloudinary.com/) (для аватаров пользователей)
+
+## //: Автор
+
+*   **Orion_Z43**
+*   **Telegram:** [https://t.me/Orion_Z43](https://t.me/Orion_Z43)
+
+Спасибо за интерес к проекту!
