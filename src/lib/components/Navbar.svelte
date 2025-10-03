@@ -27,7 +27,7 @@
     }
 
     function getEncodedUsername(username: string | undefined | null): string {
-        if (!username) return ''; // Возвращаем пустую строку, если username не определен
+        if (!username) return '';
         return encodeURIComponent(username.trim());
     }
 

@@ -3,7 +3,6 @@ import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { FieldValue } from 'firebase-admin/firestore';
 
-// Тип для комментария, чтобы было удобно работать
 export type Comment = {
     id: string;
     text: string;
@@ -27,7 +26,6 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
     const userProfileDoc = userSnapshot.docs[0];
     const userProfileData = userProfileDoc.data();
 
-    // Загружаем комментарии для этого профиля
     const commentsRef = userProfileDoc.ref.collection('comments').orderBy('createdAt', 'desc').limit(20);
     const commentsSnapshot = await commentsRef.get();
 
@@ -50,9 +48,9 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
             uid: userProfileDoc.id,
             username: userProfileData.username,
             avatar_url: userProfileData.avatar_url,
-            social_link: userProfileData.social_link, // Добавил обратно, если нужно
+            social_link: userProfileData.social_link,
             about_me: userProfileData.about_me,
-            socials: userProfileData.socials || {} // Оставляем socials
+            socials: userProfileData.socials || {}
         },
         comments: comments
     };

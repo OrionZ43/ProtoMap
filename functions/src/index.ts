@@ -16,7 +16,6 @@ const ALLOWED_ORIGINS = ["http://localhost:5173",
     const handleCors = (request: any, response: any): boolean => {
     const origin = request.headers.origin as string;
 
-    // ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ
     console.log(`[CORS] Request received from origin: ${origin}`);
     console.log(`[CORS] Request method: ${request.method}`);
     console.log(`[CORS] Allowed origins: ${ALLOWED_ORIGINS.join(', ')}`);
@@ -229,7 +228,7 @@ export const addOrUpdateLocation = onRequest(
 );
 
 export const getLocations = onRequest(
-  { cors: false }, // <-- ИЗМЕНЕНИЕ
+  { cors: false },
   async (request, response) => {
     if (handleCors(request, response)) { return; }
 
@@ -402,7 +401,6 @@ export const uploadAvatar = onCall<UploadAvatarData>(
     secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"],
   },
   async (request) => {
-    // 1. Проверяем аутентификацию пользователя
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Необходимо войти в систему для загрузки аватара.");
     }
@@ -458,9 +456,7 @@ export const uploadAvatar = onCall<UploadAvatarData>(
   );
 
   function escapeMarkdownV2(text: string): string {
-    // Убедимся, что на входе строка
     const sourceText = String(text || '');
-    // Список символов, которые нужно экранировать
     const charsToEscape = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
     let escapedText = sourceText;
     for (const char of charsToEscape) {
@@ -469,13 +465,11 @@ export const uploadAvatar = onCall<UploadAvatarData>(
     return escapedText;
 }
 
-// Интерфейс для данных, которые приходят с жалобой
 interface ReportData {
     type: 'comment' | 'profile';
     reportedContentId: string;
     profileOwnerUid: string;
     reason: string;
-    // Новые опциональные поля для имен
     reportedUsername?: string;
     reporterUsername?: string;
     profileOwnerUsername?: string;

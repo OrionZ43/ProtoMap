@@ -79,16 +79,16 @@ function createModalStore() {
             ]
         }),
         report: (title: string, message: string, options: ReportOption[], onSubmit: (selectedReason: string) => void) => {
-            let selectedReason = options[0]?.id || ''; // Причина по умолчанию
+            let selectedReason = options[0]?.id || '';
 
             set({
                 isOpen: true,
                 title,
                 message,
-                type: 'warning', // Жалоба - это предупреждение
+                type: 'warning',
                 reportOptions: options.map(opt => ({...opt, selected: selectedReason === opt.id })),
                 onReportSubmit: (reason) => {
-                    selectedReason = reason; // Обновляем выбранную причину
+                    selectedReason = reason;
                 },
                 actions: [
                     {

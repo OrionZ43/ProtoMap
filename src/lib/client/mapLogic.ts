@@ -56,6 +56,7 @@ export function initMap(containerId: string) {
         maxZoom: 20
     });
 
+
     const baseLayers = {
         "Стандартная": osmStandard,
         "Тёмная": cartoDarkMatter

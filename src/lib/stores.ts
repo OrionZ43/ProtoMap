@@ -61,3 +61,19 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
 
     userStore.set({ user: userProfile, loading: false });
 });
+type ChatState = {
+    isOpen: boolean;
+};
+
+function createChatStore() {
+    const { subscribe, update } = writable<ChatState>({ isOpen: false });
+
+    return {
+        subscribe,
+        toggle: () => update(state => ({ ...state, isOpen: !state.isOpen })),
+        open: () => update(state => ({ ...state, isOpen: true })),
+        close: () => update(state => ({ ...state, isOpen: false }))
+    };
+}
+
+export const chat = createChatStore();
