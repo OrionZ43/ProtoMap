@@ -4,19 +4,12 @@
     import { collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp, type Unsubscribe, type Timestamp } from 'firebase/firestore';
     import { userStore, chat } from '$lib/stores';
     import { modal } from '$lib/stores/modalStore';
-    import { slide, fade, scale } from 'svelte/transition';
-    import { swipe } from '$lib/actions/swipe';
-    import { cubicOut } from 'svelte/easing';
+    import { slide, fade } from 'svelte/transition';
 
     type ReplyInfo = {
         author_username: string;
         text: string;
     };
-
-let isTouchDevice = false;
-onMount(() => {
-    isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-});
 
     type ChatMessage = {
         id: string;
@@ -101,6 +94,21 @@ onMount(() => {
         };
         inputElement?.focus();
     }
+    function isSameDay(date1: Date, date2: Date): boolean {
+        if (!date1 || !date2) return false;
+        return date1.getFullYear() === date2.getFullYear() &&
+               date1.getMonth() === date2.getMonth() &&
+               date1.getDate() === date2.getDate();
+    }
+
+    function formatDateSeparator(date: Date): string {
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (isSameDay(date, today)) return 'Сегодня';
+        if (isSameDay(date, yesterday)) return 'Вчера';
+        return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+    }
 
     onMount(() => {
         const q = query(collection(db, "global_chat"), orderBy("createdAt", "desc"), limit(50));
@@ -113,7 +121,7 @@ onMount(() => {
                     author_uid: data.author_uid || '',
                     author_username: data.author_username || 'unknown',
                     author_avatar_url: data.author_avatar_url || '',
-                    createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
+                    createdAt: (data.createdAt as Timestamp)?.toDate(),
                     replyTo: data.replyTo
                 };
             }).filter(msg => msg.createdAt).reverse();
@@ -135,57 +143,6 @@ onMount(() => {
             messagesWindow.scrollTo({ top: messagesWindow.scrollHeight, behavior: 'smooth' });
         }
     });
-
-    let swipeOffsets = {};
-    let replyIconVisible = {};
-
-    function handleSwipeStart(msgId) {
-        replyIconVisible[msgId] = true;
-    }
-
-    function handleSwipeMove(e, msgId, isOwn) {
-    let dx = e.detail.dx;
-    if (isOwn && dx > 0) dx = 0;
-    if (!isOwn && dx < 0) dx = 0;
-
-    swipeOffsets[msgId] = Math.min(Math.abs(dx), 80);
-}
-
-    function handleSwipeEnd(e, msgId) {
-        if (swipeOffsets[msgId] < 50) {
-            swipeOffsets[msgId] = 0;
-        } else {
-            swipeOffsets[msgId] = 60;
-        }
-    }
-
-    function handleSwipeRight(msg: ChatMessage) {
-        setReplyTo(msg);
-        setTimeout(() => {
-            swipeOffsets[msg.id] = 0;
-            replyIconVisible[msg.id] = false;
-        }, 300);
-    }
-
-    function isSameDay(date1: Date, date2: Date): boolean {
-        if (!date1 || !date2) return false;
-        return date1.getFullYear() === date2.getFullYear() &&
-               date1.getMonth() === date2.getMonth() &&
-               date1.getDate() === date2.getDate();
-    }
-
-    function formatDateSeparator(date: Date): string {
-        const today = new Date();
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-
-        if (isSameDay(date, today)) return 'Сегодня';
-        if (isSameDay(date, yesterday)) return 'Вчера';
-
-        // Для других дат возвращаем в формате "3 октября"
-        return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-    }
-
 </script>
 
 {#if $chat.isOpen}
@@ -205,63 +162,50 @@ onMount(() => {
                 <p class="status-text">СИГНАЛОВ НЕ ОБНАРУЖЕНО. НАЧНИТЕ ДИАЛОГ.</p>
             {:else}
                 {#each messages as msg, i (msg.id)}
-            {@const prevMsg = messages[i - 1]}
+                    {@const prevMsg = messages[i - 1]}
 
-            {#if i === 0 || !isSameDay(msg.createdAt, prevMsg.createdAt)}
-                <div class="date-separator">
-                    <span>{formatDateSeparator(msg.createdAt)}</span>
-                </div>
-            {/if}
-    <div
-        class="message-wrapper"
-        class:is-touch={isTouchDevice}
-        style="transform: translateX({($userStore.user?.uid === msg.author_uid ? -1 : 1) * (swipeOffsets[msg.id] || 0)}px);"
-        use:swipe={{ threshold: 50 }}
-        on:swipestart={() => isTouchDevice && handleSwipeStart(msg.id)}
-        on:swipemove={(e) => isTouchDevice && handleSwipeMove(e, msg.id, msg.author_uid === $userStore.user?.uid)}
-        on:swipeend={(e) => isTouchDevice && handleSwipeEnd(e, msg.id, msg.author_uid === $userStore.user?.uid)}
-        on:swiperight={() => isTouchDevice && msg.author_uid !== $userStore.user?.uid && handleSwipeRight(msg)}
-        on:swipeleft={() => isTouchDevice && msg.author_uid === $userStore.user?.uid && handleSwipeRight(msg)}
-    >
-        <div class="reply-swipe-icon" class:visible={replyIconVisible[msg.id]} class:right={msg.author_uid === $userStore.user?.uid}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd" /></svg>
-        </div>
-
-        <div class="message-card" class:own-message={msg.author_uid === $userStore.user?.uid} transition:fade>
-            <a href={`/profile/${msg.author_username}`} class="shrink-0" title={msg.author_username}>
-                <img
-                    src={msg.author_avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${msg.author_username}`}
-                    alt={msg.author_username}
-                    class="message-avatar"
-                />
-            </a>
-
-            <div class="message-content-wrapper">
-                <a href={`/profile/${msg.author_username}`} class="message-author">{msg.author_username}</a>
-
-                <div class="message-body">
-                    {#if msg.replyTo}
-                        <div class="reply-quote">
-                            <strong>{msg.replyTo.author_username}:</strong> {msg.replyTo.text}
+                    {#if i === 0 || !isSameDay(msg.createdAt, prevMsg.createdAt)}
+                        <div class="date-separator">
+                            <span>{formatDateSeparator(msg.createdAt)}</span>
                         </div>
                     {/if}
-                    <p class="message-text">{msg.text}</p>
-                </div>
 
-                <div class="message-meta">
-                    <span class="message-time">{msg.createdAt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                    {#if $userStore.user}
-                        <div class="message-actions">
-                            <button on:click={() => setReplyTo(msg)} class="action-btn">
-                                Ответить
-                            </button>
+                    <div class="message-card" class:own-message={msg.author_uid === $userStore.user?.uid} transition:fade>
+                        <a href={`/profile/${msg.author_username}`} class="shrink-0" title={msg.author_username}>
+                            <img
+                                src={msg.author_avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${msg.author_username}`}
+                                alt={msg.author_username}
+                                class="message-avatar"
+                            />
+                        </a>
+
+                        <div class="message-content-wrapper">
+                            <a href={`/profile/${msg.author_username}`} class="message-author">{msg.author_username}</a>
+
+                            <div class="message-body">
+                                {#if msg.replyTo}
+                                    <div class="reply-quote">
+                                        <strong>{msg.replyTo.author_username}:</strong> {msg.replyTo.text}
+                                    </div>
+                                {/if}
+                                <p class="message-text">{msg.text}</p>
+                                <span class="message-time-inline">
+                                    {msg.createdAt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </span>
+                            </div>
+
+                            <div class="message-meta">
+                                {#if $userStore.user}
+                                    <div class="message-actions">
+                                        <button on:click={() => setReplyTo(msg)} class="action-btn">
+                                            Ответить
+                                        </button>
+                                    </div>
+                                {/if}
+                            </div>
                         </div>
-                    {/if}
-                </div>
-            </div>
-        </div>
-    </div>
-{/each}
+                    </div>
+                {/each}
             {/if}
         </div>
 
@@ -289,14 +233,9 @@ onMount(() => {
                     class="send-button"
                 >
                     {#if isSending}
-                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                         <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     {:else}
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-                           <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg>
                     {/if}
                 </button>
             {:else}
@@ -506,5 +445,9 @@ onMount(() => {
 
     .messages-window::-webkit-scrollbar-thumb:hover {
         background-color: #ffff00;
+    }
+
+    .message-time-inline {
+    @apply absolute bottom-1 right-2 text-xs text-gray-500;
     }
 </style>
