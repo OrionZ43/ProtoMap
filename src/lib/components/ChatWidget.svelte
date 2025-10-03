@@ -450,4 +450,8 @@
     .message-time-inline {
     @apply absolute bottom-1 right-2 text-xs text-gray-500;
     }
+    .message-body {
+    @apply relative p-3 rounded-md;
+    padding-bottom: 1.75rem;
+    }
 </style>
