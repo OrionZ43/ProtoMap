@@ -67,4 +67,9 @@ class:no-scroll-container={isMapPage}>
         @apply fixed top-0 bottom-0 z-20 flex items-center justify-center;
         width: 75px;
     }
+    @media (max-width: 1023px) {
+        .side-panel {
+            display: none;
+        }
+    }
 </style>
