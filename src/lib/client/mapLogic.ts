@@ -68,7 +68,7 @@ function createCyberPopup(userData: MarkerUserData, city: string, isOwner: boole
 
             <div class="popup-actions"> <!-- НОВАЯ ОБЕРТКА ДЛЯ КНОПОК -->
                 <a href="${profileUrl}" target="_blank" class="popup-profile-btn">
-                    ПОЛНОЕ ДОСЬЕ <span>&rarr;</span>
+                    ОТКРЫТЬ ПРОФИЛЬ</span>
                 </a>
                 ${deleteButtonHTML} <!-- Вставляем кнопку удаления сюда -->
             </div>
