@@ -19,18 +19,18 @@
     const containerOpacity = tweened(0, { duration: 500, easing: quintOut });
 
     const profileReportReasons = [
-    { id: 'spam', label: 'Спам или реклама', text: 'Спам или реклама' },
-    { id: 'inappropriate_content', label: 'Неприемлемый контент', text: 'Неприемлемый контент (аватар, описание)' },
-    { id: 'impersonation', label: 'Выдача себя за другого', text: 'Выдача себя за другого человека' },
-    { id: 'harassment', label: 'Оскорбления/преследование', text: 'Оскорбления или преследование' },
-    { id: 'other', label: 'Другое', text: 'Другое' }
+        { id: 'spam', label: 'Спам или реклама', text: 'Спам или реклама' },
+        { id: 'inappropriate_content', label: 'Неприемлемый контент', text: 'Неприемлемый контент (аватар, описание)' },
+        { id: 'impersonation', label: 'Выдача себя за другого', text: 'Выдача себя за другого человека' },
+        { id: 'harassment', label: 'Оскорбления/преследование', text: 'Оскорбления или преследование' },
+        { id: 'other', label: 'Другое', text: 'Другое' }
     ];
 
     const commentReportReasons = [
-    { id: 'spam', label: 'Спам или реклама', text: 'Спам или реклама' },
-    { id: 'inappropriate_comment', label: 'Неприемлемый текст', text: 'Неприемлемый или оскорбительный текст' },
-    { id: 'harassment', label: 'Преследование/угрозы', text: 'Преследование или угрозы' },
-    { id: 'other', label: 'Другое', text: 'Другое' }
+        { id: 'spam', label: 'Спам или реклама', text: 'Спам или реклама' },
+        { id: 'inappropriate_comment', label: 'Неприемлемый текст', text: 'Неприемлемый или оскорбительный текст' },
+        { id: 'harassment', label: 'Преследование/угрозы', text: 'Преследование или угрозы' },
+        { id: 'other', label: 'Другое', text: 'Другое' }
     ];
 
     onMount(() => {
@@ -53,124 +53,66 @@
     $: hasSocials = Object.values(socials).some(link => !!link);
 
     async function handleReportProfile() {
-    if (!$userStore.user) {
-        modal.warning("Требуется авторизация", "Войдите, чтобы отправлять жалобы.");
-        return;
-    }
-
-    // Вызываем наше модальное окно с выбором причин
-    modal.report(
-        "Жалоба на профиль",
-        `Пожалуйста, выберите причину жалобы на пользователя <strong>${data.profile.username}</strong>.`,
-        profileReportReasons, // Убедись, что массив profileReportReasons определен выше
-        async (selectedReasonId) => {
-            // Этот коллбэк выполнится, когда пользователь нажмет "Отправить жалобу"
-
-            // Находим полный объект причины, чтобы получить ее текст для отправки
+        if (!$userStore.user) {
+            modal.warning("Требуется авторизация", "Войдите, чтобы отправлять жалобы.");
+            return;
+        }
+        modal.report("Жалоба на профиль", `Выберите причину жалобы на <strong>${data.profile.username}</strong>.`, profileReportReasons, async (selectedReasonId) => {
             const reasonObject = profileReportReasons.find(r => r.id === selectedReasonId);
-            if (!reasonObject) {
-                modal.error("Ошибка", "Выбранная причина не найдена.");
-                return;
-            }
-
+            if (!reasonObject) { modal.error("Ошибка", "Выбранная причина не найдена."); return; }
             try {
                 const functions = getFunctions();
                 const reportContentFunc = httpsCallable(functions, 'reportContent');
-
-                modal.info("Отправка...", "Отправляем вашу жалобу на рассмотрение...");
-
-                await reportContentFunc({
-                    type: 'profile',
-                    reportedContentId: data.profile.uid,
-                    profileOwnerUid: data.profile.uid, // Для профиля это одно и то же
-                    reason: reasonObject.text, // <-- Отправляем полный текст причины
-                    // Отправляем имена для удобства в Telegram-уведомлении
-                    reportedUsername: data.profile.username,
-                    reporterUsername: $userStore.user?.username || 'неизвестен'
-                });
-
-                modal.success("Жалоба отправлена", "Спасибо! Мы рассмотрим вашу жалобу в ближайшее время.");
-            } catch (error: any) {
-                console.error("Ошибка отправки жалобы на профиль:", error);
-                modal.error("Ошибка", error.message || "Не удалось отправить жалобу.");
-            }
-        }
-    );
-}
+                modal.info("Отправка...", "Отправляем вашу жалобу...");
+                await reportContentFunc({ type: 'profile', reportedContentId: data.profile.uid, profileOwnerUid: data.profile.uid, reason: reasonObject.text, reportedUsername: data.profile.username, reporterUsername: $userStore.user?.username || 'неизвестен'});
+                modal.success("Жалоба отправлена", "Спасибо! Мы рассмотрим вашу жалобу.");
+            } catch (error: any) { modal.error("Ошибка", error.message || "Не удалось отправить жалобу."); }
+        });
+    }
 
     async function handleReportComment(commentId: string, commentAuthorUsername: string) {
-    if (!$userStore.user) {
-        modal.warning("Требуется авторизация", "Войдите, чтобы отправлять жалобы.");
-        return;
-    }
-
-    // Вызываем модальное окно с выбором причин для комментария
-    modal.report(
-        "Жалоба на комментарий",
-        `Пожалуйста, выберите причину жалобы на комментарий от <strong>${commentAuthorUsername}</strong>.`,
-        commentReportReasons, // Убедись, что массив commentReportReasons определен выше
-        async (selectedReasonId) => {
-            // Находим полный объект причины, чтобы получить ее текст
+        if (!$userStore.user) {
+            modal.warning("Требуется авторизация", "Войдите, чтобы отправлять жалобы.");
+            return;
+        }
+        modal.report("Жалоба на комментарий", `Выберите причину жалобы на комментарий от <strong>${commentAuthorUsername}</strong>.`, commentReportReasons, async (selectedReasonId) => {
             const reasonObject = commentReportReasons.find(r => r.id === selectedReasonId);
-            if (!reasonObject) {
-                modal.error("Ошибка", "Выбранная причина не найдена.");
-                return;
-            }
-
+            if (!reasonObject) { modal.error("Ошибка", "Выбранная причина не найдена."); return; }
             try {
                 const functions = getFunctions();
                 const reportContentFunc = httpsCallable(functions, 'reportContent');
-
                 modal.info("Отправка...", "Отправляем вашу жалобу...");
-
-                await reportContentFunc({
-                    type: 'comment',
-                    reportedContentId: commentId,
-                    profileOwnerUid: data.profile.uid, // UID владельца профиля, где оставлен коммент
-                    reason: reasonObject.text, // <-- Отправляем полный текст причины
-                    // Отправляем имена для удобства в Telegram-уведомлении
-                    profileOwnerUsername: data.profile.username,
-                    reportedUsername: commentAuthorUsername,
-                    reporterUsername: $userStore.user?.username || 'неизвестен'
-                });
-
-                modal.success("Жалоба отправлена", "Спасибо! Администрация рассмотрит вашу жалобу.");
-            } catch (error: any) {
-                console.error("Ошибка отправки жалобы на комментарий:", error);
-                modal.error("Ошибка", error.message || "Не удалось отправить жалобу.");
-            }
-        }
-    );
-}
+                await reportContentFunc({ type: 'comment', reportedContentId: commentId, profileOwnerUid: data.profile.uid, reason: reasonObject.text, profileOwnerUsername: data.profile.username, reportedUsername: commentAuthorUsername, reporterUsername: $userStore.user?.username || 'неизвестен' });
+                modal.success("Жалоба отправлена", "Спасибо!");
+            } catch (error: any) { modal.error("Ошибка", error.message || "Не удалось отправить жалобу."); }
+        });
+    }
 
     function copyDiscordTag() {
         const tag = socials.discord;
         if (tag) {
             navigator.clipboard.writeText(tag).then(() => {
-                modal.success("Скопировано!", `Discord-тег <strong>${tag}</strong> скопирован в буфер обмена.`);
-            }, (err) => {
+                modal.success("Скопировано!", `Discord-тег <strong>${tag}</strong> скопирован.`);
+            }, () => {
                 modal.error("Ошибка", "Не удалось скопировать тег.");
-                console.error('Could not copy text: ', err);
             });
         }
     }
-    let commentText = '';
 
+    let commentText = '';
     $: if (form?.addCommentSuccess) {
         commentText = '';
     }
+
     function formatTimeAgo(date: Date): string {
+        if (!date || !(date instanceof Date)) return '';
         const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-        let interval = seconds / 31536000;
-        if (interval > 1) return Math.floor(interval) + " г. назад";
-        interval = seconds / 2592000;
-        if (interval > 1) return Math.floor(interval) + " мес. назад";
-        interval = seconds / 86400;
-        if (interval > 1) return Math.floor(interval) + " д. назад";
-        interval = seconds / 3600;
-        if (interval > 1) return Math.floor(interval) + " ч. назад";
-        interval = seconds / 60;
-        if (interval > 1) return Math.floor(interval) + " мин. назад";
+        if (seconds < 60) return "только что";
+        const intervals = { 'г.': 31536000, 'мес.': 2592000, 'д.': 86400, 'ч.': 3600, 'мин.': 60 };
+        for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+            const interval = seconds / secondsInUnit;
+            if (interval > 1) return `${Math.floor(interval)} ${unit} назад`;
+        }
         return "только что";
     }
 </script>
@@ -184,45 +126,40 @@
         <p class="glitch-text" data-text={statusText}>{statusText}</p>
     </div>
 {:else}
-    <div class="profile-container cyber-panel pb-12" style="opacity: {$containerOpacity}">
-        <div class="corner-bg top-left"></div>
-        <div class="corner-bg top-right"></div>
-        <div class="corner-bg bottom-left"></div>
-        <div class="corner-bg bottom-right"></div>
+    <div class="container mx-auto px-4">
+        <div class="profile-container cyber-panel pb-12" style="opacity: {$containerOpacity}">
 
-        <div class="top-bar">
-            <span class="pl-6">USER ID: {data.profile.uid.substring(0, 18).toUpperCase()}...</span>
-        </div>
+            {#if $userStore.user && !isOwner}
+                <button on:click={handleReportProfile} class="report-icon-btn" title="Пожаловаться на профиль">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                </button>
+            {/if}
 
-                <!-- Кнопки действий профиля -->
-        <div class="profile-actions">
-               <div class="absolute top-2 right-2 z-20">
-        {#if $userStore.user && !isOwner}
-            <button on:click={handleReportProfile} class="report-icon-btn" title="Пожаловаться на профиль">
-                <!-- SVG иконка -->
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                </svg>
-            </button>
-        {/if}
-    </div>
+            <div class="corner-bg top-left"></div>
+            <div class="corner-bg top-right"></div>
+            <div class="corner-bg bottom-left"></div>
+            <div class="corner-bg bottom-right"></div>
 
-        <div class="profile-header">
-            <img
-                src={data.profile.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${data.profile.username}`}
-                alt="Аватар {data.profile.username}"
-                class="profile-avatar"
-            />
-            <h2 class="profile-username font-display">{data.profile.username}</h2>
-        </div>
+            <div class="top-bar">
+                <span class="pl-6">USER ID: {data.profile.uid.substring(0, 18).toUpperCase()}...</span>
+            </div>
 
-        <div class="profile-content">
-            {#if hasSocials}
-                <div class="profile-section">
-                    <h4 class="font-display">// КАНАЛЫ СВЯЗИ</h4>
-                   <div class="text-center">
-                    <div class="social-links-grid">
-                        {#if socials.telegram}
+            <div class="profile-header">
+                <img
+                    src={data.profile.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${data.profile.username}`}
+                    alt="Аватар {data.profile.username}"
+                    class="profile-avatar"
+                />
+                <h2 class="profile-username font-display">{data.profile.username}</h2>
+            </div>
+
+            <div class="profile-content">
+                {#if hasSocials}
+                    <div class="profile-section">
+                        <h4 class="font-display">// КАНАЛЫ СВЯЗИ</h4>
+                        <div class="text-center">
+                            <div class="social-links-grid">
+                                {#if socials.telegram}
                             <a href={`https://t.me/${socials.telegram}`} target="_blank" rel="noopener noreferrer" class="social-link-btn" title="Telegram">
 <svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid">
 		<g fill-rule="evenodd">
@@ -496,116 +433,90 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
 </svg>
                             </a>
                         {/if}
+                            </div>
                         </div>
                     </div>
+                {/if}
+
+                {#if data.profile.about_me && data.profile.about_me.trim()}
+                    <div class="profile-section">
+                        <h4 class="font-display">// ИНФОРМАЦИЯ</h4>
+                        <p class="about-me-text">{data.profile.about_me}</p>
+                    </div>
+                {/if}
+            </div>
+
+            {#if isOwner}
+                <div class="profile-actions">
+                    <NeonButton href="/profile/edit">РЕДАКТИРОВАТЬ</NeonButton>
                 </div>
             {/if}
 
-            {#if data.profile.about_me && data.profile.about_me.trim()}
-                <div class="profile-section">
-                    <h4 class="font-display">// ИНФОРМАЦИЯ</h4>
-                    <p class="about-me-text">{data.profile.about_me}</p>
-                </div>
-            {/if}
-        </div> <!-- Конец .profile-content -->
-</div>
-
-        <!-- Бегущая строка -->
-        <div class="ticker-wrap">
+            <div class="ticker-wrap">
             <div class="ticker">
                 <span>СТАТУС: ОНЛАЙН // УРОВЕНЬ ЗАЩИЩЕННОСТИ: 5 // БИОМЕТРИЯ: СИНХРОНИЗИРОВАНА // ДАТА ПОСЛЕДНЕГО ОБНОВЛЕНИЯ: {new Date().toLocaleDateString()} // ДОБРО ПОЖАЛОВАТЬ, ПОЛЬЗОВАТЕЛЬ. </span>
                 <span>СТАТУС: ОНЛАЙН // УРОВЕНЬ ЗАЩИЩЕННОСТИ: 5 // БИОМЕТРИЯ: СИНХРОНИЗИРОВАНА // ДАТА ПОСЛЕДНЕГО ОБНОВЛЕНИЯ: {new Date().toLocaleDateString()} // ДОБРО ПОЖАЛОВАТЬ, ПОЛЬЗОВАТЕЛЬ. </span>
             </div>
         </div>
-
-    </div> <!-- <-- ЗАКРЫВАЮЩИЙ ТЕГ ДЛЯ .profile-container -->
-
-    <!-- СЕКЦИЯ КОММЕНТАРИЕВ (ОТДЕЛЬНЫЙ БЛОК) -->
-    <div class="comments-container max-w-4xl mx-auto mt-12">
-        <h4 class="font-display text-2xl text-cyber-yellow mb-6 text-center">// КОММЕНТАРИИ ({data.comments.length})</h4>
-
-        <!-- Форма добавления комментария (только для залогиненных) -->
-        {#if $userStore.user}
-            <form
-                method="POST"
-                action="?/addComment"
-                use:enhance
-                class="add-comment-form"
-            >
-                <img
-                    src={$userStore.user.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user.username}`}
-                    alt="Ваш аватар"
-                    class="comment-avatar"
-                />
-                <div class="flex-grow">
-                    <textarea
-                        name="commentText"
-                        bind:value={commentText}
-                        placeholder="Оставить комментарий..."
-                        class="input-field"
-                        rows="3"
-                    ></textarea>
-                    {#if form?.addCommentError}
-                        <p class="error-message-small">{form.addCommentError}</p>
-                    {/if}
-                </div>
-                <NeonButton type="submit" extraClass="self-start">Отправить</NeonButton>
-            </form>
-        {:else}
-            <p class="text-center text-gray-400 py-4">
-                <a href="/login" class="text-cyber-yellow hover:underline">Войдите</a>, чтобы оставлять комментарии.
-            </p>
-        {/if}
-
-        <!-- Список комментариев -->
-        <div class="comments-list">
-            {#if data.comments.length > 0}
-                {#each data.comments as comment (comment.id)}
-                    <div class="comment-card" transition:fade>
-                        <a href={`/profile/${comment.author_username}`} class="shrink-0">
-                            <img
-                                src={comment.author_avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${comment.author_username}`}
-                                alt="Аватар {comment.author_username}"
-                                class="comment-avatar"
-                            />
-                        </a>
-                        <div class="flex-grow">
-                            <div class="comment-header">
-                                <a href={`/profile/${comment.author_username}`} class="comment-author">{comment.author_username}</a>
-                                <span class="comment-time">{formatTimeAgo(comment.createdAt)}</span>
-                            </div>
-                            <p class="comment-text">{comment.text}</p>
-                            <div class="comment-actions">
-    {#if $userStore.user}
-        {#if comment.author_uid === $userStore.user.uid}
-            <!-- Пользователь - автор комментария: может только удалить -->
-            <form method="POST" action="?/deleteComment" use:enhance class="inline">
-                <input type="hidden" name="commentId" value={comment.id} />
-                <input type="hidden" name="profileUid" value={data.profile.uid} />
-                <button type="submit" class="action-btn">Удалить</button>
-            </form>
-        {:else}
-            <!-- Пользователь - НЕ автор комментария: может только пожаловаться -->
-            <button on:click={() => handleReportComment(comment.id, comment.author_username)} class="action-btn">
-                Пожаловаться
-            </button>
-        {/if}
-    {/if}
-</div>
-                        </div>
-                    </div>
-                {/each}
-            {:else}
-                <p class="text-center text-gray-500 py-8">Здесь пока нет комментариев. Станьте первым!</p>
-            {/if}
+            </div>
         </div>
-    </div>
 
+        <div class="comments-container max-w-4xl mx-auto mt-12">
+            <h4 class="font-display text-2xl text-cyber-yellow mb-6 text-center">// КОММЕНТАРИИ ({data.comments.length})</h4>
+
+            {#if $userStore.user}
+                <form method="POST" action="?/addComment" use:enhance class="add-comment-form">
+                    <img src={$userStore.user.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user.username}`} alt="Ваш аватар" class="comment-avatar" />
+                    <div class="flex-grow">
+                        <textarea name="commentText" bind:value={commentText} placeholder="Оставить комментарий..." class="input-field" rows="3"></textarea>
+                        {#if form?.addCommentError}<p class="error-message-small">{form.addCommentError}</p>{/if}
+                    </div>
+                    <NeonButton type="submit" extraClass="self-start">Отправить</NeonButton>
+                </form>
+            {:else}
+                <p class="text-center text-gray-400 py-4"><a href="/login" class="text-cyber-yellow hover:underline">Войдите</a>, чтобы оставлять комментарии.</p>
+            {/if}
+
+            <div class="comments-list">
+                {#if data.comments.length > 0}
+                    {#each data.comments as comment (comment.id)}
+                        <div class="comment-card" transition:fade>
+                            <a href={`/profile/${comment.author_username}`} class="shrink-0">
+                                <img src={comment.author_avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${comment.author_username}`} alt="Аватар {comment.author_username}" class="comment-avatar" />
+                            </a>
+                            <div class="flex-grow">
+                                <div class="comment-header">
+                                    <a href={`/profile/${comment.author_username}`} class="comment-author">{comment.author_username}</a>
+                                    <span class="comment-time">{formatTimeAgo(comment.createdAt)}</span>
+                                </div>
+                                <p class="comment-text">{comment.text}</p>
+                                <div class="comment-actions">
+                                    {#if $userStore.user}
+                                        {#if comment.author_uid === $userStore.user.uid}
+                                            <form method="POST" action="?/deleteComment" use:enhance class="inline">
+                                                <input type="hidden" name="commentId" value={comment.id} />
+                                                <input type="hidden" name="profileUid" value={data.profile.uid} />
+                                                <button type="submit" class="action-btn">Удалить</button>
+                                            </form>
+                                        {:else}
+                                            <button on:click={() => handleReportComment(comment.id, comment.author_username)} class="action-btn">
+                                                Пожаловаться
+                                            </button>
+                                        {/if}
+                                    {/if}
+                                </div>
+                            </div>
+                        </div>
+                    {/each}
+                {:else}
+                    <p class="text-center text-gray-500 py-8">Здесь пока нет комментариев. Станьте первым!</p>
+                {/if}
+            </div>
+        </div>
 {/if}
 
 
 <style>
-    /* KEYFRAMES (без изменений) */
     @keyframes typing { from { width: 0 } to { width: 100% } }
     @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: var(--cyber-yellow, #fcee0a); } }
     @keyframes glitch-anim { 0% { clip-path: inset(45% 0 50% 0); } 100% { clip-path: inset(5% 0 90% 0); } }
@@ -619,7 +530,6 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* НОВЫЕ KEYFRAMES: для анимации пульсации кнопки жалобы */
     @keyframes report-pulse {
       0%, 100% {
         transform: scale(1);
@@ -631,7 +541,6 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
       }
     }
 
-    /* ОСНОВНЫЕ СТИЛИ ПРОФИЛЯ */
     .glitch-text { @apply text-xl sm:text-2xl; position: relative; text-shadow: 0 0 5px var(--cyber-yellow); }
     .glitch-text::before, .glitch-text::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color, #16181d); overflow: hidden; }
     .glitch-text::before { left: 2px; text-shadow: -2px 0 #ff00c1; animation: glitch-anim 1.5s infinite linear alternate-reverse; }
@@ -642,7 +551,7 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
         background: #0a0a0a;
         border: 1px solid rgba(252, 238, 10, 0.3);
         clip-path: polygon(0 20px, 20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
-        overflow: hidden; /* Важно, чтобы corner-bg не вылезал */
+        overflow: hidden;
         background-image:
             linear-gradient(rgba(10, 10, 10, 0.96), rgba(10, 10, 10, 0.96)),
             linear-gradient(rgba(252, 238, 10, 0.1) 1px, transparent 1px),
@@ -659,7 +568,7 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
     .top-bar {
         @apply relative flex items-center justify-between p-2 text-xs uppercase tracking-widest text-cyber-yellow/70;
         border-bottom: 1px solid var(--border-color);
-        padding-right: 3.5rem; /* Отступ для кнопки жалобы */
+        padding-right: 3.5rem;
     }
     .bar-light { @apply absolute top-1/2 left-2 w-2 h-2 rounded-full bg-cyber-yellow; transform: translateY(-50%); box-shadow: 0 0 5px var(--cyber-yellow); }
 
@@ -686,8 +595,7 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
     .ticker-wrap { @apply absolute bottom-0 left-0 w-full p-2 overflow-hidden text-xs uppercase tracking-wider; background: var(--bg-color); border-top: 1px solid var(--border-color); }
     .ticker { @apply inline-block whitespace-nowrap; animation: ticker-scroll 30s linear infinite; }
 
-    /* --- СТИЛИ ДЛЯ КОММЕНТАРИЕВ --- */
-    .comments-container { /* Мы переименовали comments-section в comments-container */
+    .comments-container {
         @apply mt-12 max-w-4xl mx-auto;
     }
     .comments-container h4 {
@@ -710,12 +618,8 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
     .comment-text { @apply whitespace-pre-wrap text-gray-300; }
     .comment-actions { @apply mt-2; }
     .action-btn { @apply text-xs text-gray-500 hover:text-red-400 transition-colors; }
-
-    /* --- ФИНАЛЬНЫЙ СТИЛЬ ДЛЯ КНОПКИ ЖАЛОБЫ --- */
-    /* Используем класс, который у тебя в HTML: .report-icon-btn */
     .report-icon-btn {
         @apply absolute top-2 right-2 z-20 p-2 rounded-full;
-        /* Используем фоллбэк #ff003c, если --cyber-red не определен глобально */
         color: var(--cyber-red, #ff003c);
         animation: report-pulse 2.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
         transition: all 0.2s ease-in-out;

@@ -11,9 +11,11 @@
 
     export let data: PageData;
 
+    let status = data.profile.status || '';
     let aboutMe = data.profile.about_me || '';
     let socials = { ...data.profile.socials };
     let imagePreviewUrl: string | null = data.profile.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(data.profile.username.trim() || 'default')}`;
+
     let isLoadingAvatar = false;
     let isSavingProfile = false;
 
@@ -23,18 +25,19 @@
         opacity.set(1);
     });
 
+    // --- ЛОГИКА ЗАГРУЗКИ АВАТАРА ---
     async function handleAvatarChange(event: Event) {
         const input = event.target as HTMLInputElement;
         const file = input.files?.[0];
         if (!file) return;
 
-        if (file.size > 5 * 1024 * 1024) {
+        if (file.size > 5 * 1024 * 1024) { // 5 MB limit
             modal.error('Файл слишком большой', 'Пожалуйста, выберите файл размером до 5 МБ.');
             input.value = '';
             return;
         }
         if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
-            modal.error('Неверный тип файла', 'Пожалуйста, выберите изображение в формате JPG, PNG, GIF или WEBP.');
+            modal.error('Неверный тип файла', 'Выберите изображение (JPG, PNG, GIF, WEBP).');
             input.value = '';
             return;
         }
@@ -52,25 +55,20 @@
                 const imageBase64 = uploadReader.result as string;
                 const functions = getFunctions();
                 const uploadAvatarFunc = httpsCallable(functions, 'uploadAvatar');
-
-                modal.info('Загрузка...', 'Отправляем ваш новый аватар. Пожалуйста, подождите.');
-
+                modal.info('Загрузка...', 'Отправляем ваш новый аватар...');
                 const result = await uploadAvatarFunc({ imageBase64 });
                 const newAvatarUrl = (result.data as { avatarUrl: string }).avatarUrl;
-
                 imagePreviewUrl = newAvatarUrl;
                 modal.success("Успешно!", "Ваш новый аватар был сохранен.");
-
                 userStore.update(store => {
                     if (store.user) {
                         return { ...store, user: { ...store.user, avatar_url: newAvatarUrl } };
                     }
                     return store;
                 });
-
             } catch (error: any) {
-                modal.error("Ошибка загрузки", error.message || 'Не удалось обновить аватар. Попробуйте снова.');
-                imagePreviewUrl = data.profile.avatar_url;
+                modal.error("Ошибка загрузки", error.message || 'Не удалось обновить аватар.');
+                imagePreviewUrl = data.profile.avatar_url; // Возвращаем старый при ошибке
             } finally {
                 isLoadingAvatar = false;
                 input.value = '';
@@ -82,23 +80,33 @@
         }
     }
 
+    // --- ЛОГИКА СОХРАНЕНИЯ ПРОФИЛЯ ---
     async function saveProfileData() {
         isSavingProfile = true;
         try {
             const functions = getFunctions();
             const updateProfileFunc = httpsCallable(functions, 'updateProfileData');
-
             const profileDataToSend = {
+                status: status, // <-- ДОБАВЛЕНО ПОЛЕ СТАТУСА
                 about_me: aboutMe,
                 socials: socials
             };
-
             const result = await updateProfileFunc(profileDataToSend);
             const message = (result.data as { message: string }).message;
 
             modal.success("Успешно!", message || "Данные профиля сохранены.");
 
-            await goto(`/profile/${data.profile.username}`);
+            // Обновляем status в userStore
+            userStore.update(store => {
+                if (store.user) {
+                    store.user.status = status;
+                }
+                return store;
+            });
+
+            setTimeout(() => {
+                goto(`/profile/${data.profile.username}`);
+            }, 1500);
 
         } catch (error: any) {
             modal.error("Ошибка сохранения", error.message || "Не удалось сохранить данные.");
@@ -128,13 +136,20 @@
             {/if}
         </NeonButton>
         <input type="file" id="avatar-file-input" class="hidden-file-input" on:change={handleAvatarChange} accept="image/jpeg, image/png, image/gif, image/webp" />
-        <p class="form-help-text text-center">Изменения для аватара сохраняются немедленно.</p>
+        <p class="form-help-text text-center">Аватар сохраняется сразу после загрузки.</p>
     </div>
 
     <hr class="separator"/>
 
     <div class="space-y-8">
         <h3 class="form-label font-display text-lg">// ИНФОРМАЦИЯ И ССЫЛКИ</h3>
+
+        <!-- НОВОЕ ПОЛЕ: СТАТУС -->
+        <div class="form-group">
+            <label for="status" class="form-label font-display">СТАТУС</label>
+            <input bind:value={status} type="text" id="status" class="input-field" placeholder="Чем вы сейчас заняты?" maxlength="100" disabled={isLoadingAvatar || isSavingProfile} />
+            <p class="form-help-text">Короткое сообщение (макс. 100 симв.), которое будет видно в вашем профиле и на карте.</p>
+        </div>
 
         <div class="form-group">
             <label for="about_me" class="form-label font-display">ОБО МНЕ</label>

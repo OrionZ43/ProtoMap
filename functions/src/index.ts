@@ -15,7 +15,6 @@ const ALLOWED_ORIGINS = ["http://localhost:5173",
 
     const handleCors = (request: any, response: any): boolean => {
     const origin = request.headers.origin as string;
-
     console.log(`[CORS] Request received from origin: ${origin}`);
     console.log(`[CORS] Request method: ${request.method}`);
     console.log(`[CORS] Allowed origins: ${ALLOWED_ORIGINS.join(', ')}`);
@@ -153,7 +152,7 @@ async function getDistrictCenterCoords(lat: number, lng: number): Promise<[strin
 }
 
 export const addOrUpdateLocation = onRequest(
-  { cors: false }, // <-- ИЗМЕНЕНИЕ
+  { cors: false },
   async (request, response) => {
     if (handleCors(request, response)) { return; }
     const idToken = request.headers.authorization?.split('Bearer ')[1];
@@ -271,13 +270,17 @@ export const getLocations = onRequest(
         const userData = usersMap.get(locationData.user_id);
 
         return {
+            uid: userData.uid,
           lat: locationData.latitude,
           lng: locationData.longitude,
           city: locationData.city,
-          user: userData ? userData.username : "неизвестно",
-          avatar_url: userData ? (userData.avatar_url || null) : null,
+          user: userData ? {
+            username: userData.username || "неизвестно",
+            avatar_url: userData.avatar_url || null,
+            status: userData.status || null,
+          } : null
         };
-      }).filter(item => item.user !== "неизвестно");
+      }).filter(item => item.user && item.user.username !== "неизвестно");
 
       response.status(200).json({ data: results });
 
@@ -322,13 +325,14 @@ export const deleteLocation = onCall(
 );
 
 interface ProfileData {
-    about_me: string;
-    socials: {
-        telegram: string;
-        discord: string;
-        vk: string;
-        twitter: string;
-        website: string;
+    about_me?: string;
+    status?: string;
+    socials?: {
+        telegram?: string;
+        discord?: string;
+        vk?: string;
+        twitter?: string;
+        website?: string;
     }
 }
 
@@ -347,6 +351,10 @@ export const updateProfileData = onCall<ProfileData>(
         }
 
         const fieldsToUpdate: { [key: string]: any } = {};
+
+        if (typeof data.status === 'string') {
+            fieldsToUpdate.status = data.status.trim().substring(0, 100);
+        }
 
         if (typeof data.about_me === 'string') {
             fieldsToUpdate.about_me = data.about_me.trim();
@@ -392,6 +400,7 @@ export const updateProfileData = onCall<ProfileData>(
         }
     }
 );
+
 interface UploadAvatarData {
     imageBase64: string;
 }
@@ -545,7 +554,7 @@ export const reportContent = onCall<ReportData>(
 
             if (type === 'profile') {
                 message += `*На профиль:* ${reportedUserLink}`;
-            } else { // type === 'comment'
+            } else {
                 message += `*На комментарий пользователя* ${reportedUserLink} *в профиле* ${profileOwnerLink}`;
                 if (newReport.reportedContentText) {
                     message += `

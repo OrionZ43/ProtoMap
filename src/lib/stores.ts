@@ -12,6 +12,7 @@ export type UserProfile = {
     avatar_url: string;
     social_link: string;
     about_me: string;
+    status?: string;
 };
 
 type AuthStore = {
@@ -41,6 +42,7 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
                 avatar_url: data.avatar_url || '',
                 social_link: data.social_link || '',
                 about_me: data.about_me || '',
+                status: data.status || '',
             };
         }
         token = await userAuth.getIdToken();

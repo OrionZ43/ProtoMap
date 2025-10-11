@@ -6,6 +6,87 @@ import { get } from 'svelte/store';
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { modal } from '$lib/stores/modalStore';
 
+type MarkerUserData = {
+    username: string;
+    avatar_url: string;
+    status?: string | null;
+};
+
+function simpleHash(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash |= 0;
+    }
+    return ('00000000' + (hash >>> 0).toString(16).toUpperCase()).slice(-8);
+}
+
+function createCyberPopup(userData: MarkerUserData, city: string, isOwner: boolean): string {
+    const profileUrl = `/profile/${encodeURIComponent(userData.username.trim())}`;
+    const defaultAvatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(userData.username.trim())}`;
+    const hexClipId = `hex-clip-${Math.random().toString(36).substring(2, 9)}`;
+    const hexSvg = `<svg width="0" height="0"><defs><clipPath id="${hexClipId}" clipPathUnits="objectBoundingBox"><polygon points="0.5 0, 1 0.25, 1 0.75, 0.5 1, 0 0.75, 0 0.25" /></clipPath></defs></svg>`;
+
+    const avatarImg = `<div class="popup-avatar-wrapper">${hexSvg}<img src="${userData.avatar_url || defaultAvatar}" alt="Аватар" class="popup-avatar" style="clip-path: url(#${hexClipId});" onerror="this.onerror=null; this.src='${defaultAvatar}';"/></div>`;
+
+    const statusHTML = userData.status
+        ? `<p class="popup-status"><span>&gt;</span> "${escapeHtml(userData.status)}"</p>`
+        : '<p class="popup-status-empty">//: СИГНАЛ СТАТУСА ОТСУТСТВУЕТ</p>';
+
+    const signalStrength = 90 + Math.floor(Math.random() * 10); // Сигнал 90-99%
+    const zoneStatus = ["СТАБИЛЬНО", "СИНХРОНИЗАЦИЯ", "НОРМА"][Math.floor(Math.random() * 3)];
+    const deleteButtonHTML = isOwner
+        ? `<button class="popup-delete-btn" data-username="${escapeHtml(userData.username)}">Удалить метку</button>`
+        : '';
+    const html = `
+        <div class="hud-popup">
+            <div class="popup-header"> <!-- НОВЫЙ КЛАСС -->
+                ${avatarImg}
+                <div class="popup-user-info">
+                    <a href="${profileUrl}" target="_blank" class="popup-username glitch-text" data-text="${escapeHtml(userData.username)}">${escapeHtml(userData.username)}</a>
+                </div>
+            </div>
+
+            <div class="popup-content">
+                ${statusHTML}
+                <div class="location-data">
+                    <div class="data-item">
+                        <span class="data-label">//:ЛОКАЦИЯ</span>
+                        <span class="data-value">${escapeHtml(city)}</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">//:СИГНАЛ</span>
+                        <span class="data-value">${signalStrength}%</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">//:СТАТУС ЗОНЫ</span>
+                        <span class="data-value text-green-400">${zoneStatus}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="popup-actions"> <!-- НОВАЯ ОБЕРТКА ДЛЯ КНОПОК -->
+                <a href="${profileUrl}" target="_blank" class="popup-profile-btn">
+                    ПОЛНОЕ ДОСЬЕ <span>&rarr;</span>
+                </a>
+                ${deleteButtonHTML} <!-- Вставляем кнопку удаления сюда -->
+            </div>
+
+        </div>
+    `;
+    return html;
+}
+
+function escapeHtml(unsafe: string): string {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+
 function createUserAvatarIcon(avatarUrl: string | null | undefined, username: string): L.DivIcon {
     const defaultAvatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(username.trim())}`;
     const imageUrl = avatarUrl || defaultAvatar;
@@ -161,19 +242,21 @@ const markers = L.markerClusterGroup({
         return popupHTML;
     }
 
-    function addOrUpdateMarker(username: string, lat: number, lng: number, city: string, avatarUrl?: string | null): void {
-        const popupContent = createPopupContent(username, city);
-        const customUserIcon = createUserAvatarIcon(avatarUrl, username);
-        const trimmedUsernameForMapKey = username.trim();
+    function addOrUpdateMarker(userData: MarkerUserData, lat: number, lng: number, city: string): void {
+        const currentUser = get(userStore).user;
+        const isOwner = currentUser?.username?.trim() === userData.username.trim();
+        const popupContent = createCyberPopup(userData, city, isOwner);
+        const customUserIcon = createUserAvatarIcon(userData.avatar_url, userData.username);
+        const usernameKey = userData.username.trim();
 
-        if (userMarkers[trimmedUsernameForMapKey]) {
-            userMarkers[trimmedUsernameForMapKey].setLatLng([lat, lng])
+        if (userMarkers[usernameKey]) {
+            userMarkers[usernameKey].setLatLng([lat, lng])
                                  .setIcon(customUserIcon)
                                  .setPopupContent(popupContent);
         } else {
             const newMarker = L.marker([lat, lng], { icon: customUserIcon }).bindPopup(popupContent);
             markers.addLayer(newMarker);
-            userMarkers[trimmedUsernameForMapKey] = newMarker;
+            userMarkers[usernameKey] = newMarker;
         }
     }
 
@@ -183,15 +266,15 @@ const markers = L.markerClusterGroup({
             const functions = getFunctions();
             const getLocationsFunc = httpsCallable(functions, 'getLocations');
             const result = await getLocationsFunc();
-            const locations = result.data as Array<{user: string, lat: number, lng: number, city: string, avatar_url?: string | null}>;
+            const locations = result.data as Array<{user: MarkerUserData, lat: number, lng: number}>;
 
             console.log(`Получено ${locations.length} меток с сервера.`);
             markers.clearLayers();
             Object.keys(userMarkers).forEach(key => delete userMarkers[key]);
 
             locations.forEach((loc) => {
-                if (loc.user && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
-                    addOrUpdateMarker(loc.user, loc.lat, loc.lng, loc.city, loc.avatar_url);
+                if (loc.user && loc.user.username && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
+                    addOrUpdateMarker(loc.user, loc.lat, loc.lng, loc.city);
                 }
             });
             console.log("Все метки из базы данных добавлены на карту.");
@@ -217,13 +300,19 @@ const markers = L.markerClusterGroup({
 
             const data = result.data as any;
             if (data.status === 'success') {
-                addOrUpdateMarker(currentUser.username, data.placeLat, data.placeLng, data.foundCity, currentUser.avatar_url);
+                const currentUserData: MarkerUserData = {
+                    username: currentUser.username,
+                    avatar_url: currentUser.avatar_url,
+                    status: currentUser.status,
+                };
 
+                addOrUpdateMarker(currentUserData, data.placeLat, data.placeLng, data.foundCity);
                 const trimmedUsernameKey = currentUser.username.trim();
                 if (userMarkers[trimmedUsernameKey]) {
                     userMarkers[trimmedUsernameKey].openPopup();
                 }
                 modal.success("Готово!", data.message || "Ваша метка успешно обновлена!");
+
             } else {
                 throw new Error(data.message || 'Ошибка ответа сервера');
             }
@@ -288,7 +377,7 @@ const markers = L.markerClusterGroup({
 
             markers.on('popupopen', (e: L.LeafletEvent & { popup: L.Popup }) => {
                 const popupNode = e.popup._contentNode as HTMLElement;
-                const deleteButton = popupNode.querySelector('.delete-marker-btn') as HTMLButtonElement | null;
+                const deleteButton = popupNode.querySelector('.popup-delete-btn');
 
                 if (deleteButton && currentUser && currentUser.username) {
                     deleteButton.addEventListener('click', function(this: HTMLButtonElement, ev: MouseEvent) {
