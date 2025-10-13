@@ -2,7 +2,6 @@ import L from 'leaflet';
 import 'leaflet.markercluster';
 import { auth } from '$lib/firebase';
 import { userStore, type UserProfile } from '$lib/stores';
-import { get } from 'svelte/store';
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { modal } from '$lib/stores/modalStore';
 
@@ -12,146 +11,79 @@ type MarkerUserData = {
     status?: string | null;
 };
 
-function simpleHash(str: string): string {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash |= 0;
-    }
-    return ('00000000' + (hash >>> 0).toString(16).toUpperCase()).slice(-8);
-}
-
 function createCyberPopup(userData: MarkerUserData, city: string, isOwner: boolean): string {
     const profileUrl = `/profile/${encodeURIComponent(userData.username.trim())}`;
     const defaultAvatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(userData.username.trim())}`;
     const hexClipId = `hex-clip-${Math.random().toString(36).substring(2, 9)}`;
     const hexSvg = `<svg width="0" height="0"><defs><clipPath id="${hexClipId}" clipPathUnits="objectBoundingBox"><polygon points="0.5 0, 1 0.25, 1 0.75, 0.5 1, 0 0.75, 0 0.25" /></clipPath></defs></svg>`;
-
     const avatarImg = `<div class="popup-avatar-wrapper">${hexSvg}<img src="${userData.avatar_url || defaultAvatar}" alt="Аватар" class="popup-avatar" style="clip-path: url(#${hexClipId});" onerror="this.onerror=null; this.src='${defaultAvatar}';"/></div>`;
-
-    const statusHTML = userData.status
-        ? `<p class="popup-status"><span>&gt;</span> "${escapeHtml(userData.status)}"</p>`
-        : '<p class="popup-status-empty">//: СИГНАЛ СТАТУСА ОТСУТСТВУЕТ</p>';
-
-    const signalStrength = 90 + Math.floor(Math.random() * 10); // Сигнал 90-99%
+    const statusHTML = userData.status ? `<p class="popup-status"><span>&gt;</span> "${escapeHtml(userData.status)}"</p>` : '<p class="popup-status-empty">//: СИГНАЛ СТАТУСА ОТСУТСТВУЕТ</p>';
+    const signalStrength = 90 + Math.floor(Math.random() * 10);
     const zoneStatus = ["СТАБИЛЬНО", "СИНХРОНИЗАЦИЯ", "НОРМА"][Math.floor(Math.random() * 3)];
-    const deleteButtonHTML = isOwner
-        ? `<button class="popup-delete-btn" data-username="${escapeHtml(userData.username)}">Удалить метку</button>`
-        : '';
+    const deleteButtonHTML = isOwner ? `<button class="popup-delete-btn" data-username="${escapeHtml(userData.username)}">Удалить метку</button>` : '';
     const html = `
         <div class="hud-popup">
-            <div class="popup-header"> <!-- НОВЫЙ КЛАСС -->
+            <div class="popup-header">
                 ${avatarImg}
                 <div class="popup-user-info">
                     <a href="${profileUrl}" target="_blank" class="popup-username glitch-text" data-text="${escapeHtml(userData.username)}">${escapeHtml(userData.username)}</a>
                 </div>
             </div>
-
             <div class="popup-content">
                 ${statusHTML}
                 <div class="location-data">
-                    <div class="data-item">
-                        <span class="data-label">//:ЛОКАЦИЯ</span>
-                        <span class="data-value">${escapeHtml(city)}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">//:СИГНАЛ</span>
-                        <span class="data-value">${signalStrength}%</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">//:СТАТУС ЗОНЫ</span>
-                        <span class="data-value text-green-400">${zoneStatus}</span>
-                    </div>
+                    <div class="data-item"><span class="data-label">//:ЛОКАЦИЯ</span><span class="data-value">${escapeHtml(city)}</span></div>
+                    <div class="data-item"><span class="data-label">//:СИГНАЛ</span><span class="data-value">${signalStrength}%</span></div>
+                    <div class="data-item"><span class="data-label">//:СТАТУС ЗОНЫ</span><span class="data-value text-green-400">${zoneStatus}</span></div>
                 </div>
             </div>
-
-            <div class="popup-actions"> <!-- НОВАЯ ОБЕРТКА ДЛЯ КНОПОК -->
-                <a href="${profileUrl}" target="_blank" class="popup-profile-btn">
-                    ОТКРЫТЬ ПРОФИЛЬ</span>
-                </a>
-                ${deleteButtonHTML} <!-- Вставляем кнопку удаления сюда -->
+            <div class="popup-actions">
+                <a href="${profileUrl}" target="_blank" class="popup-profile-btn">ОТКРЫТЬ ПРОФИЛЬ <span>&rarr;</span></a>
+                ${deleteButtonHTML}
             </div>
-
         </div>
     `;
     return html;
 }
 
 function escapeHtml(unsafe: string): string {
-    return unsafe
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
+    return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
 function createUserAvatarIcon(avatarUrl: string | null | undefined, username: string): L.DivIcon {
     const defaultAvatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(username.trim())}`;
     const imageUrl = avatarUrl || defaultAvatar;
     const iconSize = 38;
-    const iconHtml = `
-        <div class="user-avatar-marker" style="width: ${iconSize}px; height: ${iconSize}px;">
-            <img src="${imageUrl}" alt="Аватар ${username}"
-                 style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid var(--cyber-yellow, #fcee0a); background-color: #333;"
-                 onerror="this.onerror=null; this.src='${defaultAvatar}';" />
-        </div>
-    `;
-    return L.divIcon({
-        html: iconHtml,
-        className: 'custom-leaflet-div-icon',
-        iconSize: [iconSize, iconSize],
-        iconAnchor: [iconSize / 2, iconSize],
-        popupAnchor: [0, -(iconSize + 2)]
-    });
+    const iconHtml = `<div class="user-avatar-marker" style="width: ${iconSize}px; height: ${iconSize}px;"><img src="${imageUrl}" alt="Аватар ${username}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid var(--cyber-yellow, #fcee0a); background-color: #333;" onerror="this.onerror=null; this.src='${defaultAvatar}';"/></div>`;
+    return L.divIcon({ html: iconHtml, className: 'custom-leaflet-div-icon', iconSize: [iconSize, iconSize], iconAnchor: [iconSize / 2, iconSize], popupAnchor: [0, -42] });
 }
 
 export function initMap(containerId: string) {
     console.log("Инициализация карты в контейнере:", containerId);
 
-    const southWest = L.latLng(-90, -180);
-    const northEast = L.latLng(90, 180);
-    const bounds = L.latLngBounds(southWest, northEast);
+    let currentUserProfile: UserProfile | null = null;
 
     const map = L.map(containerId, {
         center: [54.5, 30.0],
         zoom: 4,
-        maxBounds: bounds,
-        maxBoundsViscosity: 1.0,
-        minZoom: 2
+        minZoom: 2,
     });
 
     if (map.attributionControl) {
-        map.attributionControl.setPrefix('<a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a>');
+        map.attributionControl.setPrefix(false);
     }
 
-     const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    });
-
-    const cartoDarkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20
-    });
-
-
     const baseLayers = {
-        "Стандартная": osmStandard,
-        "Тёмная": cartoDarkMatter
+        "Стандартная": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OSM' }),
+        "Тёмная": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '© CARTO' })
     };
-
-    const defaultLayerName = "Стандартная";
     const storageKey = 'protomap-selected-theme';
-    
-    let savedLayerName = defaultLayerName;
+    let savedLayerName = "Стандартная";
+
     try {
         const storedName = localStorage.getItem(storageKey);
         if (storedName && baseLayers[storedName]) {
             savedLayerName = storedName;
-            console.log(`Загружена сохраненная тема карты: ${savedLayerName}`);
         }
     } catch (e) {
         console.error("Не удалось получить доступ к localStorage", e);
@@ -159,10 +91,8 @@ export function initMap(containerId: string) {
 
     baseLayers[savedLayerName].addTo(map);
 
-    const layersControl = L.control.layers(baseLayers);
-    layersControl.addTo(map);
+    const layersControl = L.control.layers(baseLayers).addTo(map);
     map.on('baselayerchange', function (e: L.LayersControlEvent) {
-        console.log(`Тема карты изменена на: ${e.name}`);
         try {
             localStorage.setItem(storageKey, e.name);
         } catch (error) {
@@ -170,89 +100,43 @@ export function initMap(containerId: string) {
         }
     });
 
-const controlContainer = layersControl.getContainer();
-if (controlContainer) {
-    controlContainer.classList.add('cyber-layers-control');
-    setTimeout(() => {
-        const inputs = controlContainer.querySelectorAll('.leaflet-control-layers-base input[type="radio"]');
-        inputs.forEach(input => {
-            const nextElement = input.nextElementSibling;
-            if (nextElement && nextElement.tagName === 'SPAN') {
-                nextElement.classList.add('custom-radio-span');
-            }
-        });
-    }, 0);
-}
+    const controlContainer = layersControl.getContainer();
+    if (controlContainer) {
+        controlContainer.classList.add('cyber-layers-control');
+        setTimeout(() => {
+            const inputs = controlContainer.querySelectorAll('.leaflet-control-layers-base input[type="radio"]');
+            inputs.forEach(input => {
+                const nextElement = input.nextElementSibling;
+                if (nextElement && nextElement.tagName === 'SPAN') {
+                    nextElement.classList.add('custom-radio-span');
+                }
+            });
+        }, 0);
+    }
 
     const createClusterIcon = function (cluster: L.MarkerCluster) {
-    const count = cluster.getChildCount();
-    let sizeClass = 'small';
-    let powerLevel = Math.min(count, 100);
+        const count = cluster.getChildCount();
+        let sizeClass = 'small';
+        if (count >= 10) sizeClass = 'medium';
+        if (count >= 50) sizeClass = 'large';
+        const chargeAngle = Math.round((Math.min(count, 100) / 100) * 360);
+        const html = `<div class="reactor-cluster ${sizeClass}"><div class="reactor-glow"></div><div class="reactor-ring outer"></div><div class="reactor-ring middle"></div><div class="reactor-charge-indicator" style="--charge-angle: ${chargeAngle}deg;"></div><div class="reactor-core"><span class="count">${count}</span></div><div class="particle p1"></div><div class="particle p2"></div><div class="particle p3"></div><div class="particle p4"></div></div>`;
+        return L.divIcon({ html: html, className: 'custom-cluster-icon-wrapper', iconSize: L.point(80, 80, true) });
+    };
 
-    if (count >= 10) sizeClass = 'medium';
-    if (count >= 50) sizeClass = 'large';
-
-    const chargeAngle = Math.round((powerLevel / 100) * 360);
-
-    const html = `
-        <div class="reactor-cluster ${sizeClass}">
-            <div class="reactor-glow"></div>
-            <div class="reactor-ring outer"></div>
-            <div class="reactor-ring middle"></div>
-
-            <!-- Индикатор заряда/мощности -->
-            <div class="reactor-charge-indicator" style="--charge-angle: ${chargeAngle}deg;"></div>
-
-            <div class="reactor-core">
-                <span class="count">${count}</span>
-            </div>
-
-            <!-- Частицы, которые появляются при наведении -->
-            <div class="particle p1"></div>
-            <div class="particle p2"></div>
-            <div class="particle p3"></div>
-            <div class="particle p4"></div>
-        </div>
-    `;
-
-    return L.divIcon({
-        html: html,
-        className: 'custom-cluster-icon-wrapper',
-        iconSize: L.point(80, 80, true)
-    });
-}
-
-const markers = L.markerClusterGroup({
-    iconCreateFunction: createClusterIcon
-});
-
+    const markers = L.markerClusterGroup({ iconCreateFunction: createClusterIcon });
     map.addLayer(markers);
 
     const userMarkers: { [key: string]: L.Marker } = {};
 
-    function createPopupContent(username: string, city: string): string {
-        const trimmedUsername = username.trim();
-        const profileUrl = `/profile/${encodeURIComponent(trimmedUsername)}`;
-        let popupHTML = `Протоген <a href="${profileUrl}" target="_blank">${trimmedUsername}</a> в: ${city || 'Неизвестно'}`;
-
-        const currentUser = get(userStore).user;
-        if (currentUser && trimmedUsername === (currentUser.username ? currentUser.username.trim() : '')) {
-            popupHTML += `<br><button class="delete-marker-btn" data-username="${trimmedUsername}">Удалить мою метку</button>`;
-        }
-        return popupHTML;
-    }
-
     function addOrUpdateMarker(userData: MarkerUserData, lat: number, lng: number, city: string): void {
-        const currentUser = get(userStore).user;
-        const isOwner = currentUser?.username?.trim() === userData.username.trim();
+        const isOwner = currentUserProfile?.username?.trim() === userData.username.trim();
         const popupContent = createCyberPopup(userData, city, isOwner);
         const customUserIcon = createUserAvatarIcon(userData.avatar_url, userData.username);
         const usernameKey = userData.username.trim();
 
         if (userMarkers[usernameKey]) {
-            userMarkers[usernameKey].setLatLng([lat, lng])
-                                 .setIcon(customUserIcon)
-                                 .setPopupContent(popupContent);
+            userMarkers[usernameKey].setLatLng([lat, lng]).setIcon(customUserIcon).setPopupContent(popupContent);
         } else {
             const newMarker = L.marker([lat, lng], { icon: customUserIcon }).bindPopup(popupContent);
             markers.addLayer(newMarker);
@@ -261,14 +145,12 @@ const markers = L.markerClusterGroup({
     }
 
     async function loadAllMarkers() {
-        console.log("Вызов Cloud Function 'getLocations' для загрузки меток...");
         try {
             const functions = getFunctions();
             const getLocationsFunc = httpsCallable(functions, 'getLocations');
             const result = await getLocationsFunc();
-            const locations = result.data as Array<{user: MarkerUserData, lat: number, lng: number}>;
+            const locations = result.data as Array<{user: MarkerUserData, lat: number, lng: number, city: string}>;
 
-            console.log(`Получено ${locations.length} меток с сервера.`);
             markers.clearLayers();
             Object.keys(userMarkers).forEach(key => delete userMarkers[key]);
 
@@ -279,47 +161,39 @@ const markers = L.markerClusterGroup({
             });
             console.log("Все метки из базы данных добавлены на карту.");
         } catch (error) {
-            console.error("Ошибка вызова Cloud Function 'getLocations':", error);
+            console.error("Ошибка при обработке меток:", error);
         }
     }
 
     async function sendLocationToServer(lat: number, lng: number, currentUser: UserProfile) {
-        console.log(`Отправка координат (${lat}, ${lng}) на сервер...`);
         const geoButton = document.querySelector('.geolocation-button');
         if (geoButton) L.DomUtil.addClass(geoButton, 'loading');
-
         try {
-            const idToken = await auth.currentUser?.getIdToken();
+            const idToken = await auth.currentUser?.getIdToken(true);
             if (!idToken) throw new Error("Не удалось получить токен пользователя.");
 
             const functions = getFunctions();
             const addOrUpdateLocationFunc = httpsCallable(functions, 'addOrUpdateLocation');
-            const result = await addOrUpdateLocationFunc({ lat, lng }, {
-                headers: { 'Authorization': `Bearer ${idToken}` }
-            });
+            const result = await addOrUpdateLocationFunc({ lat, lng });
 
             const data = result.data as any;
             if (data.status === 'success') {
                 const currentUserData: MarkerUserData = {
                     username: currentUser.username,
                     avatar_url: currentUser.avatar_url,
-                    status: currentUser.status,
+                    status: currentUser.status
                 };
-
                 addOrUpdateMarker(currentUserData, data.placeLat, data.placeLng, data.foundCity);
                 const trimmedUsernameKey = currentUser.username.trim();
                 if (userMarkers[trimmedUsernameKey]) {
                     userMarkers[trimmedUsernameKey].openPopup();
                 }
                 modal.success("Готово!", data.message || "Ваша метка успешно обновлена!");
-
             } else {
                 throw new Error(data.message || 'Ошибка ответа сервера');
             }
         } catch (error: any) {
-            console.error("Ошибка при добавлении/обновлении метки:", error);
-            const errorMessage = error?.message || 'Произошла неизвестная ошибка.';
-            modal.error("Ошибка сохранения", `Не удалось сохранить метку. <br><small class="text-gray-400">Детали: ${errorMessage}</small>`);
+            modal.error("Ошибка сохранения", `Не удалось сохранить метку: ${error.message}`);
         } finally {
             if (geoButton) L.DomUtil.removeClass(geoButton, 'loading');
         }
@@ -331,38 +205,29 @@ const markers = L.markerClusterGroup({
 
         if (currentUser) {
             map.on('click', (e: L.LeafletMouseEvent) => {
-                modal.confirm(
-                    "Подтверждение",
-                    "Добавить или переместить вашу метку в эту точку?",
-                    () => {
-                        sendLocationToServer(e.latlng.lat, e.latlng.lng, currentUser);
-                    }
-                );
+                modal.confirm("Подтверждение", "Добавить/переместить вашу метку в эту точку?", () => {
+                    sendLocationToServer(e.latlng.lat, e.latlng.lng, currentUser);
+                });
             });
 
-            if (!(map as any).geocontrol || !map.hasControl((map as any).geocontrol)) {
+            if (!(map as any).geocontrol) {
                 const GeolocationControl = L.Control.extend({
                     options: { position: 'topleft' as L.ControlPosition },
-                    onAdd: function (mapInstance: L.Map) {
+                    onAdd: function () {
                         const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom geolocation-button');
                         container.title = 'Добавить/Переместить по геолокации';
-                        container.innerHTML = '<a href="#" role="button" aria-label="Найти меня"><i class="fas fa-map-marker-alt"></i></a>';
-
-                        L.DomEvent.disableClickPropagation(container);
-                        L.DomEvent.on(container.firstChild as HTMLElement, 'click', (ev: MouseEvent) => {
-                            L.DomEvent.stop(ev);
+                        container.innerHTML = '<a href="#" role="button"><i class="fas fa-map-marker-alt"></i></a>';
+                        L.DomEvent.on(container, 'click', L.DomEvent.stop).on(container, 'click', () => {
                             if ('geolocation' in navigator) {
                                 L.DomUtil.addClass(container, 'loading');
                                 navigator.geolocation.getCurrentPosition(
                                     (position) => {
+                                        sendLocationToServer(position.coords.latitude, position.coords.longitude, currentUser);
                                         L.DomUtil.removeClass(container, 'loading');
-                                        const lat = parseFloat(position.coords.latitude.toFixed(3));
-                                        const lng = parseFloat(position.coords.longitude.toFixed(3));
-                                        sendLocationToServer(lat, lng, currentUser);
                                     },
                                     (geoError) => {
+                                        modal.error("Ошибка геолокации", geoError.message);
                                         L.DomUtil.removeClass(container, 'loading');
-                                        modal.error("Ошибка геолокации", geoError.message || "Не удалось определить ваше местоположение.");
                                     }
                                 );
                             } else { modal.warning("Не поддерживается", "Ваш браузер не поддерживает геолокацию."); }
@@ -374,44 +239,36 @@ const markers = L.markerClusterGroup({
                 map.addControl((map as any).geocontrol);
             }
 
-
             markers.on('popupopen', (e: L.LeafletEvent & { popup: L.Popup }) => {
                 const popupNode = e.popup._contentNode as HTMLElement;
                 const deleteButton = popupNode.querySelector('.popup-delete-btn');
-
                 if (deleteButton && currentUser && currentUser.username) {
                     deleteButton.addEventListener('click', function(this: HTMLButtonElement, ev: MouseEvent) {
                         ev.preventDefault();
                         const usernameToDelete = this.getAttribute('data-username');
                         if (usernameToDelete && usernameToDelete === currentUser.username.trim()) {
-                            modal.confirm(
-                                "Удаление метки",
-                                "Вы уверены, что хотите безвозвратно удалить свою метку с карты?",
-                                async () => {
-                                    this.textContent = "Удаление...";
-                                    this.disabled = true;
-                                    try {
-                                        const functions = getFunctions();
-                                        const deleteLocationFunc = httpsCallable(functions, 'deleteLocation');
-                                        const result = await deleteLocationFunc();
-                                        const data = result.data as any;
-
-                                        if (data.status === 'success') {
-                                            if (userMarkers[usernameToDelete]) {
-                                                markers.removeLayer(userMarkers[usernameToDelete]);
-                                                delete userMarkers[usernameToDelete];
-                                            }
-                                            map.closePopup();
-                                            modal.success("Успешно", data.message || "Ваша метка была удалена.");
-                                        } else {
-                                            throw new Error(data.message || 'Ошибка удаления на сервере');
+                            modal.confirm("Удаление метки", "Вы уверены?", async () => {
+                                this.textContent = "Удаление...";
+                                this.disabled = true;
+                                try {
+                                    const functions = getFunctions();
+                                    const deleteLocationFunc = httpsCallable(functions, 'deleteLocation');
+                                    const result = await deleteLocationFunc();
+                                    const data = result.data as any;
+                                    if (data.status === 'success') {
+                                        if (userMarkers[usernameToDelete]) {
+                                            markers.removeLayer(userMarkers[usernameToDelete]);
+                                            delete userMarkers[usernameToDelete];
                                         }
-                                    } catch (delError: any) {
-                                        console.error("Ошибка удаления метки:", delError);
-                                        modal.error("Ошибка", `Не удалось удалить метку: ${delError.message}`);
+                                        map.closePopup();
+                                        modal.success("Успешно", data.message || "Метка удалена.");
+                                    } else {
+                                        throw new Error(data.message);
                                     }
+                                } catch (delError: any) {
+                                    modal.error("Ошибка", `Не удалось удалить метку: ${delError.message}`);
                                 }
-                            );
+                            });
                         }
                     }, { once: true });
                 }
@@ -419,21 +276,27 @@ const markers = L.markerClusterGroup({
 
         } else {
             map.on('click', () => {
-                modal.warning("Требуется авторизация", "Пожалуйста, войдите в систему, чтобы добавить свою метку на карту.");
+                modal.warning("Требуется авторизация", "Пожалуйста, войдите, чтобы добавить свою метку.");
             });
-            if ((map as any).geocontrol && map.hasControl((map as any).geocontrol)) {
+            if ((map as any).geocontrol) {
                 map.removeControl((map as any).geocontrol);
                 (map as any).geocontrol = null;
             }
+        }
+
+        if (markers.getLayers().length > 0) {
+            loadAllMarkers();
         }
     }
 
     loadAllMarkers();
 
     userStore.subscribe((storeValue) => {
-        if (!storeValue.loading) {
-            setupMapInteraction(storeValue.user);
+        if (storeValue.loading) {
+            return;
         }
+        currentUserProfile = storeValue.user;
+        setupMapInteraction(storeValue.user);
     });
 
     return { map, markers, addOrUpdateMarkerFn: addOrUpdateMarker };
