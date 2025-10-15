@@ -14,31 +14,46 @@ type MarkerUserData = {
 function createCyberPopup(userData: MarkerUserData, city: string, isOwner: boolean): string {
     const profileUrl = `/profile/${encodeURIComponent(userData.username.trim())}`;
     const defaultAvatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(userData.username.trim())}`;
-    const hexClipId = `hex-clip-${Math.random().toString(36).substring(2, 9)}`;
-    const hexSvg = `<svg width="0" height="0"><defs><clipPath id="${hexClipId}" clipPathUnits="objectBoundingBox"><polygon points="0.5 0, 1 0.25, 1 0.75, 0.5 1, 0 0.75, 0 0.25" /></clipPath></defs></svg>`;
-    const avatarImg = `<div class="popup-avatar-wrapper">${hexSvg}<img src="${userData.avatar_url || defaultAvatar}" alt="Аватар" class="popup-avatar" style="clip-path: url(#${hexClipId});" onerror="this.onerror=null; this.src='${defaultAvatar}';"/></div>`;
-    const statusHTML = userData.status ? `<p class="popup-status"><span>&gt;</span> "${escapeHtml(userData.status)}"</p>` : '<p class="popup-status-empty">//: СИГНАЛ СТАТУСА ОТСУТСТВУЕТ</p>';
+
+    const avatarImg = `<img src="${userData.avatar_url || defaultAvatar}" alt="Аватар" class="popup-avatar" onerror="this.onerror=null; this.src='${defaultAvatar}';"/>`;
+
+    const statusHTML = userData.status
+        ? `<p class="popup-status">"${escapeHtml(userData.status)}"</p>`
+        : '<p class="popup-status-empty">//: Статус не установлен</p>';
+
     const signalStrength = 90 + Math.floor(Math.random() * 10);
     const zoneStatus = ["СТАБИЛЬНО", "СИНХРОНИЗАЦИЯ", "НОРМА"][Math.floor(Math.random() * 3)];
-    const deleteButtonHTML = isOwner ? `<button class="popup-delete-btn" data-username="${escapeHtml(userData.username)}">Удалить метку</button>` : '';
+
+    const deleteButtonHTML = isOwner
+        ? `<button class="popup-delete-btn" data-username="${escapeHtml(userData.username)}">Удалить</button>`
+        : '';
+
     const html = `
-        <div class="hud-popup">
+        <div class="liquid-glass-popup">
             <div class="popup-header">
                 ${avatarImg}
-                <div class="popup-user-info">
-                    <a href="${profileUrl}" target="_blank" class="popup-username glitch-text" data-text="${escapeHtml(userData.username)}">${escapeHtml(userData.username)}</a>
+                <span class="popup-username">${escapeHtml(userData.username)}</span>
+            </div>
+
+            ${statusHTML}
+
+            <div class="location-data">
+                <div class="data-item">
+                    <span class="data-label">ЛОКАЦИЯ</span>
+                    <span class="data-value">${escapeHtml(city)}</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">СИГНАЛ</span>
+                    <span class="data-value">${signalStrength}%</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">СТАТУС ЗОНЫ</span>
+                    <span class="data-value text-green-400">${zoneStatus}</span>
                 </div>
             </div>
-            <div class="popup-content">
-                ${statusHTML}
-                <div class="location-data">
-                    <div class="data-item"><span class="data-label">//:ЛОКАЦИЯ</span><span class="data-value">${escapeHtml(city)}</span></div>
-                    <div class="data-item"><span class="data-label">//:СИГНАЛ</span><span class="data-value">${signalStrength}%</span></div>
-                    <div class="data-item"><span class="data-label">//:СТАТУС ЗОНЫ</span><span class="data-value text-green-400">${zoneStatus}</span></div>
-                </div>
-            </div>
+
             <div class="popup-actions">
-                <a href="${profileUrl}" target="_blank" class="popup-profile-btn">ОТКРЫТЬ ПРОФИЛЬ <span>&rarr;</span></a>
+                <a href="${profileUrl}" target="_blank" class="popup-profile-btn">Профиль</a>
                 ${deleteButtonHTML}
             </div>
         </div>
@@ -63,10 +78,16 @@ export function initMap(containerId: string) {
 
     let currentUserProfile: UserProfile | null = null;
 
+    const southWest = L.latLng(-90, -180);
+    const northEast = L.latLng(90, 180);
+    const bounds = L.latLngBounds(southWest, northEast);
+
     const map = L.map(containerId, {
         center: [54.5, 30.0],
         zoom: 4,
         minZoom: 2,
+        maxBounds: bounds,
+        maxBoundsViscosity: 1.0,
     });
 
     if (map.attributionControl) {

@@ -522,153 +522,93 @@ html {
     min-width: 280px;
 }
 .leaflet-container a.leaflet-popup-close-button {
-    color: #9ca3af !important;
-    padding: 8px 8px 0 0 !important;
-    transition: color 0.2s;
+    color: rgba(255, 255, 255, 0.7) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); 
     z-index: 100;
+    transition: color 0.2s;
 }
 .leaflet-container a.leaflet-popup-close-button:hover {
     color: white !important;
 }
 
-.hud-popup {
-    @apply relative flex flex-col p-4 font-mono;
-    background: linear-gradient(135deg, rgba(10, 20, 30, 0.8) 0%, rgba(10, 10, 10, 0.9) 100%);
-    border: 1px solid rgba(0, 240, 255, 0.3);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    animation: draw-in 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+.liquid-glass-popup {
+    @apply p-4 font-sans text-white rounded-2xl;
+    background: rgba(20, 20, 25, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    animation: fade-in-up 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
-@keyframes draw-in {
-    from { clip-path: inset(50% 50% 50% 50%); }
-    to { clip-path: inset(0% 0% 0% 0%); }
-}
-
-.popup-content {
-    padding-left: 0;
-    margin-top: 80px;
+@keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .popup-header {
-    @apply absolute top-4 flex items-center gap-3;
-    padding-left: 80px;
-    left: 1rem;
-    right: 1rem;
-
-}
-.popup-avatar-wrapper {
-    @apply absolute top-0 left-0 w-16 h-[68px];
-    animation: avatar-glow-pulse 4s infinite ease-in-out;
-}
-@keyframes avatar-glow-pulse {
-    0%, 100% { filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.4)); }
-    50% { filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.7)); }
+    @apply flex items-center gap-3 pb-3 border-b border-white/10;
 }
 .popup-avatar {
-    @apply w-full h-full object-cover;
+    @apply w-12 h-12 rounded-full object-cover border-2 border-white/20;
 }
 .popup-username {
-    @apply text-lg font-bold text-white hover:text-cyber-yellow transition-colors;
-    animation: text-fade-in 0.5s 0.2s backwards;
+    @apply text-lg font-bold text-white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 .popup-status {
-    @apply text-sm text-gray-300 italic pr-2;
-    animation: text-fade-in 0.5s 0.4s backwards;
+    @apply text-sm text-gray-200 italic py-3;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 .popup-status-empty {
-    @apply text-sm text-gray-600 uppercase text-xs;
-    animation: text-fade-in 0.5s 0.4s backwards;
-}
-.popup-status > span {
-    @apply text-cyber-yellow mr-1;
+    @apply text-xs text-gray-400 uppercase py-3;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .location-data {
-    @apply mt-4 pt-3 border-t border-cyan-500/20 space-y-2 text-xs font-mono;
-    /* Скрываем дочерние элементы для анимации */
-    & > .data-item {
-        opacity: 0;
-        animation: text-fade-in 0.4s forwards;
-    }
-    /* Задержка для каждой строки */
-    & > .data-item:nth-child(1) { animation-delay: 0.6s; }
-    & > .data-item:nth-child(2) { animation-delay: 0.8s; }
-    & > .data-item:nth-child(3) { animation-delay: 1.0s; }
-}
-/* Анимация появления текста */
-@keyframes text-fade-in {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    @apply py-3 border-t border-white/10 space-y-2 text-xs font-mono;
 }
 .data-item {
     @apply flex justify-between items-baseline;
 }
 .data-label {
-    @apply text-gray-500 uppercase;
+    @apply text-gray-400 uppercase;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
 }
 .data-value {
-    @apply text-gray-200 font-bold;
+    @apply text-gray-100 font-bold;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
 }
 
-.popup-profile-btn {
-    @apply block w-full text-center mt-4 p-2 text-sm uppercase tracking-widest font-display;
-    background: rgba(0, 240, 255, 0.1);
-    color: var(--cyber-cyan, #00f0ff);
+.data-value.text-green-400 {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.popup-actions {
+    @apply flex gap-2 pt-3 border-t border-white/10;
+}
+.popup-profile-btn, .popup-delete-btn {
+    @apply flex-grow text-center p-2 text-sm uppercase tracking-wider font-bold rounded-lg;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
     transition: all 0.2s;
+}
+.popup-profile-btn {
+    color: white;
 }
 .popup-profile-btn:hover {
-    background: var(--cyber-cyan, #00f0ff);
-    color: black;
-    box-shadow: 0 0 10px var(--cyber-cyan, #00f0ff);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
-.popup-profile-btn span {
-    transition: transform 0.3s;
-    display: inline-block;
-}
-.popup-profile-btn:hover span {
-    transform: translateX(5px);
-}
-
-.scan-line {
-    @apply absolute left-0 w-full h-px;
-    background: var(--cyber-cyan, #00f0ff);
-    box-shadow: 0 0 5px var(--cyber-cyan, #00f0ff);
-    opacity: 0.7;
-    animation: scan-popup 5s infinite linear;
-}
-@keyframes scan-popup {
-    0% { top: -5%; }
-    100% { top: 105%; }
-}
-
-.corner-bracket {
-    @apply absolute w-4 h-4;
-    border-style: solid;
-    border-color: var(--cyber-cyan, #00f0ff);
-    opacity: 0.5;
-}
-.popup-actions {
-    @apply flex gap-2 mt-4;
-    animation: text-fade-in 0.5s 1.2s backwards;
-}
-.popup-actions .popup-profile-btn {
-    @apply flex-grow;
-    margin-top: 0;
-}
-
 .popup-delete-btn {
-    @apply px-3 py-2 text-xs uppercase tracking-wider font-display;
-    background: rgba(255, 0, 60, 0.2);
-    color: var(--cyber-red, #ff003c);
-    border: 1px solid rgba(255, 0, 60, 0.4);
-    transition: all 0.2s;
+    color: #ffc2c2;
 }
 .popup-delete-btn:hover {
-    background: var(--cyber-red, #ff003c);
+    background: rgba(255, 0, 60, 0.4);
+    border-color: rgba(255, 0, 60, 0.6);
     color: white;
     box-shadow: 0 0 10px var(--cyber-red, #ff003c);
 }
-.top-left { top: -2px; left: -2px; border-width: 2px 0 0 2px; }
-.top-right { top: -2px; right: -2px; border-width: 2px 2px 0 0; }
-.bottom-left { bottom: -2px; left: -2px; border-width: 0 0 2px 2px; }
-.bottom-right { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }

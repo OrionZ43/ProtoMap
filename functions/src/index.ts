@@ -229,8 +229,11 @@ export const addOrUpdateLocation = onRequest(
 export const getLocations = onRequest(
   { cors: false },
   async (request, response) => {
+    if (handleCors(request, response)) {
+      return;
+    }
     if (handleCors(request, response)) { return; }
-
+    response.set('Cache-Control', 'public, max-age=300, s-maxage=300');
     try {
       const locationsSnapshot = await db.collection("locations").get();
       if (locationsSnapshot.empty) {
@@ -270,7 +273,6 @@ export const getLocations = onRequest(
         const userData = usersMap.get(locationData.user_id);
 
         return {
-            uid: userData.uid,
           lat: locationData.latitude,
           lng: locationData.longitude,
           city: locationData.city,
@@ -286,6 +288,7 @@ export const getLocations = onRequest(
 
     } catch (error) {
       console.error("Error fetching locations:", error);
+      response.removeHeader('Cache-Control');
       response.status(500).json({ error: { message: "Internal server error" } });
     }
   },
