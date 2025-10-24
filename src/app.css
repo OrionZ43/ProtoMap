@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -523,7 +525,7 @@ html {
 }
 .leaflet-container a.leaflet-popup-close-button {
     color: rgba(255, 255, 255, 0.7) !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); 
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     z-index: 100;
     transition: color 0.2s;
 }
@@ -611,4 +613,70 @@ html {
     border-color: rgba(255, 0, 60, 0.6);
     color: white;
     box-shadow: 0 0 10px var(--cyber-red, #ff003c);
+}
+.mobile-menu-link {
+        @apply block w-full text-left px-4 py-2 text-base text-gray-200 hover:bg-cyan-500/10 hover:text-white;
+    }
+
+    .mobile-menu-item-flex {
+        @apply flex items-center justify-between px-4 py-2;
+    }
+
+    .user-dropdown {
+        z-index: 100;
+    }
+.setting-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-size: 1rem;
+    user-select: none;
+    color: var(--text-color, #e8e8e8);
+}
+
+.setting-toggle .label-text {
+    flex-grow: 1;
+}
+
+.setting-toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.setting-toggle .slider {
+    position: relative;
+    display: block;
+    width: 44px;
+    height: 24px;
+    background-color: #333;
+    border: 1px solid var(--border-color, #30363d);
+    border-radius: 12px;
+    transition: background-color 0.3s;
+    flex-shrink: 0;
+    margin-left: 12px;
+}
+
+.setting-toggle .slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 2px;
+    top: 2px;
+    background-color: #aaa;
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.setting-toggle input:checked + .slider {
+    background-color: var(--primary-color, #00f0ff);
+    border-color: var(--primary-color, #00f0ff);
+}
+
+.setting-toggle input:checked + .slider::before {
+    background-color: #fff;
+    transform: translateX(20px);
 }

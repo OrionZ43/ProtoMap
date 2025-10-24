@@ -1,5 +1,4 @@
 import { writable } from 'svelte/store';
-
 export type ModalType = 'info' | 'success' | 'warning' | 'error';
 
 export type ModalAction = {

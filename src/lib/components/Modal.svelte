@@ -3,10 +3,33 @@
     import { quintOut } from 'svelte/easing';
     import { scale, fade } from 'svelte/transition';
     import NeonButton from './NeonButton.svelte';
+    import { AudioManager } from '$lib/client/audioManager';
+    import { browser } from '$app/environment';
 
     let selectedReason = '';
     $: if ($modal.isOpen && $modal.reportOptions) {
         selectedReason = $modal.reportOptions[0]?.id || '';
+    }
+
+    let previouslyOpen = false;
+    $: if (browser) {
+        if ($modal.isOpen && !previouslyOpen) {
+            switch ($modal.type) {
+                case 'success':
+                case 'info':
+                    AudioManager.play('success');
+                    break;
+                case 'error':
+                case 'warning':
+                    AudioManager.play('fail');
+                    break;
+            }
+        }
+        previouslyOpen = $modal.isOpen;
+    }
+    function handleSecondaryClick(action: () => void) {
+        AudioManager.play('click_alt');
+        action();
     }
 </script>
 
@@ -90,7 +113,7 @@
                             {button.text}
                         </NeonButton>
                     {:else}
-                         <button type="button" class="cancel-btn w-full sm:w-auto" on:click={button.action}>
+                         <button type="button" class="cancel-btn w-full sm:w-auto" on:click={() => handleSecondaryClick(button.action)}>
                             {button.text}
                          </button>
                     {/if}

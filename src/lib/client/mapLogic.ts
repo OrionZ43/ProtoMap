@@ -4,6 +4,7 @@ import { auth } from '$lib/firebase';
 import { userStore, type UserProfile } from '$lib/stores';
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { modal } from '$lib/stores/modalStore';
+import { AudioManager } from '$lib/client/audioManager';
 
 type MarkerUserData = {
     username: string;
@@ -74,8 +75,6 @@ function createUserAvatarIcon(avatarUrl: string | null | undefined, username: st
 }
 
 export function initMap(containerId: string) {
-    console.log("Инициализация карты в контейнере:", containerId);
-
     let currentUserProfile: UserProfile | null = null;
 
     const southWest = L.latLng(-90, -180);
@@ -226,8 +225,9 @@ export function initMap(containerId: string) {
 
         if (currentUser) {
             map.on('click', (e: L.LeafletMouseEvent) => {
-                modal.confirm("Подтверждение", "Добавить/переместить вашу метку в эту точку?", () => {
-                    sendLocationToServer(e.latlng.lat, e.latlng.lng, currentUser);
+                const { lat, lng } = e.latlng;
+        modal.confirm("Подтверждение", "Добавить/переместить вашу метку в эту точку?", () => {
+            sendLocationToServer(lat, lng, currentUser);
                 });
             });
 
@@ -318,6 +318,13 @@ export function initMap(containerId: string) {
         }
         currentUserProfile = storeValue.user;
         setupMapInteraction(storeValue.user);
+    });
+    map.on('popupopen', (e) => {
+        AudioManager.play('popup_open');
+    });
+
+    map.on('popupclose', (e) => {
+        AudioManager.play('popup_close');
     });
 
     return { map, markers, addOrUpdateMarkerFn: addOrUpdateMarker };

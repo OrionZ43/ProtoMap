@@ -25,7 +25,6 @@
         opacity.set(1);
     });
 
-    // --- ЛОГИКА ЗАГРУЗКИ АВАТАРА ---
     async function handleAvatarChange(event: Event) {
         const input = event.target as HTMLInputElement;
         const file = input.files?.[0];
@@ -68,7 +67,7 @@
                 });
             } catch (error: any) {
                 modal.error("Ошибка загрузки", error.message || 'Не удалось обновить аватар.');
-                imagePreviewUrl = data.profile.avatar_url; // Возвращаем старый при ошибке
+                imagePreviewUrl = data.profile.avatar_url;
             } finally {
                 isLoadingAvatar = false;
                 input.value = '';
@@ -80,14 +79,13 @@
         }
     }
 
-    // --- ЛОГИКА СОХРАНЕНИЯ ПРОФИЛЯ ---
     async function saveProfileData() {
         isSavingProfile = true;
         try {
             const functions = getFunctions();
             const updateProfileFunc = httpsCallable(functions, 'updateProfileData');
             const profileDataToSend = {
-                status: status, // <-- ДОБАВЛЕНО ПОЛЕ СТАТУСА
+                status: status,
                 about_me: aboutMe,
                 socials: socials
             };
@@ -96,7 +94,6 @@
 
             modal.success("Успешно!", message || "Данные профиля сохранены.");
 
-            // Обновляем status в userStore
             userStore.update(store => {
                 if (store.user) {
                     store.user.status = status;
@@ -144,7 +141,6 @@
     <div class="space-y-8">
         <h3 class="form-label font-display text-lg">// ИНФОРМАЦИЯ И ССЫЛКИ</h3>
 
-        <!-- НОВОЕ ПОЛЕ: СТАТУС -->
         <div class="form-group">
             <label for="status" class="form-label font-display">СТАТУС</label>
             <input bind:value={status} type="text" id="status" class="input-field" placeholder="Чем вы сейчас заняты?" maxlength="100" disabled={isLoadingAvatar || isSavingProfile} />

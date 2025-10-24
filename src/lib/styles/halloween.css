@@ -1,0 +1,294 @@
+:root {
+    --cyber-yellow: #ff6600;
+    --cyber-purple: #bd00ff;
+    --cyber-green: #39ff14;
+    --cyber-red: #ff3300;
+    --text-color: #e8e8e8;
+}
+
+@keyframes spooky-pulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 5px var(--cyber-yellow));
+        transform: scale(1);
+    }
+    50% {
+        filter: drop-shadow(0 0 15px var(--cyber-yellow));
+        transform: scale(1.1);
+    }
+}
+
+@keyframes bat-fly-across {
+    0% {
+        transform: translate(-10vw, 10vh) scale(0.5) rotate(15deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    90% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(110vw, 30vh) scale(0.8) rotate(-15deg);
+        opacity: 0;
+    }
+}
+
+@keyframes sway-left {
+    0%, 100% {
+        transform: rotate(12deg);
+    }
+    50% {
+        transform: rotate(-12deg);
+    }
+}
+
+@keyframes sway-right {
+    0%, 100% {
+        transform: rotate(-12deg);
+    }
+    50% {
+        transform: rotate(12deg);
+    }
+}
+
+@keyframes heart-beat {
+    0%, 35%, 75%, 100% {
+        opacity: 0;
+        transform: scale(0.5) translateY(10px);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.2) translateY(0);
+    }
+}
+
+body {
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23ff6600' fill-opacity='0.03' d='M0 2h2v2H0zM2 0h2v2H2z'/%3E%3C/svg%3E"),
+        radial-gradient(ellipse at bottom, rgba(80, 20, 0, 0.5) 0%, rgba(0, 0, 0, 0.9) 80%);
+}
+
+.font-display, .nav-brand, .profile-username {
+    text-shadow: 0 0 5px var(--cyber-red), 0 0 10px var(--cyber-yellow);
+}
+
+nav.bg-gray-900\/50 {
+    position: relative;
+    overflow: visible !important;
+}
+
+.nav-brand {
+    position: relative;
+    color: var(--cyber-yellow) !important;
+    text-shadow: 0 0 5px var(--cyber-red),
+    0 0 10px var(--cyber-yellow) !important;
+}
+
+.nav-brand::before,
+.nav-brand::after {
+    display: none;
+}
+
+.spider-scene {
+    position: absolute;
+    top: 90%;
+    left: calc(50% - 145px);
+    width: 110px;
+    height: 70px;
+    z-index: 51;
+    pointer-events: none;
+}
+
+.spider-scene::before,
+.spider-scene::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 45px;
+    height: 65px;
+    background-color: #ffffff;
+    -webkit-mask-image: url('/halloween/spider.svg');
+    mask-image: url('/halloween/spider.svg');
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    transform-origin: top center;
+}
+
+.spider-scene::before {
+    left: 0;
+    animation: sway-left 4s infinite ease-in-out;
+}
+
+.spider-scene::after {
+    right: 0;
+    animation: sway-right 4s infinite ease-in-out;
+}
+
+.spider-scene .heart {
+    position: absolute;
+    top: 15px;
+    left: 43%;
+    transform: translateX(-50%);
+    width: 15px;
+    height: 15px;
+    background-color: var(--cyber-red);
+    -webkit-mask-image: url('/halloween/heart.svg');
+    mask-image: url('/halloween/heart.svg');
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    filter: drop-shadow(0 0 8px var(--cyber-red));
+    opacity: 0;
+    animation: heart-beat 4s infinite;
+}
+
+.cyber-panel::before,
+.cyber-panel::after {
+    content: '';
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    background-color: rgba(255, 255, 255, 0.15);
+    -webkit-mask-image: url('/halloween/web.svg');
+    mask-image: url('/halloween/web.svg');
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    z-index: 0;
+    animation: none;
+    pointer-events: none;
+}
+
+.cyber-panel::before {
+    top: -10px;
+    left: -10px;
+}
+
+.cyber-panel::after {
+    bottom: -10px;
+    right: -10px;
+    transform: rotate(180deg);
+}
+
+.reactor-cluster {
+    animation: none !important;
+    transition: none !important;
+}
+
+.reactor-ring, .reactor-glow, .reactor-charge-indicator, .particle {
+    display: none !important;
+}
+
+.reactor-cluster::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('/halloween/pumpkin.svg');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: drop-shadow(0 0 15px var(--cyber-yellow)) drop-shadow(0 0 5px #fff);
+    transition: transform 0.3s ease;
+}
+
+.reactor-cluster:hover::before {
+    transform: scale(1.15) rotate(5deg);
+}
+
+.reactor-core {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    z-index: 10;
+    transform: translateY(15%);
+}
+
+.reactor-core .count {
+    color: #000 !important;
+    font-family: 'Creepster', cursive;
+    font-weight: 400 !important;
+    text-shadow: 0 0 3px var(--cyber-yellow), 0 0 5px var(--cyber-yellow) !important;
+    -webkit-text-stroke: 1px var(--cyber-yellow);
+    line-height: 1;
+}
+
+.small .reactor-core .count {
+    font-size: 2.5em;
+}
+
+.medium .reactor-core .count {
+    font-size: 2.8em;
+}
+
+.large .reactor-core .count {
+    font-size: 3em;
+}
+
+.user-avatar-marker:has(img[src*="bottts-neutral"]) {
+    background-color: rgba(255, 255, 255, 0.9);
+    -webkit-mask-image: url('/halloween/ghost.svg');
+    mask-image: url('/halloween/ghost.svg');
+    -webkit-mask-size: 80%;
+    mask-size: 80%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.6) !important;
+    border: none !important;
+}
+
+.user-avatar-marker img[src*="bottts-neutral"] {
+    opacity: 0;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100px;
+    height: 60px;
+    background-color: #000;
+    -webkit-mask-image: url('/halloween/bat.svg');
+    mask-image: url('/halloween/bat.svg');
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    animation: bat-fly-across 60s linear infinite;
+    animation-delay: 10s;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--cyber-yellow);
+    border-color: #000;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+html {
+    scrollbar-color: var(--cyber-yellow) #1a1a1a;
+}
+
+.cyber-layers-control.leaflet-control-layers a.leaflet-control-layers-toggle {
+    filter: hue-rotate(270deg) brightness(1.5);
+}
+.setting-toggle input:checked + .slider {
+    background-color: var(--cyber-yellow);
+    border-color: var(--cyber-yellow);
+}
+
+.popover-header {
+    color: var(--cyber-yellow);
+}

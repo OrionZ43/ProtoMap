@@ -5,6 +5,7 @@
     import { userStore, chat } from '$lib/stores';
     import { modal } from '$lib/stores/modalStore';
     import { slide, fade } from 'svelte/transition';
+    import { AudioManager } from '$lib/client/audioManager';
 
     type ReplyInfo = {
         author_username: string;
@@ -65,6 +66,7 @@
             }
 
             await addDoc(collection(db, "global_chat"), newMessage);
+            AudioManager.play('message');
 
             setTimeout(() => {
                 canSendMessage = true;
@@ -143,6 +145,10 @@
             messagesWindow.scrollTo({ top: messagesWindow.scrollHeight, behavior: 'smooth' });
         }
     });
+    function closeChat() {
+        chat.close();
+        AudioManager.play('popup_close');
+    }
 </script>
 
 {#if $chat.isOpen}
@@ -152,7 +158,7 @@
     >
         <div class="widget-header">
             <h3 class="font-display">// ОБЩИЙ ЧАТ</h3>
-            <button on:click={chat.close} class="close-btn" aria-label="Закрыть чат">&times;</button>
+            <button on:click={closeChat} class="close-btn" aria-label="Закрыть чат">&times;</button>
         </div>
 
         <div class="messages-window" bind:this={messagesWindow}>

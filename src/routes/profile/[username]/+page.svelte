@@ -7,15 +7,19 @@
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
     import { enhance } from '$app/forms';
-    import { fade, fly } from 'svelte/transition';
+    import { fade } from 'svelte/transition';
     import { getFunctions, httpsCallable } from "firebase/functions";
+    import { settingsStore } from '$lib/stores/settingsStore';
+    import CinematicLoader from '$lib/components/CinematicLoader.svelte';
+    import { browser } from '$app/environment';
 
     export let data: PageData;
     export let form: ActionData;
 
-    let loading = true;
-    let statusText = "ПОДКЛЮЧЕНИЕ К ХОСТУ...";
-    const statusMessages = ["ОБХОД БРАНДМАУЭРА...", "РАСШИФРОВКА ДАННЫХ...", "ДОСТУП К ПРОФИЛЮ...", "СОЕДИНЕНИЕ УСТАНОВЛЕНО"];
+    let initializationComplete = false;
+    let showCinematicIntro = true;
+    let isProfileVisible = false;
+
     const containerOpacity = tweened(0, { duration: 500, easing: quintOut });
 
     const profileReportReasons = [
@@ -34,19 +38,29 @@
     ];
 
     onMount(() => {
-        let messageIndex = 0;
-        const interval = setInterval(() => {
-            if (messageIndex < statusMessages.length) {
-                statusText = statusMessages[messageIndex];
-                messageIndex++;
+        if (browser) {
+            const cinematicEnabled = $settingsStore.cinematicLoadsEnabled;
+            const sessionKey = `viewed_profile_${data.profile.username}`;
+            const alreadyViewed = sessionStorage.getItem(sessionKey);
+
+            if (cinematicEnabled && !alreadyViewed) {
+                showCinematicIntro = true;
+                sessionStorage.setItem(sessionKey, 'true');
             } else {
-                clearInterval(interval);
-                loading = false;
+                showCinematicIntro = false;
+                isProfileVisible = true;
                 containerOpacity.set(1);
             }
-        }, 600);
-        return () => clearInterval(interval);
+        }
     });
+
+    function handleIntroFinished() {
+        showCinematicIntro = false;
+        setTimeout(() => {
+            isProfileVisible = true;
+            containerOpacity.set(1);
+        }, 500);
+    }
 
     $: isOwner = $userStore.user && $userStore.user.uid === data.profile.uid;
     $: socials = data.profile.socials || {};
@@ -118,15 +132,20 @@
 </script>
 
 <svelte:head>
-    <title>{loading ? 'Получение доступа...' : `Профиль ${data.profile.username}`} | ProtoMap</title>
+    <title>Профиль {data.profile.username} | ProtoMap</title>
 </svelte:head>
 
-{#if loading}
-    <div class="h-full w-full flex items-center justify-center font-display text-cyber-yellow uppercase tracking-widest">
-        <p class="glitch-text" data-text={statusText}>{statusText}</p>
-    </div>
-{:else}
-    <div class="container mx-auto px-4">
+{#if showCinematicIntro}
+    <CinematicLoader
+        username={data.profile.username}
+        avatar_url={data.profile.avatar_url}
+        status={data.profile.status}
+        on:finished={handleIntroFinished}
+    />
+{/if}
+
+{#if isProfileVisible}
+    <div class="container mx-auto px-4" transition:fade={{ duration: 300 }}>
         <div class="profile-container cyber-panel pb-12" style="opacity: {$containerOpacity}">
 
             {#if $userStore.user && !isOwner}
@@ -517,10 +536,6 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
 
 
 <style>
-    @keyframes typing { from { width: 0 } to { width: 100% } }
-    @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: var(--cyber-yellow, #fcee0a); } }
-    @keyframes glitch-anim { 0% { clip-path: inset(45% 0 50% 0); } 100% { clip-path: inset(5% 0 90% 0); } }
-    @keyframes glitch-anim-2 { 0% { clip-path: inset(80% 0 15% 0); } 100% { clip-path: inset(12% 0 85% 0); } }
     @keyframes ticker-scroll {
         0% { transform: translateX(0); }
         100% { transform: translateX(-50%); }
@@ -540,11 +555,6 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
         opacity: 1;
       }
     }
-
-    .glitch-text { @apply text-xl sm:text-2xl; position: relative; text-shadow: 0 0 5px var(--cyber-yellow); }
-    .glitch-text::before, .glitch-text::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color, #16181d); overflow: hidden; }
-    .glitch-text::before { left: 2px; text-shadow: -2px 0 #ff00c1; animation: glitch-anim 1.5s infinite linear alternate-reverse; }
-    .glitch-text::after { left: -2px; text-shadow: 2px 0 var(--cyber-cyan); animation: glitch-anim-2 1.5s 0.2s infinite linear alternate-reverse; }
 
     .profile-container {
         @apply max-w-2xl mx-auto my-10 p-1 sm:p-2 rounded-none shadow-2xl relative;
@@ -570,7 +580,6 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
         border-bottom: 1px solid var(--border-color);
         padding-right: 3.5rem;
     }
-    .bar-light { @apply absolute top-1/2 left-2 w-2 h-2 rounded-full bg-cyber-yellow; transform: translateY(-50%); box-shadow: 0 0 5px var(--cyber-yellow); }
 
     .profile-header, .profile-content, .profile-actions { animation: content-fade-in 0.5s ease-out both; }
     .profile-content { animation-delay: 0.2s; }
@@ -618,6 +627,7 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
     .comment-text { @apply whitespace-pre-wrap text-gray-300; }
     .comment-actions { @apply mt-2; }
     .action-btn { @apply text-xs text-gray-500 hover:text-red-400 transition-colors; }
+
     .report-icon-btn {
         @apply absolute top-2 right-2 z-20 p-2 rounded-full;
         color: var(--cyber-red, #ff003c);
@@ -634,6 +644,7 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
     .report-icon-btn:focus-visible {
         @apply outline-none ring-2 ring-offset-2 ring-offset-black ring-red-500;
     }
+
     .top-bar::before {
         content: '';
         @apply absolute top-1/2 left-2 w-2 h-2 rounded-full bg-cyber-yellow;

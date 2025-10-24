@@ -1,17 +1,23 @@
 <script lang="ts">
+    import { AudioManager } from '$lib/client/audioManager';
     export let href: string | null = null;
     export let type: 'button' | 'submit' | 'reset' = 'button';
     export let disabled = false;
     export let extraClass: string = '';
+    function handleClick() {
+        if (!disabled) {
+            AudioManager.play('click');
+        }
+    }
 </script>
 
 {#if href}
-    <a {href} class="neon-btn {extraClass}" class:disabled>
+    <a {href} class="neon-btn {extraClass}" class:disabled on:click={handleClick}>
     <span class="btn-content"><slot /></span>
 
     </a>
 {:else}
-    <button {type} {disabled} class="neon-btn {extraClass}" on:click>
+    <button {type} {disabled} class="neon-btn {extraClass}" on:click={handleClick} on:click>
     <span class="btn-content"><slot /></span>
     </button>
 {/if}
