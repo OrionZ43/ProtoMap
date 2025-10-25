@@ -8,13 +8,15 @@
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
+    import { modal } from '$lib/stores/modalStore';
+    import { userStore } from '$lib/stores';
 
     let email = "";
     let password = "";
     let username = "";
-    let error = "";
     let loading = false;
     let googleLoading = false;
+    let termsAccepted = false;
 
     const opacity = tweened(0, { duration: 400, easing: quintOut });
     onMount(() => {
@@ -31,25 +33,34 @@
             return (result.data as { isAvailable: boolean }).isAvailable;
         } catch (e) {
             console.error("Ошибка вызова Cloud Function 'checkUsername':", e);
-            error = "Не удалось проверить имя пользователя. Попробуйте позже.";
+            modal.error("Системная ошибка", "Не удалось проверить имя пользователя. Попробуйте позже.");
             return false;
         }
     }
 
     async function handleRegister() {
+        if (!termsAccepted) {
+            modal.error("Требуется согласие", "Необходимо принять условия Пользовательского Соглашения и Политику Конфиденциальности.");
+            return;
+        }
+
         const finalEmail = email.trim();
         const finalUsername = username.trim();
-        if (!finalEmail || !password || !finalUsername) { error = "Пожалуйста, заполните все поля."; return; }
+
+        if (!finalEmail || !password || !finalUsername) {
+            modal.error("Ошибка ввода", "Пожалуйста, заполните все поля.");
+            return;
+        }
         if (finalUsername.length < 4) {
-             error = "Имя пользователя должно быть не менее 4 символов.";
+             modal.error("Ошибка ввода", "Имя пользователя должно быть не менее 4 символов.");
              return;
         }
 
-        loading = true; error = "";
+        loading = true;
 
         const usernameIsAvailable = await isUsernameAvailable(finalUsername);
         if (!usernameIsAvailable) {
-            error = "Это имя пользователя уже занято или недоступно.";
+            modal.error("Ошибка регистрации", "Это имя пользователя уже занято или недоступно.");
             loading = false;
             return;
         }
@@ -64,17 +75,29 @@
                 avatar_url: "", social_link: "", createdAt: serverTimestamp()
             });
             console.log("Пользователь зарегистрирован:", user.uid);
+             const token = await user.getIdToken();
+            await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: token }),
+            });
             goto('/');
         } catch (e: any) {
             console.error("Ошибка регистрации:", e.code);
-            if (e.code === 'auth/email-already-in-use') { error = "Этот email уже используется."; }
-            else if (e.code === 'auth/weak-password') { error = "Пароль слишком слабый (не менее 6 символов)."; }
-            else { error = "Произошла ошибка при регистрации."; }
-        } finally { loading = false; }
+            if (e.code === 'auth/email-already-in-use') {
+                modal.error("Ошибка регистрации", "Этот email уже используется.");
+            } else if (e.code === 'auth/weak-password') {
+                modal.error("Ошибка безопасности", "Пароль слишком слабый. Используйте не менее 6 символов.");
+            } else {
+                modal.error("Системная ошибка", "Произошла неизвестная ошибка при регистрации.");
+            }
+        } finally {
+            loading = false;
+        }
     }
 
     async function handleGoogleLogin() {
-        googleLoading = true; error = "";
+        googleLoading = true;
         const provider = new GoogleAuthProvider();
         try {
             const result = await signInWithPopup(auth, provider);
@@ -91,8 +114,10 @@
             goto('/');
         } catch (e: any) {
             console.error("Ошибка входа через Google:", e);
-            error = "Не удалось войти с помощью Google.";
-        } finally { googleLoading = false; }
+            modal.error("Системная ошибка", "Не удалось войти с помощью Google.");
+        } finally {
+            googleLoading = false;
+        }
     }
 </script>
 
@@ -104,26 +129,32 @@
 
     <h2 class="form-title font-display">СОЗДАТЬ НОВЫЙ ПРОФИЛЬ</h2>
 
-    <form on:submit|preventDefault={handleRegister} class="space-y-8">
+    <form on:submit|preventDefault={handleRegister} class="space-y-8" novalidate>
         <div class="form-group">
             <label for="username" class="form-label font-display">ИМЯ_ПОЛЬЗОВАТЕЛЯ</label>
-            <input bind:value={username} type="text" id="username" name="username" class="input-field" required>
+            <input bind:value={username} type="text" id="username" name="username" class="input-field">
         </div>
         <div class="form-group">
             <label for="email" class="form-label font-display">EMAIL_ПОЛЬЗОВАТЕЛЯ</label>
-            <input bind:value={email} type="email" id="email" name="email" class="input-field" required>
+            <input bind:value={email} type="email" id="email" name="email" class="input-field">
         </div>
         <div class="form-group">
             <label for="password" class="form-label font-display">ПАРОЛЬ</label>
-            <input bind:value={password} type="password" id="password" name="password" class="input-field" required>
+            <input bind:value={password} type="password" id="password" name="password" class="input-field">
         </div>
 
-        {#if error}
-            <p class="error-message">{error}</p>
-        {/if}
+        <div class="form-group pt-2">
+            <label class="terms-label">
+                <input type="checkbox" bind:checked={termsAccepted} class="terms-checkbox">
+                <span class="custom-checkbox"></span>
+                <span class="text-sm text-gray-400">
+                    Я принимаю <a href="/terms-of-service" target="_blank" class="link">Пользовательское Соглашение</a> и <a href="/privacy-policy" target="_blank" class="link">Политику Конфиденциальности</a>
+                </span>
+            </label>
+        </div>
 
         <div class="pt-2">
-            <NeonButton type="submit" disabled={loading || googleLoading} extraClass="w-full">
+            <NeonButton type="submit" disabled={loading || googleLoading || !termsAccepted} extraClass="w-full">
                 {loading ? 'Загрузка...' : 'ЗАРЕГИСТРИРОВАТЬСЯ'}
             </NeonButton>
         </div>
@@ -161,12 +192,6 @@
     }
     @media (max-width: 640px) { .form-container { @apply my-4 mx-4 p-6; } }
 
-    .corner { @apply absolute w-5 h-5; border-color: var(--cyber-yellow, #fcee0a); opacity: 0.7; }
-    .top-left { top: 0; left: 0; border-top: 2px solid; border-left: 2px solid; }
-    .top-right { top: 0; right: 0; border-top: 2px solid; border-right: 2px solid; }
-    .bottom-left { bottom: 0; left: 0; border-bottom: 2px solid; border-left: 2px solid; }
-    .bottom-right { bottom: 0; right: 0; border-bottom: 2px solid; border-right: 2px solid; }
-
     .form-title { @apply text-2xl lg:text-3xl font-bold text-center text-white mb-10;text-shadow: none; }
     .form-label { @apply block text-sm font-bold uppercase tracking-widest text-cyber-yellow mb-2; }
     .input-field {
@@ -176,9 +201,57 @@
         font-size: 1.1em; transition: border-color 0.3s, box-shadow 0.3s;
     }
     .input-field:focus { @apply outline-none; border-bottom-color: var(--cyber-yellow, #fcee0a); box-shadow: 0 1px 0 var(--cyber-yellow, #fcee0a); }
-    .error-message { @apply mt-4 text-center text-red-400 bg-red-900/50 p-3 rounded-md; }
 
     .google-btn { @apply inline-flex justify-center items-center w-12 h-12 p-3 border border-gray-700 rounded-full shadow-sm; background-color: var(--input-bg-color); transition: background-color 0.2s, border-color 0.2s; }
     .google-btn:hover:not(:disabled) { background-color: var(--secondary-bg-color); border-color: var(--border-color); }
     .google-btn:disabled { @apply opacity-50 cursor-not-allowed; }
+
+    .terms-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+    }
+    .terms-checkbox {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .custom-checkbox {
+        flex-shrink: 0;
+        position: relative;
+        width: 20px;
+        height: 20px;
+        background-color: rgba(255,255,255,0.1);
+        border: 1px solid var(--border-color, #30363d);
+        margin-right: 10px;
+        transition: all 0.2s;
+    }
+    .terms-checkbox:checked + .custom-checkbox {
+        background-color: var(--cyber-yellow);
+        border-color: var(--cyber-yellow);
+    }
+    .custom-checkbox::after {
+        content: '';
+        position: absolute;
+        display: none;
+        left: 6px;
+        top: 2px;
+        width: 6px;
+        height: 12px;
+        border: solid white;
+        border-width: 0 3px 3px 0;
+        transform: rotate(45deg);
+    }
+    .terms-checkbox:checked + .custom-checkbox::after {
+        display: block;
+    }
+    .link {
+        color: var(--cyber-yellow);
+        text-decoration: underline;
+    }
+    .link:hover {
+        color: #fff;
+    }
 </style>

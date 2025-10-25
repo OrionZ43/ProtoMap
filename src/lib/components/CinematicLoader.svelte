@@ -271,7 +271,7 @@
     .glitch::after { text-shadow: 3px 0 #00f0ff; animation: glitch-anim 0.2s infinite linear alternate-reverse; left: -3px; animation-delay: 0.1s; }
 
     .skip-btn {
-        position: fixed; bottom: 2rem; left: 2rem;
+        position: fixed; bottom: 5rem; left: 2rem;
         background: rgba(0,0,0,0.5); border: 2px solid rgba(255, 255, 255, 0.2);
         color: rgba(255, 255, 255, 0.5); padding: 0.8rem 1.5rem; font-weight: bold;
         font-family: 'Chakra Petch', monospace; cursor: pointer; transition: all 0.2s; z-index: 10000;

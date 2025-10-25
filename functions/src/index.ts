@@ -603,3 +603,65 @@ ${escapeMarkdownV2(newReport.reportedContentText)}
     }
   }
 );
+
+export const deleteAccount = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Для выполнения этой операции необходимо войти в систему.');
+    }
+    const uid = request.auth.uid;
+    console.log(`[deleteAccount] Получен запрос на удаление для UID: ${uid}`);
+
+    try {
+        const db = admin.firestore();
+        const auth = admin.auth();
+        const batch = db.batch();
+
+        console.log(`[deleteAccount] Начинаю процесс анонимизации для UID: ${uid}...`);
+
+        const commentsSnapshot = await db.collectionGroup('comments').where('author_uid', '==', uid).get();
+        if (!commentsSnapshot.empty) {
+            console.log(`[deleteAccount] Найдено ${commentsSnapshot.size} комментариев для анонимизации.`);
+            commentsSnapshot.forEach(doc => {
+                batch.update(doc.ref, {
+                    author_username: '[Удаленный пользователь]',
+                    author_avatar_url: null,
+                    author_uid: null
+                });
+            });
+        }
+
+        const chatMessagesSnapshot = await db.collection('global_chat').where('author_uid', '==', uid).get();
+        if (!chatMessagesSnapshot.empty) {
+            console.log(`[deleteAccount] Найдено ${chatMessagesSnapshot.size} сообщений в чате для анонимизации.`);
+            chatMessagesSnapshot.forEach(doc => {
+                batch.update(doc.ref, {
+                    author_username: '[Удаленный пользователь]',
+                    author_avatar_url: null,
+                    author_uid: null
+                });
+            });
+        }
+
+        console.log('[deleteAccount] Выполнение пакетной записи для анонимизации...');
+        await batch.commit();
+
+        console.log(`[deleteAccount] Удаление основных документов Firestore для UID: ${uid}...`);
+
+        await db.collection('users').doc(uid).delete();
+
+        const locationQuery = await db.collection('locations').where('user_id', '==', uid).limit(1).get();
+        if (!locationQuery.empty) {
+            await locationQuery.docs[0].ref.delete();
+        }
+
+        console.log(`[deleteAccount] Удаление пользователя из Firebase Auth для UID: ${uid}...`);
+        await auth.deleteUser(uid);
+
+        console.log(`[deleteAccount] Успешное полное удаление и анонимизация для UID: ${uid}.`);
+        return { status: 'success', message: 'Ваша учетная запись и все связанные данные были успешно удалены.' };
+
+    } catch (error: any) {
+        console.error(`[deleteAccount] Критическая ошибка при удалении UID: ${uid}. Ошибка:`, error);
+        throw new HttpsError('internal', 'Произошла ошибка на сервере при удалении вашей учетной записи. Пожалуйста, свяжитесь с поддержкой.');
+    }
+});

@@ -11,6 +11,8 @@
     import { browser } from '$app/environment';
     import { onMount } from 'svelte';
     import { AudioManager } from '$lib/client/audioManager';
+    import Footer from "$lib/components/Footer.svelte";
+    import CookieBanner from '$lib/components/CookieBanner.svelte';
 
     let isHalloweenAnomalyActive = false;
     if (browser) {
@@ -59,15 +61,22 @@
         <div class="v-text">{isHalloweenAnomalyActive ? 'АНАЛИЗ АНОМАЛИИ...' : 'МОЩНОСТЬ СЕТИ: 99%'}</div>
     </div>
 
-    <div class="relative z-20 flex flex-col min-h-screen">
+    <div class="relative z-20 flex flex-col flex-grow">
         <Navbar />
         <main class="flex-grow">
             <slot />
         </main>
     </div>
 
+    <div class="hidden lg:block">
+    {#if !isMapPage}
+        <Footer />
+    {/if}
+    </div>
+
     <Modal />
     <ChatWidget />
+    <CookieBanner />
 
     <button
         class="chat-trigger-btn"

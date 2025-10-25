@@ -8,10 +8,10 @@
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { db } from '$lib/firebase';
+    import { modal } from '$lib/stores/modalStore';
 
     let email = "";
     let password = "";
-    let error = "";
     let loading = false;
     let googleLoading = false;
 
@@ -21,8 +21,11 @@
     });
 
     async function handleLogin() {
-        if (!email || !password) { error = "Пожалуйста, заполните все поля."; return; }
-        loading = true; error = "";
+        if (!email || !password) {
+            modal.error("Ошибка ввода", "Пожалуйста, заполните все поля.");
+            return;
+        }
+        loading = true;
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             console.log("Пользователь вошел:", userCredential.user);
@@ -30,13 +33,17 @@
         } catch (e: any) {
             console.error("Ошибка входа:", e.code);
             if (e.code === 'auth/invalid-credential' || e.code === 'auth/invalid-email' || e.code === 'auth/wrong-password') {
-                error = "Неверный email или пароль.";
-            } else { error = "Произошла ошибка при входе."; }
-        } finally { loading = false; }
+                modal.error("Ошибка входа", "Неверный email или пароль.");
+            } else {
+                modal.error("Системная ошибка", "Произошла неизвестная ошибка при входе.");
+            }
+        } finally {
+            loading = false;
+        }
     }
 
     async function handleGoogleLogin() {
-        googleLoading = true; error = "";
+        googleLoading = true;
         const provider = new GoogleAuthProvider();
         try {
             const result = await signInWithPopup(auth, provider);
@@ -52,8 +59,12 @@
                 });
             }
             goto('/');
-        } catch (e: any) { console.error("Ошибка входа через Google:", e); error = "Не удалось войти с помощью Google.";
-        } finally { googleLoading = false; }
+        } catch (e: any) {
+            console.error("Ошибка входа через Google:", e);
+            modal.error("Системная ошибка", "Не удалось войти с помощью Google.");
+        } finally {
+            googleLoading = false;
+        }
     }
 </script>
 
@@ -69,19 +80,15 @@
 
     <h2 class="form-title font-display">АУТЕНТИФИКАЦИЯ</h2>
 
-    <form on:submit|preventDefault={handleLogin} class="space-y-8">
+    <form on:submit|preventDefault={handleLogin} class="space-y-8" novalidate>
         <div class="form-group">
             <label for="email" class="form-label font-display">EMAIL_ПОЛЬЗОВАТЕЛЯ</label>
-            <input bind:value={email} type="email" id="email" name="email" class="input-field" required>
+            <input bind:value={email} type="email" id="email" name="email" class="input-field">
         </div>
         <div class="form-group">
             <label for="password" class="form-label font-display">ПАРОЛЬ</label>
-            <input bind:value={password} type="password" id="password" name="password" class="input-field" required>
+            <input bind:value={password} type="password" id="password" name="password" class="input-field">
         </div>
-
-        {#if error}
-            <p class="error-message">{error}</p>
-        {/if}
 
         <div class="pt-2">
             <NeonButton type="submit" disabled={loading || googleLoading} extraClass="w-full">
@@ -119,13 +126,13 @@
         @apply max-w-lg mx-auto my-10 p-8 rounded-none shadow-2xl relative;
         background: rgba(10, 10, 10, 0.5); backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
-        border: 1px solid rgba(252, 238, 10, 0.2); /* Желтая рамка */
+        border: 1px solid rgba(252, 238, 10, 0.2);
         clip-path: polygon(0 15px, 15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
     }
     @media (max-width: 640px) { .form-container { @apply my-4 mx-4 p-6; } }
 
     .form-title { @apply text-2xl lg:text-3xl font-bold text-center text-white mb-10;text-shadow: none; }
-    .form-group { /* ... */ }
+    .form-group { }
     .form-label { @apply block text-sm font-bold uppercase tracking-widest text-cyber-yellow mb-2; }
     .input-field {
         @apply block w-full p-2 bg-transparent text-gray-200;
@@ -134,7 +141,6 @@
         font-size: 1.1em; transition: border-color 0.3s, box-shadow 0.3s;
     }
     .input-field:focus { @apply outline-none; border-bottom-color: var(--cyber-yellow, #fcee0a); box-shadow: 0 1px 0 var(--cyber-yellow, #fcee0a); }
-    .error-message { @apply mt-4 text-center text-red-400 bg-red-900/50 p-3 rounded-md; }
 
     .google-btn {
         @apply inline-flex justify-center items-center w-12 h-12 p-3 border border-gray-700 rounded-full shadow-sm;

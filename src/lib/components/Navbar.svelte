@@ -7,6 +7,7 @@
     import SettingsPopover from '$lib/components/SettingsPopover.svelte';
     import { getSeasonalContent } from '$lib/seasonal/seasonalContent';
     import { settingsStore } from '$lib/stores/settingsStore';
+    import Footer from "$lib/components/Footer.svelte";
 
     const seasonal = getSeasonalContent();
     let isMobileMenuOpen = false;
@@ -111,6 +112,8 @@
                                         <span class="slider"></span>
                                     </div>
                                 </label>
+                                <hr class="border-gray-700 my-1">
+                                <Footer mode="menu" />
                             </div>
                         </div>
                     {/if}

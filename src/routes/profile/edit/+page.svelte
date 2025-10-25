@@ -8,6 +8,7 @@
     import { userStore } from '$lib/stores';
     import { modal } from '$lib/stores/modalStore';
     import { goto } from '$app/navigation';
+    import { settingsStore } from '$lib/stores/settingsStore';
 
     export let data: PageData;
 
@@ -30,7 +31,7 @@
         const file = input.files?.[0];
         if (!file) return;
 
-        if (file.size > 5 * 1024 * 1024) { // 5 MB limit
+        if (file.size > 5 * 1024 * 1024) {
             modal.error('Файл слишком большой', 'Пожалуйста, выберите файл размером до 5 МБ.');
             input.value = '';
             return;
@@ -111,6 +112,32 @@
             isSavingProfile = false;
         }
     }
+
+    async function handleDeleteAccount() {
+        modal.confirm(
+            "Подтверждение удаления",
+            "Вы уверены, что хотите НАВСЕГДА удалить свою учетную запись? Все ваши данные (профиль, метка) будут стерты, а комментарии и сообщения в чате - анонимизированы. Это действие НЕЛЬЗЯ отменить.",
+            async () => {
+                try {
+                    const functions = getFunctions();
+                    const deleteAccountFunc = httpsCallable(functions, 'deleteAccount');
+
+                    modal.info("Удаление...", "Запускаем протокол полного стирания данных... Пожалуйста, подождите.");
+
+                    await deleteAccountFunc();
+
+                    modal.success("Учетная запись удалена", "Ваши данные стерты из системы. Вы будете перенаправлены на главную страницу.");
+
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 3000);
+
+                } catch (error: any) {
+                    modal.error("Ошибка удаления", error.message || "Не удалось удалить учетную запись. Свяжитесь с администрацией.");
+                }
+            }
+        );
+    }
 </script>
 
 <svelte:head>
@@ -140,18 +167,15 @@
 
     <div class="space-y-8">
         <h3 class="form-label font-display text-lg">// ИНФОРМАЦИЯ И ССЫЛКИ</h3>
-
         <div class="form-group">
             <label for="status" class="form-label font-display">СТАТУС</label>
             <input bind:value={status} type="text" id="status" class="input-field" placeholder="Чем вы сейчас заняты?" maxlength="100" disabled={isLoadingAvatar || isSavingProfile} />
             <p class="form-help-text">Короткое сообщение (макс. 100 симв.), которое будет видно в вашем профиле и на карте.</p>
         </div>
-
         <div class="form-group">
             <label for="about_me" class="form-label font-display">ОБО МНЕ</label>
-            <textarea bind:value={aboutMe} id="about_me" rows="5" class="input-field textarea-field" placeholder="Расскажите о себе..." disabled={isLoadingAvatar || isSavingProfile}></textarea>
+            <textarea bind:value={aboutMe} id="about_me" rows="5" class="input-field" placeholder="Расскажите о себе..." disabled={isLoadingAvatar || isSavingProfile}></textarea>
         </div>
-
         <div class="form-group">
             <label for="social_telegram" class="form-label font-display">TELEGRAM</label>
             <input bind:value={socials.telegram} type="text" id="social_telegram" class="input-field" placeholder="username (без @)" disabled={isLoadingAvatar || isSavingProfile} />
@@ -172,13 +196,23 @@
             <label for="social_website" class="form-label font-display">САЙТ</label>
             <input bind:value={socials.website} type="url" id="social_website" class="input-field" placeholder="https://..." disabled={isLoadingAvatar || isSavingProfile} />
         </div>
-
         <div class="flex flex-col sm:flex-row gap-4 pt-4">
             <NeonButton type="button" on:click={saveProfileData} extraClass="w-full" disabled={isLoadingAvatar || isSavingProfile}>
                 {isSavingProfile ? 'Сохранение...' : 'Сохранить информацию и ссылки'}
             </NeonButton>
             <a href="/profile/{data.profile.username || ''}" class="cancel-btn">Отмена</a>
         </div>
+    </div>
+
+    <hr class="separator"/>
+    <div class="space-y-4">
+         <h3 class="form-label font-display text-lg text-red-500">// ОПАСНАЯ ЗОНА</h3>
+         <div class="danger-zone-box">
+            <p class="text-gray-300">Полное и безвозвратное удаление вашей учетной записи.</p>
+            <button class="delete-account-btn" on:click={handleDeleteAccount}>
+                Удалить аккаунт
+            </button>
+         </div>
     </div>
 </div>
 
@@ -197,4 +231,7 @@
     .hidden-file-input { width: 0; height: 0; position: absolute; opacity: 0; z-index: -1; }
     .animate-pulse { animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    .danger-zone-box { background: rgba(255, 0, 60, 0.1); border: 1px solid var(--cyber-red, #ff3300); padding: 1rem; border-radius: var(--border-radius); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    .delete-account-btn { padding: 0.5rem 1rem; background: var(--cyber-red, #ff3300); color: #fff; border: none; border-radius: 4px; font-family: 'Chakra Petch', monospace; text-transform: uppercase; font-weight: bold; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+    .delete-account-btn:hover { background: #fff; color: var(--cyber-red, #ff3300); box-shadow: 0 0 15px var(--cyber-red, #ff3300); }
 </style>
