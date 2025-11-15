@@ -7,12 +7,21 @@
 :root {
     --bg-color-start: #1f2125;
     --bg-color-end: #101214;
-    --primary-color: #00f0ff;
+    --primary-color: #00f0ff; /* Старое название для --cyber-cyan */
     --secondary-bg-color: #1a1d21;
     --border-color: #30363d;
     --text-color: #e8e8e8;
     --text-muted-color: #909dab;
     --border-radius: 8px;
+
+    /* --- НОВЫЙ БЛОК: УНИВЕРСАЛЬНАЯ ПАЛИТРА --- */
+    /* Здесь мы определяем цвета по умолчанию */
+    --cyber-yellow: #fcee0a;
+    --cyber-cyan: #00f0ff;
+    --cyber-purple: #bd00ff;
+    --cyber-green: #39ff14;
+    --cyber-red: #ff003c;
+    /* --- КОНЕЦ НОВОГО БЛОКА --- */
 }
 
 @keyframes gradient-flow {
@@ -679,4 +688,315 @@ html {
 .setting-toggle input:checked + .slider::before {
     background-color: #fff;
     transform: translateX(20px);
+}
+/* === [ СИСТЕМА КАСТОМИЗАЦИИ: РАМКИ ПРОФИЛЯ ] === */
+
+@keyframes glitch-border-anim {
+    0% { clip-path: inset(90% 0 5% 0); } 20% { clip-path: inset(5% 0 80% 0); }
+    40% { clip-path: inset(45% 0 45% 0); } 60% { clip-path: inset(2% 0 90% 0); }
+    80% { clip-path: inset(60% 0 30% 0); } 100% { clip-path: inset(90% 0 5% 0); }
+}
+@keyframes high-roller-shine {
+    0% { background-position: -200% 0; } 100% { background-position: 200% 0; }
+}
+
+/* --- Базовый стиль для контейнера рамки --- */
+.avatar-wrapper {
+    position: relative;
+    /* Задаем жесткие размеры, равные аватару */
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.avatar-wrapper img {
+    border-radius: 50%;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+
+/* --- Рамка "Неоновый Поток" (Твой код, он идеален) --- */
+.avatar-wrapper.frame_neon_blue img {
+    outline: 3px solid var(--cyber-cyan);
+    outline-offset: 3px;
+    box-shadow: 0 0 15px var(--cyber-cyan), 0 0 25px var(--cyber-cyan);
+}
+
+/* --- Рамка "Системный Сбой" (Глитч) --- */
+.avatar-wrapper.frame_glitch::before,
+.avatar-wrapper.frame_glitch::after {
+    content: '';
+    position: absolute;
+    /* Растягиваем псевдоэлементы, делая их чуть больше */
+    top: -6px; left: -6px; right: -6px; bottom: -6px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+}
+.avatar-wrapper.frame_glitch::before {
+    border-color: #ff00c1;
+    animation: glitch-border-anim 1s infinite linear alternate-reverse;
+}
+.avatar-wrapper.frame_glitch::after {
+    border-color: #00f0ff;
+    animation: glitch-border-anim 1s 0.2s infinite linear alternate;
+}
+
+/* --- Рамка "Золотой Игрок" (High Roller) --- */
+.avatar-wrapper.frame_high_roller::before {
+    content: '';
+    position: absolute;
+    /* Точно так же растягиваем, чтобы создать отступ */
+    top: -7px; left: -7px; right: -7px; bottom: -7px;
+    border-radius: 50%;
+    padding: 3px;
+    background: conic-gradient(#ffd700, #f0e68c, #daa520, #f0e68c, #ffd700);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    animation: high-roller-shine 3s linear infinite;
+    background-size: 200% 100%;
+}
+/* === [ КАСТОМИЗАЦИЯ МАРКЕРОВ НА КАРТЕ ] === */
+
+/* --- Базовый стиль для маркера (уже есть, но проверим) --- */
+.user-avatar-marker {
+    box-shadow: 0 0 8px rgba(252, 238, 10, 0.7);
+    transition: transform 0.2s ease-out;
+    border-radius: 50%;
+    overflow: hidden;
+}
+.user-avatar-marker:hover {
+    transform: scale(1.1);
+}
+.user-avatar-marker img {
+    border: 2px solid var(--cyber-yellow, #fcee0a);
+    background-color: #333;
+}
+
+/* --- Стили для рамок на маркерах --- */
+/* Убираем стандартную желтую рамку, если есть кастомная */
+.user-avatar-marker.frame_neon_blue img,
+.user-avatar-marker.frame_glitch img,
+.user-avatar-marker.frame_high_roller img {
+    border: none;
+}
+
+/* --- Неоновая рамка (уменьшенная) --- */
+.user-avatar-marker.frame_neon_blue {
+    border: 2px solid var(--cyber-cyan);
+    box-shadow: 0 0 8px var(--cyber-cyan), 0 0 12px var(--cyber-cyan);
+}
+
+/* --- Глитч-рамка (уменьшенная) --- */
+.user-avatar-marker.frame_glitch::before,
+.user-avatar-marker.frame_glitch::after {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+}
+.user-avatar-marker.frame_glitch::before {
+    border-color: #ff00c1;
+    animation: glitch-border-anim 1s infinite linear alternate-reverse;
+}
+.user-avatar-marker.frame_glitch::after {
+    border-color: #00f0ff;
+    animation: glitch-border-anim 1s 0.2s infinite linear alternate;
+}
+
+/* --- Золотая рамка (уменьшенная) --- */
+.user-avatar-marker.frame_high_roller::before {
+    content: '';
+    position: absolute;
+    top: -3px; left: -3px; right: -3px; bottom: -3px;
+    border-radius: 50%;
+    padding: 2px; /* Толщина рамки */
+    background: conic-gradient(#ffd700, #f0e68c, #daa520, #f0e68c, #ffd700);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    animation: high-roller-shine 3s linear infinite;
+    background-size: 200% 100%;
+}
+/* === [ КАСТОМИЗАЦИЯ АВАТАРОВ В ПОПАПЕ НА КАРТЕ ] === */
+
+/* Базовый контейнер. Он будет "холстом" для рамки. */
+.avatar-wrapper-popup {
+    position: relative;
+    width: 48px;  /* Размер аватара в попапе */
+    height: 48px; /* Размер аватара в попапе */
+    flex-shrink: 0; /* Чтобы flex-контейнер его не сжимал */
+}
+.avatar-wrapper-popup .popup-avatar {
+    width: 100%;
+    height: 100%;
+    /* Убираем рамку с самой картинки, ей будет управлять контейнер */
+    border: none;
+}
+
+/* --- Рамка "Неоновый Поток" (версия для попапа) --- */
+.avatar-wrapper-popup.frame_neon_blue {
+    border-radius: 50%;
+    border: 2px solid var(--cyber-cyan);
+    box-shadow: 0 0 8px var(--cyber-cyan), 0 0 12px var(--cyber-cyan);
+}
+
+/* --- Рамка "Системный Сбой" (версия для попапа) --- */
+.avatar-wrapper-popup.frame_glitch::before,
+.avatar-wrapper-popup.frame_glitch::after {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+}
+.avatar-wrapper-popup.frame_glitch::before {
+    border-color: #ff00c1;
+    animation: glitch-border-anim 1s infinite linear alternate-reverse;
+}
+.avatar-wrapper-popup.frame_glitch::after {
+    border-color: #00f0ff;
+    animation: glitch-border-anim 1s 0.2s infinite linear alternate;
+}
+
+/* --- Рамка "Золотой Игрок" (версия для попапа) --- */
+.avatar-wrapper-popup.frame_high_roller::before {
+    content: '';
+    position: absolute;
+    top: -4px; left: -4px; right: -4px; bottom: -4px;
+    border-radius: 50%;
+    padding: 2px;
+    background: conic-gradient(#ffd700, #f0e68c, #daa520, #f0e68c, #ffd700);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    animation: high-roller-shine 3s linear infinite;
+    background-size: 200% 100%;
+}
+/* === [ КАСТОМИЗАЦИЯ АВАТАРОВ В КОММЕНТАРИЯХ ] === */
+
+.comment-avatar-wrapper.frame_neon_blue {
+    /* Используем outline, чтобы не влиять на размер элемента */
+    outline: 2px solid var(--cyber-cyan);
+    outline-offset: 2px; /* Добавляем отступ от края */
+    box-shadow: 0 0 8px var(--cyber-cyan), 0 0 12px var(--cyber-cyan);
+}
+
+.comment-avatar-wrapper.frame_glitch::before,
+.comment-avatar-wrapper.frame_glitch::after {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+}
+.comment-avatar-wrapper.frame_glitch::before {
+    border-color: #ff00c1;
+    animation: glitch-border-anim 1s infinite linear alternate-reverse;
+}
+.comment-avatar-wrapper.frame_glitch::after {
+    border-color: #00f0ff;
+    animation: glitch-border-anim 1s 0.2s infinite linear alternate;
+}
+
+.comment-avatar-wrapper.frame_high_roller::before {
+    content: '';
+    position: absolute;
+    top: -4px; left: -4px; right: -4px; bottom: -4px;
+    border-radius: 50%;
+    padding: 2px;
+    background: conic-gradient(#ffd700, #f0e68c, #daa520, #f0e68c, #ffd700);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    animation: high-roller-shine 3s linear infinite;
+    background-size: 200% 100%;
+}
+/* === [ КАЗИНО: СЕКРЕТНЫЙ МАРКЕР НА КАРТЕ ] === */
+
+@keyframes neon-flicker {
+    0%, 100% {
+        opacity: 1;
+        text-shadow: 0 0 5px #ff00c1, 0 0 10px #ff00c1, 0 0 20px #ff00c1;
+    }
+    50% {
+        opacity: 0.8;
+        text-shadow: 0 0 2px #ff00c1, 0 0 5px #ff00c1;
+    }
+}
+
+@keyframes glow-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+.custom-casino-icon {
+    background: transparent !important;
+    border: none !important;
+}
+
+.casino-marker-wrapper {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.casino-marker-sign {
+    font-family: 'Chakra Petch', monospace;
+    font-weight: bold;
+    font-size: 2.2rem; /* Увеличили размер символа */
+    line-height: 1; /* Для идеального центрирования */
+    color: #fff;
+    background: #111;
+
+    /* Делаем круглый знак */
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 2px solid #ff00c1;
+    z-index: 2;
+
+    animation: neon-flicker 2.5s infinite ease-in-out;
+    transition: all 0.2s;
+}
+
+.casino-marker-wrapper:hover .casino-marker-sign {
+    transform: scale(1.1);
+    background: #000;
+}
+
+.casino-marker-glow {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #ff00c1;
+    z-index: 1;
+    animation: glow-pulse 3s infinite;
 }

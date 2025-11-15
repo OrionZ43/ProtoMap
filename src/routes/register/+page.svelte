@@ -72,7 +72,9 @@
             const userDocRef = doc(db, "users", user.uid);
             await setDoc(userDocRef, {
                 username: finalUsername, email: user.email, about_me: "",
-                avatar_url: "", social_link: "", createdAt: serverTimestamp()
+                avatar_url: "", social_link: "", createdAt: serverTimestamp(),
+                casino_credits: 100,
+                last_daily_bonus: null
             });
             console.log("Пользователь зарегистрирован:", user.uid);
              const token = await user.getIdToken();
@@ -108,7 +110,9 @@
                 await setDoc(userDocRef, {
                     username: user.displayName || `user_${user.uid.substring(0, 6)}`,
                     email: user.email, avatar_url: user.photoURL || "", social_link: "",
-                    about_me: "Вошел с помощью Google", createdAt: serverTimestamp()
+                    about_me: "Вошел с помощью Google", createdAt: serverTimestamp(),
+                    casino_credits: 100,
+                    last_daily_bonus: null,
                 });
             }
             goto('/');

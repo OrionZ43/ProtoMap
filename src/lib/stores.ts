@@ -13,6 +13,11 @@ export type UserProfile = {
     social_link: string;
     about_me: string;
     status?: string;
+    casino_credits: number;
+    last_daily_bonus: Date | null;
+    owned_items: string[];
+    equipped_frame: string | null;
+    equipped_badge: string | null;
 };
 
 type AuthStore = {
@@ -43,6 +48,8 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
                 social_link: data.social_link || '',
                 about_me: data.about_me || '',
                 status: data.status || '',
+                casino_credits: data.casino_credits || 100,
+                last_daily_bonus: data.last_daily_bonus ? data.last_daily_bonus.toDate() : null,
             };
         }
         token = await userAuth.getIdToken();

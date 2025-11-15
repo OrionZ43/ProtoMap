@@ -19,6 +19,7 @@
     let initializationComplete = false;
     let showCinematicIntro = true;
     let isProfileVisible = false;
+    let isSubmitting = false;
 
     const containerOpacity = tweened(0, { duration: 500, easing: quintOut });
 
@@ -65,6 +66,51 @@
     $: isOwner = $userStore.user && $userStore.user.uid === data.profile.uid;
     $: socials = data.profile.socials || {};
     $: hasSocials = Object.values(socials).some(link => !!link);
+
+    async function handleAddComment() {
+        if (!commentText.trim() || isSubmitting) return;
+
+        isSubmitting = true;
+        try {
+            const functions = getFunctions();
+            const addCommentFunc = httpsCallable(functions, 'addComment');
+
+            await addCommentFunc({
+                profileUid: data.profile.uid,
+                text: commentText
+            });
+
+            commentText = '';
+
+        } catch (error: any) {
+            modal.error("Ошибка", error.message || "Не удалось добавить комментарий.");
+        } finally {
+            isSubmitting = false;
+        }
+    }
+
+async function handleDeleteComment(commentId: string) {
+    modal.confirm(
+        "Удаление комментария",
+        "Вы уверены, что хотите удалить этот комментарий? Это действие нельзя отменить.",
+        async () => {
+            try {
+                const functions = getFunctions();
+                const deleteCommentFunc = httpsCallable(functions, 'deleteComment');
+
+                await deleteCommentFunc({
+                    profileUid: data.profile.uid,
+                    commentId: commentId
+                });
+
+                modal.success("Успешно", "Комментарий удален.");
+
+            } catch (error: any) {
+                modal.error("Ошибка удаления", error.message || "Не удалось удалить комментарий.");
+            }
+        }
+    );
+}
 
     async function handleReportProfile() {
         if (!$userStore.user) {
@@ -138,13 +184,12 @@
 {#if showCinematicIntro}
     <CinematicLoader
         username={data.profile.username}
-        avatar_url={data.profile.avatar_url}
-        status={data.profile.status}
         on:finished={handleIntroFinished}
     />
 {/if}
 
 {#if isProfileVisible}
+<div class="hidden neon-blue-frame glitch-frame high-roller-frame"></div>
     <div class="container mx-auto px-4" transition:fade={{ duration: 300 }}>
         <div class="profile-container cyber-panel pb-12" style="opacity: {$containerOpacity}">
 
@@ -164,13 +209,15 @@
             </div>
 
             <div class="profile-header">
-                <img
-                    src={data.profile.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${data.profile.username}`}
-                    alt="Аватар {data.profile.username}"
-                    class="profile-avatar"
-                />
-                <h2 class="profile-username font-display">{data.profile.username}</h2>
-            </div>
+                <div class="avatar-wrapper {data.profile.equipped_frame || ''}">
+        <img
+            src={data.profile.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${data.profile.username}`}
+            alt="Аватар {data.profile.username}"
+            class="profile-avatar"
+        />
+    </div>
+    <h2 class="profile-username font-display">{data.profile.username}</h2>
+</div>
 
             <div class="profile-content">
                 {#if hasSocials}
@@ -484,13 +531,15 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
             <h4 class="font-display text-2xl text-cyber-yellow mb-6 text-center">// КОММЕНТАРИИ ({data.comments.length})</h4>
 
             {#if $userStore.user}
-                <form method="POST" action="?/addComment" use:enhance class="add-comment-form">
+                <form on:submit|preventDefault={handleAddComment} class="add-comment-form">
                     <img src={$userStore.user.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user.username}`} alt="Ваш аватар" class="comment-avatar" />
                     <div class="flex-grow">
                         <textarea name="commentText" bind:value={commentText} placeholder="Оставить комментарий..." class="input-field" rows="3"></textarea>
                         {#if form?.addCommentError}<p class="error-message-small">{form.addCommentError}</p>{/if}
                     </div>
-                    <NeonButton type="submit" extraClass="self-start">Отправить</NeonButton>
+                    <NeonButton type="submit" extraClass="self-start" disabled={isSubmitting}>
+                    {isSubmitting ? 'Отправка...' : 'Отправить'}
+                    </NeonButton>
                 </form>
             {:else}
                 <p class="text-center text-gray-400 py-4"><a href="/login" class="text-cyber-yellow hover:underline">Войдите</a>, чтобы оставлять комментарии.</p>
@@ -500,9 +549,9 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
                 {#if data.comments.length > 0}
                     {#each data.comments as comment (comment.id)}
                         <div class="comment-card" transition:fade>
-                            <a href={`/profile/${comment.author_username}`} class="shrink-0">
-                                <img src={comment.author_avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${comment.author_username}`} alt="Аватар {comment.author_username}" class="comment-avatar" />
-                            </a>
+                <a href={`/profile/${comment.author_username}`} class="comment-avatar-wrapper {comment.author_equipped_frame || ''}">
+                    <img src={comment.author_avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${comment.author_username}`} alt="Аватар {comment.author_username}" class="comment-avatar" />
+                </a>
                             <div class="flex-grow">
                                 <div class="comment-header">
                                     <a href={`/profile/${comment.author_username}`} class="comment-author">{comment.author_username}</a>
@@ -512,15 +561,13 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
                                 <div class="comment-actions">
                                     {#if $userStore.user}
                                         {#if comment.author_uid === $userStore.user.uid}
-                                            <form method="POST" action="?/deleteComment" use:enhance class="inline">
-                                                <input type="hidden" name="commentId" value={comment.id} />
-                                                <input type="hidden" name="profileUid" value={data.profile.uid} />
-                                                <button type="submit" class="action-btn">Удалить</button>
-                                            </form>
-                                        {:else}
-                                            <button on:click={() => handleReportComment(comment.id, comment.author_username)} class="action-btn">
-                                                Пожаловаться
-                                            </button>
+                                            <button on:click={() => handleDeleteComment(comment.id)} type="button" class="action-btn">
+                                Удалить
+                            </button>
+                        {:else}
+                            <button on:click={() => handleReportComment(comment.id, comment.author_username)} class="action-btn">
+                                Пожаловаться
+                            </button>
                                         {/if}
                                     {/if}
                                 </div>
@@ -650,5 +697,30 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
         @apply absolute top-1/2 left-2 w-2 h-2 rounded-full bg-cyber-yellow;
         transform: translateY(-50%);
         box-shadow: 0 0 5px var(--cyber-yellow);
+    }
+ .avatar-wrapper {
+    position: relative;
+    display: inline-block;
+    border-radius: 50%;
+    line-height: 0;
+}
+
+.profile-avatar {
+    @apply w-32 h-32 rounded-full object-cover;
+    box-shadow: none;
+    border: none;
+}
+.add-comment-form .comment-avatar { @apply border-cyber-yellow; }
+
+.comment-avatar-wrapper {
+        position: relative;
+        flex-shrink: 0;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+    }
+    .comment-avatar {
+        @apply w-12 h-12 rounded-full object-cover;
+        border: none;
     }
 </style>

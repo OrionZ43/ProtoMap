@@ -11,7 +11,8 @@ export type SoundName =
     | 'message'
     | 'click_alt'
     | 'popup_open'
-    | 'popup_close';
+    | 'popup_close'
+    | 'entercasino';
 
 const soundFiles: Record<SoundName, string> = {
     click: '/sounds/click.mp3',
@@ -21,6 +22,7 @@ const soundFiles: Record<SoundName, string> = {
     click_alt: '/sounds/click_for_other_buttons.mp3',
     popup_open: '/sounds/popup_open.mp3',
     popup_close: '/sounds/popup_closed.mp3',
+    entercasino: '/sounds/entercasino.mp3',
 };
 
 let sounds: Partial<Record<SoundName, Howl>> = {};

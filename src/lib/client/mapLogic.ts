@@ -10,13 +10,19 @@ type MarkerUserData = {
     username: string;
     avatar_url: string;
     status?: string | null;
+    equipped_frame?: string | null;
 };
 
 function createCyberPopup(userData: MarkerUserData, city: string, isOwner: boolean): string {
     const profileUrl = `/profile/${encodeURIComponent(userData.username.trim())}`;
     const defaultAvatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(userData.username.trim())}`;
 
-    const avatarImg = `<img src="${userData.avatar_url || defaultAvatar}" alt="Аватар" class="popup-avatar" onerror="this.onerror=null; this.src='${defaultAvatar}';"/>`;
+    const frameClass = userData.equipped_frame || '';
+    const avatarImg = `
+        <div class="avatar-wrapper-popup ${frameClass}">
+            <img src="${userData.avatar_url || defaultAvatar}" alt="Аватар" class="popup-avatar" onerror="this.onerror=null; this.src='${defaultAvatar}';"/>
+        </div>
+    `;
 
     const statusHTML = userData.status
         ? `<p class="popup-status">"${escapeHtml(userData.status)}"</p>`
@@ -66,11 +72,14 @@ function escapeHtml(unsafe: string): string {
     return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-function createUserAvatarIcon(avatarUrl: string | null | undefined, username: string): L.DivIcon {
-    const defaultAvatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(username.trim())}`;
-    const imageUrl = avatarUrl || defaultAvatar;
+function createUserAvatarIcon(userData: MarkerUserData): L.DivIcon {
+    const defaultAvatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(userData.username.trim())}`;
+    const imageUrl = userData.avatar_url || defaultAvatar;
     const iconSize = 38;
-    const iconHtml = `<div class="user-avatar-marker" style="width: ${iconSize}px; height: ${iconSize}px;"><img src="${imageUrl}" alt="Аватар ${username}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid var(--cyber-yellow, #fcee0a); background-color: #333;" onerror="this.onerror=null; this.src='${defaultAvatar}';"/></div>`;
+
+    const frameClass = userData.equipped_frame || '';
+    const iconHtml = `<div class="user-avatar-marker ${frameClass}" style="width: ${iconSize}px; height: ${iconSize}px;"><img src="${imageUrl}" alt="Аватар ${userData.username}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background-color: #333;" onerror="this.onerror=null; this.src='${defaultAvatar}';"/></div>`;
+
     return L.divIcon({ html: iconHtml, className: 'custom-leaflet-div-icon', iconSize: [iconSize, iconSize], iconAnchor: [iconSize / 2, iconSize], popupAnchor: [0, -42] });
 }
 
@@ -149,10 +158,39 @@ export function initMap(containerId: string) {
 
     const userMarkers: { [key: string]: L.Marker } = {};
 
+    const casinoIconHtml = `
+        <div class="casino-marker-wrapper">
+            <div class="casino-marker-sign">¢</div>
+            <div class="casino-marker-glow"></div>
+        </div>
+    `;
+
+    const casinoIcon = L.divIcon({
+        html: casinoIconHtml,
+        className: 'custom-casino-icon',
+        iconSize: [60, 60],
+        iconAnchor: [30, 30]
+    });
+
+    const casinoMarker = L.marker([25.76, -71.00], { icon: casinoIcon }); // Координаты в Бермудском треугольнике
+
+    casinoMarker.on('click', () => {
+        // Проигрываем какой-нибудь "секретный" звук
+        AudioManager.play('entercasino'); // Например, звук успеха
+
+        // Добавляем небольшую задержку для "вау-эффекта"
+        setTimeout(() => {
+            // Используем нативный редирект, так как goto из svelte/navigation здесь недоступен
+            window.location.href = '/casino';
+        }, 300);
+    });
+
+    casinoMarker.addTo(map);
+
     function addOrUpdateMarker(userData: MarkerUserData, lat: number, lng: number, city: string): void {
         const isOwner = currentUserProfile?.username?.trim() === userData.username.trim();
         const popupContent = createCyberPopup(userData, city, isOwner);
-        const customUserIcon = createUserAvatarIcon(userData.avatar_url, userData.username);
+        const customUserIcon = createUserAvatarIcon(userData);
         const usernameKey = userData.username.trim();
 
         if (userMarkers[usernameKey]) {
@@ -201,7 +239,8 @@ export function initMap(containerId: string) {
                 const currentUserData: MarkerUserData = {
                     username: currentUser.username,
                     avatar_url: currentUser.avatar_url,
-                    status: currentUser.status
+                    status: currentUser.status,
+                    equipped_frame: currentUser.equipped_frame
                 };
                 addOrUpdateMarker(currentUserData, data.placeLat, data.placeLng, data.foundCity);
                 const trimmedUsernameKey = currentUser.username.trim();
@@ -226,8 +265,8 @@ export function initMap(containerId: string) {
         if (currentUser) {
             map.on('click', (e: L.LeafletMouseEvent) => {
                 const { lat, lng } = e.latlng;
-        modal.confirm("Подтверждение", "Добавить/переместить вашу метку в эту точку?", () => {
-            sendLocationToServer(lat, lng, currentUser);
+                modal.confirm("Подтверждение", "Добавить/переместить вашу метку в эту точку?", () => {
+                    sendLocationToServer(lat, lng, currentUser);
                 });
             });
 
@@ -304,10 +343,6 @@ export function initMap(containerId: string) {
                 (map as any).geocontrol = null;
             }
         }
-
-        if (markers.getLayers().length > 0) {
-            loadAllMarkers();
-        }
     }
 
     loadAllMarkers();
@@ -319,6 +354,7 @@ export function initMap(containerId: string) {
         currentUserProfile = storeValue.user;
         setupMapInteraction(storeValue.user);
     });
+
     map.on('popupopen', (e) => {
         AudioManager.play('popup_open');
     });
@@ -327,5 +363,5 @@ export function initMap(containerId: string) {
         AudioManager.play('popup_close');
     });
 
-    return { map, markers, addOrUpdateMarkerFn: addOrUpdateMarker };
+    return { map, markers };
 }

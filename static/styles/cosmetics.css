@@ -1,0 +1,90 @@
+/* === [ ProtoMap Cosmetics Engine: v2 ] === */
+
+/* --- Анимации, используемые в рамках --- */
+@keyframes neon-pulse-blue {
+    0%, 100% { box-shadow: 0 0 5px #00f0ff, 0 0 10px #00f0ff, inset 0 0 5px #00f0ff; opacity: 0.8; }
+    50% { box-shadow: 0 0 15px #00f0ff, 0 0 30px #00f0ff, inset 0 0 10px #00f0ff; opacity: 1; }
+}
+
+/* ВОЗВРАЩАЕМ СТАРУЮ, ПЛАВНУЮ АНИМАЦИЮ ГЛИТЧА */
+@keyframes glitch-border {
+    0% { clip-path: inset(0 0 95% 0); }
+    20% { clip-path: inset(40% 0 40% 0); }
+    40% { clip-path: inset(80% 0 10% 0); }
+    60% { clip-path: inset(10% 0 88% 0); }
+    80% { clip-path: inset(95% 0 0 0); }
+    100% { clip-path: inset(0 0 95% 0); }
+}
+
+@keyframes gold-shine {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@keyframes rotate-hue {
+    to { filter: hue-rotate(360deg); }
+}
+
+/* --- Базовый стиль контейнера аватара --- */
+.avatar-container-with-frame {
+    position: relative;
+    border-radius: 50%;
+    padding: 5px;
+    margin: -5px;
+}
+.avatar-container-with-frame img, .avatar-placeholder {
+    border-radius: 50%;
+    display: block; /* Убирает лишние отступы */
+}
+
+
+/* === [ РАМКИ (FRAMES) ] === */
+
+/* --- Рамка: Неоновый Поток (Синий) v2.0 --- */
+.neon-blue-frame {
+    border: 3px solid #00f0ff;
+    animation: neon-pulse-blue 2.5s infinite ease-in-out;
+}
+
+/* --- Рамка: Системный Сбой (Глитч) v2.0 --- */
+.glitch-frame::before,
+.glitch-frame::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    border: 3px solid;
+    /* Убираем steps(), возвращаем плавность */
+    animation-timing-function: linear;
+}
+.glitch-frame::before {
+    border-color: #ff00c1;
+    animation: glitch-border 1.5s infinite alternate-reverse;
+}
+.glitch-frame::after {
+    border-color: #00f0ff;
+    animation: glitch-border 1.5s 0.2s infinite alternate;
+}
+
+
+/* --- Рамка: Золотой Игрок (High Roller) v2.0 --- */
+.high-roller-frame {
+    padding: 4px;
+    border: 2px solid #ffd700;
+    border-radius: 50%;
+    box-shadow: 0 0 20px #ffd700, inset 0 0 10px rgba(255, 215, 0, 0.5);
+    position: relative;
+    overflow: hidden; /* Важно для эффекта блика */
+}
+.high-roller-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Эффект блика, который будет "пробегать" по рамке */
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: gold-shine 3s infinite linear;
+}

@@ -38,6 +38,89 @@ const ALLOWED_ORIGINS = ["http://localhost:5173",
     return false;
 };
 
+export const deleteComment = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Необходима авторизация.');
+    }
+    const currentUserUid = request.auth.uid;
+    const { profileUid, commentId } = request.data;
+
+    if (!profileUid || !commentId) {
+        throw new HttpsError('invalid-argument', 'Неверные данные для удаления комментария.');
+    }
+
+    try {
+        const db = admin.firestore();
+        const commentRef = db.collection('users').doc(profileUid).collection('comments').doc(commentId);
+        const commentDoc = await commentRef.get();
+
+        if (!commentDoc.exists) {
+            throw new HttpsError('not-found', 'Комментарий не найден.');
+        }
+
+        const commentData = commentDoc.data()!;
+
+        if (commentData.author_uid !== currentUserUid) {
+            throw new HttpsError('permission-denied', 'Вы не можете удалить чужой комментарий.');
+        }
+
+        await commentRef.delete();
+
+        console.log(`[deleteComment] Пользователь ${currentUserUid} удалил комментарий ${commentId}`);
+        return { status: 'success', message: 'Комментарий удален.' };
+
+    } catch (error: any) {
+        console.error(`[deleteComment] Ошибка при удалении комментария ${commentId}:`, error);
+        if (error instanceof HttpsError) {
+            throw error;
+        }
+        throw new HttpsError('internal', 'Ошибка сервера при удалении комментария.');
+    }
+});
+
+export const addComment = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Необходимо войти, чтобы оставлять комментарии.');
+    }
+    const authorUid = request.auth.uid;
+    const { profileUid, text } = request.data;
+
+    if (!profileUid || !text || typeof text !== 'string' || text.trim().length === 0) {
+        throw new HttpsError('invalid-argument', 'Не предоставлены все данные (ID профиля и текст).');
+    }
+    if (text.length > 1000) {
+        throw new HttpsError('invalid-argument', 'Комментарий слишком длинный.');
+    }
+
+    try {
+        const db = admin.firestore();
+        const authorDoc = await db.collection('users').doc(authorUid).get();
+        if (!authorDoc.exists) {
+            throw new HttpsError('not-found', 'Профиль автора комментария не найден.');
+        }
+        const authorData = authorDoc.data()!;
+        const newComment = {
+            text: text.trim(),
+            author_uid: authorUid,
+            author_username: authorData.username,
+            author_avatar_url: authorData.avatar_url || '',
+            createdAt: FieldValue.serverTimestamp()
+        };
+
+        await db.collection('users').doc(profileUid).collection('comments').add(newComment);
+
+        console.log(`[addComment] Пользователь ${authorUid} оставил комментарий в профиле ${profileUid}`);
+        return { status: 'success', message: 'Комментарий успешно добавлен!' };
+
+    } catch (error: any) {
+        console.error(`[addComment] Ошибка при добавлении комментария:`, error);
+        if (error instanceof HttpsError) {
+            throw error;
+        }
+        throw new HttpsError('internal', 'Произошла ошибка на сервере при добавлении комментария.');
+    }
+});
+
 export const checkUsername = onRequest(
   { cors: false },
   async (request, response) => {
@@ -69,6 +152,315 @@ export const checkUsername = onRequest(
     }
   },
 );
+
+export const updateEquippedItems = onCall({ cors: ALLOWED_ORIGINS }, async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Необходима аутентификация.');
+    }
+
+    const { equipped_frame } = request.data;
+    const uid = request.auth.uid;
+    const db = admin.firestore();
+    const userRef = db.collection('users').doc(uid);
+
+    if (equipped_frame !== null && typeof equipped_frame !== 'string') {
+        throw new HttpsError('invalid-argument', 'Неверный ID рамки.');
+    }
+
+    try {
+        const userDoc = await userRef.get();
+        if (!userDoc.exists) {
+            throw new HttpsError('not-found', 'Профиль пользователя не найден.');
+        }
+
+        const userData = userDoc.data() as any;
+        const ownedItems = userData.owned_items || [];
+
+        if (equipped_frame !== null && !ownedItems.includes(equipped_frame)) {
+            throw new HttpsError('permission-denied', 'Вы не владеете этим предметом.');
+        }
+
+        await userRef.update({
+            equipped_frame: equipped_frame
+        });
+
+        return { data: { status: 'success', message: 'Кастомизация сохранена!' } };
+
+    } catch (error: any) {
+        console.error(`[updateEquippedItems] Ошибка для UID: ${uid}. Ошибка:`, error);
+        if (error.code) { throw error; }
+        throw new HttpsError('internal', 'Ошибка сервера при сохранении кастомизации.');
+    }
+});
+
+export const purchaseShopItem = onCall({ cors: ALLOWED_ORIGINS }, async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Необходима аутентификация.');
+    }
+
+    const { itemId } = request.data;
+    const uid = request.auth.uid;
+    const db = admin.firestore();
+
+    if (!itemId || typeof itemId !== 'string') {
+        throw new HttpsError('invalid-argument', 'Неверный ID предмета.');
+    }
+
+    const userRef = db.collection('users').doc(uid);
+    const itemRef = db.collection('shop_items').doc(itemId);
+
+    try {
+        await db.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            const itemDoc = await transaction.get(itemRef);
+
+            if (!userDoc.exists) { throw new HttpsError('not-found', 'Профиль пользователя не найден.'); }
+            if (!itemDoc.exists) { throw new HttpsError('not-found', 'Предмет не найден в магазине.'); }
+
+            const userData = userDoc.data() as any;
+            const itemData = itemDoc.data() as any;
+
+            const currentCredits = userData.casino_credits || 0;
+            const itemPrice = itemData.price || 999999;
+            const ownedItems = userData.owned_items || [];
+
+            if (ownedItems.includes(itemId)) {
+                throw new HttpsError('already-exists', 'Вы уже владеете этим предметом.');
+            }
+            if (currentCredits < itemPrice) {
+                throw new HttpsError('failed-precondition', 'Недостаточно Протокоинов.');
+            }
+
+            transaction.update(userRef, {
+                casino_credits: currentCredits - itemPrice,
+                owned_items: FieldValue.arrayUnion(itemId)
+            });
+        });
+
+        return { data: { status: 'success', message: 'Покупка совершена!' } };
+
+    } catch (error: any) {
+        console.error(`[purchaseShopItem] Ошибка для UID: ${uid}, ItemID: ${itemId}. Ошибка:`, error);
+        if (error.code) { throw error; }
+        throw new HttpsError('internal', 'Произошла ошибка на сервере во время покупки.');
+    }
+});
+
+export const playSlotMachine = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Необходима аутентификация.');
+    }
+
+    const { bet } = request.data;
+    const uid = request.auth.uid;
+    const db = admin.firestore();
+    const userRef = db.collection('users').doc(uid);
+
+    if (typeof bet !== 'number' || !Number.isInteger(bet) || bet <= 0) {
+        throw new HttpsError('invalid-argument', 'Ставка должна быть положительным целым числом.');
+    }
+
+    try {
+        const result = await db.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists) {
+                throw new HttpsError('not-found', 'Пользователь не найден.');
+            }
+
+            const data = userDoc.data() as any;
+            let currentCredits = data.casino_credits;
+            if (currentCredits === undefined) { currentCredits = 100; }
+
+            if (currentCredits < bet) {
+                throw new HttpsError('failed-precondition', 'Недостаточно кредитов для совершения ставки.');
+            }
+
+            const newBalanceAfterBet = currentCredits - bet;
+
+            let finalReels: string[] = [];
+            let winMultiplier = 0;
+            let lossAmount = 0;
+
+            const randomPercent = Math.random() * 100;
+
+            if (randomPercent < 0.01) {
+                finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo'];
+                winMultiplier = 100;
+            } else if (randomPercent < 0.05) {
+                finalReels = ['glitch-6', 'glitch-6', 'glitch-6'];
+                lossAmount = 666;
+            } else if (randomPercent < 0.5) {
+                finalReels = ['heart', 'heart', 'heart'];
+                winMultiplier = 25;
+            } else if (randomPercent < 2.5) {
+                finalReels = ['ram', 'ram', 'ram'];
+                winMultiplier = 10;
+            } else if (randomPercent < 12.5) {
+                finalReels = ['paw', 'paw', 'paw'];
+                winMultiplier = 5;
+            } else {
+                let reel1, reel2, reel3;
+                const baseSymbols = ['paw', 'ram', 'heart'];
+                do {
+                    reel1 = baseSymbols[Math.floor(Math.random() * baseSymbols.length)];
+                    reel2 = baseSymbols[Math.floor(Math.random() * baseSymbols.length)];
+                    reel3 = baseSymbols[Math.floor(Math.random() * baseSymbols.length)];
+                } while (reel1 === reel2 && reel2 === reel3);
+                finalReels = [reel1, reel2, reel3];
+            }
+
+            const winAmount = Math.floor(bet * winMultiplier);
+            const finalBalance = newBalanceAfterBet + winAmount - lossAmount;
+
+            transaction.update(userRef, {
+                casino_credits: finalBalance < 0 ? 0 : finalBalance,
+                last_game_played: FieldValue.serverTimestamp()
+            });
+
+            return {
+                reels: finalReels,
+                winAmount: winAmount,
+                lossAmount: lossAmount,
+                newBalance: finalBalance < 0 ? 0 : finalBalance,
+            };
+        });
+
+        return { data: result };
+
+    } catch (error: any) {
+        console.error(`[playSlotMachine] Ошибка для UID: ${uid}. Ошибка:`, error);
+        if (error.code) { throw error; }
+        throw new HttpsError('internal', 'Произошла ошибка на сервере во время игры.');
+    }
+});
+
+export const getDailyBonus = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Необходимо войти в систему для получения бонуса.');
+    }
+    const uid = request.auth.uid;
+    const db = admin.firestore();
+    const userRef = db.collection('users').doc(uid);
+
+    try {
+        const result = await db.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+
+            if (!userDoc.exists) {
+                throw new HttpsError('not-found', 'Пользователь не найден.');
+            }
+
+            const data = userDoc.data() as any;
+            const lastBonusTimestamp = data.last_daily_bonus;
+            let currentCredits = data.casino_credits;
+            if (currentCredits === undefined) {
+                currentCredits = 100;
+            }
+            const now = Date.now();
+            const oneDayInMs = 24 * 60 * 60 * 1000;
+            const dailyBonusAmount = 25;
+
+            if (lastBonusTimestamp && (now - lastBonusTimestamp.toDate().getTime() < oneDayInMs)) {
+                const remainingTimeMs = oneDayInMs - (now - lastBonusTimestamp.toDate().getTime());
+                return {
+                    status: 'error',
+                    message: `Бонус уже был получен. Осталось ждать: ${Math.ceil(remainingTimeMs / (1000 * 60 * 60))} ч.`
+                };
+            }
+
+            transaction.update(userRef, {
+                casino_credits: currentCredits + dailyBonusAmount,
+                last_daily_bonus: FieldValue.serverTimestamp()
+            });
+
+            return {
+                status: 'success',
+                message: `Получен ежедневный бонус: +${dailyBonusAmount} кредитов!`,
+                new_balance: currentCredits + dailyBonusAmount
+            };
+        });
+
+        if (result.status === 'success') {
+            return { data: result };
+        } else {
+            throw new HttpsError('resource-exhausted', result.message);
+        }
+
+    } catch (error: any) {
+        if (error.code === 'resource-exhausted') {
+            throw error;
+        }
+        console.error("Ошибка при получении бонуса:", error);
+        throw new HttpsError('internal', 'Ошибка сервера при обработке бонуса.');
+    }
+});
+
+export const playCoinFlip = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Необходима аутентификация.');
+    }
+
+    const { bet, choice } = request.data;
+    const uid = request.auth.uid;
+    const db = admin.firestore();
+    const userRef = db.collection('users').doc(uid);
+
+    if (typeof bet !== 'number' || !Number.isInteger(bet) || bet <= 0) {
+        throw new HttpsError('invalid-argument', 'Ставка должна быть положительным целым числом.');
+    }
+    if (choice !== 'heads' && choice !== 'tails') {
+        throw new HttpsError('invalid-argument', 'Выбор должен быть "heads" или "tails".');
+    }
+
+    try {
+        const result = await db.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists) {
+                throw new HttpsError('not-found', 'Пользователь не найден.');
+            }
+
+            const data = userDoc.data() as any;
+            let currentCredits = data.casino_credits;
+            if (currentCredits === undefined) {
+            currentCredits = 100;
+            }
+            if (currentCredits < bet) {
+                throw new HttpsError('failed-precondition', 'Недостаточно кредитов для совершения ставки.');
+            }
+
+            const newBalanceAfterBet = currentCredits - bet;
+
+            const winMultiplier = 1.9;
+            const outcome: 'heads' | 'tails' = Math.random() < 0.5 ? 'heads' : 'tails';
+            const hasWon = choice === outcome;
+
+            let finalBalance = newBalanceAfterBet;
+            if (hasWon) {
+                finalBalance += Math.floor(bet * winMultiplier);
+            }
+
+            transaction.update(userRef, {
+                casino_credits: finalBalance
+            });
+
+            return {
+                outcome: outcome,
+                hasWon: hasWon,
+                newBalance: finalBalance,
+                creditsChange: finalBalance - currentCredits
+            };
+        });
+
+        return { data: result };
+
+    } catch (error: any) {
+        console.error(`[playCoinFlip] Ошибка для UID: ${uid}. Ошибка:`, error);
+        if (error.code) {
+            throw error;
+        }
+        throw new HttpsError('internal', 'Произошла ошибка на сервере во время игры.');
+    }
+});
 
 async function getDistrictCenterCoords(lat: number, lng: number): Promise<[string, number, number] | null> {
     const userAgent = process.env.NOMINATIM_USER_AGENT || 'ProtoMap/1.0 (kovalevd418@gmail.com)';
@@ -280,6 +672,7 @@ export const getLocations = onRequest(
             username: userData.username || "неизвестно",
             avatar_url: userData.avatar_url || null,
             status: userData.status || null,
+            equipped_frame: userData.equipped_frame || null
           } : null
         };
       }).filter(item => item.user && item.user.username !== "неизвестно");

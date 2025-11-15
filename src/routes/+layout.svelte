@@ -48,6 +48,7 @@
     {#if isHalloweenAnomalyActive}
         <link rel="stylesheet" href="/styles/halloween.css">
     {/if}
+    <link rel="stylesheet" href="/styles/cosmetics.css">
 </svelte:head>
 
 <div

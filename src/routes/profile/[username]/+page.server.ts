@@ -1,7 +1,7 @@
 import { firestoreAdmin } from '$lib/server/firebase.admin';
-import { error, fail } from '@sveltejs/kit';
-import type { PageServerLoad, Actions } from './$types';
-import { FieldValue } from 'firebase-admin/firestore';
+import { error } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
+import { FieldValue, FieldPath } from 'firebase-admin/firestore';
 
 export type Comment = {
     id: string;
@@ -9,6 +9,7 @@ export type Comment = {
     author_uid: string;
     author_username: string;
     author_avatar_url: string;
+    author_equipped_frame: string | null;
     createdAt: Date;
 };
 
@@ -29,123 +30,50 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
     const commentsRef = userProfileDoc.ref.collection('comments').orderBy('createdAt', 'desc').limit(20);
     const commentsSnapshot = await commentsRef.get();
 
+    const authorUids = [...new Set(commentsSnapshot.docs.map(doc => doc.data().author_uid).filter(Boolean))];
+    const authorsData = new Map<string, any>();
+
+    if (authorUids.length > 0) {
+        const authorPromises = [];
+        for (let i = 0; i < authorUids.length; i += 30) {
+            const chunk = authorUids.slice(i, i + 30);
+            const promise = firestoreAdmin.collection('users')
+                .where(FieldPath.documentId(), 'in', chunk)
+                .get()
+                .then(snapshot => {
+                    snapshot.forEach(doc => authorsData.set(doc.id, doc.data()));
+                });
+            authorPromises.push(promise);
+        }
+        await Promise.all(authorPromises);
+    }
+
     const comments: Comment[] = commentsSnapshot.docs.map(doc => {
         const data = doc.data();
+        const author = authorsData.get(data.author_uid);
         return {
             id: doc.id,
             text: data.text || '',
             author_uid: data.author_uid || '',
-            author_username: data.author_username || 'Аноним',
-            author_avatar_url: data.author_avatar_url || '',
+            author_username: author?.username || data.author_username || 'Аноним',
+            author_avatar_url: author?.avatar_url || data.author_avatar_url || '',
+            author_equipped_frame: author?.equipped_frame || null,
             createdAt: data.createdAt?.toDate() || new Date()
         };
     });
 
-    setHeaders({ 'Cache-Control': 'public, s-maxage=900, stale-while-revalidate=60' });
+    setHeaders({ 'Cache-Control': 'public, max-age=900, stale-while-revalidate=60' });
 
     return {
         profile: {
             uid: userProfileDoc.id,
             username: userProfileData.username,
             avatar_url: userProfileData.avatar_url,
-            social_link: userProfileData.social_link,
             about_me: userProfileData.about_me,
-            socials: userProfileData.socials || {}
+            status: userProfileData.status || null,
+            socials: userProfileData.socials || {},
+            equipped_frame: userProfileData.equipped_frame || null
         },
         comments: comments
     };
-};
-
-export const actions: Actions = {
-    addComment: async ({ request, locals, params }) => {
-        const currentUser = locals.user;
-        if (!currentUser) {
-            return fail(401, { error: 'Необходимо войти, чтобы оставлять комментарии.' });
-        }
-
-        const formData = await request.formData();
-        const commentText = formData.get('commentText') as string;
-
-        if (!commentText || commentText.trim().length === 0) {
-            return fail(400, { addCommentError: 'Комментарий не может быть пустым.', text: commentText });
-        }
-        if (commentText.length > 1000) {
-            return fail(400, { addCommentError: 'Комментарий слишком длинный.', text: commentText });
-        }
-
-        try {
-            const profileUsername = params.username;
-            if (!profileUsername) {
-                return fail(400, { addCommentError: 'Не указан профиль для комментирования.' });
-            }
-
-            const usersRef = firestoreAdmin.collection('users');
-            const userSnapshot = await usersRef.where('username', '==', profileUsername).limit(1).get();
-
-            if (userSnapshot.empty) {
-                return fail(404, { addCommentError: 'Профиль, который вы пытаетесь комментировать, не найден.' });
-            }
-            const profileDocRef = userSnapshot.docs[0].ref;
-
-            const authorDoc = await usersRef.doc(currentUser.uid).get();
-            const authorData = authorDoc.data();
-
-            if (!authorDoc.exists || !authorData) {
-                 return fail(404, { addCommentError: 'Ваш профиль не найден, невозможно оставить комментарий.' });
-            }
-
-            const newComment = {
-                text: commentText.trim(),
-                author_uid: currentUser.uid,
-                author_username: authorData.username,
-                author_avatar_url: authorData.avatar_url || '',
-                createdAt: FieldValue.serverTimestamp()
-            };
-
-            await profileDocRef.collection('comments').add(newComment);
-
-            return { addCommentSuccess: true, message: 'Комментарий добавлен!' };
-
-        } catch (e) {
-            console.error("Ошибка добавления комментария:", e);
-            return fail(500, { addCommentError: 'Ошибка сервера. Не удалось добавить комментарий.' });
-        }
-    },
-
-    deleteComment: async ({ request, locals }) => {
-        const currentUser = locals.user;
-        if (!currentUser) {
-            return fail(401, { error: 'Необходима авторизация.' });
-        }
-
-        const formData = await request.formData();
-        const commentId = formData.get('commentId') as string;
-        const profileUid = formData.get('profileUid') as string;
-
-        if (!commentId || !profileUid) {
-            return fail(400, { deleteCommentError: 'Неверные данные для удаления.' });
-        }
-
-        try {
-            const commentRef = firestoreAdmin.collection('users').doc(profileUid).collection('comments').doc(commentId);
-            const commentDoc = await commentRef.get();
-
-            if (!commentDoc.exists) {
-                return fail(404, { deleteCommentError: 'Комментарий не найден.' });
-            }
-
-            const commentData = commentDoc.data();
-            if (commentData?.author_uid !== currentUser.uid) {
-                return fail(403, { deleteCommentError: 'Вы не можете удалить чужой комментарий.' });
-            }
-
-            await commentRef.delete();
-
-            return { deleteCommentSuccess: true, message: 'Комментарий удален.' };
-
-        } catch (e) {
-            console.error("Ошибка удаления комментария:", e);
-            return fail(500, { deleteCommentError: 'Ошибка сервера при удалении.' });
-        }
-    }
 };
