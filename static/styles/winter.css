@@ -1,0 +1,220 @@
+/* === [ ПЕРЕОПРЕДЕЛЕНИЕ ПАЛИТРЫ: CRYOGENIC MODE ] === */
+:root {
+    /* Хак: подменяем "желтый" (основной акцент) на Ледяной Голубой */
+    --cyber-yellow: #00f3ff;
+    /* Подменяем "красный" (опасность) на Неоновый Розовый (Synthwave) */
+    --cyber-red: #ff00aa;
+    /* Дополнительный цвет: Чистый белый для снега */
+    --frost-white: #ffffff;
+
+    --text-color: #e0f7fa; /* Чуть голубоватый текст */
+}
+
+/* === [ ГЛОБАЛЬНАЯ АТМОСФЕРА ] === */
+
+body {
+    /* Холодный фоновый градиент */
+    background-image:
+        radial-gradient(circle at 50% 0%, rgba(0, 243, 255, 0.15), transparent 60%),
+        radial-gradient(ellipse at bottom, rgba(10, 20, 40, 1) 0%, #000000 100%);
+    overflow-x: hidden;
+}
+
+/* Эффект замерзшего экрана (виньетка с инеем) */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 999;
+    box-shadow: inset 0 0 80px rgba(0, 243, 255, 0.15);
+    background:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+    opacity: 0.6;
+    mix-blend-mode: overlay;
+}
+
+/* === [ ЦИФРОВОЙ СНЕГОПАД ] === */
+/* Используем два слоя падающих точек для параллакса */
+
+@keyframes snowfall {
+    0% { background-position: 0 0, 0 0; }
+    100% { background-position: 50px 100vh, -50px 100vh; }
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+        radial-gradient(2px 2px at 20px 30px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 50px 160px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 160px 120px, #fff, rgba(0,0,0,0));
+    background-size: 200px 200px;
+    opacity: 0.3;
+    animation: snowfall 20s linear infinite;
+}
+
+/* === [ НАВБАР: ГИРЛЯНДА И СОСУЛЬКИ ] === */
+
+nav.bg-gray-900\/50 {
+    border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+}
+
+/* Гирлянда под навбаром */
+@keyframes garland-blink {
+    0%, 100% { opacity: 0.5; box-shadow: 0 2px 5px var(--color); }
+    50% { opacity: 1; box-shadow: 0 2px 15px var(--color); }
+}
+
+nav .max-w-7xl::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    z-index: 55;
+    /* Генерируем точки гирлянды градиентом */
+    background-image:
+        radial-gradient(circle, #ff003c 2px, transparent 4px),
+        radial-gradient(circle, #00f3ff 2px, transparent 4px),
+        radial-gradient(circle, #39ff14 2px, transparent 4px),
+        radial-gradient(circle, #bd00ff 2px, transparent 4px);
+    background-size: 40px 6px;
+    background-position: 0 0, 10px 0, 20px 0, 30px 0;
+    background-repeat: repeat-x;
+    opacity: 0.8;
+    animation: garland-blink 2s infinite alternate;
+}
+
+/* Замена Паучка на Снежинку */
+.spider-scene {
+    top: 100%;
+}
+
+.spider-scene::before, .spider-scene::after {
+    display: none; /* Убираем лапки паука */
+}
+
+.spider-scene .heart {
+    /* Превращаем сердце в снежинку */
+    width: 30px;
+    height: 30px;
+    background-color: transparent;
+    -webkit-mask-image: none;
+    mask-image: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300f3ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12h20M12 2v20M20 20l-8-8-8 8M20 4l-8 8-8-8'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    filter: drop-shadow(0 0 5px var(--cyber-yellow));
+    animation: spin-slow 10s linear infinite;
+    left: 50%;
+}
+
+@keyframes spin-slow { from { transform: translateX(-50%) rotate(0deg); } to { transform: translateX(-50%) rotate(360deg); } }
+
+/* === [ UI ПАНЕЛИ: ЗАМЕРЗШЕЕ СТЕКЛО ] === */
+
+.cyber-panel {
+    background: rgba(10, 20, 30, 0.8) !important;
+    border: 1px solid rgba(0, 243, 255, 0.3) !important;
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.1), inset 0 0 20px rgba(0, 243, 255, 0.05) !important;
+}
+
+/* Убираем паутину из halloween.css, если она осталась, и добавляем иней */
+.cyber-panel::before, .cyber-panel::after {
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyber-yellow), transparent);
+    -webkit-mask-image: none;
+    mask-image: none;
+    opacity: 0.5;
+    animation: light-sweep 3s infinite linear;
+}
+
+.cyber-panel::before { top: 0; left: 0; }
+.cyber-panel::after { bottom: 0; right: 0; }
+
+/* === [ КАРТА: КРИО-РЕАКТОРЫ ] === */
+
+/* Кластеры превращаются в ледяные ядра */
+.reactor-core {
+    background: #001015 !important;
+    border-color: #00f3ff !important;
+    box-shadow: 0 0 15px #00f3ff, inset 0 0 10px #00f3ff !important;
+}
+
+.reactor-core .count {
+    color: #fff !important;
+    text-shadow: 0 0 10px #00f3ff;
+    font-family: 'Chakra Petch', monospace !important; /* Возвращаем техно-шрифт вместо хэллоуинского */
+}
+
+/* Кольца реактора становятся ледяными орбитами */
+.reactor-ring {
+    border-color: transparent !important;
+    border-top-color: rgba(255, 255, 255, 0.8) !important;
+    border-right-color: rgba(0, 243, 255, 0.5) !important;
+    filter: drop-shadow(0 0 2px #00f3ff);
+}
+
+.reactor-glow {
+    background: radial-gradient(circle, rgba(0, 243, 255, 0.4) 0%, transparent 70%) !important;
+    box-shadow: none !important;
+}
+
+/* Убираем тыкву если она была */
+.reactor-cluster::before { display: none !important; }
+
+/* === [ ТЕКСТОВЫЕ ЭФФЕКТЫ ] === */
+
+.font-display, .nav-brand, .title, .machine-title {
+    text-shadow:
+        0 0 5px #00f3ff,
+        0 0 10px #00f3ff,
+        0 0 20px #0077ff !important;
+}
+
+/* Глитч-текст становится бело-голубым */
+.glitch::before { text-shadow: -2px 0 #fff !important; }
+.glitch::after { text-shadow: 2px 0 #00f3ff !important; }
+
+/* === [ СКРОЛЛБАР ] === */
+
+::-webkit-scrollbar-thumb {
+    background-color: #00f3ff;
+    border: 2px solid #0a0a0a;
+}
+::-webkit-scrollbar-track {
+    background: #051015;
+}
+
+/* === [ КАЗИНО И МАГАЗИН ] === */
+
+/* Кнопки действий (Бонус, Магазин) */
+.panel-btn {
+    border-color: rgba(0, 243, 255, 0.4);
+    background: linear-gradient(180deg, rgba(0, 243, 255, 0.1), rgba(0, 0, 0, 0));
+}
+.panel-btn:hover {
+    box-shadow: 0 0 15px #00f3ff !important;
+    color: #fff;
+}
+
+/* Слот-машина: замена цветов */
+.win-tier-1 .particle { background: #00f3ff !important; }
+.jackpot-ticker { border-color: #00f3ff !important; color: #00f3ff !important; box-shadow: 0 0 10px #00f3ff !important; }
+
+/* === [ ГИРЛЯНДА ДЛЯ ПОПАПОВ НА КАРТЕ ] === */
+
+/* Небольшой праздничный штрих внутри попапа */
+.liquid-glass-popup {
+    border-top: 2px solid #00f3ff;
+    box-shadow: 0 10px 40px rgba(0, 243, 255, 0.2);
+}

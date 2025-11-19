@@ -283,24 +283,29 @@ export const playSlotMachine = onCall(async (request) => {
 
             const randomPercent = Math.random() * 100;
 
-            if (randomPercent < 0.01) {
+            if (randomPercent < 0.1) {
                 finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo'];
                 winMultiplier = 100;
-            } else if (randomPercent < 0.05) {
+            }
+            else if (randomPercent < 3.1) {
                 finalReels = ['glitch-6', 'glitch-6', 'glitch-6'];
                 lossAmount = 666;
-            } else if (randomPercent < 0.5) {
+            }
+            else if (randomPercent < 5.1) {
                 finalReels = ['heart', 'heart', 'heart'];
                 winMultiplier = 25;
-            } else if (randomPercent < 2.5) {
+            }
+            else if (randomPercent < 12.1) {
                 finalReels = ['ram', 'ram', 'ram'];
                 winMultiplier = 10;
-            } else if (randomPercent < 12.5) {
+            }
+            else if (randomPercent < 27.1) {
                 finalReels = ['paw', 'paw', 'paw'];
                 winMultiplier = 5;
-            } else {
+            }
+            else {
                 let reel1, reel2, reel3;
-                const baseSymbols = ['paw', 'ram', 'heart'];
+                const baseSymbols = ['paw', 'ram', 'heart', 'protomap_logo'];
                 do {
                     reel1 = baseSymbols[Math.floor(Math.random() * baseSymbols.length)];
                     reel2 = baseSymbols[Math.floor(Math.random() * baseSymbols.length)];
@@ -310,10 +315,12 @@ export const playSlotMachine = onCall(async (request) => {
             }
 
             const winAmount = Math.floor(bet * winMultiplier);
-            const finalBalance = newBalanceAfterBet + winAmount - lossAmount;
+
+            const finalBalanceCalc = newBalanceAfterBet + winAmount - lossAmount;
+            const finalBalance = finalBalanceCalc < 0 ? 0 : finalBalanceCalc;
 
             transaction.update(userRef, {
-                casino_credits: finalBalance < 0 ? 0 : finalBalance,
+                casino_credits: finalBalance,
                 last_game_played: FieldValue.serverTimestamp()
             });
 
@@ -321,7 +328,7 @@ export const playSlotMachine = onCall(async (request) => {
                 reels: finalReels,
                 winAmount: winAmount,
                 lossAmount: lossAmount,
-                newBalance: finalBalance < 0 ? 0 : finalBalance,
+                newBalance: finalBalance,
             };
         });
 
@@ -333,6 +340,7 @@ export const playSlotMachine = onCall(async (request) => {
         throw new HttpsError('internal', 'Произошла ошибка на сервере во время игры.');
     }
 });
+
 
 export const getDailyBonus = onCall(async (request) => {
     if (!request.auth) {
@@ -430,7 +438,7 @@ export const playCoinFlip = onCall(async (request) => {
 
             const newBalanceAfterBet = currentCredits - bet;
 
-            const winMultiplier = 1.9;
+            const winMultiplier = 1.95;
             const outcome: 'heads' | 'tails' = Math.random() < 0.5 ? 'heads' : 'tails';
             const hasWon = choice === outcome;
 

@@ -8,25 +8,20 @@
     import 'leaflet.markercluster/dist/MarkerCluster.css';
     import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
     import { page } from '$app/stores';
-    import { browser } from '$app/environment';
     import { onMount } from 'svelte';
     import { AudioManager } from '$lib/client/audioManager';
     import Footer from "$lib/components/Footer.svelte";
     import CookieBanner from '$lib/components/CookieBanner.svelte';
 
-    let isHalloweenAnomalyActive = false;
-    if (browser) {
-        const today = new Date();
-        const currentMonth = today.getMonth();
-        const currentDay = today.getDate();
+    // Импортируем логику определения ивента
+    import { getActiveEventName } from '$lib/seasonal/seasonalContent';
 
-        if (currentMonth === 9 && currentDay >= 20) {
-            isHalloweenAnomalyActive = true;
-        }
-        if (currentMonth === 10 && currentDay <= 2) {
-            isHalloweenAnomalyActive = true;
-        }
-    }
+    // Определяем текущий активный ивент
+    const activeEventName = getActiveEventName();
+
+    // Флаги для шаблона
+    const isHalloween = activeEventName === 'Glitch-o-Ween';
+    const isWinter = activeEventName === 'Neon Blizzard';
 
     onMount(() => {
         AudioManager.initialize();
@@ -42,24 +37,45 @@
         }
         chat.toggle();
     }
+
+    // Тексты для боковых панелей в зависимости от сезона
+    let sideTextLeft = 'СТАТУС СИСТЕМЫ: ОНЛАЙН';
+    let sideTextRight = 'МОЩНОСТЬ СЕТИ: 99%';
+
+    if (isHalloween) {
+        sideTextLeft = 'СИСТЕМА: НЕСТАБИЛЬНА';
+        sideTextRight = 'АНАЛИЗ АНОМАЛИИ...';
+    } else if (isWinter) {
+        sideTextLeft = 'ТЕМПЕРАТУРА ЯДРА: -40°C';
+        sideTextRight = 'КРИОГЕННЫЕ ПРОТОКОЛЫ: АКТИВНЫ';
+    }
 </script>
 
 <svelte:head>
-    {#if isHalloweenAnomalyActive}
+    <!-- Динамическая загрузка сезонных стилей -->
+    {#if isHalloween}
         <link rel="stylesheet" href="/styles/halloween.css">
     {/if}
+    {#if isWinter}
+        <!-- Мы создадим этот файл на следующем шаге -->
+        <link rel="stylesheet" href="/styles/winter.css">
+    {/if}
+
     <link rel="stylesheet" href="/styles/cosmetics.css">
 </svelte:head>
 
 <div
     class="min-h-screen flex flex-col font-sans antialiased relative"
     class:no-scroll-container={isMapPage}
+    class:winter-theme={isWinter}
 >
+    <!-- Добавляем класс winter-theme для глобальных переопределений, если нужно -->
+
     <div class="side-panel left z-10">
-        <div class="v-text">{isHalloweenAnomalyActive ? 'СИСТЕМА: НЕСТАБИЛЬНА' : 'СТАТУС СИСТЕМЫ: ОНЛАЙН'}</div>
+        <div class="v-text">{sideTextLeft}</div>
     </div>
     <div class="side-panel right z-10">
-        <div class="v-text">{isHalloweenAnomalyActive ? 'АНАЛИЗ АНОМАЛИИ...' : 'МОЩНОСТЬ СЕТИ: 99%'}</div>
+        <div class="v-text">{sideTextRight}</div>
     </div>
 
     <div class="relative z-20 flex flex-col flex-grow">
@@ -70,9 +86,9 @@
     </div>
 
     <div class="hidden lg:block">
-    {#if !isMapPage}
-        <Footer />
-    {/if}
+        {#if !isMapPage}
+            <Footer />
+        {/if}
     </div>
 
     <Modal />
