@@ -341,6 +341,37 @@ export const playSlotMachine = onCall(async (request) => {
     }
 });
 
+export const getLeaderboard = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Доступ к данным закрыт для гостей.');
+    }
+
+    const db = admin.firestore();
+
+    try {
+        // Берем топ-10 самых богатых
+        const snapshot = await db.collection('users')
+            .orderBy('casino_credits', 'desc')
+            .limit(10)
+            .get();
+
+        const leaderboard = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                username: data.username || 'Неизвестный',
+                avatar_url: data.avatar_url || '',
+                casino_credits: data.casino_credits || 0,
+                equipped_frame: data.equipped_frame || null // Важно для красоты!
+            };
+        });
+
+        return { data: leaderboard };
+
+    } catch (error) {
+        console.error("Ошибка получения лидерборда:", error);
+        throw new HttpsError('internal', 'Не удалось загрузить списки лидеров.');
+    }
+});
 
 export const getDailyBonus = onCall(async (request) => {
     if (!request.auth) {
