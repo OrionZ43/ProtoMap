@@ -1041,3 +1041,31 @@ html {
     border-radius: 50%; background: #ff00c1; z-index: 1;
     animation: glow-pulse 3s infinite;
 }
+.leaflet-container a.leaflet-popup-close-button {
+    color: rgba(255, 255, 255, 0.6) !important; /* Светло-серый по умолчанию */
+    font-size: 28px !important; /* Увеличили сам крестик (было около 16px) */
+    font-weight: 300 !important;
+
+    /* Увеличиваем зону клика */
+    width: 40px !important;
+    height: 40px !important;
+
+    /* Центрируем крестик внутри зоны клика */
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+
+    /* Позиционирование */
+    top: 5px !important;
+    right: 5px !important;
+
+    border-radius: 50%; /* Круглая форма при ховере */
+    transition: all 0.2s ease-in-out !important;
+    text-decoration: none !important;
+    z-index: 100;
+}
+
+/* Убираем странные отступы Leaflet, если они есть */
+.leaflet-popup-content-wrapper {
+    padding-right: 0 !important;
+}

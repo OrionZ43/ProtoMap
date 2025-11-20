@@ -48,7 +48,7 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
                 social_link: data.social_link || '',
                 about_me: data.about_me || '',
                 status: data.status || '',
-                casino_credits: data.casino_credits || 100,
+                casino_credits: data.casino_credits ?? 100,
                 last_daily_bonus: data.last_daily_bonus ? data.last_daily_bonus.toDate() : null,
             };
         }
