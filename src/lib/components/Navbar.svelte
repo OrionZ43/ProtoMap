@@ -89,6 +89,7 @@
         <!-- 1. ЛОГОТИП -->
         <div class="flex-shrink-0 flex items-center gap-3 z-20">
             <a href="/" class="nav-brand text-2xl font-bold tracking-widest" data-text="PROTOMAP">PROTOMAP</a>
+            <!-- Сезонка видна только на очень широких экранах (xl) -->
             <span class="hidden xl:inline-block text-xs text-gray-500 border-l border-gray-700 pl-3 font-mono">
                  <a href={seasonal.link} target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition-colors">
                     {seasonal.phrase}
@@ -96,17 +97,15 @@
             </span>
         </div>
 
-        <!-- 2. ЦЕНТРАЛЬНОЕ МЕНЮ (DESKTOP) -->
-        <div class="hidden md:flex items-center justify-center space-x-1 absolute left-1/2 transform -translate-x-1/2 h-full z-10">
+        <!-- 2. ЦЕНТРАЛЬНОЕ МЕНЮ (Изменили md:flex на lg:flex) -->
+        <div class="hidden lg:flex items-center justify-center space-x-1 absolute left-1/2 transform -translate-x-1/2 h-full z-10">
             <a href="/" class="nav-tab" class:active={isActive('/')}>
                 КАРТА
                 <div class="tab-line"></div>
             </a>
 
-            <!-- ВКЛАДКА НОВОСТЕЙ С ТОЧКОЙ -->
             <a href="/news" class="nav-tab" class:active={isActive('/news')} on:click={markNewsAsRead}>
                 НОВОСТИ
-                <!-- ИНДИКАТОР -->
                 {#if hasUnreadNews}
                     <span class="notification-dot"></span>
                 {/if}
@@ -123,8 +122,8 @@
             </a>
         </div>
 
-        <!-- 3. ПРАВАЯ ЧАСТЬ (DESKTOP) -->
-        <div class="hidden md:flex items-center gap-3 z-20">
+        <!-- 3. ПРАВАЯ ЧАСТЬ (Изменили md:flex на lg:flex) -->
+        <div class="hidden lg:flex items-center gap-3 z-20">
             {#if $userStore.user}
                 <div class="balance-pill" title="Ваш баланс">
                     <span class="text-xs text-cyber-yellow font-bold tracking-wider">PC</span>
@@ -138,6 +137,7 @@
                 </button>
                 {#if isSettingsOpen}
                     <div class="cyber-dropdown" transition:scale={{duration: 150, start: 0.95, opacity: 0}}>
+                        <!-- ... (внутренности без изменений) ... -->
                         <div class="dropdown-header">// СИСТЕМА</div>
                         <div class="px-4 py-2">
                             <label class="setting-row">
@@ -155,9 +155,11 @@
 
             <div class="h-6 w-px bg-white/10 mx-1"></div>
 
+            <!-- ПОЛЬЗОВАТЕЛЬ (Логика та же, просто скрываем до lg) -->
             {#if $userStore.loading}
                 <div class="h-9 w-24 bg-gray-800 rounded-full animate-pulse"></div>
             {:else if $userStore.user}
+                <!-- ... (все внутренности userStore.user те же) ... -->
                 <div class="relative">
                     <button on:click={toggleUserMenu} class="user-pill" class:active={isUserMenuOpen}>
                         <div class="avatar-container small {$userStore.user.equipped_frame || ''}">
@@ -173,6 +175,7 @@
 
                     {#if isUserMenuOpen}
                         <div class="cyber-dropdown" transition:scale={{duration: 150, start: 0.95, opacity: 0}}>
+                            <!-- ... -->
                             <div class="dropdown-header">// ПРОФИЛЬ</div>
                             <a href="/profile/{getEncodedUsername($userStore.user.username)}" class="dropdown-item">
                                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
@@ -196,8 +199,8 @@
             {/if}
         </div>
 
-        <!-- 4. МОБИЛЬНОЕ МЕНЮ -->
-        <div class="md:hidden flex items-center gap-3">
+        <!-- 4. МОБИЛЬНОЕ МЕНЮ (Изменили md:hidden на lg:hidden) -->
+        <div class="lg:hidden flex items-center gap-3">
             {#if $userStore.user}
                 <div class="balance-pill mobile">
                     <span class="text-[10px] text-cyber-yellow font-bold">PC</span>
@@ -219,12 +222,13 @@
         </div>
     </div>
 
+    <!-- МОБИЛЬНЫЙ СПИСОК (Изменили md:hidden на lg:hidden) -->
     {#if isMobileMenuOpen}
-        <div class="md:hidden bg-[#050a10]/95 backdrop-blur-xl border-b border-gray-800 absolute w-full left-0 z-40 shadow-2xl" transition:slide>
+        <div class="lg:hidden bg-[#050a10]/95 backdrop-blur-xl border-b border-gray-800 absolute w-full left-0 z-40 shadow-2xl" transition:slide>
+            <!-- ... (внутренности без изменений) ... -->
             <div class="py-2 space-y-1">
                 <a href="/" class="mobile-link" class:active={isActive('/')}>КАРТА</a>
 
-                <!-- МОБИЛЬНЫЕ НОВОСТИ С ТОЧКОЙ -->
                 <a href="/news" class="mobile-link relative" class:active={isActive('/news')} on:click={markNewsAsRead}>
                     НОВОСТИ
                     {#if hasUnreadNews}
@@ -277,6 +281,7 @@
 </nav>
 
 <style>
+    /* === БАЗА (СТЕКЛО) === */
     .navbar-glass {
         background: rgba(5, 8, 12, 0.85);
         backdrop-filter: blur(16px);
@@ -285,11 +290,11 @@
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
     }
 
-    /* === УВЕДОМЛЕНИЯ === */
+    /* === УВЕДОМЛЕНИЯ (КРАСНАЯ ТОЧКА) === */
     .notification-dot {
         position: absolute;
         top: 12px;
-        right: 0px;
+        right: 2px;
         width: 8px;
         height: 8px;
         background-color: var(--cyber-red, #ff003c);
@@ -297,9 +302,20 @@
         box-shadow: 0 0 8px var(--cyber-red, #ff003c);
         animation: pulse-dot 2s infinite;
         pointer-events: none;
+        z-index: 10;
     }
-    .notification-dot.mobile { top: 50%; right: 20px; transform: translateY(-50%); }
-    .notification-dot.mobile-icon { top: 5px; right: 5px; width: 10px; height: 10px; border: 2px solid #050a10; }
+    .notification-dot.mobile {
+        top: 50%;
+        right: 20px;
+        transform: translateY(-50%);
+    }
+    .notification-dot.mobile-icon {
+        top: 5px;
+        right: 5px;
+        width: 10px;
+        height: 10px;
+        border: 2px solid #050a10;
+    }
 
     @keyframes pulse-dot {
         0% { opacity: 1; transform: scale(1); }
@@ -307,90 +323,278 @@
         100% { opacity: 1; transform: scale(1); }
     }
 
-    /* === ЦЕНТРАЛЬНОЕ МЕНЮ === */
+    /* === ЦЕНТРАЛЬНОЕ МЕНЮ (ВКЛАДКИ) === */
     .nav-tab {
-        position: relative; padding: 0 1rem; height: 100%;
-        display: flex; align-items: center;
-        font-family: 'Chakra Petch', monospace; font-size: 0.85rem; font-weight: 700;
-        letter-spacing: 0.05em; color: #94a3b8; transition: color 0.3s; text-transform: uppercase;
+        position: relative;
+        padding: 0 1rem;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        font-family: 'Chakra Petch', monospace;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: #94a3b8;
+        transition: color 0.3s;
+        text-transform: uppercase;
     }
-    .nav-tab:hover { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
-    .nav-tab.active { color: #fff; }
+    .nav-tab:hover {
+        color: #fff;
+        text-shadow: 0 0 8px rgba(255,255,255,0.5);
+    }
+    .nav-tab.active {
+        color: #fff;
+    }
 
+    /* ЛИНИЯ ПОД ВКЛАДКОЙ */
     .tab-line {
-        position: absolute; bottom: 0; left: 0; width: 100%; height: 2px;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
         background: var(--cyber-yellow, #fcee0a);
         box-shadow: 0 -2px 10px var(--cyber-yellow, #fcee0a);
-        transform: scaleX(0); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: center;
+        transform: scaleX(0);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-origin: center;
     }
-    .nav-tab:hover .tab-line, .nav-tab.active .tab-line { transform: scaleX(1); }
+    .nav-tab:hover .tab-line,
+    .nav-tab.active .tab-line {
+        transform: scaleX(1);
+    }
 
+    /* ГЛИТЧ-ЭФФЕКТ ДЛЯ КАЗИНО */
     .glitch-link:hover {
         animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
         color: var(--cyber-red, #ff003c);
         text-shadow: 2px 0 #00f0ff, -2px 0 #ff003c;
     }
     @keyframes glitch-skew {
-        0% { transform: skew(0deg); } 20% { transform: skew(-2deg); } 40% { transform: skew(2deg); }
-        60% { transform: skew(-1deg); } 80% { transform: skew(1deg); } 100% { transform: skew(0deg); }
+        0% { transform: skew(0deg); }
+        20% { transform: skew(-2deg); }
+        40% { transform: skew(2deg); }
+        60% { transform: skew(-1deg); }
+        80% { transform: skew(1deg); }
+        100% { transform: skew(0deg); }
     }
 
-    /* === ПРАВАЯ ЧАСТЬ === */
+    /* === ПРАВАЯ ЧАСТЬ (БАЛАНС И ИКОНКИ) === */
     .balance-pill {
-        display: flex; align-items: center; gap: 0.5rem;
-        background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 0.3rem 0.8rem; border-radius: 6px; color: #e2e8f0;
-        transition: all 0.2s; font-family: 'Chakra Petch', monospace;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.3rem 0.8rem;
+        border-radius: 6px;
+        color: #e2e8f0;
+        transition: all 0.2s;
+        font-family: 'Chakra Petch', monospace;
     }
-    .balance-pill:hover { border-color: var(--cyber-yellow); box-shadow: 0 0 10px rgba(252, 238, 10, 0.1); }
-    .balance-pill.mobile { padding: 0.2rem 0.6rem; background: rgba(0,0,0,0.4); }
+    .balance-pill:hover {
+        border-color: var(--cyber-yellow);
+        box-shadow: 0 0 10px rgba(252, 238, 10, 0.1);
+    }
+    .balance-pill.mobile {
+        padding: 0.2rem 0.6rem;
+        background: rgba(0,0,0,0.4);
+    }
 
-    .icon-btn { padding: 0.5rem; color: #94a3b8; border-radius: 8px; transition: all 0.2s; }
-    .icon-btn:hover, .icon-btn.active { color: #fff; background: rgba(255, 255, 255, 0.1); }
+    .icon-btn {
+        padding: 0.5rem;
+        color: #94a3b8;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+    .icon-btn:hover, .icon-btn.active {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+    }
 
+    /* === МЕНЮ ПОЛЬЗОВАТЕЛЯ (ПИЛЮЛЯ) === */
     .user-pill {
-        display: flex; align-items: center; gap: 0.75rem;
-        padding: 0.25rem 0.25rem 0.25rem 0.25rem; padding-right: 0.75rem;
-        background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 99px; transition: all 0.2s; cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.25rem 0.25rem 0.25rem 0.25rem; /* Слева меньше, там аватар */
+        padding-right: 0.75rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 99px;
+        transition: all 0.2s;
+        cursor: pointer;
     }
-    .user-pill:hover, .user-pill.active { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.3); }
-    .username { font-family: 'Chakra Petch', monospace; font-weight: 600; font-size: 0.9rem; color: #e2e8f0; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .chevron { color: #64748b; transition: transform 0.2s; }
-    .chevron.rotate { transform: rotate(180deg); }
+    .user-pill:hover, .user-pill.active {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+    .username {
+        font-family: 'Chakra Petch', monospace;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #e2e8f0;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .chevron {
+        color: #64748b;
+        transition: transform 0.2s;
+    }
+    .chevron.rotate {
+        transform: rotate(180deg);
+    }
 
-    .avatar-container.small { width: 32px; height: 32px; position: relative; border-radius: 50%; flex-shrink: 0; }
-    .avatar-container.small:not([class*="frame_"]) { border: 1px solid rgba(255,255,255,0.3); }
-    .user-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: none !important; }
+    /* === АВАТАР === */
+    .avatar-container.small {
+        width: 32px;
+        height: 32px;
+        position: relative;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    /* Дефолтная рамка, если не куплена */
+    .avatar-container.small:not([class*="frame_"]) {
+        border: 1px solid rgba(255,255,255,0.3);
+    }
+    .user-avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: none !important;
+    }
 
-    /* === DROPDOWN === */
+    /* === ВЫПАДАЮЩЕЕ МЕНЮ (DROPDOWN) === */
     .cyber-dropdown {
-        position: absolute; top: calc(100% + 8px); right: 0; width: 240px;
-        background: rgba(8, 12, 18, 0.95); backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px;
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6); z-index: 100; overflow: hidden; transform-origin: top right;
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        width: 240px;
+        background: rgba(8, 12, 18, 0.95);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+        z-index: 100;
+        overflow: hidden;
+        transform-origin: top right;
     }
-    .dropdown-header { padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'Chakra Petch', monospace; }
-    .dropdown-item { display: flex; align-items: center; width: 100%; padding: 0.75rem 1rem; font-size: 0.9rem; color: #cbd5e1; transition: all 0.2s; text-align: left; font-family: 'Inter', sans-serif; }
-    .dropdown-item:hover { background: rgba(255, 255, 255, 0.05); color: #fff; padding-left: 1.25rem; }
-    .dropdown-item .icon { width: 18px; height: 18px; margin-right: 10px; opacity: 0.7; }
-    .dropdown-item:hover .icon { opacity: 1; color: var(--cyber-yellow); }
-    .dropdown-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0; }
+    .dropdown-header {
+        padding: 0.75rem 1rem;
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: rgba(0,0,0,0.2);
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        font-family: 'Chakra Petch', monospace;
+    }
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        color: #cbd5e1;
+        transition: all 0.2s;
+        text-align: left;
+        font-family: 'Inter', sans-serif;
+    }
+    .dropdown-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+        padding-left: 1.25rem;
+    }
+    .dropdown-item .icon {
+        width: 18px;
+        height: 18px;
+        margin-right: 10px;
+        opacity: 0.7;
+    }
+    .dropdown-item:hover .icon {
+        opacity: 1;
+        color: var(--cyber-yellow);
+    }
+    .dropdown-divider {
+        height: 1px;
+        background: rgba(255,255,255,0.1);
+        margin: 4px 0;
+    }
     .text-red { color: #ef4444; }
     .text-red:hover { color: #f87171; background: rgba(239, 68, 68, 0.1); }
 
-    /* === SWITCH === */
-    .setting-row { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-size: 0.9rem; color: #cbd5e1; }
+    /* === СВИТЧЕРЫ (ПЕРЕКЛЮЧАТЕЛИ) === */
+    .setting-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        font-size: 0.9rem;
+        color: #cbd5e1;
+    }
     .setting-row:hover { color: #fff; }
-    .cyber-switch { appearance: none; width: 36px; height: 20px; background: #334155; border-radius: 99px; position: relative; cursor: pointer; transition: all 0.3s; border: 1px solid #475569; }
-    .cyber-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #94a3b8; border-radius: 50%; transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); }
-    .cyber-switch:checked { background: rgba(0, 240, 255, 0.2); border-color: var(--cyber-yellow); }
-    .cyber-switch:checked::after { left: 18px; background: var(--cyber-yellow); box-shadow: 0 0 10px var(--cyber-yellow); }
 
-    /* === MOBILE === */
-    .mobile-link { display: block; padding: 0.75rem 1rem; font-family: 'Chakra Petch', monospace; font-weight: bold; color: #9ca3af; border-left: 2px solid transparent; }
+    .cyber-switch {
+        appearance: none;
+        width: 36px;
+        height: 20px;
+        background: #334155;
+        border-radius: 99px;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 1px solid #475569;
+    }
+    .cyber-switch::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        background: #94a3b8;
+        border-radius: 50%;
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    .cyber-switch:checked {
+        background: rgba(0, 240, 255, 0.2);
+        border-color: var(--cyber-yellow);
+    }
+    .cyber-switch:checked::after {
+        left: 18px;
+        background: var(--cyber-yellow);
+        box-shadow: 0 0 10px var(--cyber-yellow);
+    }
+
+    /* === МОБИЛЬНОЕ МЕНЮ === */
+    .mobile-link {
+        display: block;
+        padding: 0.75rem 1rem;
+        font-family: 'Chakra Petch', monospace;
+        font-weight: bold;
+        color: #9ca3af;
+        border-left: 2px solid transparent;
+    }
     .mobile-link:hover { color: #fff; }
-    .mobile-link.active { color: var(--cyber-yellow); border-left-color: var(--cyber-yellow); background: linear-gradient(to right, rgba(255,255,255,0.05), transparent); }
-    .mobile-sub-link { display: block; padding: 0.75rem 1rem 0.75rem 3rem; font-size: 0.95rem; color: #cbd5e1; border-left: 2px solid transparent; }
-    .mobile-sub-link:hover { color: #fff; background: rgba(255,255,255,0.03); }
+    .mobile-link.active {
+        color: var(--cyber-yellow);
+        border-left-color: var(--cyber-yellow);
+        background: linear-gradient(to right, rgba(255,255,255,0.05), transparent);
+    }
+    .mobile-sub-link {
+        display: block;
+        padding: 0.75rem 1rem 0.75rem 3rem;
+        font-size: 0.95rem;
+        color: #cbd5e1;
+        border-left: 2px solid transparent;
+    }
+    .mobile-sub-link:hover {
+        color: #fff;
+        background: rgba(255,255,255,0.03);
+    }
 </style>

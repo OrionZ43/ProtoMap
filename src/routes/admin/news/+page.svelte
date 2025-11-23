@@ -8,10 +8,8 @@
 
     let isSubmitting = false;
 
-    // Реакция на ответ сервера
     $: if (form?.success) {
         modal.success("Опубликовано!", "Новость успешно добавлена в ленту.");
-        // Очистка формы (опционально, можно через reset())
     } else if (form?.message) {
         modal.error("Ошибка", form.message);
     }
@@ -36,26 +34,22 @@
         }}
         class="space-y-6"
     >
-        <!-- ЗАГОЛОВОК -->
         <div class="form-group">
             <label for="title">ЗАГОЛОВОК</label>
             <input type="text" id="title" name="title" required placeholder="Пример: Обновление 2.0" class="input-field" />
         </div>
 
-        <!-- ТЕКСТ -->
         <div class="form-group">
             <label for="content">ТЕКСТ НОВОСТИ</label>
             <textarea id="content" name="content" required rows="6" placeholder="Что нового в Бездне?" class="input-field"></textarea>
             <p class="text-xs text-gray-500 mt-1">Переносы строк учитываются автоматически.</p>
         </div>
 
-        <!-- КАРТИНКА -->
         <div class="form-group">
             <label for="imageUrl">ССЫЛКА НА ИЗОБРАЖЕНИЕ (Опционально)</label>
             <input type="url" id="imageUrl" name="imageUrl" placeholder="https://..." class="input-field" />
         </div>
 
-        <!-- ТЕГИ -->
         <div class="form-group">
             <label for="tags">ТЕГИ (через запятую)</label>
             <input type="text" id="tags" name="tags" placeholder="update, casino, event" class="input-field" />

@@ -6,11 +6,9 @@
     export let username: string = 'НЕИЗВЕСТНЫЙ_УЗЕЛ';
     const dispatch = createEventDispatcher();
 
-    // Определяем сезон (зима или нет) для стилей
     let isWinter = false;
     if (browser) {
         const m = new Date().getMonth();
-        // Ноябрь (10) с 15-го, Декабрь (11), Январь (0)
         if ((m === 11 && new Date().getDate() >= 15) || m === 11 || m === 0) {
             isWinter = true;
         }
@@ -27,7 +25,6 @@
     let timeouts: NodeJS.Timeout[] = [];
     let intervals: NodeJS.Timeout[] = [];
 
-    // --- ТЕКСТЫ (АДАПТИВНЫЕ) ---
     const winterLogs = [
         'РАЗМОРОЗКА ПАКЕТОВ...', 'ПРОВЕРКА КРИО-ЯЧЕЕК...', 'ТЕМПЕРАТУРА ЯДРА ПОВЫШАЕТСЯ...',
         'УДАЛЕНИЕ ЦИФРОВОГО ИНЕЯ...', 'СИНХРОНИЗАЦИЯ С СЕВЕРНЫМ СЕРВЕРОМ...',
@@ -55,7 +52,7 @@
             } else {
                 clearInterval(typingInterval);
             }
-        }, 40); // Чуть быстрее печатаем
+        }, 40);
         intervals.push(typingInterval);
     }
 
@@ -80,7 +77,7 @@
 
     onMount(() => {
         sound = new Howl({
-            src: ['/sounds/long_maybe_for_loading_profile_anim.mp3'], // Можно оставить тот же звук, он подходит под эмбиент
+            src: ['/sounds/long_maybe_for_loading_profile_anim.mp3'],
             volume: 0.8,
             onend: skipAnimation
         });
@@ -224,7 +221,6 @@
 </div>
 
 <style>
-    /* === БАЗОВЫЕ АНИМАЦИИ === */
     @keyframes blink { 50% { opacity: 0; } }
     @keyframes scanline-anim { 0% { transform: translateY(-100vh); } 100% { transform: translateY(100vh); } }
     @keyframes granted-flash { 0% { opacity: 0; transform: scale(0.8); filter: blur(10px); } 10% { opacity: 1; transform: scale(1); filter: blur(0px); } 80% { opacity: 1; } 100% { opacity: 0; } }
@@ -239,15 +235,12 @@
     @keyframes matrix-scroll { from { background-position: 0 0; } to { background-position: 0 1000px; } }
     @keyframes glitch-anim { 0% { clip-path: inset(45% 0 50% 0); transform: translateX(-2px); } 100% { clip-path: inset(5% 0 90% 0); transform: translateX(2px); } }
 
-    /* Зимние анимации */
     @keyframes snow-fall-anim { from { background-position: 0 0; } to { background-position: 50px 500px; } }
     @keyframes frost-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
 
-    /* === КОНТЕЙНЕР === */
     .loader-container {
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
         background-color: #050a05;
-        /* Дефолтный цвет (зеленый) */
         color: #00ff41;
         --primary-color: #00ff41;
         --secondary-color: #00ff41;
@@ -257,7 +250,6 @@
         overflow: hidden; perspective: 1000px;
     }
 
-    /* === ЗИМНЯЯ ТЕМА === */
     .loader-container.winter-theme {
         background-color: #02050a;
         color: #00f3ff; /* Cyan */
@@ -267,8 +259,6 @@
 
     .loader-container.crt-off { animation: crt-off-anim 0.8s cubic-bezier(0.755, 0.05, 0.855, 0.06) forwards; }
     .loader-container.screen-glitch { animation: screen-shake 0.15s linear infinite; filter: hue-rotate(90deg) contrast(1.5); }
-
-    /* === ФОНОВЫЕ ЭФФЕКТЫ === */
     .background-effects { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 
     .matrix-rain {
@@ -299,7 +289,6 @@
         background-image: linear-gradient(rgba(0, 255, 65, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.1) 1px, transparent 1px);
         background-size: 30px 30px;
     }
-    /* Перекрашиваем сетку для зимы */
     .winter-theme .grid-overlay {
         background-image: linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
     }
@@ -315,7 +304,6 @@
         background: radial-gradient(circle, transparent 50%, black 150%);
     }
 
-    /* === ТЕРМИНАЛ === */
     .terminal-perspective { transform: rotateX(5deg); transform-style: preserve-3d; }
     .terminal {
         width: 90vw; max-width: 1200px; padding: 2rem;
@@ -330,8 +318,6 @@
     .main-terminal { width: 60%; }
     .line { font-size: 1.8rem; margin-bottom: 1rem; white-space: pre; color: var(--primary-color); }
     .caret { display: inline-block; width: 12px; height: 1.8rem; background-color: var(--primary-color); animation: blink 0.8s step-end infinite; vertical-align: sub; }
-
-    /* Прогресс бар */
     .breach-mode .progress-bar-container {
         border: 4px solid var(--primary-color); padding: 1rem; background: rgba(0,20,0,0.8);
         box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
@@ -346,7 +332,6 @@
     .progress-fill { height: 100%; background: var(--primary-color); box-shadow: 0 0 20px var(--primary-color); transition: width 0.1s linear; }
     .progress-percent { display: block; text-align: right; font-size: 2rem; margin-top: 0.5rem; color: var(--secondary-color); }
 
-    /* Грант доступа */
     .granted-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         display: flex; align-items: center; justify-content: center;
