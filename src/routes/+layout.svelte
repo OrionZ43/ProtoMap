@@ -97,7 +97,7 @@
     </div>
 
     <div class="hidden lg:block">
-        {#if !isMapPage}
+        {#if !isMapPage && !$page.url.pathname.startsWith('/admin')}
             <Footer />
         {/if}
     </div>

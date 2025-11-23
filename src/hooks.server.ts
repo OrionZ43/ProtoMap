@@ -16,6 +16,30 @@ export const handle: Handle = async ({ event, resolve }) => {
 
         if (userDocSnap.exists) {
             const userData = userDocSnap.data();
+
+            // === [ BANHAMMER LOGIC ] ===
+            // Если поле isBanned существует и равно true
+            if (userData?.isBanned) {
+                // Если пользователь пытается зайти куда угодно, кроме страницы бана
+                if (!event.url.pathname.startsWith('/banned')) {
+                    console.log(`Хук: Забаненный пользователь ${userData.username} перенаправлен в изолятор.`);
+                    return new Response('Redirect', {
+                        status: 303,
+                        headers: { Location: '/banned' }
+                    });
+                }
+            } else {
+                // Если пользователь НЕ забанен, но находится на странице /banned -> выкидываем на главную
+                // (чтобы не сидели в тюрьме просто так)
+                if (event.url.pathname.startsWith('/banned')) {
+                    return new Response('Redirect', {
+                        status: 303,
+                        headers: { Location: '/' }
+                    });
+                }
+            }
+            // ===========================
+
             event.locals.user = {
                 uid: decodedClaims.uid,
                 email: decodedClaims.email,
