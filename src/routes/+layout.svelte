@@ -12,16 +12,33 @@
     import { AudioManager } from '$lib/client/audioManager';
     import Footer from "$lib/components/Footer.svelte";
     import CookieBanner from '$lib/components/CookieBanner.svelte';
+    import { browser } from '$app/environment';
 
-    // Импортируем логику определения ивента
-    import { getActiveEventName } from '$lib/seasonal/seasonalContent';
+    let themeState = 'default';
+    let sideTextLeft = 'СТАТУС СИСТЕМЫ: ОНЛАЙН';
+    let sideTextRight = 'МОЩНОСТЬ СЕТИ: 99%';
 
-    // Определяем текущий активный ивент
-    const activeEventName = getActiveEventName();
+    if (browser) {
+        const d = new Date();
+        const m = d.getMonth();
+        const day = d.getDate();
 
-    // Флаги для шаблона
-    const isHalloween = activeEventName === 'Glitch-o-Ween';
-    const isWinter = activeEventName === 'Neon Blizzard';
+        if ((m === 9 && day >= 20) || (m === 10 && day <= 2)) {
+            themeState = 'halloween';
+            sideTextLeft = 'СИСТЕМА: НЕСТАБИЛЬНА';
+            sideTextRight = 'АНАЛИЗ АНОМАЛИИ...';
+        }
+        else if (m === 11 && day >= 1 && day < 15) {
+            themeState = 'winter';
+            sideTextLeft = 'ТЕМПЕРАТУРА: -15°C';
+            sideTextRight = 'СИСТЕМА ОХЛАЖДЕНИЯ: АКТИВНА';
+        }
+        else if ((m === 11 && day >= 15) || (m === 0 && day <= 14)) {
+            themeState = 'newyear';
+            sideTextLeft = 'РЕЖИМ: GLITCHMAS';
+            sideTextRight = 'КРИОГЕННЫЕ ПРОТОКОЛЫ: МАКСИМУМ';
+        }
+    }
 
     onMount(() => {
         AudioManager.initialize();
@@ -37,39 +54,33 @@
         }
         chat.toggle();
     }
-
-    // Тексты для боковых панелей в зависимости от сезона
-    let sideTextLeft = 'СТАТУС СИСТЕМЫ: ОНЛАЙН';
-    let sideTextRight = 'МОЩНОСТЬ СЕТИ: 99%';
-
-    if (isHalloween) {
-        sideTextLeft = 'СИСТЕМА: НЕСТАБИЛЬНА';
-        sideTextRight = 'АНАЛИЗ АНОМАЛИИ...';
-    } else if (isWinter) {
-        sideTextLeft = 'ТЕМПЕРАТУРА ЯДРА: -40°C';
-        sideTextRight = 'КРИОГЕННЫЕ ПРОТОКОЛЫ: АКТИВНЫ';
-    }
 </script>
 
 <svelte:head>
-    <!-- Динамическая загрузка сезонных стилей -->
-    {#if isHalloween}
+    {#if themeState === 'halloween'}
         <link rel="stylesheet" href="/styles/halloween.css">
     {/if}
-    {#if isWinter}
-        <!-- Мы создадим этот файл на следующем шаге -->
+    {#if themeState === 'winter' || themeState === 'newyear'}
         <link rel="stylesheet" href="/styles/winter.css">
     {/if}
-
+    {#if themeState === 'newyear'}
+        <link rel="stylesheet" href="/styles/newyear.css">
+    {/if}
     <link rel="stylesheet" href="/styles/cosmetics.css">
 </svelte:head>
 
 <div
     class="min-h-screen flex flex-col font-sans antialiased relative"
     class:no-scroll-container={isMapPage}
-    class:winter-theme={isWinter}
+    class:winter-mode={themeState === 'winter' || themeState === 'newyear'}
 >
-    <!-- Добавляем класс winter-theme для глобальных переопределений, если нужно -->
+{#if themeState === 'winter' || themeState === 'newyear'}
+        <div class="initial-snow">
+            {#each Array(50) as _, i}
+                <div class="snow">❄</div>
+            {/each}
+        </div>
+    {/if}
 
     <div class="side-panel left z-10">
         <div class="v-text">{sideTextLeft}</div>

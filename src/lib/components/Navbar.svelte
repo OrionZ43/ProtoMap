@@ -8,179 +8,389 @@
     import { getSeasonalContent } from '$lib/seasonal/seasonalContent';
     import { settingsStore } from '$lib/stores/settingsStore';
     import Footer from "$lib/components/Footer.svelte";
+    import { page } from '$app/stores';
+    import { slide, fade, scale } from 'svelte/transition';
+    import { quintOut } from 'svelte/easing';
+    import { tweened } from 'svelte/motion';
+    import { onMount } from 'svelte';
 
     const seasonal = getSeasonalContent();
     let isMobileMenuOpen = false;
-    let showSettings = false;
+    let isUserMenuOpen = false;
+    let isSettingsOpen = false;
 
-    function toggleMobileMenu() { isMobileMenuOpen = !isMobileMenuOpen; }
-    function closeMenu() { if (isMobileMenuOpen) { isMobileMenuOpen = false; } }
-    afterNavigate(() => { closeMenu(); });
-    async function handleLogout() { await signOut(auth); closeMenu(); }
+    // --- ЛОГИКА УВЕДОМЛЕНИЙ ---
+    let hasUnreadNews = false;
+    $: latestNewsDate = $page.data.latestNewsDate;
+
+    onMount(() => {
+        checkUnreadNews();
+    });
+
+    function checkUnreadNews() {
+        if (!latestNewsDate) return;
+        const lastViewed = localStorage.getItem('protomap_last_news_view');
+
+        if (!lastViewed) {
+            hasUnreadNews = true;
+        } else {
+            if (new Date(latestNewsDate) > new Date(lastViewed)) {
+                hasUnreadNews = true;
+            }
+        }
+    }
+
+    function markNewsAsRead() {
+        if (latestNewsDate) {
+            localStorage.setItem('protomap_last_news_view', new Date().toISOString());
+            hasUnreadNews = false;
+        }
+    }
+    // ---------------------------
+
+    function toggleMobileMenu() { isMobileMenuOpen = !isMobileMenuOpen; isUserMenuOpen = false; isSettingsOpen = false; }
+    function toggleUserMenu() { isUserMenuOpen = !isUserMenuOpen; isSettingsOpen = false; }
+    function toggleSettings() { isSettingsOpen = !isSettingsOpen; isUserMenuOpen = false; }
+
+    function closeAllMenus() {
+        isMobileMenuOpen = false;
+        isUserMenuOpen = false;
+        isSettingsOpen = false;
+    }
+
+    function handleBackdropClick() { closeAllMenus(); }
+
+    afterNavigate(() => { closeAllMenus(); });
+    async function handleLogout() { await signOut(auth); closeAllMenus(); }
+
     function getEncodedUsername(username: string | undefined | null): string {
         if (!username) return '';
         return encodeURIComponent(username.trim());
     }
+
+    const displayedCredits = tweened(0, { duration: 500, easing: quintOut });
+    $: if ($userStore.user) { displayedCredits.set($userStore.user.casino_credits); }
+
+    $: activeRoute = $page.url.pathname;
+    function isActive(path: string) {
+        if (path === '/' && activeRoute === '/') return true;
+        if (path !== '/' && activeRoute.startsWith(path)) return true;
+        return false;
+    }
 </script>
 
-<nav class="bg-gray-900/50 backdrop-blur-sm sticky top-0 z-50 border-b border-cyber-yellow/20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16 relative">
+{#if isUserMenuOpen || isSettingsOpen}
+    <div class="fixed inset-0 z-40" on:click={handleBackdropClick}></div>
+{/if}
 
-            <div class="spider-scene">
-                <div class="heart"></div>
-            </div>
+<nav class="navbar-glass sticky top-0 z-50 w-full px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16 relative">
 
-            <div class="flex-shrink-0 flex items-center space-x-2">
-                <a href="/" class="nav-brand" data-text="PROTOMAP">PROTOMAP</a>
-                <span class="text-gray-500 text-xs mt-1 hidden sm:inline">
-                     <a href={seasonal.link} target="_blank" rel="noopener noreferrer" class="font-semibold text-gray-400 hover:text-cyan-400 transition-colors duration-150">
-                        {seasonal.phrase}
-                     </a>
-                </span>
-            </div>
+        <!-- 1. ЛОГОТИП -->
+        <div class="flex-shrink-0 flex items-center gap-3 z-20">
+            <a href="/" class="nav-brand text-2xl font-bold tracking-widest" data-text="PROTOMAP">PROTOMAP</a>
+            <span class="hidden xl:inline-block text-xs text-gray-500 border-l border-gray-700 pl-3 font-mono">
+                 <a href={seasonal.link} target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition-colors">
+                    {seasonal.phrase}
+                 </a>
+            </span>
+        </div>
 
-            <div class="flex-grow"></div>
+        <!-- 2. ЦЕНТРАЛЬНОЕ МЕНЮ (DESKTOP) -->
+        <div class="hidden md:flex items-center justify-center space-x-1 absolute left-1/2 transform -translate-x-1/2 h-full z-10">
+            <a href="/" class="nav-tab" class:active={isActive('/')}>
+                КАРТА
+                <div class="tab-line"></div>
+            </a>
 
-            <div class="hidden md:flex items-center space-x-6">
-                <a href="/about" class="nav-link-btn">О проекте</a>
-                <div class="flex items-center space-x-4">
-                    <div class="h-6 w-px bg-gray-600"></div>
-                    {#if $userStore.loading}
-                        <div class="h-5 w-32 bg-gray-700/50 rounded animate-pulse"></div>
-                    {:else if $userStore.user}
-                        <span class="text-gray-400 text-sm">
-                            Привет, <a href="/profile/{getEncodedUsername($userStore.user.username)}" class="font-bold text-white hover:text-cyber-yellow transition-colors">{$userStore.user.username}</a>!
-                        </span>
-                        <button on:click={handleLogout} class="nav-link-btn">Выйти</button>
-                    {:else}
-                        <a href="/login" class="nav-link-btn">Войти</a>
-                        <NeonButton href="/register" extraClass="text-sm">Регистрация</NeonButton>
-                    {/if}
+            <!-- ВКЛАДКА НОВОСТЕЙ С ТОЧКОЙ -->
+            <a href="/news" class="nav-tab" class:active={isActive('/news')} on:click={markNewsAsRead}>
+                НОВОСТИ
+                <!-- ИНДИКАТОР -->
+                {#if hasUnreadNews}
+                    <span class="notification-dot"></span>
+                {/if}
+                <div class="tab-line"></div>
+            </a>
+
+            <a href="/casino" class="nav-tab glitch-link" class:active={isActive('/casino')} data-text="THE GLITCH PIT">
+                THE GLITCH PIT
+                <div class="tab-line"></div>
+            </a>
+            <a href="/about" class="nav-tab" class:active={isActive('/about')}>
+                ИНФО
+                <div class="tab-line"></div>
+            </a>
+        </div>
+
+        <!-- 3. ПРАВАЯ ЧАСТЬ (DESKTOP) -->
+        <div class="hidden md:flex items-center gap-3 z-20">
+            {#if $userStore.user}
+                <div class="balance-pill" title="Ваш баланс">
+                    <span class="text-xs text-cyber-yellow font-bold tracking-wider">PC</span>
+                    <span class="font-mono font-bold">{Math.floor($displayedCredits)}</span>
                 </div>
+            {/if}
+
+            <div class="relative">
+                 <button class="icon-btn" class:active={isSettingsOpen} on:click={toggleSettings} aria-label="Настройки">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+                </button>
+                {#if isSettingsOpen}
+                    <div class="cyber-dropdown" transition:scale={{duration: 150, start: 0.95, opacity: 0}}>
+                        <div class="dropdown-header">// СИСТЕМА</div>
+                        <div class="px-4 py-2">
+                            <label class="setting-row">
+                                <span>АУДИО</span>
+                                <input type="checkbox" bind:checked={$settingsStore.audioEnabled} class="cyber-switch">
+                            </label>
+                            <label class="setting-row mt-3">
+                                <span>АНИМАЦИИ</span>
+                                <input type="checkbox" bind:checked={$settingsStore.cinematicLoadsEnabled} class="cyber-switch">
+                            </label>
+                        </div>
+                    </div>
+                {/if}
             </div>
 
-            <div class="flex items-center pl-4">
-                <div class="hidden md:block relative">
-                     <button class="p-2 rounded-full text-gray-400 hover:text-white transition-colors" on:click={() => showSettings = !showSettings} aria-label="Открыть настройки">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 8.25C9.92894 8.25 8.25 9.92893 8.25 12C8.25 14.0711 9.92894 15.75 12 15.75C14.0711 15.75 15.75 14.0711 15.75 12C15.75 9.92893 14.0711 8.25 12 8.25ZM9.75 12C9.75 10.7574 10.7574 9.75 12 9.75C13.2426 9.75 14.25 10.7574 14.25 12C14.25 13.2426 13.2426 14.25 12 14.25C10.7574 14.25 9.75 13.2426 9.75 12Z" fill="currentColor"/>
-                            <path fill-rule="evenodd" clip-rule="evenodd" d="M11.9747 1.25C11.5303 1.24999 11.1592 1.24999 10.8546 1.27077C10.5375 1.29241 10.238 1.33905 9.94761 1.45933C9.27379 1.73844 8.73843 2.27379 8.45932 2.94762C8.31402 3.29842 8.27467 3.66812 8.25964 4.06996C8.24756 4.39299 8.08454 4.66251 7.84395 4.80141C7.60337 4.94031 7.28845 4.94673 7.00266 4.79568C6.64714 4.60777 6.30729 4.45699 5.93083 4.40743C5.20773 4.31223 4.47642 4.50819 3.89779 4.95219C3.64843 5.14353 3.45827 5.3796 3.28099 5.6434C3.11068 5.89681 2.92517 6.21815 2.70294 6.60307L2.67769 6.64681C2.45545 7.03172 2.26993 7.35304 2.13562 7.62723C1.99581 7.91267 1.88644 8.19539 1.84541 8.50701C1.75021 9.23012 1.94617 9.96142 2.39016 10.5401C2.62128 10.8412 2.92173 11.0602 3.26217 11.2741C3.53595 11.4461 3.68788 11.7221 3.68786 12C3.68785 12.2778 3.53592 12.5538 3.26217 12.7258C2.92169 12.9397 2.62121 13.1587 2.39007 13.4599C1.94607 14.0385 1.75012 14.7698 1.84531 15.4929C1.88634 15.8045 1.99571 16.0873 2.13552 16.3727C2.26983 16.6469 2.45535 16.9682 2.67758 17.3531L2.70284 17.3969C2.92507 17.7818 3.11058 18.1031 3.28089 18.3565C3.45817 18.6203 3.64833 18.8564 3.89769 19.0477C4.47632 19.4917 5.20763 19.6877 5.93073 19.5925C6.30717 19.5429 6.647 19.3922 7.0025 19.2043C7.28833 19.0532 7.60329 19.0596 7.8439 19.1986C8.08452 19.3375 8.24756 19.607 8.25964 19.9301C8.27467 20.3319 8.31403 20.7016 8.45932 21.0524C8.73843 21.7262 9.27379 22.2616 9.94761 22.5407C10.238 22.661 10.5375 22.7076 10.8546 22.7292C11.1592 22.75 11.5303 22.75 11.9747 22.75H12.0252C12.4697 22.75 12.8407 22.75 13.1454 22.7292C13.4625 22.7076 13.762 22.661 14.0524 22.5407C14.7262 22.2616 15.2616 21.7262 15.5407 21.0524C15.686 20.7016 15.7253 20.3319 15.7403 19.93C15.7524 19.607 15.9154 19.3375 16.156 19.1985C16.3966 19.0596 16.7116 19.0532 16.9974 19.2042C17.3529 19.3921 17.6927 19.5429 18.0692 19.5924C18.7923 19.6876 19.5236 19.4917 20.1022 19.0477C20.3516 18.8563 20.5417 18.6203 20.719 18.3565C20.8893 18.1031 21.0748 17.7818 21.297 17.3969L21.3223 17.3531C21.5445 16.9682 21.7301 16.6468 21.8644 16.3726C22.0042 16.0872 22.1135 15.8045 22.1546 15.4929C22.2498 14.7697 22.0538 14.0384 21.6098 13.4598C21.3787 13.1586 21.0782 12.9397 20.7378 12.7258C20.464 12.5538 20.3121 12.2778 20.3121 11.9999C20.3121 11.7221 20.464 11.4462 20.7377 11.2742C21.0783 11.0603 21.3788 10.8414 21.6099 10.5401C22.0539 9.96149 22.2499 9.23019 22.1547 8.50708C22.1136 8.19546 22.0043 7.91274 21.8645 7.6273C21.7302 7.35313 21.5447 7.03183 21.3224 6.64695L21.2972 6.60318C21.0749 6.21825 20.8894 5.89688 20.7191 5.64347C20.5418 5.37967 20.3517 5.1436 20.1023 4.95225C19.5237 4.50826 18.7924 4.3123 18.0692 4.4075C17.6928 4.45706 17.353 4.60782 16.9975 4.79572C16.7117 4.94679 16.3967 4.94036 16.1561 4.80144C15.9155 4.66253 15.7524 4.39297 15.7403 4.06991C15.7253 3.66808 15.686 3.2984 15.5407 2.94762C15.2616 2.27379 14.7262 1.73844 14.0524 1.45933C13.762 1.33905 13.4625 1.29241 13.1454 1.27077C12.8407 1.24999 12.4697 1.24999 12.0252 1.25H11.9747ZM10.5216 2.84515C10.5988 2.81319 10.716 2.78372 10.9567 2.76729C11.2042 2.75041 11.5238 2.75 12 2.75C12.4762 2.75 12.7958 2.75041 13.0432 2.76729C13.284 2.78372 13.4012 2.81319 13.4783 2.84515C13.7846 2.97202 14.028 3.21536 14.1548 3.52165C14.1949 3.61826 14.228 3.76887 14.2414 4.12597C14.271 4.91835 14.68 5.68129 15.4061 6.10048C16.1321 6.51968 16.9974 6.4924 17.6984 6.12188C18.0143 5.9549 18.1614 5.90832 18.265 5.89467C18.5937 5.8514 18.9261 5.94047 19.1891 6.14228C19.2554 6.19312 19.3395 6.27989 19.4741 6.48016C19.6125 6.68603 19.7726 6.9626 20.0107 7.375C20.2488 7.78741 20.4083 8.06438 20.5174 8.28713C20.6235 8.50382 20.6566 8.62007 20.6675 8.70287C20.7108 9.03155 20.6217 9.36397 20.4199 9.62698C20.3562 9.70995 20.2424 9.81399 19.9397 10.0041C19.2684 10.426 18.8122 11.1616 18.8121 11.9999C18.8121 12.8383 19.2683 13.574 19.9397 13.9959C20.2423 14.186 20.3561 14.29 20.4198 14.373C20.6216 14.636 20.7107 14.9684 20.6674 15.2971C20.6565 15.3799 20.6234 15.4961 20.5173 15.7128C20.4082 15.9355 20.2487 16.2125 20.0106 16.6249C19.7725 17.0373 19.6124 17.3139 19.474 17.5198C19.3394 17.72 19.2553 17.8068 19.189 17.8576C18.926 18.0595 18.5936 18.1485 18.2649 18.1053C18.1613 18.0916 18.0142 18.045 17.6983 17.8781C16.9973 17.5075 16.132 17.4803 15.4059 17.8995C14.68 18.3187 14.271 19.0816 14.2414 19.874C14.228 20.2311 14.1949 20.3817 14.1548 20.4784C14.028 20.7846 13.7846 21.028 13.4783 21.1549C13.4012 21.1868 13.284 21.2163 13.0432 21.2327C12.7958 21.2496 12.4762 21.25 12 21.25C11.5238 21.25 11.2042 21.2496 10.9567 21.2327C10.716 21.2163 10.5988 21.1868 10.5216 21.1549C10.2154 21.028 9.97201 20.7846 9.84514 20.4784C9.80512 20.3817 9.77195 20.2311 9.75859 19.874C9.72896 19.0817 9.31997 18.3187 8.5939 17.8995C7.86784 17.4803 7.00262 17.5076 6.30158 17.8781C5.98565 18.0451 5.83863 18.0917 5.73495 18.1053C5.40626 18.1486 5.07385 18.0595 4.81084 17.8577C4.74458 17.8069 4.66045 17.7201 4.52586 17.5198C4.38751 17.314 4.22736 17.0374 3.98926 16.625C3.75115 16.2126 3.59171 15.9356 3.4826 15.7129C3.37646 15.4962 3.34338 15.3799 3.33248 15.2971C3.28921 14.9684 3.37828 14.636 3.5801 14.373C3.64376 14.2901 3.75761 14.186 4.0602 13.9959C4.73158 13.5741 5.18782 12.8384 5.18786 12.0001C5.18791 11.1616 4.73165 10.4259 4.06021 10.004C3.75769 9.81389 3.64385 9.70987 3.58019 9.62691C3.37838 9.3639 3.28931 9.03149 3.33258 8.7028C3.34348 8.62001 3.37656 8.50375 3.4827 8.28707C3.59181 8.06431 3.75125 7.78734 3.98935 7.37493C4.22746 6.96253 4.3876 6.68596 4.52596 6.48009C4.66055 6.27983 4.74468 6.19305 4.81093 6.14222C5.07395 5.9404 5.40636 5.85133 5.73504 5.8946C5.83873 5.90825 5.98576 5.95483 6.30173 6.12184C7.00273 6.49235 7.86791 6.51962 8.59394 6.10045C9.31998 5.68128 9.72896 4.91837 9.75859 4.12602C9.77195 3.76889 9.80512 3.61827 9.84514 3.52165C9.97201 3.21536 10.2154 2.97202 10.5216 2.84515Z" fill="currentColor"/>
-                        </svg>
+            <div class="h-6 w-px bg-white/10 mx-1"></div>
+
+            {#if $userStore.loading}
+                <div class="h-9 w-24 bg-gray-800 rounded-full animate-pulse"></div>
+            {:else if $userStore.user}
+                <div class="relative">
+                    <button on:click={toggleUserMenu} class="user-pill" class:active={isUserMenuOpen}>
+                        <div class="avatar-container small {$userStore.user.equipped_frame || ''}">
+                            <img
+                                src={$userStore.user.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user.username}`}
+                                alt="Avatar"
+                                class="user-avatar"
+                            />
+                        </div>
+                        <span class="username">{$userStore.user.username}</span>
+                        <svg class="chevron" class:rotate={isUserMenuOpen} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
                     </button>
-                    {#if showSettings}
-                        <SettingsPopover close={() => showSettings = false} />
-                    {/if}
-                </div>
-                <div class="md:hidden">
-                    <button on:click={toggleMobileMenu} type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700/50 focus:outline-none transition-colors">
-                        <span class="sr-only">Открыть меню</span>
-                        <svg class:hidden={isMobileMenuOpen} class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                        <svg class:hidden={!isMobileMenuOpen} class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                    {#if isMobileMenuOpen}
-                        <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-gray-900/95 backdrop-blur-lg ring-1 ring-black ring-opacity-5 focus:outline-none user-dropdown" role="menu" aria-orientation="vertical">
-                            <div class="py-1">
-                                {#if $userStore.user}
-                                    <div class="px-4 py-3 text-sm text-gray-400">
-                                        <span class="font-bold text-white">{$userStore.user.username}</span>
-                                    </div>
-                                    <hr class="border-gray-700">
-                                    <a href="/profile/{getEncodedUsername($userStore.user.username)}" class="mobile-menu-link">Мой профиль</a>
-                                    <a href="/profile/edit" class="mobile-menu-link">Редактировать</a>
-                                    <button on:click={handleLogout} class="w-full text-left mobile-menu-link">Выйти</button>
-                                {:else if !$userStore.loading}
-                                    <a href="/login" class="mobile-menu-link">Войти</a>
-                                    <a href="/register" class="mobile-menu-link">Зарегистрироваться</a>
-                                {/if}
-                                <a href="/about" class="mobile-menu-link">О проекте</a>
-                                <hr class="border-gray-700 my-1">
-                                <div class="px-4 py-2">
-                                    <span class="text-xs text-gray-500 uppercase">Настройки</span>
-                                </div>
-                                <label class="setting-toggle px-4 py-3">
-                                    <span class="label-text">Звуки</span>
-                                    <div>
-                                        <input type="checkbox" bind:checked={$settingsStore.audioEnabled}>
-                                        <span class="slider"></span>
-                                    </div>
-                                </label>
-                                <label class="setting-toggle px-4 py-3">
-                                    <span class="label-text">Анимации</span>
-                                    <div>
-                                        <input type="checkbox" bind:checked={$settingsStore.cinematicLoadsEnabled}>
-                                        <span class="slider"></span>
-                                    </div>
-                                </label>
-                                <hr class="border-gray-700 my-1">
-                                <Footer mode="menu" />
-                            </div>
+
+                    {#if isUserMenuOpen}
+                        <div class="cyber-dropdown" transition:scale={{duration: 150, start: 0.95, opacity: 0}}>
+                            <div class="dropdown-header">// ПРОФИЛЬ</div>
+                            <a href="/profile/{getEncodedUsername($userStore.user.username)}" class="dropdown-item">
+                                <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                Личное дело
+                            </a>
+                            <a href="/casino/inventory" class="dropdown-item">
+                                <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                                Инвентарь
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <button on:click={handleLogout} class="dropdown-item text-red">
+                                <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                                Отключиться
+                            </button>
                         </div>
                     {/if}
                 </div>
-            </div>
+            {:else}
+                <a href="/login" class="text-sm font-bold text-gray-300 hover:text-white mr-3 transition-colors font-display tracking-wide">ВОЙТИ</a>
+                <NeonButton href="/register" extraClass="text-xs px-5 py-1.5 !border-[1px]">РЕГИСТРАЦИЯ</NeonButton>
+            {/if}
+        </div>
+
+        <!-- 4. МОБИЛЬНОЕ МЕНЮ -->
+        <div class="md:hidden flex items-center gap-3">
+            {#if $userStore.user}
+                <div class="balance-pill mobile">
+                    <span class="text-[10px] text-cyber-yellow font-bold">PC</span>
+                    <span class="font-mono text-sm font-bold">{Math.floor($displayedCredits)}</span>
+                </div>
+            {/if}
+
+            <button on:click={toggleMobileMenu} class="p-2 text-gray-400 hover:text-white transition-colors relative">
+                {#if isMobileMenuOpen}
+                    <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                {:else}
+                    <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    <!-- Мобильная точка -->
+                    {#if hasUnreadNews}
+                        <span class="notification-dot mobile-icon"></span>
+                    {/if}
+                {/if}
+            </button>
         </div>
     </div>
+
+    {#if isMobileMenuOpen}
+        <div class="md:hidden bg-[#050a10]/95 backdrop-blur-xl border-b border-gray-800 absolute w-full left-0 z-40 shadow-2xl" transition:slide>
+            <div class="py-2 space-y-1">
+                <a href="/" class="mobile-link" class:active={isActive('/')}>КАРТА</a>
+
+                <!-- МОБИЛЬНЫЕ НОВОСТИ С ТОЧКОЙ -->
+                <a href="/news" class="mobile-link relative" class:active={isActive('/news')} on:click={markNewsAsRead}>
+                    НОВОСТИ
+                    {#if hasUnreadNews}
+                        <span class="notification-dot mobile"></span>
+                    {/if}
+                </a>
+
+                <a href="/casino" class="mobile-link glitch-text-mobile" class:active={isActive('/casino')}>THE GLITCH PIT</a>
+                <a href="/about" class="mobile-link" class:active={isActive('/about')}>О ПРОЕКТЕ</a>
+
+                <div class="border-t border-white/10 my-2"></div>
+
+                {#if $userStore.user}
+                    <div class="px-4 py-3 flex items-center gap-3 bg-white/5 mx-2 rounded-lg border border-white/5">
+                        <div class="avatar-container small {$userStore.user.equipped_frame || ''}">
+                            <img src={$userStore.user.avatar_url} class="user-avatar" alt=""/>
+                        </div>
+                        <div>
+                            <p class="text-white font-bold leading-tight font-display">{$userStore.user.username}</p>
+                            <p class="text-xs text-gray-400 font-mono">ID: {$userStore.user.uid.substring(0,6)}</p>
+                        </div>
+                    </div>
+                    <a href="/profile/{getEncodedUsername($userStore.user.username)}" class="mobile-sub-link">Мой профиль</a>
+                    <a href="/casino/inventory" class="mobile-sub-link">Инвентарь</a>
+                    <button on:click={handleLogout} class="mobile-sub-link text-red-400">Выйти</button>
+                {:else}
+                    <a href="/login" class="mobile-link">Войти</a>
+                    <a href="/register" class="mobile-link">Регистрация</a>
+                {/if}
+
+                <div class="border-t border-white/10 my-2"></div>
+
+                <div class="px-4 py-2">
+                    <p class="text-xs text-gray-500 uppercase mb-2 font-bold tracking-wider font-mono">// НАСТРОЙКИ</p>
+                    <label class="flex items-center justify-between py-3 border-b border-white/5">
+                        <span class="text-sm text-gray-300 font-display">ЗВУК</span>
+                        <input type="checkbox" bind:checked={$settingsStore.audioEnabled} class="cyber-switch">
+                    </label>
+                    <label class="flex items-center justify-between py-3">
+                        <span class="text-sm text-gray-300 font-display">АНИМАЦИИ</span>
+                        <input type="checkbox" bind:checked={$settingsStore.cinematicLoadsEnabled} class="cyber-switch">
+                    </label>
+                </div>
+                <div class="px-4 pb-4">
+                    <Footer mode="menu"/>
+                </div>
+            </div>
+        </div>
+    {/if}
 </nav>
 
 <style>
-    .nav-brand {
-        @apply text-xl lg:text-2xl font-bold uppercase tracking-widest relative cursor-pointer select-none;
-        font-family: 'Chakra Petch', sans-serif;
-        color: #e0e0e0;
-        text-shadow: 0 0 3px rgba(0, 240, 255, 0.7),
-                     0 0 5px rgba(0, 240, 255, 0.5);
+    .navbar-glass {
+        background: rgba(5, 8, 12, 0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
     }
-    .nav-brand::before,
-    .nav-brand::after {
-        content: attr(data-text);
+
+    /* === УВЕДОМЛЕНИЯ === */
+    .notification-dot {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: transparent;
-        overflow: hidden;
+        top: 12px;
+        right: 0px;
+        width: 8px;
+        height: 8px;
+        background-color: var(--cyber-red, #ff003c);
+        border-radius: 50%;
+        box-shadow: 0 0 8px var(--cyber-red, #ff003c);
+        animation: pulse-dot 2s infinite;
+        pointer-events: none;
     }
-    .nav-brand::before {
-        left: 2px;
-        text-shadow: -2px 0 #ff00c1;
-        clip-path: inset(50% 0 50% 0);
-    }
-    .nav-brand::after {
-        left: -2px;
-        text-shadow: 2px 0 #00f0ff;
-        clip-path: inset(50% 0 50% 0);
-    }
-    .nav-brand:hover::before {
-        animation: glitch-effect 1s infinite linear alternate-reverse;
-    }
-    .nav-brand:hover::after {
-        animation: glitch-effect 1s infinite linear alternate;
-    }
-    @keyframes glitch-effect {
-      0% { clip-path: inset(10% 0 85% 0); }
-      20% { clip-path: inset(80% 0 5% 0); }
-      40% { clip-path: inset(45% 0 45% 0); }
-      60% { clip-path: inset(90% 0 2% 0); }
-      80% { clip-path: inset(30% 0 60% 0); }
-      100% { clip-path: inset(10% 0 85% 0); }
+    .notification-dot.mobile { top: 50%; right: 20px; transform: translateY(-50%); }
+    .notification-dot.mobile-icon { top: 5px; right: 5px; width: 10px; height: 10px; border: 2px solid #050a10; }
+
+    @keyframes pulse-dot {
+        0% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.8); }
+        100% { opacity: 1; transform: scale(1); }
     }
 
-    .nav-link-btn {
-        @apply font-display uppercase tracking-widest text-sm text-gray-300;
-        transition: color 0.2s, text-shadow 0.2s;
+    /* === ЦЕНТРАЛЬНОЕ МЕНЮ === */
+    .nav-tab {
+        position: relative; padding: 0 1rem; height: 100%;
+        display: flex; align-items: center;
+        font-family: 'Chakra Petch', monospace; font-size: 0.85rem; font-weight: 700;
+        letter-spacing: 0.05em; color: #94a3b8; transition: color 0.3s; text-transform: uppercase;
     }
-    .nav-link-btn:hover {
-        color: var(--cyber-yellow, #fcee0a);
-        text-shadow: 0 0 8px var(--cyber-yellow, #fcee0a);
+    .nav-tab:hover { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
+    .nav-tab.active { color: #fff; }
+
+    .tab-line {
+        position: absolute; bottom: 0; left: 0; width: 100%; height: 2px;
+        background: var(--cyber-yellow, #fcee0a);
+        box-shadow: 0 -2px 10px var(--cyber-yellow, #fcee0a);
+        transform: scaleX(0); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: center;
+    }
+    .nav-tab:hover .tab-line, .nav-tab.active .tab-line { transform: scaleX(1); }
+
+    .glitch-link:hover {
+        animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+        color: var(--cyber-red, #ff003c);
+        text-shadow: 2px 0 #00f0ff, -2px 0 #ff003c;
+    }
+    @keyframes glitch-skew {
+        0% { transform: skew(0deg); } 20% { transform: skew(-2deg); } 40% { transform: skew(2deg); }
+        60% { transform: skew(-1deg); } 80% { transform: skew(1deg); } 100% { transform: skew(0deg); }
     }
 
-    .mobile-menu-link {
-        @apply block w-full text-left px-4 py-2 text-base text-gray-200 hover:bg-cyan-500/10 hover:text-white;
+    /* === ПРАВАЯ ЧАСТЬ === */
+    .balance-pill {
+        display: flex; align-items: center; gap: 0.5rem;
+        background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.3rem 0.8rem; border-radius: 6px; color: #e2e8f0;
+        transition: all 0.2s; font-family: 'Chakra Petch', monospace;
     }
+    .balance-pill:hover { border-color: var(--cyber-yellow); box-shadow: 0 0 10px rgba(252, 238, 10, 0.1); }
+    .balance-pill.mobile { padding: 0.2rem 0.6rem; background: rgba(0,0,0,0.4); }
 
-    .user-dropdown {
-        z-index: 100;
+    .icon-btn { padding: 0.5rem; color: #94a3b8; border-radius: 8px; transition: all 0.2s; }
+    .icon-btn:hover, .icon-btn.active { color: #fff; background: rgba(255, 255, 255, 0.1); }
+
+    .user-pill {
+        display: flex; align-items: center; gap: 0.75rem;
+        padding: 0.25rem 0.25rem 0.25rem 0.25rem; padding-right: 0.75rem;
+        background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 99px; transition: all 0.2s; cursor: pointer;
     }
+    .user-pill:hover, .user-pill.active { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.3); }
+    .username { font-family: 'Chakra Petch', monospace; font-weight: 600; font-size: 0.9rem; color: #e2e8f0; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chevron { color: #64748b; transition: transform 0.2s; }
+    .chevron.rotate { transform: rotate(180deg); }
+
+    .avatar-container.small { width: 32px; height: 32px; position: relative; border-radius: 50%; flex-shrink: 0; }
+    .avatar-container.small:not([class*="frame_"]) { border: 1px solid rgba(255,255,255,0.3); }
+    .user-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: none !important; }
+
+    /* === DROPDOWN === */
+    .cyber-dropdown {
+        position: absolute; top: calc(100% + 8px); right: 0; width: 240px;
+        background: rgba(8, 12, 18, 0.95); backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6); z-index: 100; overflow: hidden; transform-origin: top right;
+    }
+    .dropdown-header { padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'Chakra Petch', monospace; }
+    .dropdown-item { display: flex; align-items: center; width: 100%; padding: 0.75rem 1rem; font-size: 0.9rem; color: #cbd5e1; transition: all 0.2s; text-align: left; font-family: 'Inter', sans-serif; }
+    .dropdown-item:hover { background: rgba(255, 255, 255, 0.05); color: #fff; padding-left: 1.25rem; }
+    .dropdown-item .icon { width: 18px; height: 18px; margin-right: 10px; opacity: 0.7; }
+    .dropdown-item:hover .icon { opacity: 1; color: var(--cyber-yellow); }
+    .dropdown-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0; }
+    .text-red { color: #ef4444; }
+    .text-red:hover { color: #f87171; background: rgba(239, 68, 68, 0.1); }
+
+    /* === SWITCH === */
+    .setting-row { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-size: 0.9rem; color: #cbd5e1; }
+    .setting-row:hover { color: #fff; }
+    .cyber-switch { appearance: none; width: 36px; height: 20px; background: #334155; border-radius: 99px; position: relative; cursor: pointer; transition: all 0.3s; border: 1px solid #475569; }
+    .cyber-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #94a3b8; border-radius: 50%; transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); }
+    .cyber-switch:checked { background: rgba(0, 240, 255, 0.2); border-color: var(--cyber-yellow); }
+    .cyber-switch:checked::after { left: 18px; background: var(--cyber-yellow); box-shadow: 0 0 10px var(--cyber-yellow); }
+
+    /* === MOBILE === */
+    .mobile-link { display: block; padding: 0.75rem 1rem; font-family: 'Chakra Petch', monospace; font-weight: bold; color: #9ca3af; border-left: 2px solid transparent; }
+    .mobile-link:hover { color: #fff; }
+    .mobile-link.active { color: var(--cyber-yellow); border-left-color: var(--cyber-yellow); background: linear-gradient(to right, rgba(255,255,255,0.05), transparent); }
+    .mobile-sub-link { display: block; padding: 0.75rem 1rem 0.75rem 3rem; font-size: 0.95rem; color: #cbd5e1; border-left: 2px solid transparent; }
+    .mobile-sub-link:hover { color: #fff; background: rgba(255,255,255,0.03); }
 </style>

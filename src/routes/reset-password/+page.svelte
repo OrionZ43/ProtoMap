@@ -16,7 +16,6 @@
     let isCheckingCode = true;
 
     onMount(async () => {
-        // 1. Достаем секретный код из URL (Firebase добавляет ?oobCode=...)
         code = $page.url.searchParams.get("oobCode") || "";
 
         if (!code) {
@@ -25,7 +24,6 @@
             return;
         }
 
-        // 2. Проверяем валидность кода
         try {
             email = await verifyPasswordResetCode(auth, code);
             isCodeValid = true;
@@ -46,7 +44,6 @@
 
         loading = true;
         try {
-            // 3. Меняем пароль
             await confirmPasswordReset(auth, code, newPassword);
 
             modal.success("Успешно!", "Ваш пароль был изменен. Теперь вы можете войти.");
@@ -150,7 +147,6 @@
         box-shadow: 0 1px 0 var(--cyber-yellow, #fcee0a);
     }
 
-    /* Декор уголков */
     .corner { position: absolute; width: 10px; height: 10px; border-color: var(--cyber-yellow); transition: all 0.3s; }
     .top-left { top: 0; left: 0; border-top: 2px solid; border-left: 2px solid; }
     .top-right { top: 0; right: 0; border-top: 2px solid; border-right: 2px solid; }

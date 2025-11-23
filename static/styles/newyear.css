@@ -1,0 +1,217 @@
+/* === [ GLITCHMAS PROTOCOL: ENGAGED ] === */
+
+:root {
+    --festive-red: #ff003c;
+    --festive-gold: #ffd700;
+    --festive-green: #00ff9d;
+}
+
+/* === [ 1. ФОН: СЕВЕРНОЕ СИЯНИЕ (AURORA) ] === */
+
+/* Добавляем слой поверх зимнего снега */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -1; /* За снегом, но перед фоном */
+    background: linear-gradient(
+        120deg,
+        rgba(2, 5, 10, 0) 0%,
+        rgba(0, 255, 157, 0.1) 25%,
+        rgba(189, 0, 255, 0.15) 50%,
+        rgba(255, 0, 85, 0.1) 75%,
+        rgba(2, 5, 10, 0) 100%
+    );
+    background-size: 300% 300%;
+    filter: blur(40px);
+    mix-blend-mode: screen;
+    animation: aurora-flow 15s ease-in-out infinite alternate;
+}
+
+@keyframes aurora-flow {
+    0% { background-position: 0% 50%; opacity: 0.5; }
+    100% { background-position: 100% 50%; opacity: 0.8; }
+}
+
+/* === [ 2. НАВБАР: RGB ГИРЛЯНДА (Твоя версия) ] === */
+
+/* Убираем стандартную тень, чтобы гирлянда сияла ярче */
+nav.bg-gray-900\/50 {
+    border-bottom: none !important;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Сама гирлянда */
+nav::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    z-index: 60;
+    background-image:
+        /* Красная точка */
+        radial-gradient(circle, var(--festive-red) 2px, transparent 5px),
+        /* Зеленая точка */
+        radial-gradient(circle, var(--festive-green) 2px, transparent 5px),
+        /* Золотая точка */
+        radial-gradient(circle, var(--festive-gold) 2px, transparent 5px);
+
+    /* Размеры повторяющихся паттернов */
+    background-size: 60px 10px;
+
+    /* Сдвиг каждого цвета, чтобы они шли друг за другом */
+    background-position: 0 0, 20px 0, 40px 0;
+
+    background-repeat: repeat-x;
+    animation: xmas-lights 1s infinite alternate;
+}
+
+@keyframes xmas-lights {
+    0% { filter: drop-shadow(0 0 2px var(--festive-red)); opacity: 0.7; }
+    100% { filter: drop-shadow(0 0 8px var(--festive-gold)) drop-shadow(2px 2px 10px var(--festive-green)); opacity: 1; }
+}
+
+/* === [ 3. КАРТА: РАЗНОЦВЕТНЫЕ ЁЛОЧНЫЕ ИГРУШКИ ] === */
+
+/* Базовый стиль шара (общая форма, блики, тени) */
+.reactor-core {
+    border: none !important;
+    overflow: visible !important;
+    /* Блики и внутренняя тень для объема */
+    box-shadow:
+        inset -5px -5px 10px rgba(0,0,0,0.7),
+        inset 5px 5px 10px rgba(255,255,255,0.4) !important;
+}
+
+/* --- 🔴 МАЛЕНЬКИЕ ШАРЫ (Красные) --- */
+.small .reactor-core {
+    background: radial-gradient(circle at 30% 30%, #ff4d4d, #990000) !important;
+    box-shadow:
+        inset -5px -5px 10px rgba(0,0,0,0.7),
+        inset 5px 5px 10px rgba(255,255,255,0.4),
+        0 0 15px #ff0055 !important; /* Свечение */
+}
+
+/* --- 🟡 СРЕДНИЕ ШАРЫ (Золотые) --- */
+.medium .reactor-core {
+    background: radial-gradient(circle at 30% 30%, #ffd700, #b8860b) !important;
+    box-shadow:
+        inset -5px -5px 10px rgba(0,0,0,0.7),
+        inset 5px 5px 10px rgba(255,255,255,0.4),
+        0 0 15px #ffd700 !important;
+}
+/* Для золотого шара текст лучше сделать черным для читаемости */
+.medium .reactor-core .count {
+    color: #000 !important;
+    text-shadow: none !important;
+}
+
+/* --- 🔵 БОЛЬШИЕ ШАРЫ (Синие) --- */
+.large .reactor-core {
+    background: radial-gradient(circle at 30% 30%, #00f3ff, #0055ff) !important;
+    box-shadow:
+        inset -5px -5px 10px rgba(0,0,0,0.7),
+        inset 5px 5px 10px rgba(255,255,255,0.4),
+        0 0 20px #00f3ff !important;
+}
+
+/* --- ДЕТАЛИ ИГРУШКИ --- */
+
+/* Золотая "шапочка" сверху */
+.reactor-core::before {
+    content: ''; position: absolute;
+    top: -6px; left: 50%; transform: translateX(-50%);
+    width: 14px; height: 8px;
+    background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728);
+    border-radius: 2px; z-index: -1;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Петелька */
+.reactor-core::after {
+    content: ''; position: absolute;
+    top: -12px; left: 50%; transform: translateX(-50%);
+    width: 8px; height: 8px;
+    border: 2px solid #fcf6ba;
+    border-radius: 50%; z-index: -2;
+}
+
+/* Текст внутри шара (по умолчанию белый) */
+.reactor-core .count {
+    color: #fff !important;
+    text-shadow: 0 1px 2px #000 !important;
+    font-weight: bold;
+}
+
+/* Кольца превращаются в мишуру (цвет зависит от размера) */
+.reactor-ring {
+    border-color: transparent !important;
+    animation-duration: 20s !important;
+}
+
+.small .reactor-ring {
+    border-top: 2px dotted #ffd700 !important;
+    border-bottom: 2px dotted #ffd700 !important;
+    filter: drop-shadow(0 0 2px #ffd700);
+}
+.medium .reactor-ring {
+    border-top: 2px dotted #ff0055 !important; /* Красная мишура на золотом шаре */
+    border-bottom: 2px dotted #ff0055 !important;
+    filter: drop-shadow(0 0 2px #ff0055);
+}
+.large .reactor-ring {
+    border-top: 2px dotted #fff !important; /* Серебряная мишура на синем шаре */
+    border-bottom: 2px dotted #fff !important;
+    filter: drop-shadow(0 0 2px #fff);
+}
+
+/* Свечение вокруг (тоже адаптируем) */
+.reactor-glow {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%) !important;
+}
+
+/* === [ 4. ИНТЕРФЕЙС: ПРАЗДНИЧНЫЕ АКЦЕНТЫ ] === */
+
+/* Заголовки переливаются золотом */
+.title, .nav-brand, .machine-title {
+    background: linear-gradient(to bottom, #fff, var(--festive-gold));
+    -webkit-background-clip: text;
+    color: transparent !important;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.5) !important;
+}
+
+/* Кнопки действий становятся более "теплыми" */
+.panel-btn, .neon-btn {
+    border-color: var(--festive-red) !important;
+    background: linear-gradient(180deg, rgba(255, 0, 85, 0.15), transparent) !important;
+}
+.panel-btn:hover, .neon-btn:hover {
+    box-shadow: 0 0 20px var(--festive-red) !important;
+}
+
+/* === [ 5. СКРОЛЛБАР: ЛЕДЕНЕЦ (CANDY CANE) ] === */
+
+::-webkit-scrollbar-thumb {
+    background-image: repeating-linear-gradient(
+        45deg,
+        #fff,
+        #fff 10px,
+        #ff0055 10px,
+        #ff0055 20px
+    ) !important;
+    border: 2px solid #0a0a0a;
+    box-shadow: 0 0 10px var(--festive-red);
+}
+
+/* === [ 6. ПОПАПЫ: ПРАЗДНИЧНАЯ РАМКА ] === */
+
+.liquid-glass-popup {
+    border: 1px solid var(--festive-gold) !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.15), inset 0 0 30px rgba(255, 0, 85, 0.05) !important;
+}
+
+/* === [ 7. ГЛИТЧ СТАЛ ПРАЗДНИЧНЫМ ] === */
+.glitch::before { text-shadow: -2px 0 var(--festive-red) !important; }
+.glitch::after { text-shadow: 2px 0 var(--festive-green) !important; }

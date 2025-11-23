@@ -153,39 +153,13 @@ export function initMap(containerId: string) {
         return L.divIcon({ html: html, className: 'custom-cluster-icon-wrapper', iconSize: L.point(80, 80, true) });
     };
 
-    const markers = L.markerClusterGroup({ iconCreateFunction: createClusterIcon });
+    const markers = L.markerClusterGroup({
+    iconCreateFunction: createClusterIcon,
+    showCoverageOnHover: false
+    });
     map.addLayer(markers);
 
     const userMarkers: { [key: string]: L.Marker } = {};
-
-    const casinoIconHtml = `
-        <div class="casino-marker-wrapper">
-            <div class="casino-marker-sign">¢</div>
-            <div class="casino-marker-glow"></div>
-        </div>
-    `;
-
-    const casinoIcon = L.divIcon({
-        html: casinoIconHtml,
-        className: 'custom-casino-icon',
-        iconSize: [60, 60],
-        iconAnchor: [30, 30]
-    });
-
-    const casinoMarker = L.marker([25.76, -71.00], { icon: casinoIcon }); // Координаты в Бермудском треугольнике
-
-    casinoMarker.on('click', () => {
-        // Проигрываем какой-нибудь "секретный" звук
-        AudioManager.play('entercasino'); // Например, звук успеха
-
-        // Добавляем небольшую задержку для "вау-эффекта"
-        setTimeout(() => {
-            // Используем нативный редирект, так как goto из svelte/navigation здесь недоступен
-            window.location.href = '/casino';
-        }, 300);
-    });
-
-    casinoMarker.addTo(map);
 
     function addOrUpdateMarker(userData: MarkerUserData, lat: number, lng: number, city: string): void {
         const isOwner = currentUserProfile?.username?.trim() === userData.username.trim();

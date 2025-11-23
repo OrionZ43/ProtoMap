@@ -971,7 +971,6 @@ html {
 
 
 /* === [ КАСТОМИЗАЦИЯ АВАТАРОВ В КОММЕНТАРИЯХ ] === */
-/* (Используем те же стили, что и для попапов, но адаптируем под класс .comment-avatar-wrapper) */
 
 .comment-avatar-wrapper.frame_neon_blue { outline: 2px solid var(--cyber-cyan); outline-offset: 2px; box-shadow: 0 0 8px var(--cyber-cyan), 0 0 12px var(--cyber-cyan); }
 
@@ -1003,69 +1002,27 @@ html {
     border: 1px dashed rgba(255, 255, 255, 0.5); border-top: 2px solid #fff; border-bottom: 2px solid #fff; animation: stealth-scan 3s ease-in-out infinite;
 }
 
-/* === [ КАЗИНО: СЕКРЕТНЫЙ МАРКЕР НА КАРТЕ ] === */
-
-@keyframes neon-flicker {
-    0%, 100% { opacity: 1; text-shadow: 0 0 5px #ff00c1, 0 0 10px #ff00c1, 0 0 20px #ff00c1; }
-    50% { opacity: 0.8; text-shadow: 0 0 2px #ff00c1, 0 0 5px #ff00c1; }
-}
-
-@keyframes glow-pulse {
-    0%, 100% { transform: scale(1); opacity: 0.5; }
-    50% { transform: scale(1.5); opacity: 0; }
-}
-
-.custom-casino-icon {
-    background: transparent !important;
-    border: none !important;
-}
-
-.casino-marker-wrapper {
-    position: relative; width: 60px; height: 60px;
-    display: flex; align-items: center; justify-content: center; cursor: pointer;
-}
-
-.casino-marker-sign {
-    font-family: 'Chakra Petch', monospace; font-weight: bold; font-size: 2.2rem;
-    line-height: 1; color: #fff; background: #111;
-    width: 45px; height: 45px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    border: 2px solid #ff00c1; z-index: 2;
-    animation: neon-flicker 2.5s infinite ease-in-out; transition: all 0.2s;
-}
-
-.casino-marker-wrapper:hover .casino-marker-sign { transform: scale(1.1); background: #000; }
-
-.casino-marker-glow {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    border-radius: 50%; background: #ff00c1; z-index: 1;
-    animation: glow-pulse 3s infinite;
-}
 .leaflet-container a.leaflet-popup-close-button {
-    color: rgba(255, 255, 255, 0.6) !important; /* Светло-серый по умолчанию */
-    font-size: 28px !important; /* Увеличили сам крестик (было около 16px) */
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-size: 28px !important;
     font-weight: 300 !important;
 
-    /* Увеличиваем зону клика */
     width: 40px !important;
     height: 40px !important;
 
-    /* Центрируем крестик внутри зоны клика */
     display: flex !important;
     align-items: center;
     justify-content: center;
 
-    /* Позиционирование */
     top: 5px !important;
     right: 5px !important;
 
-    border-radius: 50%; /* Круглая форма при ховере */
+    border-radius: 50%;
     transition: all 0.2s ease-in-out !important;
     text-decoration: none !important;
     z-index: 100;
 }
 
-/* Убираем странные отступы Leaflet, если они есть */
 .leaflet-popup-content-wrapper {
     padding-right: 0 !important;
 }

@@ -1,9 +1,20 @@
 <script lang="ts">
     import { onMount, onDestroy, createEventDispatcher } from 'svelte';
     import { Howl } from 'howler';
+    import { browser } from '$app/environment';
 
     export let username: string = 'НЕИЗВЕСТНЫЙ_УЗЕЛ';
     const dispatch = createEventDispatcher();
+
+    // Определяем сезон (зима или нет) для стилей
+    let isWinter = false;
+    if (browser) {
+        const m = new Date().getMonth();
+        // Ноябрь (10) с 15-го, Декабрь (11), Январь (0)
+        if ((m === 11 && new Date().getDate() >= 15) || m === 11 || m === 0) {
+            isWinter = true;
+        }
+    }
 
     type AnimationPhase = 'idle' | 'phase1_init' | 'phase2_breach' | 'phase3_analyze' | 'phase4_granted' | 'finished';
     let phase: AnimationPhase = 'idle';
@@ -15,6 +26,21 @@
     let sound: Howl | null = null;
     let timeouts: NodeJS.Timeout[] = [];
     let intervals: NodeJS.Timeout[] = [];
+
+    // --- ТЕКСТЫ (АДАПТИВНЫЕ) ---
+    const winterLogs = [
+        'РАЗМОРОЗКА ПАКЕТОВ...', 'ПРОВЕРКА КРИО-ЯЧЕЕК...', 'ТЕМПЕРАТУРА ЯДРА ПОВЫШАЕТСЯ...',
+        'УДАЛЕНИЕ ЦИФРОВОГО ИНЕЯ...', 'СИНХРОНИЗАЦИЯ С СЕВЕРНЫМ СЕРВЕРОМ...',
+        'ОБНАРУЖЕН СЛОЙ ЛЬДА...', 'АКТИВАЦИЯ ТЕПЛОВЫХ КОНТУРОВ...',
+        'СБОРКА СНЕЖНЫХ БИТОВ...', 'ПРОГРЕВ НЕЙРОСЕТИ...'
+    ];
+
+    const defaultLogs = [
+        'ОБХОД ICE...', 'ЗАПРОС К КОРНЮ...', 'ОБНАРУЖЕНА УТЕЧКА ПАМЯТИ...',
+        'ПАТЧ ЯДРА ПРИМЕНЕН...', 'ПОДМЕНА УЧЕТНЫХ ДАННЫХ...', 'ДЕШИФРОВКА ПАКЕТА 0x7F...',
+        'NULL POINTER... ИГНОРИРУЕТСЯ.', 'ПЕРЕЗАПИСЬ ПРОТОКОЛОВ БЕЗОПАСНОСТИ...',
+        'ВНЕДРЕНИЕ ПОЛЕЗНОЙ НАГРУЗКИ...'
+    ];
 
     function addLineAndType(text: string, glitch: boolean = false) {
         const lineIndex = mainLines.length;
@@ -29,7 +55,7 @@
             } else {
                 clearInterval(typingInterval);
             }
-        }, 50);
+        }, 40); // Чуть быстрее печатаем
         intervals.push(typingInterval);
     }
 
@@ -54,7 +80,7 @@
 
     onMount(() => {
         sound = new Howl({
-            src: ['/sounds/long_maybe_for_loading_profile_anim.mp3'],
+            src: ['/sounds/long_maybe_for_loading_profile_anim.mp3'], // Можно оставить тот же звук, он подходит под эмбиент
             volume: 0.8,
             onend: skipAnimation
         });
@@ -62,8 +88,11 @@
 
         phase = 'phase1_init';
 
-        timeouts.push(setTimeout(() => addLineAndType('> ИНИЦИАЛИЗАЦИЯ СОЕДИНЕНИЯ...'), 1000));
-        timeouts.push(setTimeout(() => addLineAndType('> ЦЕЛЕВОЙ УЗЕЛ ИДЕНТИФИЦИРОВАН:'), 2000));
+        const initText = isWinter ? '> ЗАПУСК КРИО-ПРОТОКОЛА...' : '> ИНИЦИАЛИЗАЦИЯ СОЕДИНЕНИЯ...';
+        const targetText = isWinter ? '> ЦЕЛЬ ЗАМОРОЖЕНА:' : '> ЦЕЛЕВОЙ УЗЕЛ ИДЕНТИФИЦИРОВАН:';
+
+        timeouts.push(setTimeout(() => addLineAndType(initText), 1000));
+        timeouts.push(setTimeout(() => addLineAndType(targetText), 2000));
         timeouts.push(setTimeout(() => {
             addLineAndType(`> //: [${username}]`, true);
             triggerScreenGlitch();
@@ -81,14 +110,9 @@
             }, 100);
             intervals.push(progressInterval);
 
+            const logPool = isWinter ? winterLogs : defaultLogs;
             const logInterval = setInterval(() => {
-                const logs = [
-                    'ОБХОД ICE...', 'ЗАПРОС К КОРНЮ...', 'ОБНАРУЖЕНА УТЕЧКА ПАМЯТИ...',
-                    'ПАТЧ ЯДРА ПРИМЕНЕН...', 'ПОДМЕНА УЧЕТНЫХ ДАННЫХ...', 'ДЕШИФРОВКА ПАКЕТА 0x7F...',
-                    'NULL POINTER... ИГНОРИРУЕТСЯ.', 'ПЕРЕЗАПИСЬ ПРОТОКОЛОВ БЕЗОПАСНОСТИ...',
-                    'ВНЕДРЕНИЕ ПОЛЕЗНОЙ НАГРУЗКИ...', 'УСТАНОВКА BACKDOOR...'
-                ];
-                addLog(logs[Math.floor(Math.random() * logs.length)]);
+                addLog(logPool[Math.floor(Math.random() * logPool.length)]);
             }, 150);
             intervals.push(logInterval);
         }, 4500));
@@ -100,9 +124,13 @@
             logLines = [];
             triggerScreenGlitch();
 
-            timeouts.push(setTimeout(() => addLog('ТРАССИРОВКА ЗАВЕРШЕНА. АНАЛИЗ СИГНАТУРЫ...'), 200));
-            timeouts.push(setTimeout(() => addLog('РАЗБОР НЕЙРОННЫХ МЕТАДАННЫХ...'), 1000));
-            timeouts.push(setTimeout(() => addLog('ИЗВЛЕЧЕНИЕ ФРАГМЕНТОВ ПАМЯТИ...'), 2000));
+            const analyzeTexts = isWinter
+                ? ['РАЗМОРОЗКА ЗАВЕРШЕНА.', 'СБОРКА ДАННЫХ ПРОФИЛЯ...', 'ОТРИСОВКА ИНТЕРФЕЙСА...']
+                : ['ТРАССИРОВКА ЗАВЕРШЕНА.', 'РАЗБОР НЕЙРОННЫХ МЕТАДАННЫХ...', 'ИЗВЛЕЧЕНИЕ ФРАГМЕНТОВ ПАМЯТИ...'];
+
+            timeouts.push(setTimeout(() => addLog(analyzeTexts[0]), 200));
+            timeouts.push(setTimeout(() => addLog(analyzeTexts[1]), 1000));
+            timeouts.push(setTimeout(() => addLog(analyzeTexts[2]), 2000));
         }, 6100));
 
         timeouts.push(setTimeout(() => {
@@ -128,10 +156,22 @@
     });
 </script>
 
-<div class="loader-container" class:crt-off={phase === 'finished'} class:screen-glitch={screenGlitch} role="status" aria-live="polite">
+<div
+    class="loader-container"
+    class:crt-off={phase === 'finished'}
+    class:screen-glitch={screenGlitch}
+    class:winter-theme={isWinter}
+    role="status"
+    aria-live="polite"
+>
 
     <div class="background-effects">
-        <div class="matrix-rain"></div>
+        {#if isWinter}
+            <div class="snow-storm"></div>
+            <div class="frost-overlay"></div>
+        {:else}
+            <div class="matrix-rain"></div>
+        {/if}
         <div class="grid-overlay"></div>
         <div class="scanline"></div>
         <div class="vignette"></div>
@@ -141,7 +181,7 @@
         <div class="terminal">
             {#if phase === 'phase2_breach' || phase === 'phase3_analyze'}
                 <div class="log-panel">
-                    <h3 class="panel-title">//: СИСТЕМНЫЙ ЖУРНАЛ</h3>
+                    <h3 class="panel-title">{isWinter ? '//: СИСТЕМНЫЙ ЖУРНАЛ' : '//: SYSTEM LOG'}</h3>
                     {#each logLines as log, i}
                         <p class="log-line" style="opacity: {1 - i * 0.15}; transform: translateX({i * 5}px);">{log}</p>
                     {/each}
@@ -159,7 +199,9 @@
             {#if phase === 'phase2_breach'}
                  <div class="main-terminal breach-mode">
                     <div class="progress-bar-container">
-                        <span class="progress-label glitch" data-text="ВЗЛОМ БРАНДМАУЭРА...">ВЗЛОМ БРАНДМАУЭРА...</span>
+                        <span class="progress-label glitch" data-text={isWinter ? "РАЗМОРОЗКА ДАННЫХ..." : "ВЗЛОМ БРАНДМАУЭРА..."}>
+                            {isWinter ? "РАЗМОРОЗКА ДАННЫХ..." : "ВЗЛОМ БРАНДМАУЭРА..."}
+                        </span>
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: {progress}%"></div>
                         </div>
@@ -170,16 +212,19 @@
 
             {#if phase === 'phase4_granted'}
                 <div class="granted-overlay">
-                    <h1 class="granted-text glitch" data-text="ДОСТУП РАЗРЕШЕН">ДОСТУП РАЗРЕШЕН</h1>
+                    <h1 class="granted-text glitch" data-text={isWinter ? "ДОСТУП ОТКРЫТ" : "ДОСТУП РАЗРЕШЕН"}>
+                        {isWinter ? "ДОСТУП ОТКРЫТ" : "ДОСТУП РАЗРЕШЕН"}
+                    </h1>
                 </div>
             {/if}
         </div>
     </div>
 
-    <button class="skip-btn" on:click={skipAnimation}>[ ПРОПУСТИТЬ СЦЕНУ ]</button>
+    <button class="skip-btn" on:click={skipAnimation}>[ ПРОПУСТИТЬ ]</button>
 </div>
 
 <style>
+    /* === БАЗОВЫЕ АНИМАЦИИ === */
     @keyframes blink { 50% { opacity: 0; } }
     @keyframes scanline-anim { 0% { transform: translateY(-100vh); } 100% { transform: translateY(100vh); } }
     @keyframes granted-flash { 0% { opacity: 0; transform: scale(0.8); filter: blur(10px); } 10% { opacity: 1; transform: scale(1); filter: blur(0px); } 80% { opacity: 1; } 100% { opacity: 0; } }
@@ -189,84 +234,135 @@
         100% { transform: scale(0, 0); filter: brightness(0); }
     }
     @keyframes screen-shake {
-        0% { transform: translate(0, 0); }
-        20% { transform: translate(-5px, 5px); }
-        40% { transform: translate(5px, -5px); }
-        60% { transform: translate(-5px, -5px); }
-        80% { transform: translate(5px, 5px); }
-        100% { transform: translate(0, 0); }
+        0% { transform: translate(0, 0); } 20% { transform: translate(-5px, 5px); } 40% { transform: translate(5px, -5px); } 60% { transform: translate(-5px, -5px); } 80% { transform: translate(5px, 5px); } 100% { transform: translate(0, 0); }
     }
     @keyframes matrix-scroll { from { background-position: 0 0; } to { background-position: 0 1000px; } }
     @keyframes glitch-anim { 0% { clip-path: inset(45% 0 50% 0); transform: translateX(-2px); } 100% { clip-path: inset(5% 0 90% 0); transform: translateX(2px); } }
 
+    /* Зимние анимации */
+    @keyframes snow-fall-anim { from { background-position: 0 0; } to { background-position: 50px 500px; } }
+    @keyframes frost-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
 
+    /* === КОНТЕЙНЕР === */
     .loader-container {
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        background-color: #050a05; color: #00ff41; font-family: 'Chakra Petch', monospace;
+        background-color: #050a05;
+        /* Дефолтный цвет (зеленый) */
+        color: #00ff41;
+        --primary-color: #00ff41;
+        --secondary-color: #00ff41;
+
+        font-family: 'Chakra Petch', monospace;
         display: flex; align-items: center; justify-content: center; z-index: 9999;
         overflow: hidden; perspective: 1000px;
     }
+
+    /* === ЗИМНЯЯ ТЕМА === */
+    .loader-container.winter-theme {
+        background-color: #02050a;
+        color: #00f3ff; /* Cyan */
+        --primary-color: #00f3ff;
+        --secondary-color: #ffffff;
+    }
+
     .loader-container.crt-off { animation: crt-off-anim 0.8s cubic-bezier(0.755, 0.05, 0.855, 0.06) forwards; }
     .loader-container.screen-glitch { animation: screen-shake 0.15s linear infinite; filter: hue-rotate(90deg) contrast(1.5); }
 
+    /* === ФОНОВЫЕ ЭФФЕКТЫ === */
     .background-effects { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
     .matrix-rain {
         position: absolute; width: 100%; height: 100%; opacity: 0.15;
         background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><text x="10" y="30" fill="%2300ff41" font-family="monospace" font-size="20">1</text><text x="50" y="70" fill="%2300ff41" font-family="monospace" font-size="20">0</text></svg>');
         animation: matrix-scroll 5s linear infinite;
     }
+
+    .snow-storm {
+        position: absolute; width: 100%; height: 100%; opacity: 0.3;
+        background-image:
+            radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+            radial-gradient(1px 1px at 100px 150px, #00f3ff, transparent);
+        background-size: 300px 300px;
+        animation: snow-fall-anim 10s linear infinite;
+    }
+
+    .frost-overlay {
+        position: absolute; width: 100%; height: 100%;
+        box-shadow: inset 0 0 150px rgba(0, 243, 255, 0.3);
+        background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+        opacity: 0.5;
+        animation: frost-pulse 5s infinite ease-in-out;
+    }
+
     .grid-overlay {
         position: absolute; width: 100%; height: 100%; opacity: 0.3;
         background-image: linear-gradient(rgba(0, 255, 65, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 65, 0.1) 1px, transparent 1px);
         background-size: 30px 30px;
     }
+    /* Перекрашиваем сетку для зимы */
+    .winter-theme .grid-overlay {
+        background-image: linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+    }
+
     .scanline {
         position: absolute; width: 100%; height: 100px;
-        background: linear-gradient(to bottom, transparent, rgba(0, 255, 65, 0.1), transparent);
-        animation: scanline-anim 4s linear infinite; opacity: 0.5;
+        background: linear-gradient(to bottom, transparent, var(--primary-color), transparent);
+        opacity: 0.1;
+        animation: scanline-anim 4s linear infinite;
     }
     .vignette {
         position: absolute; width: 100%; height: 100%;
         background: radial-gradient(circle, transparent 50%, black 150%);
     }
 
+    /* === ТЕРМИНАЛ === */
     .terminal-perspective { transform: rotateX(5deg); transform-style: preserve-3d; }
     .terminal {
         width: 90vw; max-width: 1200px; padding: 2rem;
         display: flex; justify-content: space-between; align-items: center;
-        text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+        text-shadow: 0 0 5px var(--primary-color);
     }
 
-    .log-panel { width: 35%; font-size: 0.9rem; color: rgba(0, 255, 65, 0.7); }
-    .panel-title { color: var(--cyber-yellow); margin-bottom: 1rem; border-bottom: 2px solid var(--cyber-yellow); display: inline-block; }
+    .log-panel { width: 35%; font-size: 0.9rem; color: var(--primary-color); opacity: 0.8; }
+    .panel-title { color: var(--secondary-color); margin-bottom: 1rem; border-bottom: 2px solid var(--secondary-color); display: inline-block; }
     .log-line { white-space: nowrap; overflow: hidden; margin-bottom: 0.3rem; font-family: 'Share Tech Mono', monospace; }
 
     .main-terminal { width: 60%; }
-    .line { font-size: 1.8rem; margin-bottom: 1rem; white-space: pre; }
-    .caret { display: inline-block; width: 12px; height: 1.8rem; background-color: #00ff41; animation: blink 0.8s step-end infinite; vertical-align: sub; }
+    .line { font-size: 1.8rem; margin-bottom: 1rem; white-space: pre; color: var(--primary-color); }
+    .caret { display: inline-block; width: 12px; height: 1.8rem; background-color: var(--primary-color); animation: blink 0.8s step-end infinite; vertical-align: sub; }
+
+    /* Прогресс бар */
     .breach-mode .progress-bar-container {
-        border: 4px solid #00ff41; padding: 1rem; background: rgba(0,20,0,0.8);
+        border: 4px solid var(--primary-color); padding: 1rem; background: rgba(0,20,0,0.8);
         box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
     }
-    .progress-label { font-size: 1.5rem; display: block; text-align: center; margin-bottom: 1rem; }
-    .progress-bar { height: 40px; background: rgba(0, 255, 65, 0.1); border: 1px solid #00ff41; padding: 4px; }
-    .progress-fill { height: 100%; background: #00ff41; box-shadow: 0 0 20px #00ff41; transition: width 0.1s linear; }
-    .progress-percent { display: block; text-align: right; font-size: 2rem; margin-top: 0.5rem; }
+    .winter-theme .breach-mode .progress-bar-container {
+        background: rgba(0,10,20,0.8);
+        box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+    }
 
+    .progress-label { font-size: 1.5rem; display: block; text-align: center; margin-bottom: 1rem; color: var(--primary-color); }
+    .progress-bar { height: 40px; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--primary-color); padding: 4px; }
+    .progress-fill { height: 100%; background: var(--primary-color); box-shadow: 0 0 20px var(--primary-color); transition: width 0.1s linear; }
+    .progress-percent { display: block; text-align: right; font-size: 2rem; margin-top: 0.5rem; color: var(--secondary-color); }
+
+    /* Грант доступа */
     .granted-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         display: flex; align-items: center; justify-content: center;
     }
     .granted-text {
-        font-size: 8vw; color: var(--cyber-yellow);
-        text-shadow: 0 0 50px var(--cyber-yellow), 0 0 20px #fff;
+        font-size: 8vw; color: var(--secondary-color);
+        text-shadow: 0 0 50px var(--secondary-color), 0 0 20px var(--primary-color);
         animation: granted-flash 2s ease-out forwards;
     }
 
-    .glitch { position: relative; color: var(--cyber-yellow, #fcee0a); }
+    .glitch { position: relative; color: var(--secondary-color); }
     .glitch::before, .glitch::after {
         content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #050a05; overflow: hidden; clip-path: inset(0 0 0 0);
     }
+    .winter-theme .glitch::before, .winter-theme .glitch::after { background: #02050a; }
+
     .glitch::before { text-shadow: -3px 0 #ff00c1; animation: glitch-anim 0.2s infinite linear alternate-reverse; left: 3px; }
     .glitch::after { text-shadow: 3px 0 #00f0ff; animation: glitch-anim 0.2s infinite linear alternate-reverse; left: -3px; animation-delay: 0.1s; }
 
@@ -276,46 +372,15 @@
         color: rgba(255, 255, 255, 0.5); padding: 0.8rem 1.5rem; font-weight: bold;
         font-family: 'Chakra Petch', monospace; cursor: pointer; transition: all 0.2s; z-index: 10000;
     }
-    .skip-btn:hover { border-color: var(--cyber-red); color: var(--cyber-red); box-shadow: 0 0 15px var(--cyber-red); }
+    .skip-btn:hover { border-color: var(--primary-color); color: var(--primary-color); box-shadow: 0 0 15px var(--primary-color); }
 
     @media (max-width: 768px) {
-        .terminal {
-            flex-direction: column;
-            justify-content: center;
-            width: 95vw;
-            padding: 1rem;
-        }
-
-        .main-terminal {
-            width: 100%;
-            order: 1;
-            margin-bottom: 2rem;
-        }
-
-        .log-panel {
-            width: 100%;
-            order: 2;
-            font-size: 0.8rem;
-            max-height: 25vh;
-            overflow: hidden;
-        }
-
-        .line {
-            font-size: 1.2rem;
-            white-space: normal;
-            word-break: break-all;
-        }
-
-        .progress-label {
-            font-size: 1rem;
-        }
-
-        .progress-percent {
-            font-size: 1.5rem;
-        }
-
-        .granted-text {
-            font-size: 12vw;
-        }
+        .terminal { flex-direction: column; justify-content: center; width: 95vw; padding: 1rem; }
+        .main-terminal { width: 100%; order: 1; margin-bottom: 2rem; }
+        .log-panel { width: 100%; order: 2; font-size: 0.8rem; max-height: 25vh; overflow: hidden; }
+        .line { font-size: 1.2rem; white-space: normal; word-break: break-all; }
+        .progress-label { font-size: 1rem; }
+        .progress-percent { font-size: 1.5rem; }
+        .granted-text { font-size: 12vw; }
     }
 </style>
