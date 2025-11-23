@@ -2,10 +2,9 @@
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
+
     const opacity = tweened(0, { duration: 400, easing: quintOut });
-    onMount(() => {
-        opacity.set(1);
-    });
+    onMount(() => { opacity.set(1); });
 </script>
 
 <svelte:head>
@@ -14,72 +13,146 @@
 
 <div class="about-container cyber-panel pb-12" style="opacity: {$opacity}">
 
-    <h2 class="title font-display">// ABOUT_PROTOMAP</h2>
+    <header class="about-header">
+        <h2 class="title font-display glitch" data-text="// ABOUT_PROTOMAP">// ABOUT_PROTOMAP</h2>
+    </header>
 
     <div class="content-text">
-        <p class="mb-4">
-            <span class="highlight">[SYSTEM_INITIATED]</span> Добро пожаловать на ProtoMap — неофициальную точку сбора протогенов в цифровом пространстве.
+        <p class="mb-8 intro-text">
+            <span class="highlight">[SYSTEM_INITIATED]</span> Добро пожаловать на <strong>ProtoMap</strong> — главную точку сбора протогенов в цифровом пространстве. Этот проект начался как эксперимент, а стал домом для сотен уникальных сигналов.
         </p>
-        <p class="mb-4">
-            Эта карта была создана из простого желания: увидеть, как много нас разбросано по разным городам и странам, и дать возможность найти друг друга. Здесь каждый может анонимно (или не очень) отметить свое присутствие, создав маленькую светящуюся точку в нашей общей сети.
-        </p>
+
+        <!-- Секция КОМАНДА -->
+        <div class="team-section">
+            <h3 class="section-title">// АРХИТЕКТОРЫ СЕТИ</h3>
+
+            <div class="team-grid">
+                <!-- ORION -->
+                <div class="team-card">
+                    <div class="card-visual">
+                        <div class="avatar-glow orion"></div>
+                        <img
+                            src="https://res.cloudinary.com/dzkypodvd/image/upload/v1763571062/protomap_avatars/XT2NDfkr9wUFl3d1Eh6imTEdlxt2.webp"
+                            alt="Orion_Z43"
+                            class="team-avatar"
+                        />
+                    </div>
+                    <div class="card-content">
+                        <div class="role text-cyber-yellow">LEAD ARCHITECT</div>
+                        <a href="https://t.me/Orion_Z43" target="_blank" class="name">Orion_Z43</a>
+                        <p class="desc">Создатель ядра, веб-интерфейса и безумной экономики казино. Отвечает за то, чтобы сервера не плавились, а рамки сияли.</p>
+                    </div>
+                </div>
+
+                <!-- IPOSDEV -->
+                <div class="team-card">
+                    <div class="card-visual">
+                        <div class="avatar-glow ipos"></div>
+                        <img
+                            src="https://res.cloudinary.com/dzkypodvd/image/upload/v1763932736/protomap_avatars/IubBQqbHINYegxaX5vNvhXT0oz22.webp"
+                            alt="iposdev"
+                            class="team-avatar"
+                        />
+                    </div>
+                    <div class="card-content">
+                        <div class="role text-purple-400">MOBILE ENGINEER</div>
+                        <a href="https://t.me/iposdev" target="_blank" class="name">iposdev</a>
+                        <p class="desc">Если вы думаете, что ProtoMap — это только веб-сайт, то iposdev готовит вам сюрприз.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <hr class="separator" />
-        <p class="mb-4">
-            <span class="highlight">[AUTHOR_ID]</span> Я — <a href="https://t.me/Orion_Z43" target="_blank" class="author-link">Orion_Z43</a>, создатель и единственный разработчик этого проекта. Увлекшись кодингом и киберпанк-эстетикой, я решил объединить эти два мира и сделать что-то полезное для нашего сообщества.
-        </p>
-        <p>
-            Если у вас есть идеи, предложения или вы нашли баг (что вполне вероятно!), не стесняйтесь писать мне или в наш чатик. Обратная связь — это важно для развития ProtoMap.
-        </p>
-        <hr class="separator" />
-        <p class="mb-4">
-            <span class="highlight">[COMM_LINK_ESTABLISHED]</span> Присоединяйтесь к нашему <a href="https://t.me/proto_map" target="_blank" class="author-link">Telegram-чату</a>, чтобы общаться с другими участниками, делиться идеями и быть в курсе новостей проекта!
-        </p>
-        <hr class="separator" />
-        <p class="text-sm text-gray-400">
-            <span class="highlight">[SYSTEM_NOTE]</span> Ваша приватность важна. Метки на карте не указывают точное местоположение, а привязываются к центру района или города для обеспечения анонимности.
-        </p>
+
+        <div class="community-section text-center">
+            <p class="mb-4 text-lg">
+                <span class="highlight">[COMM_LINK]</span> Проект живет благодаря вам. Присоединяйтесь к нашему Telegram-чату, чтобы общаться, предлагать идеи и первыми узнавать о скрытых обновлениях.
+            </p>
+            <a href="https://t.me/proto_map" target="_blank" class="join-btn">
+                ПРИСОЕДИНИТЬСЯ К ЧАТУ
+            </a>
+            <p class="text-xs text-gray-500 mt-6 font-mono">
+                // Все метки на карте анонимизированы. Мы не храним ваши точные координаты.
+            </p>
+        </div>
     </div>
 </div>
 
 <style>
     .about-container {
-        @apply max-w-3xl mx-auto my-10 p-8 sm:p-10 rounded-none shadow-2xl relative;
-        background: rgba(10, 10, 10, 0.7);
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
-        border: 1px solid rgba(252, 238, 10, 0.2);
+        max-width: 900px; margin: 3rem auto; padding: 3rem;
+        background: rgba(10, 10, 15, 0.8);
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         clip-path: polygon(0 20px, 20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
-        transition: opacity 0.4s ease-in-out;
-    }
-     @media (max-width: 640px) { .about-container { @apply my-4 mx-4 p-6; } }
-
-    .corner { @apply absolute w-6 h-6; border-color: var(--cyber-yellow, #fcee0a); opacity: 0.7; }
-    .top-left { top: 0; left: 0; border-top: 2px solid; border-left: 2px solid; }
-    .top-right { top: 0; right: 0; border-top: 2px solid; border-right: 2px solid; }
-    .bottom-left { bottom: 0; left: 0; border-bottom: 2px solid; border-left: 2px solid; }
-    .bottom-right { bottom: 0; right: 0; border-bottom: 2px solid; border-right: 2px solid; }
-
-    .title {
-        @apply text-3xl lg:text-4xl font-bold text-center text-white mb-8;
     }
 
-    .content-text {
-        @apply text-gray-200 text-lg leading-relaxed;
-        text-align: justify;
-    }
+    .about-header { text-align: center; margin-bottom: 3rem; }
+    .title { font-size: 3rem; font-weight: bold; color: #fff; margin-bottom: 0.5rem; position: relative; display: inline-block; }
 
-    .highlight {
-        @apply font-bold text-cyber-yellow mr-2;
-        font-family: 'Chakra Petch', sans-serif;
-    }
+    /* Глитч на заголовке */
+    .glitch { position: relative; }
+    .glitch::before, .glitch::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,10,15,0.8); overflow: hidden; }
+    .glitch::before { left: 2px; text-shadow: -1px 0 #ff00c1; animation: glitch-anim-1 2s infinite linear alternate-reverse; }
+    .glitch::after { left: -2px; text-shadow: 1px 0 #00fff9; animation: glitch-anim-2 3s infinite linear alternate-reverse; }
+    @keyframes glitch-anim-1 { 0% { clip-path: inset(20% 0 80% 0); } 100% { clip-path: inset(80% 0 20% 0); } }
+    @keyframes glitch-anim-2 { 0% { clip-path: inset(10% 0 60% 0); } 100% { clip-path: inset(30% 0 10% 0); } }
 
-    .separator {
-        @apply border-t-2 border-dashed border-gray-700/50 my-6;
-    }
+    .content-text { font-size: 1.1rem; line-height: 1.8; color: #e2e8f0; }
+    .intro-text { text-align: center; max-width: 80%; margin: 0 auto 3rem auto; }
+    .highlight { font-family: 'Chakra Petch', monospace; font-weight: bold; color: var(--cyber-yellow, #fcee0a); margin-right: 0.5rem; }
 
-    .author-link {
-        @apply text-cyan-400 hover:text-white underline;
-        text-decoration-style: dotted;
-        transition: color 0.2s;
+    /* TEAM SECTION */
+    .team-section { margin: 3rem 0; }
+    .section-title { font-family: 'Chakra Petch', monospace; font-size: 1.2rem; font-weight: bold; color: var(--cyber-yellow, #fcee0a); margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; letter-spacing: 0.1em; }
+
+    .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+
+    .team-card {
+        background: rgba(255,255,255,0.03); padding: 2rem; border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.05); transition: transform 0.3s, border-color 0.3s, background 0.3s;
+        display: flex; flex-direction: column; align-items: center; text-align: center;
+        position: relative; overflow: hidden;
+    }
+    .team-card:hover { transform: translateY(-5px); border-color: var(--cyber-yellow, #fcee0a); background: rgba(255,255,255,0.05); }
+
+    /* АВАТАРЫ */
+    .card-visual { position: relative; width: 120px; height: 120px; margin-bottom: 1.5rem; }
+    .team-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; position: relative; z-index: 1; border: 2px solid rgba(255,255,255,0.2); }
+
+    .avatar-glow {
+        position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px;
+        border-radius: 50%; opacity: 0.5; filter: blur(20px); z-index: 0;
+        animation: pulse-glow 3s infinite alternate;
+    }
+    .avatar-glow.orion { background: var(--cyber-yellow, #fcee0a); }
+    .avatar-glow.ipos { background: #a855f7; } /* Фиолетовый для мобильного инженера */
+
+    @keyframes pulse-glow { 0% { opacity: 0.3; transform: scale(0.9); } 100% { opacity: 0.7; transform: scale(1.1); } }
+
+    .role { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.15em; margin-bottom: 0.5rem; font-family: 'Chakra Petch', monospace; }
+    .text-purple-400 { color: #c084fc; }
+
+    .name { display: block; font-size: 1.8rem; font-weight: 800; color: #fff; text-decoration: none; margin-bottom: 1rem; transition: color 0.2s; }
+    .name:hover { color: var(--cyber-yellow, #fcee0a); }
+
+    .desc { font-size: 0.95rem; color: #cbd5e1; line-height: 1.6; }
+
+    .separator { border-top: 1px dashed rgba(255,255,255,0.1); margin: 4rem 0; }
+
+    .join-btn {
+        display: inline-block; padding: 1rem 2rem; background: transparent;
+        border: 2px solid var(--cyber-cyan, #00f0ff); color: var(--cyber-cyan, #00f0ff);
+        font-family: 'Chakra Petch', monospace; font-weight: bold; letter-spacing: 0.1em;
+        transition: all 0.2s; text-decoration: none;
+    }
+    .join-btn:hover { background: var(--cyber-cyan, #00f0ff); color: #000; box-shadow: 0 0 20px var(--cyber-cyan, #00f0ff); }
+
+    @media (max-width: 768px) {
+        .about-container { margin: 1rem; padding: 1.5rem; }
+        .title { font-size: 2rem; }
+        .team-grid { grid-template-columns: 1fr; }
+        .intro-text { max-width: 100%; }
     }
 </style>
