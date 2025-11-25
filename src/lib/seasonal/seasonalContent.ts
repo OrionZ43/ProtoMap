@@ -22,7 +22,6 @@ const events: SeasonalEvent[] = [
             '// system anomaly...',
         ]
     },
-
     {
         name: 'Winter Chill',
         isActive: (date) => {
@@ -40,7 +39,6 @@ const events: SeasonalEvent[] = [
             'Cold logic only.'
         ]
     },
-
     {
         name: 'Glitchmas',
         isActive: (date) => {
@@ -48,7 +46,7 @@ const events: SeasonalEvent[] = [
             const d = date.getDate();
             return (m === 11 && d >= 15) || (m === 0 && d <= 14);
         },
-        link: 'https://www.youtube.com/watch?v=Rnil5LyK_B0',
+        link: 'https://vm.tiktok.com/ZMAqvpf1X/',
         phrases: [
             '🎄 Merry Glitchmas!',
             'Ho-ho-host unreachable.',
@@ -61,10 +59,16 @@ const events: SeasonalEvent[] = [
     }
 ];
 
-const defaultContent = {
-    phrase: 'by Orion_Z43',
-    link: 'https://t.me/Orion_Z43'
-};
+const TEASER_PHRASES = [
+    'by Orion_Z43',
+    'by Orion_Z43',
+    'Something is coming...',
+    '//: SIGNAL DETECTED',
+    'Android?',
+    'Scanning frequencies...',
+    '31.12', // Дата!
+    'Prepare your devices'
+];
 
 export function getSeasonalContent(): { phrase: string; link: string } {
     const today = new Date();
@@ -78,5 +82,15 @@ export function getSeasonalContent(): { phrase: string; link: string } {
         };
     }
 
-    return defaultContent;
+    const randomTeaser = TEASER_PHRASES[Math.floor(Math.random() * TEASER_PHRASES.length)];
+    return {
+        phrase: randomTeaser,
+        link: 'https://t.me/proto_map/5/1845'
+    };
+}
+
+export function getActiveEventName(): string | null {
+    const today = new Date();
+    const activeEvent = events.find(event => event.isActive(today));
+    return activeEvent ? activeEvent.name : null;
 }
