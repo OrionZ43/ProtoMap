@@ -13,6 +13,7 @@
     import Footer from "$lib/components/Footer.svelte";
     import CookieBanner from '$lib/components/CookieBanner.svelte';
     import { browser } from '$app/environment';
+    import { injectAnalytics } from '@vercel/analytics/sveltekit'
 
     let themeState = 'default';
     let sideTextLeft = 'СТАТУС СИСТЕМЫ: ОНЛАЙН';
