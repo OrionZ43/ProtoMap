@@ -1,7 +1,8 @@
 <script lang="ts">
     import { onMount, onDestroy, afterUpdate } from 'svelte';
     import { db } from '$lib/firebase';
-    import { collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp, type Unsubscribe, type Timestamp } from 'firebase/firestore';
+    import { collection, query, orderBy, limit, onSnapshot, type Unsubscribe, type Timestamp } from 'firebase/firestore';
+    import { getFunctions, httpsCallable } from 'firebase/functions';
     import { userStore, chat } from '$lib/stores';
     import { modal } from '$lib/stores/modalStore';
     import { slide, fade } from 'svelte/transition';
@@ -20,7 +21,7 @@
         author_avatar_url: string;
         createdAt: Date;
         replyTo?: ReplyInfo;
-        // Новые поля для мобильного контента
+        // Поля для мобильного контента
         image?: boolean;
         voiceMessage?: boolean;
         replyToImage?: boolean;
@@ -35,13 +36,17 @@
     let messageText = '';
     let isSending = false;
     let canSendMessage = true;
-    const cooldownSeconds = 5;
+    const cooldownSeconds = 3; // Визуальный кулдаун (сервер тоже проверяет)
+
+    // Состояние ответа
     let replyingTo: { id: string; author_username: string; text: string; isMedia?: boolean } | null = null;
     let inputElement: HTMLTextAreaElement;
 
+    // --- ОТПРАВКА ЧЕРЕЗ CLOUD FUNCTION ---
     async function sendMessage() {
         if (isSending || !canSendMessage) return;
         if (!messageText.trim()) return;
+
         const currentUser = $userStore.user;
         if (!currentUser) {
             modal.error("Ошибка", "Необходимо войти в систему, чтобы отправлять сообщения.");
@@ -50,44 +55,57 @@
 
         isSending = true;
         canSendMessage = false;
+
         const textToSend = messageText.trim();
-        messageText = '';
+
+        // Подготовка данных для реплая
+        let replyData = null;
+        if (replyingTo) {
+            replyData = {
+                author_username: replyingTo.author_username,
+                text: replyingTo.text // Если медиа, тут будет [Изображение] или [Голосовое]
+            };
+        }
 
         try {
-            const newMessage: any = {
+            // Вызов облачной функции
+            const functions = getFunctions();
+            const sendMessageFunc = httpsCallable(functions, 'sendMessage');
+
+            await sendMessageFunc({
                 text: textToSend,
-                author_uid: currentUser.uid,
-                author_username: currentUser.username,
-                author_avatar_url: currentUser.avatar_url || '',
-                createdAt: serverTimestamp(),
-                // Явно указываем, что это не медиа (веб пока умеет только текст)
-                image: false,
-                voiceMessage: false
-            };
+                replyTo: replyData
+            });
 
-            if (replyingTo) {
-                newMessage.replyTo = {
-                    author_username: replyingTo.author_username,
-                    text: replyingTo.text // Если медиа, текст будет заглушкой (см. ниже)
-                };
-                // Добавляем флаги реплая, если отвечаем на медиа
-                if (replyingTo.text === '[Изображение]') newMessage.replyToImage = true;
-                if (replyingTo.text === '[Голосовое сообщение]') newMessage.replyToVoiceMessage = true;
-
-                replyingTo = null;
-            }
-
-            await addDoc(collection(db, "global_chat"), newMessage);
             AudioManager.play('message');
 
+            // Очистка только при успехе
+            messageText = '';
+            replyingTo = null;
+
+            // Таймер разблокировки кнопки
             setTimeout(() => {
                 canSendMessage = true;
             }, cooldownSeconds * 1000);
 
         } catch (error: any) {
-            modal.error("Ошибка", `Не удалось отправить сообщение: ${error.message}`);
-            messageText = textToSend;
-            canSendMessage = true;
+            console.error("Ошибка отправки:", error);
+            const msg = error.message || "Не удалось отправить сообщение.";
+
+            if (msg.includes('Охладите')) {
+                modal.warning("Спам-фильтр", "Вы пишете слишком часто. Подождите немного.");
+            } else if (msg.includes('заблокированы') || msg.includes('permission-denied')) {
+                modal.error("БАН", "Доступ к чату ограничен. Проверьте статус аккаунта.");
+            } else {
+                modal.error("Ошибка связи", msg);
+            }
+
+            // Разблокируем кнопку, чтобы можно было попробовать снова (если не спам)
+            if (!msg.includes('Охладите')) {
+                canSendMessage = true;
+            } else {
+                setTimeout(() => { canSendMessage = true; }, cooldownSeconds * 1000);
+            }
         } finally {
             isSending = false;
         }
@@ -101,7 +119,7 @@
     }
 
     function setReplyTo(message: ChatMessage) {
-        // Определяем текст для цитирования
+        // Определяем текст для цитирования (обработка медиа)
         let quoteText = message.text;
         let isMedia = false;
 
@@ -139,6 +157,7 @@
     }
 
     onMount(() => {
+        // Чтение чата (остается через Snapshot для реалтайма)
         const q = query(collection(db, "global_chat"), orderBy("createdAt", "desc"), limit(50));
         unsubscribe = onSnapshot(q, (querySnapshot) => {
             messages = querySnapshot.docs.map(doc => {
@@ -291,6 +310,7 @@
                         bind:this={inputElement}
                         bind:value={messageText}
                         on:keydown={handleKeydown}
+                        maxlength="1000"
                         disabled={isSending || !canSendMessage}
                         placeholder={!canSendMessage ? 'Подождите...' : 'Введите сообщение...'}
                         class="input-field"
@@ -385,6 +405,7 @@
         border: 1px solid rgba(75, 85, 99, 0.5);
         padding-bottom: 1.75rem;
     }
+    /* СТРЕЛКИ УБРАНЫ ДЛЯ ЧИСТОТЫ ИНТЕРФЕЙСА */
 
     .reply-quote {
         @apply block text-xs mb-2 border-l-2 pl-2 truncate;

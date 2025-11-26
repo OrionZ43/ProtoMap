@@ -38,6 +38,114 @@ const ALLOWED_ORIGINS = ["http://localhost:5173",
     return false;
 };
 
+interface SendMessageData {
+    text: string;
+    replyTo?: {
+        author_username: string;
+        text: string;
+        // Флаги для медиа (чтобы мобилка знала, на что ответ)
+        image?: boolean;
+        voiceMessage?: boolean;
+    };
+}
+
+export const sendMessage = onCall(async (request) => {
+    // 1. Проверка авторизации
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Доступ запрещен.');
+    }
+
+    const uid = request.auth.uid;
+    const { text, replyTo } = request.data as SendMessageData;
+
+    // 2. Валидация данных
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+        throw new HttpsError('invalid-argument', 'Сообщение не может быть пустым.');
+    }
+    if (text.length > 1000) {
+        throw new HttpsError('invalid-argument', 'Слишком длинное сообщение.');
+    }
+
+    const db = admin.firestore();
+    const userRef = db.collection('users').doc(uid);
+
+    try {
+        // 3. Транзакция или чтение пользователя (проверка на бан и кулдаун)
+        // Мы используем runTransaction, чтобы гарантировать атомарность проверки времени
+        await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+
+            if (!userDoc.exists) {
+                throw new HttpsError('not-found', 'Профиль не найден.');
+            }
+
+            const userData = userDoc.data()!;
+
+            // А. Проверка на БАН
+            if (userData.isBanned) {
+                throw new HttpsError('permission-denied', 'Вы заблокированы в системе.');
+            }
+
+            // Б. Проверка КУЛДАУНА (Серверный анти-спам)
+            const lastMessageTime = userData.last_chat_message;
+            const now = Date.now();
+            const cooldownMs = 3000; // 3 секунды между сообщениями
+
+            if (lastMessageTime) {
+                const lastTime = lastMessageTime.toDate().getTime();
+                if (now - lastTime < cooldownMs) {
+                    throw new HttpsError('resource-exhausted', 'Слишком часто. Охладите трахание.'); // ;)
+                }
+            }
+
+            // 4. Формирование сообщения
+            const newMessage: any = {
+                text: text.trim(),
+                author_uid: uid,
+                author_username: userData.username,
+                author_avatar_url: userData.avatar_url || '',
+                createdAt: FieldValue.serverTimestamp(),
+                // Явно прописываем заглушки для веба (мобилка будет слать true)
+                image: false,
+                voiceMessage: false
+            };
+
+            // Если есть ответ
+            if (replyTo) {
+                newMessage.replyTo = {
+                    author_username: replyTo.author_username,
+                    text: replyTo.text
+                };
+                // Если отвечаем на медиа (логика заглушек)
+                if (replyTo.text === '[Изображение]') newMessage.replyToImage = true;
+                if (replyingToIsVoice(replyTo.text)) newMessage.replyToVoiceMessage = true;
+            }
+
+            // 5. Запись в БД
+            const chatRef = db.collection('global_chat').doc();
+            t.set(chatRef, newMessage);
+
+            // 6. Обновление времени последнего сообщения у юзера (для кулдауна)
+            t.update(userRef, {
+                last_chat_message: FieldValue.serverTimestamp()
+            });
+        });
+
+        return { status: 'success' };
+
+    } catch (error: any) {
+        console.error(`[sendMessage] Ошибка у ${uid}:`, error);
+        // Пробрасываем ошибку клиенту
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError('internal', 'Ошибка сервера при отправке.');
+    }
+});
+
+// Вспомогательная для проверки текста реплая (можно упростить)
+function replyingToIsVoice(text: string) {
+    return text === '[Голосовое сообщение]';
+}
+
 export const deleteComment = onCall(async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Необходима авторизация.');
