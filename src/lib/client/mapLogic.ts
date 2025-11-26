@@ -104,7 +104,9 @@ export function initMap(containerId: string) {
 
     const baseLayers = {
         "Стандартная": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OSM' }),
-        "Тёмная": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '© CARTO' })
+        "Полночь": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19,attribution: '© OSM',className: 'map-black'}),
+        "Тёмная": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '© CARTO' }),
+        "Синий неон": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '© OSM', className: 'matrix-tiles'}),
     };
     const storageKey = 'protomap-selected-theme';
     let savedLayerName = "Стандартная";

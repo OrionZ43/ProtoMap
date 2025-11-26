@@ -1026,3 +1026,17 @@ html {
 .leaflet-popup-content-wrapper {
     padding-right: 0 !important;
 }
+.matrix-tiles {
+    filter:
+        invert(100%)
+        grayscale(100%)
+        brightness(1.1)
+        contrast(1.3)
+        sepia(100%)
+        hue-rotate(170deg)
+        saturate(200%)
+        !important;
+}
+.map-black {
+    filter: invert(100%) hue-rotate(200deg) grayscale(70%) brightness(90%) contrast(90%) !important;
+}

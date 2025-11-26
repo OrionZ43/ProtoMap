@@ -20,6 +20,11 @@
         author_avatar_url: string;
         createdAt: Date;
         replyTo?: ReplyInfo;
+        // Новые поля для мобильного контента
+        image?: boolean;
+        voiceMessage?: boolean;
+        replyToImage?: boolean;
+        replyToVoiceMessage?: boolean;
     };
 
     let messages: ChatMessage[] = [];
@@ -31,7 +36,7 @@
     let isSending = false;
     let canSendMessage = true;
     const cooldownSeconds = 5;
-    let replyingTo: { id: string; author_username: string; text: string } | null = null;
+    let replyingTo: { id: string; author_username: string; text: string; isMedia?: boolean } | null = null;
     let inputElement: HTMLTextAreaElement;
 
     async function sendMessage() {
@@ -54,14 +59,21 @@
                 author_uid: currentUser.uid,
                 author_username: currentUser.username,
                 author_avatar_url: currentUser.avatar_url || '',
-                createdAt: serverTimestamp()
+                createdAt: serverTimestamp(),
+                // Явно указываем, что это не медиа (веб пока умеет только текст)
+                image: false,
+                voiceMessage: false
             };
 
             if (replyingTo) {
                 newMessage.replyTo = {
                     author_username: replyingTo.author_username,
-                    text: replyingTo.text
+                    text: replyingTo.text // Если медиа, текст будет заглушкой (см. ниже)
                 };
+                // Добавляем флаги реплая, если отвечаем на медиа
+                if (replyingTo.text === '[Изображение]') newMessage.replyToImage = true;
+                if (replyingTo.text === '[Голосовое сообщение]') newMessage.replyToVoiceMessage = true;
+
                 replyingTo = null;
             }
 
@@ -89,13 +101,27 @@
     }
 
     function setReplyTo(message: ChatMessage) {
+        // Определяем текст для цитирования
+        let quoteText = message.text;
+        let isMedia = false;
+
+        if (message.image) {
+            quoteText = '[Изображение]';
+            isMedia = true;
+        } else if (message.voiceMessage) {
+            quoteText = '[Голосовое сообщение]';
+            isMedia = true;
+        }
+
         replyingTo = {
             id: message.id,
             author_username: message.author_username,
-            text: message.text
+            text: quoteText,
+            isMedia
         };
         inputElement?.focus();
     }
+
     function isSameDay(date1: Date, date2: Date): boolean {
         if (!date1 || !date2) return false;
         return date1.getFullYear() === date2.getFullYear() &&
@@ -124,7 +150,12 @@
                     author_username: data.author_username || 'unknown',
                     author_avatar_url: data.author_avatar_url || '',
                     createdAt: (data.createdAt as Timestamp)?.toDate(),
-                    replyTo: data.replyTo
+                    replyTo: data.replyTo,
+                    // Мапим новые поля
+                    image: data.image || false,
+                    voiceMessage: data.voiceMessage || false,
+                    replyToImage: data.replyToImage || false,
+                    replyToVoiceMessage: data.replyToVoiceMessage || false
                 };
             }).filter(msg => msg.createdAt).reverse();
             isLoading = false;
@@ -189,12 +220,44 @@
                             <a href={`/profile/${msg.author_username}`} class="message-author">{msg.author_username}</a>
 
                             <div class="message-body">
+                                <!-- ОТОБРАЖЕНИЕ ОТВЕТА -->
                                 {#if msg.replyTo}
                                     <div class="reply-quote">
-                                        <strong>{msg.replyTo.author_username}:</strong> {msg.replyTo.text}
+                                        <strong>{msg.replyTo.author_username}:</strong>
+                                        {#if msg.replyToImage}
+                                            <span class="text-cyber-cyan italic">[Изображение]</span>
+                                        {:else if msg.replyToVoiceMessage}
+                                            <span class="text-cyber-yellow italic">[Голосовое]</span>
+                                        {:else}
+                                            {msg.replyTo.text}
+                                        {/if}
                                     </div>
                                 {/if}
-                                <p class="message-text">{msg.text}</p>
+
+                                <!-- ОСНОВНОЙ КОНТЕНТ СООБЩЕНИЯ -->
+                                {#if msg.image}
+                                    <!-- ЗАГЛУШКА ДЛЯ КАРТИНКИ -->
+                                    <div class="mobile-exclusive image">
+                                        <div class="icon">🖼️</div>
+                                        <div class="info">
+                                            <span class="title">ИЗОБРАЖЕНИЕ</span>
+                                            <span class="subtitle">Доступно в приложении</span>
+                                        </div>
+                                    </div>
+                                {:else if msg.voiceMessage}
+                                    <!-- ЗАГЛУШКА ДЛЯ ГОЛОСОВОГО -->
+                                    <div class="mobile-exclusive voice">
+                                        <div class="icon">🎙️</div>
+                                        <div class="info">
+                                            <span class="title">ГОЛОСОВОЕ</span>
+                                            <span class="subtitle">Доступно в приложении</span>
+                                        </div>
+                                    </div>
+                                {:else}
+                                    <!-- ОБЫЧНЫЙ ТЕКСТ -->
+                                    <p class="message-text">{msg.text}</p>
+                                {/if}
+
                                 <span class="message-time-inline">
                                     {msg.createdAt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                 </span>
@@ -291,27 +354,6 @@
         @apply m-auto text-center text-gray-500 font-mono text-sm uppercase;
     }
 
-    .message-wrapper {
-        @apply relative;
-        transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
-
-    .reply-swipe-icon {
-        @apply absolute top-0 h-full w-16 flex items-center justify-center text-white opacity-0;
-        transition: opacity 0.2s ease;
-    }
-    .reply-swipe-icon.left {
-        left: 0;
-        transform: translateX(-100%);
-    }
-    .reply-swipe-icon.right {
-        right: 0;
-        transform: translateX(100%);
-    }
-    .reply-swipe-icon.visible {
-        opacity: 1;
-    }
-
     .message-card {
         @apply flex items-start gap-3 w-full;
     }
@@ -341,27 +383,14 @@
         @apply relative p-3 rounded-md;
         background: rgba(31, 41, 55, 0.5);
         border: 1px solid rgba(75, 85, 99, 0.5);
-    }
-
-    .message-body::before {
-        content: '';
-        @apply absolute top-2 w-2 h-4;
-        left: -8px;
-        background-color: var(--cyber-cyan);
-        clip-path: polygon(0 50%, 100% 0, 100% 100%);
-        opacity: 0.7;
-    }
-    .own-message .message-body::before {
-        left: auto;
-        right: -8px;
-        background-color: var(--cyber-yellow);
-        clip-path: polygon(100% 50%, 0 0, 0 100%);
+        padding-bottom: 1.75rem;
     }
 
     .reply-quote {
         @apply block text-xs mb-2 border-l-2 pl-2 truncate;
         border-color: rgba(255, 255, 255, 0.3);
         color: rgba(255, 255, 255, 0.5);
+        max-width: 200px;
     }
     .reply-quote strong {
         font-weight: 600;
@@ -374,9 +403,6 @@
 
     .message-meta {
         @apply flex items-center justify-end gap-3 mt-2 text-xs text-gray-500;
-    }
-
-    .message-actions {
     }
 
     .action-btn {
@@ -417,16 +443,6 @@
         @apply bg-gray-600 text-gray-400 opacity-50 cursor-not-allowed;
     }
 
-    .reply-swipe-icon {
-        display: none;
-    }
-    @media (pointer: coarse) {
-        .reply-swipe-icon {
-            @apply absolute top-0 h-full w-16 flex items-center justify-center text-white opacity-0;
-            transition: opacity 0.2s ease, transform 0.2s ease;
-        }
-    }
-
     .date-separator {
         @apply flex justify-center items-center my-4;
     }
@@ -454,10 +470,48 @@
     }
 
     .message-time-inline {
-    @apply absolute bottom-1 right-2 text-xs text-gray-500;
+        @apply absolute bottom-1 right-2 text-xs text-gray-500;
     }
-    .message-body {
-    @apply relative p-3 rounded-md;
-    padding-bottom: 1.75rem;
+
+    /* === СТИЛИ ЗАГЛУШЕК ДЛЯ МОБИЛЬНОГО КОНТЕНТА === */
+    .mobile-exclusive {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        font-family: 'Chakra Petch', monospace;
+        min-width: 200px;
+    }
+
+    /* Изображение */
+    .mobile-exclusive.image {
+        border-color: var(--cyber-cyan);
+        background: rgba(0, 240, 255, 0.05);
+    }
+    /* Голос */
+    .mobile-exclusive.voice {
+        border-color: var(--cyber-yellow);
+        background: rgba(252, 238, 10, 0.05);
+    }
+
+    .mobile-exclusive .icon {
+        font-size: 1.2rem;
+    }
+    .mobile-exclusive .info {
+        display: flex;
+        flex-direction: column;
+    }
+    .mobile-exclusive .title {
+        font-weight: bold;
+        font-size: 0.8rem;
+        color: #fff;
+        letter-spacing: 0.05em;
+    }
+    .mobile-exclusive .subtitle {
+        font-size: 0.65rem;
+        color: rgba(255, 255, 255, 0.6);
     }
 </style>
