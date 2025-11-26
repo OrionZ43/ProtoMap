@@ -420,6 +420,10 @@
 
     .message-text {
         @apply text-gray-200 whitespace-pre-wrap break-words;
+        max-height: 300px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--cyber-yellow) transparent;
     }
 
     .message-meta {

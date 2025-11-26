@@ -43,7 +43,6 @@ interface SendMessageData {
     replyTo?: {
         author_username: string;
         text: string;
-        // Флаги для медиа (чтобы мобилка знала, на что ответ)
         image?: boolean;
         voiceMessage?: boolean;
     };
@@ -58,20 +57,40 @@ export const sendMessage = onCall(async (request) => {
     const uid = request.auth.uid;
     const { text, replyTo } = request.data as SendMessageData;
 
-    // 2. Валидация данных
+    // 2. Валидация данных (Базовая)
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
         throw new HttpsError('invalid-argument', 'Сообщение не может быть пустым.');
     }
-    if (text.length > 1000) {
+
+    // --- ПРОТОКОЛ ОЧИСТКИ "DEEP CLEAN" ---
+    let cleanText = text;
+
+    // 1. Удаление Zalgo (хвостики букв)
+    cleanText = cleanText.replace(/[\u0300-\u036f\u20d0-\u20ff\ufe20-\ufe2f]/g, '');
+
+    // 2. Удаление невидимых символов
+    cleanText = cleanText.replace(/[\u200B-\u200D\uFEFF\u00AD]/g, '');
+
+    // 3. Удаление вертикального спама (оставляем макс 2 переноса)
+    cleanText = cleanText.trim().replace(/(\r\n|\n|\r){3,}/g, '\n\n');
+
+    // 4. Проверки после очистки
+    if (cleanText.length === 0) {
+        throw new HttpsError('invalid-argument', 'Сообщение не содержит допустимых символов.');
+    }
+
+    if (cleanText.length > 1000) {
         throw new HttpsError('invalid-argument', 'Слишком длинное сообщение.');
     }
+
+    // Вот та самая переменная, на которую ругался TS
+    const sanitizedText = cleanText;
+    // --------------------------------------
 
     const db = admin.firestore();
     const userRef = db.collection('users').doc(uid);
 
     try {
-        // 3. Транзакция или чтение пользователя (проверка на бан и кулдаун)
-        // Мы используем runTransaction, чтобы гарантировать атомарность проверки времени
         await db.runTransaction(async (t) => {
             const userDoc = await t.get(userRef);
 
@@ -86,46 +105,43 @@ export const sendMessage = onCall(async (request) => {
                 throw new HttpsError('permission-denied', 'Вы заблокированы в системе.');
             }
 
-            // Б. Проверка КУЛДАУНА (Серверный анти-спам)
+            // Б. Проверка КУЛДАУНА
             const lastMessageTime = userData.last_chat_message;
             const now = Date.now();
-            const cooldownMs = 3000; // 3 секунды между сообщениями
+            const cooldownMs = 3000;
 
             if (lastMessageTime) {
                 const lastTime = lastMessageTime.toDate().getTime();
                 if (now - lastTime < cooldownMs) {
-                    throw new HttpsError('resource-exhausted', 'Слишком часто. Охладите трахание.'); // ;)
+                    throw new HttpsError('resource-exhausted', 'Слишком часто. Охладите трахание.');
                 }
             }
 
             // 4. Формирование сообщения
             const newMessage: any = {
-                text: text.trim(),
+                text: sanitizedText, // <--- ВАЖНО: ИСПОЛЬЗУЕМ ОЧИЩЕННЫЙ ТЕКСТ ЗДЕСЬ
                 author_uid: uid,
                 author_username: userData.username,
                 author_avatar_url: userData.avatar_url || '',
                 createdAt: FieldValue.serverTimestamp(),
-                // Явно прописываем заглушки для веба (мобилка будет слать true)
                 image: false,
                 voiceMessage: false
             };
 
-            // Если есть ответ
             if (replyTo) {
                 newMessage.replyTo = {
                     author_username: replyTo.author_username,
                     text: replyTo.text
                 };
-                // Если отвечаем на медиа (логика заглушек)
                 if (replyTo.text === '[Изображение]') newMessage.replyToImage = true;
-                if (replyingToIsVoice(replyTo.text)) newMessage.replyToVoiceMessage = true;
+                if (replyTo.text === '[Голосовое сообщение]') newMessage.replyToVoiceMessage = true;
             }
 
             // 5. Запись в БД
             const chatRef = db.collection('global_chat').doc();
             t.set(chatRef, newMessage);
 
-            // 6. Обновление времени последнего сообщения у юзера (для кулдауна)
+            // 6. Обновление таймера
             t.update(userRef, {
                 last_chat_message: FieldValue.serverTimestamp()
             });
@@ -135,16 +151,10 @@ export const sendMessage = onCall(async (request) => {
 
     } catch (error: any) {
         console.error(`[sendMessage] Ошибка у ${uid}:`, error);
-        // Пробрасываем ошибку клиенту
         if (error instanceof HttpsError) throw error;
         throw new HttpsError('internal', 'Ошибка сервера при отправке.');
     }
 });
-
-// Вспомогательная для проверки текста реплая (можно упростить)
-function replyingToIsVoice(text: string) {
-    return text === '[Голосовое сообщение]';
-}
 
 export const deleteComment = onCall(async (request) => {
     if (!request.auth) {
@@ -241,8 +251,19 @@ export const checkUsername = onRequest(
     const username = request.body.data.username;
 
     if (!username || typeof username !== "string" || username.length < 4) {
-      response.status(400).json({ error: { message: "Имя пользователя не предоставлено или слишком короткое" } });
+      response.status(400).json({ error: { message: "Имя слишком короткое" } });
       return;
+    }
+
+    const lowerName = username.toLowerCase();
+    const forbiddenWords = [
+        'admin', 'administrator', 'mod', 'moderator', 'system', 'root', 'support',
+        'protomap', 'owner', 'dev', 'developer', 'bot', 'server'
+    ];
+
+    if (forbiddenWords.some(word => lowerName.includes(word))) {
+         response.status(200).json({ data: { isAvailable: false, message: "Это имя зарезервировано системой." } });
+         return;
     }
 
     try {
