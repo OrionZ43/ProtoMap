@@ -109,7 +109,7 @@ export function initMap(containerId: string) {
         "Синий неон": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '© OSM', className: 'matrix-tiles'}),
     };
     const storageKey = 'protomap-selected-theme';
-    let savedLayerName = "Стандартная";
+    let savedLayerName = "Тёмная";
 
     try {
         const storedName = localStorage.getItem(storageKey);
