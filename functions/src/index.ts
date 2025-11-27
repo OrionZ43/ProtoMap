@@ -124,6 +124,7 @@ export const sendMessage = onCall(async (request) => {
                 author_username: userData.username,
                 author_avatar_url: userData.avatar_url || '',
                 createdAt: FieldValue.serverTimestamp(),
+                author_equipped_frame: userData.equipped_frame || null, 
                 image: false,
                 voiceMessage: false
             };

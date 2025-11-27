@@ -8,9 +8,16 @@
 <div class="admin-universe">
     <div class="ambient-glow"></div>
 
-    <!-- SIDEBAR -->
+    <!-- МОБИЛЬНЫЙ ХЕДЕР (Виден только на телефоне) -->
+    <div class="mobile-header">
+        <span class="glitch-text small" data-text="OVERLORD">OVERLORD</span>
+        <div class="status-dot"></div>
+    </div>
+
+    <!-- SIDEBAR (На ПК слева, на Мобиле внизу) -->
     <aside class="glass-sidebar">
-        <div class="brand">
+        <!-- Логотип (Только ПК) -->
+        <div class="brand desktop-only">
             <h1 class="glitch-text" data-text="OVERLORD">OVERLORD</h1>
             <div class="status-dot"></div>
         </div>
@@ -24,19 +31,23 @@
             <a href="/admin/news" class="nav-item" class:active={path.includes('/news')}>
                 <div class="nav-indicator"></div>
                 <span class="icon">📡</span>
-                <span class="label">PROPAGANDA</span>
+                <span class="label">NEWS</span>
             </a>
             <a href="/admin/users" class="nav-item" class:active={path.includes('/users')}>
                 <div class="nav-indicator"></div>
                 <span class="icon">🧬</span>
-                <span class="label">SUBJECTS</span>
+                <span class="label">USERS</span>
+            </a>
+             <!-- Кнопка выхода для мобилок (вместо отдельного блока) -->
+             <a href="/" class="nav-item mobile-only text-red-500">
+                <span class="icon">❌</span>
+                <span class="label">EXIT</span>
             </a>
         </nav>
 
-        <div class="bottom-actions">
-            <a href="/" class="exit-btn">
-                EXIT GOD MODE
-            </a>
+        <!-- Футер (Только ПК) -->
+        <div class="bottom-actions desktop-only">
+            <a href="/" class="exit-btn">EXIT GOD MODE</a>
         </div>
     </aside>
 
@@ -65,7 +76,18 @@
     }
     @keyframes breathe { from { opacity: 0.5; transform: scale(1); } to { opacity: 0.8; transform: scale(1.2); } }
 
-    /* === SIDEBAR === */
+    /* === МОБИЛЬНЫЙ ХЕДЕР === */
+    .mobile-header {
+        display: none; /* По умолчанию скрыт */
+        position: fixed; top: 0; left: 0; right: 0;
+        height: 60px; z-index: 20;
+        background: rgba(15, 20, 30, 0.8); backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        align-items: center; justify-content: space-between; padding: 0 1.5rem;
+    }
+    .glitch-text.small { font-size: 1.2rem; }
+
+    /* === SIDEBAR / BOTTOM BAR === */
     .glass-sidebar {
         width: 280px; height: 96vh;
         margin: 2vh 0 2vh 2vh;
@@ -109,7 +131,6 @@
     .nav-item:hover {
         background: rgba(255, 255, 255, 0.03);
         color: #e2e8f0;
-        transform: translateX(5px);
     }
 
     .nav-item.active {
@@ -145,7 +166,52 @@
     .admin-viewport {
         flex-grow: 1; padding: 2rem 3rem;
         overflow-y: auto;
-        /* Кастомный скроллбар для контента */
         scrollbar-width: thin; scrollbar-color: #334155 transparent;
+    }
+
+    .mobile-only { display: none; }
+
+    /* === АДАПТИВНОСТЬ (MOBILE) === */
+    @media (max-width: 768px) {
+        .admin-universe { flex-direction: column; }
+
+        .mobile-header { display: flex; }
+        .desktop-only { display: none; }
+        .mobile-only { display: flex; }
+
+        .admin-viewport {
+            padding: 80px 1rem 100px 1rem; /* Отступы под хедер и футер */
+        }
+
+        /* Превращаем Sidebar в Bottom Bar */
+        .glass-sidebar {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            height: auto; margin: 0;
+            flex-direction: row;
+            border-radius: 20px 20px 0 0; /* Скругляем только верх */
+            border: none; border-top: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: env(safe-area-inset-bottom); /* Для iPhone */
+        }
+
+        .nav-links {
+            flex-direction: row; width: 100%; justify-content: space-between;
+            padding: 0.5rem 1rem; gap: 0;
+        }
+
+        .nav-item {
+            flex-direction: column; padding: 0.5rem; gap: 4px;
+            font-size: 0.6rem; border-radius: 8px;
+            flex: 1; justify-content: center;
+        }
+
+        .nav-item .icon { font-size: 1.2rem; margin-bottom: 2px; }
+
+        /* Индикатор снизу, а не сбоку */
+        .nav-indicator {
+            left: 50%; bottom: 0; top: auto; transform: translateX(-50%);
+            width: 0%; height: 2px; border-radius: 2px 2px 0 0;
+            transition: width 0.3s;
+        }
+        .nav-item.active .nav-indicator { width: 50%; height: 2px; }
     }
 </style>

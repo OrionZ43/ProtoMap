@@ -131,6 +131,16 @@
                 </div>
             {/if}
 
+        {#if $page.data.isAdmin}
+                <a href="/admin" class="icon-btn admin-btn" title="ПАНЕЛЬ УПРАВЛЕНИЯ">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <path d="M12 8v4"></path>
+                        <path d="M12 16h.01"></path>
+                    </svg>
+                </a>
+            {/if}
+
             <div class="relative">
                  <button class="icon-btn" class:active={isSettingsOpen} on:click={toggleSettings} aria-label="Настройки">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
@@ -175,7 +185,6 @@
 
                     {#if isUserMenuOpen}
                         <div class="cyber-dropdown" transition:scale={{duration: 150, start: 0.95, opacity: 0}}>
-                            <!-- ... -->
                             <div class="dropdown-header">// ПРОФИЛЬ</div>
                             <a href="/profile/{getEncodedUsername($userStore.user.username)}" class="dropdown-item">
                                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
@@ -199,7 +208,6 @@
             {/if}
         </div>
 
-        <!-- 4. МОБИЛЬНОЕ МЕНЮ (Изменили md:hidden на lg:hidden) -->
         <div class="lg:hidden flex items-center gap-3">
             {#if $userStore.user}
                 <div class="balance-pill mobile">
@@ -213,7 +221,6 @@
                     <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 {:else}
                     <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                    <!-- Мобильная точка -->
                     {#if hasUnreadNews}
                         <span class="notification-dot mobile-icon"></span>
                     {/if}
@@ -225,7 +232,6 @@
     <!-- МОБИЛЬНЫЙ СПИСОК (Изменили md:hidden на lg:hidden) -->
     {#if isMobileMenuOpen}
         <div class="lg:hidden bg-[#050a10]/95 backdrop-blur-xl border-b border-gray-800 absolute w-full left-0 z-40 shadow-2xl" transition:slide>
-            <!-- ... (внутренности без изменений) ... -->
             <div class="py-2 space-y-1">
                 <a href="/" class="mobile-link" class:active={isActive('/')}>КАРТА</a>
 
@@ -257,6 +263,12 @@
                 {:else}
                     <a href="/login" class="mobile-link">Войти</a>
                     <a href="/register" class="mobile-link">Регистрация</a>
+                {/if}
+
+                {#if $page.data.isAdmin}
+                    <a href="/admin" class="mobile-link text-red-500 border-l-red-500">
+                        💀 GOD MODE
+                    </a>
                 {/if}
 
                 <div class="border-t border-white/10 my-2"></div>
@@ -596,5 +608,15 @@
     .mobile-sub-link:hover {
         color: #fff;
         background: rgba(255,255,255,0.03);
+    }
+    .admin-btn {
+        color: #ff003c;
+        border: 1px solid rgba(255, 0, 60, 0.3);
+        background: rgba(255, 0, 60, 0.1);
+    }
+    .admin-btn:hover {
+        background: rgba(255, 0, 60, 0.2);
+        box-shadow: 0 0 15px #ff003c;
+        transform: scale(1.05);
     }
 </style>
