@@ -10,11 +10,13 @@ export type ShopItem = {
     style_value: string;
 };
 
+const HIDDEN_ITEMS = ['frame_dev', 'frame_beta'];
+
 export const load: PageServerLoad = async ({ locals, setHeaders }) => {
     try {
         const itemsSnapshot = await firestoreAdmin.collection('shop_items').orderBy('price', 'asc').get();
 
-        const items: ShopItem[] = itemsSnapshot.docs.map(doc => {
+        let items: ShopItem[] = itemsSnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
@@ -26,7 +28,8 @@ export const load: PageServerLoad = async ({ locals, setHeaders }) => {
             };
         });
 
-        // --- НАЧАЛО НОВОГО БЛОКА ---
+        items = items.filter(item => !HIDDEN_ITEMS.includes(item.id));
+
         let ownedItemIds: string[] = [];
         if (locals.user) {
             const userDoc = await firestoreAdmin.collection('users').doc(locals.user.uid).get();
@@ -34,20 +37,19 @@ export const load: PageServerLoad = async ({ locals, setHeaders }) => {
                 ownedItemIds = userDoc.data()?.owned_items || [];
             }
         }
-        // --- КОНЕЦ НОВОГО БЛОКА ---
 
         setHeaders({ 'Cache-Control': 'public, max-age=300, s-maxage=3600' });
 
         return {
             items: items,
-            ownedItemIds: ownedItemIds // <--- ПЕРЕДАЕМ НА ФРОНТЕНД
+            ownedItemIds: ownedItemIds
         };
 
     } catch (error) {
         console.error("Ошибка загрузки товаров из магазина:", error);
         return {
             items: [],
-            ownedItemIds: [] // Возвращаем пустой массив в случае ошибки
+            ownedItemIds: []
         };
     }
 };
