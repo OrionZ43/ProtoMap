@@ -284,7 +284,7 @@ export const playSlotMachine = onCall(async (request) => {
             const rand = Math.random() * 100;
 
             if (rand < 0.1) { finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo']; winMultiplier = 100; }
-            else if (rand < 3.1) { finalReels = ['glitch-6', 'glitch-6', 'glitch-6']; lossAmount = 666; }
+            else if (rand < 2.1) { finalReels = ['glitch-6', 'glitch-6', 'glitch-6']; lossAmount = 666; }
             else if (rand < 5.1) { finalReels = ['heart', 'heart', 'heart']; winMultiplier = 25; }
             else if (rand < 12.1) { finalReels = ['ram', 'ram', 'ram']; winMultiplier = 10; }
             else if (rand < 27.1) { finalReels = ['paw', 'paw', 'paw']; winMultiplier = 5; }

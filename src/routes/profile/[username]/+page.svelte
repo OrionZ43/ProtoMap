@@ -6,20 +6,23 @@
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
-    import { enhance } from '$app/forms';
     import { fade } from 'svelte/transition';
     import { getFunctions, httpsCallable } from "firebase/functions";
     import { settingsStore } from '$lib/stores/settingsStore';
     import CinematicLoader from '$lib/components/CinematicLoader.svelte';
     import { browser } from '$app/environment';
 
+    // Импорты для верификации почты
+    import { sendEmailVerification } from "firebase/auth";
+    import { auth } from "$lib/firebase";
+
     export let data: PageData;
     export let form: ActionData;
 
-    let initializationComplete = false;
     let showCinematicIntro = true;
     let isProfileVisible = false;
     let isSubmitting = false;
+    let verificationSent = false;
 
     const containerOpacity = tweened(0, { duration: 500, easing: quintOut });
 
@@ -67,6 +70,24 @@
     $: socials = data.profile.socials || {};
     $: hasSocials = Object.values(socials).some(link => !!link);
 
+    // --- ВЕРИФИКАЦИЯ ПОЧТЫ ---
+    async function sendVerification() {
+        if (!auth.currentUser) return;
+
+        try {
+            await sendEmailVerification(auth.currentUser);
+            verificationSent = true;
+            modal.success("Письмо отправлено", `Проверьте почту ${auth.currentUser.email}. Перейдите по ссылке в письме и обновите эту страницу.`);
+        } catch (e: any) {
+            if (e.code === 'auth/too-many-requests') {
+                modal.warning("Подождите", "Письмо уже было отправлено недавно. Проверьте папку Спам.");
+            } else {
+                modal.error("Ошибка", e.message);
+            }
+        }
+    }
+
+    // --- КОММЕНТАРИИ ---
     async function handleAddComment() {
         if (!commentText.trim() || isSubmitting) return;
 
@@ -89,28 +110,28 @@
         }
     }
 
-async function handleDeleteComment(commentId: string) {
-    modal.confirm(
-        "Удаление комментария",
-        "Вы уверены, что хотите удалить этот комментарий? Это действие нельзя отменить.",
-        async () => {
-            try {
-                const functions = getFunctions();
-                const deleteCommentFunc = httpsCallable(functions, 'deleteComment');
+    async function handleDeleteComment(commentId: string) {
+        modal.confirm(
+            "Удаление комментария",
+            "Вы уверены, что хотите удалить этот комментарий? Это действие нельзя отменить.",
+            async () => {
+                try {
+                    const functions = getFunctions();
+                    const deleteCommentFunc = httpsCallable(functions, 'deleteComment');
 
-                await deleteCommentFunc({
-                    profileUid: data.profile.uid,
-                    commentId: commentId
-                });
+                    await deleteCommentFunc({
+                        profileUid: data.profile.uid,
+                        commentId: commentId
+                    });
 
-                modal.success("Успешно", "Комментарий удален.");
+                    modal.success("Успешно", "Комментарий удален.");
 
-            } catch (error: any) {
-                modal.error("Ошибка удаления", error.message || "Не удалось удалить комментарий.");
+                } catch (error: any) {
+                    modal.error("Ошибка удаления", error.message || "Не удалось удалить комментарий.");
+                }
             }
-        }
-    );
-}
+        );
+    }
 
     async function handleReportProfile() {
         if (!$userStore.user) {
@@ -189,7 +210,9 @@ async function handleDeleteComment(commentId: string) {
 {/if}
 
 {#if isProfileVisible}
-<div class="hidden neon-blue-frame glitch-frame high-roller-frame"></div>
+    <!-- Предзагрузка классов рамок -->
+    <div class="hidden neon-blue-frame glitch-frame high-roller-frame frame_biohazard frame_plasma frame_stealth frame_dev frame_beta"></div>
+
     <div class="container mx-auto px-4" transition:fade={{ duration: 300 }}>
         <div class="profile-container cyber-panel pb-12" style="opacity: {$containerOpacity}">
 
@@ -209,17 +232,48 @@ async function handleDeleteComment(commentId: string) {
             </div>
 
             <div class="profile-header">
+                <!-- Аватар с рамкой -->
                 <div class="avatar-wrapper {data.profile.equipped_frame || ''}">
-        <img
-            src={data.profile.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${data.profile.username}`}
-            alt="Аватар {data.profile.username}"
-            class="profile-avatar"
-        />
-    </div>
-    <h2 class="profile-username font-display">{data.profile.username}</h2>
-</div>
+                    <img
+                        src={data.profile.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${data.profile.username}`}
+                        alt="Аватар {data.profile.username}"
+                        class="profile-avatar"
+                    />
+                </div>
+                <h2 class="profile-username font-display">{data.profile.username}</h2>
+            </div>
 
             <div class="profile-content">
+
+                <!-- === ЛИЧНЫЙ БЛОК: ПОЧТА И ВЕРИФИКАЦИЯ === -->
+                {#if isOwner && $userStore.user}
+                    <div class="profile-section private-section">
+                        <h4 class="font-display flex items-center gap-2 text-gray-400">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                            // УЧЕТНЫЕ ДАННЫЕ
+                        </h4>
+
+                        <div class="email-control">
+                            <div class="email-text">
+                                <span class="text-gray-500 text-xs font-bold tracking-wider">EMAIL:</span>
+                                <span class="text-white font-mono ml-2">{$userStore.user.email}</span>
+                            </div>
+
+                            {#if $userStore.user.emailVerified}
+                                <!-- ВЕРИФИЦИРОВАН -->
+                                <div class="verified-badge">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                    VERIFIED
+                                </div>
+                            {:else}
+                                <!-- НЕ ВЕРИФИЦИРОВАН -->
+                                <button class="unverified-btn" on:click={sendVerification} disabled={verificationSent}>
+                                    {verificationSent ? 'ПИСЬМО ОТПРАВЛЕНО' : 'ПОДТВЕРДИТЬ ПОЧТУ'}
+                                </button>
+                            {/if}
+                        </div>
+                    </div>
+                {/if}
                 {#if hasSocials}
                     <div class="profile-section">
                         <h4 class="font-display">// КАНАЛЫ СВЯЗИ</h4>
@@ -722,5 +776,57 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
     .comment-avatar {
         @apply w-12 h-12 rounded-full object-cover;
         border: none;
+    }
+    .private-section {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px dashed rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 1rem !important; /* Перебиваем паддинг родителя если надо */
+        margin-bottom: 1.5rem;
+    }
+
+    .email-control {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .verified-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: rgba(57, 255, 20, 0.1);
+        border: 1px solid #39ff14;
+        color: #39ff14;
+        font-size: 0.7rem; font-weight: bold;
+        padding: 4px 8px; border-radius: 4px;
+        font-family: 'Chakra Petch', monospace;
+        cursor: help;
+        box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
+    }
+
+    .unverified-btn {
+        background: rgba(255, 215, 0, 0.1);
+        border: 1px solid var(--cyber-yellow);
+        color: var(--cyber-yellow);
+        font-size: 0.7rem; font-weight: bold;
+        padding: 4px 10px; border-radius: 4px;
+        font-family: 'Chakra Petch', monospace;
+        cursor: pointer; transition: all 0.2s;
+        animation: blink-border 2s infinite;
+    }
+    .unverified-btn:hover {
+        background: var(--cyber-yellow);
+        color: #000;
+        box-shadow: 0 0 15px var(--cyber-yellow);
+    }
+    .unverified-btn:disabled {
+        opacity: 0.5; cursor: not-allowed; animation: none; filter: grayscale(1);
+    }
+
+    @keyframes blink-border {
+        0%, 100% { box-shadow: 0 0 2px var(--cyber-yellow); }
+        50% { box-shadow: 0 0 8px var(--cyber-yellow); }
     }
 </style>

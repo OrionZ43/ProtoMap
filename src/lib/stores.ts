@@ -9,6 +9,7 @@ export type UserProfile = {
     uid: string;
     username: string;
     email: string | null;
+    emailVerified: boolean;
     avatar_url: string;
     social_link: string;
     about_me: string;
@@ -44,6 +45,7 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
                 uid: userAuth.uid,
                 username: data.username,
                 email: userAuth.email,
+                emailVerified: userAuth.emailVerified,
                 avatar_url: data.avatar_url || '',
                 social_link: data.social_link || '',
                 about_me: data.about_me || '',
