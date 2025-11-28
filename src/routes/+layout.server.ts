@@ -1,13 +1,12 @@
 import { firestoreAdmin } from '$lib/server/firebase.admin';
 import type { LayoutServerLoad } from './$types';
-import { ADMIN_UIDS } from '$env/static/private'; // Берем список из секретов
+import { ADMIN_UIDS } from '$env/static/private';
 
 const adminList = ADMIN_UIDS ? ADMIN_UIDS.split(',') : [];
 
 export const load: LayoutServerLoad = async ({ locals }) => {
     let latestNewsDate: string | null = null;
 
-    // Проверка прав (Серверная сторона)
     const isAdmin = locals.user && adminList.includes(locals.user.uid);
 
     try {
@@ -29,6 +28,6 @@ export const load: LayoutServerLoad = async ({ locals }) => {
     return {
         user: locals.user,
         latestNewsDate,
-        isAdmin // <--- Отправляем этот флаг на фронт
+        isAdmin
     };
 };

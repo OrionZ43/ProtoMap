@@ -10,476 +10,386 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
-const ALLOWED_ORIGINS = ["http://localhost:5173",
-    "https://proto-map.vercel.app" ];
+const ALLOWED_ORIGINS = ["http://localhost:5173", "https://proto-map.vercel.app"];
 
-    const handleCors = (request: any, response: any): boolean => {
+const handleCors = (request: any, response: any): boolean => {
     const origin = request.headers.origin as string;
-    console.log(`[CORS] Request received from origin: ${origin}`);
-    console.log(`[CORS] Request method: ${request.method}`);
-    console.log(`[CORS] Allowed origins: ${ALLOWED_ORIGINS.join(', ')}`);
-
     if (ALLOWED_ORIGINS.includes(origin)) {
         response.set('Access-Control-Allow-Origin', origin);
-        console.log(`[CORS] Origin '${origin}' is allowed. 'Access-Control-Allow-Origin' header set.`);
-    } else {
-        console.warn(`[CORS] Origin '${origin}' is NOT in the allowed list.`);
     }
-
     if (request.method === 'OPTIONS') {
-        console.log('[CORS] Preflight (OPTIONS) request detected. Sending headers and 204 status.');
         response.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-firebase-appcheck');
         response.status(204).send('');
         return true;
     }
-
-    console.log('[CORS] Not a preflight request. Continuing to function logic.');
     return false;
 };
 
-interface SendMessageData {
-    text: string;
-    replyTo?: {
-        author_username: string;
-        text: string;
-        image?: boolean;
-        voiceMessage?: boolean;
-    };
+// --- ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ПРОВЕРКИ БАНА ---
+async function assertNotBanned(uid: string) {
+    const userRef = admin.firestore().collection('users').doc(uid);
+    const userSnap = await userRef.get();
+    if (userSnap.exists && userSnap.data()?.isBanned) {
+        throw new HttpsError('permission-denied', 'Ваш аккаунт заблокирован. Доступ к этой функции ограничен.');
+    }
 }
+// ---------------------------------------------
 
 export const sendMessage = onCall(async (request) => {
-    // 1. Проверка авторизации
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Доступ запрещен.');
-    }
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Доступ запрещен.');
 
     const uid = request.auth.uid;
-    const { text, replyTo } = request.data as SendMessageData;
+    await assertNotBanned(uid); // Проверка бана
 
-    // 2. Валидация данных (Базовая)
+    const { text, replyTo } = request.data as any;
+
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
         throw new HttpsError('invalid-argument', 'Сообщение не может быть пустым.');
     }
 
-    // --- ПРОТОКОЛ ОЧИСТКИ "DEEP CLEAN" ---
+    // Очистка текста
     let cleanText = text;
+    cleanText = cleanText.replace(/[\u0300-\u036f\u20d0-\u20ff\ufe20-\ufe2f]/g, ''); // Anti-Zalgo
+    cleanText = cleanText.replace(/[\u200B-\u200D\uFEFF\u00AD]/g, ''); // Anti-Invisible
+    cleanText = cleanText.trim().replace(/(\r\n|\n|\r){3,}/g, '\n\n'); // Anti-Vertical Spam
 
-    // 1. Удаление Zalgo (хвостики букв)
-    cleanText = cleanText.replace(/[\u0300-\u036f\u20d0-\u20ff\ufe20-\ufe2f]/g, '');
+    if (cleanText.length === 0) throw new HttpsError('invalid-argument', 'Сообщение не содержит допустимых символов.');
+    if (cleanText.length > 1000) throw new HttpsError('invalid-argument', 'Слишком длинное сообщение.');
 
-    // 2. Удаление невидимых символов
-    cleanText = cleanText.replace(/[\u200B-\u200D\uFEFF\u00AD]/g, '');
-
-    // 3. Удаление вертикального спама (оставляем макс 2 переноса)
-    cleanText = cleanText.trim().replace(/(\r\n|\n|\r){3,}/g, '\n\n');
-
-    // 4. Проверки после очистки
-    if (cleanText.length === 0) {
-        throw new HttpsError('invalid-argument', 'Сообщение не содержит допустимых символов.');
-    }
-
-    if (cleanText.length > 1000) {
-        throw new HttpsError('invalid-argument', 'Слишком длинное сообщение.');
-    }
-
-    // Вот та самая переменная, на которую ругался TS
     const sanitizedText = cleanText;
-    // --------------------------------------
-
-    const db = admin.firestore();
     const userRef = db.collection('users').doc(uid);
 
     try {
         await db.runTransaction(async (t) => {
             const userDoc = await t.get(userRef);
-
-            if (!userDoc.exists) {
-                throw new HttpsError('not-found', 'Профиль не найден.');
-            }
-
+            if (!userDoc.exists) throw new HttpsError('not-found', 'Профиль не найден.');
             const userData = userDoc.data()!;
 
-            // А. Проверка на БАН
-            if (userData.isBanned) {
-                throw new HttpsError('permission-denied', 'Вы заблокированы в системе.');
-            }
+            if (userData.isBanned) throw new HttpsError('permission-denied', 'Вы заблокированы.');
 
-            // Б. Проверка КУЛДАУНА
+            // Кулдаун
             const lastMessageTime = userData.last_chat_message;
-            const now = Date.now();
-            const cooldownMs = 3000;
-
-            if (lastMessageTime) {
-                const lastTime = lastMessageTime.toDate().getTime();
-                if (now - lastTime < cooldownMs) {
-                    throw new HttpsError('resource-exhausted', 'Слишком часто. Охладите трахание.');
-                }
+            if (lastMessageTime && Date.now() - lastMessageTime.toDate().getTime() < 3000) {
+                throw new HttpsError('resource-exhausted', 'Слишком часто. Охладите трахание.');
             }
 
-            // 4. Формирование сообщения
             const newMessage: any = {
-                text: sanitizedText, // <--- ВАЖНО: ИСПОЛЬЗУЕМ ОЧИЩЕННЫЙ ТЕКСТ ЗДЕСЬ
+                text: sanitizedText,
                 author_uid: uid,
                 author_username: userData.username,
                 author_avatar_url: userData.avatar_url || '',
                 createdAt: FieldValue.serverTimestamp(),
-                author_equipped_frame: userData.equipped_frame || null, 
+                author_equipped_frame: userData.equipped_frame || null,
                 image: false,
                 voiceMessage: false
             };
 
             if (replyTo) {
-                newMessage.replyTo = {
-                    author_username: replyTo.author_username,
-                    text: replyTo.text
-                };
+                newMessage.replyTo = { author_username: replyTo.author_username, text: replyTo.text };
                 if (replyTo.text === '[Изображение]') newMessage.replyToImage = true;
                 if (replyTo.text === '[Голосовое сообщение]') newMessage.replyToVoiceMessage = true;
             }
 
-            // 5. Запись в БД
             const chatRef = db.collection('global_chat').doc();
             t.set(chatRef, newMessage);
-
-            // 6. Обновление таймера
-            t.update(userRef, {
-                last_chat_message: FieldValue.serverTimestamp()
-            });
+            t.update(userRef, { last_chat_message: FieldValue.serverTimestamp() });
         });
-
         return { status: 'success' };
-
     } catch (error: any) {
-        console.error(`[sendMessage] Ошибка у ${uid}:`, error);
         if (error instanceof HttpsError) throw error;
-        throw new HttpsError('internal', 'Ошибка сервера при отправке.');
+        throw new HttpsError('internal', 'Ошибка сервера.');
     }
 });
 
 export const deleteComment = onCall(async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Необходима авторизация.');
-    }
-    const currentUserUid = request.auth.uid;
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Необходима авторизация.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(uid); // Забаненный не может удалять (даже свое)
+
     const { profileUid, commentId } = request.data;
 
-    if (!profileUid || !commentId) {
-        throw new HttpsError('invalid-argument', 'Неверные данные для удаления комментария.');
-    }
-
     try {
-        const db = admin.firestore();
         const commentRef = db.collection('users').doc(profileUid).collection('comments').doc(commentId);
         const commentDoc = await commentRef.get();
 
-        if (!commentDoc.exists) {
-            throw new HttpsError('not-found', 'Комментарий не найден.');
-        }
+        if (!commentDoc.exists) throw new HttpsError('not-found', 'Комментарий не найден.');
 
+        // Удалить может автор коммента ИЛИ владелец профиля
         const commentData = commentDoc.data()!;
-
-        if (commentData.author_uid !== currentUserUid) {
-            throw new HttpsError('permission-denied', 'Вы не можете удалить чужой комментарий.');
+        if (commentData.author_uid !== uid && profileUid !== uid) {
+            throw new HttpsError('permission-denied', 'Нет прав на удаление.');
         }
 
         await commentRef.delete();
-
-        console.log(`[deleteComment] Пользователь ${currentUserUid} удалил комментарий ${commentId}`);
         return { status: 'success', message: 'Комментарий удален.' };
-
     } catch (error: any) {
-        console.error(`[deleteComment] Ошибка при удалении комментария ${commentId}:`, error);
-        if (error instanceof HttpsError) {
-            throw error;
-        }
-        throw new HttpsError('internal', 'Ошибка сервера при удалении комментария.');
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError('internal', 'Ошибка сервера.');
     }
 });
 
 export const addComment = onCall(async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Необходимо войти, чтобы оставлять комментарии.');
-    }
-    const authorUid = request.auth.uid;
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Необходима авторизация.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(uid); // <--- ИСПРАВЛЕНО (была ошибка с переменной uid)
+
     const { profileUid, text } = request.data;
 
-    if (!profileUid || !text || typeof text !== 'string' || text.trim().length === 0) {
-        throw new HttpsError('invalid-argument', 'Не предоставлены все данные (ID профиля и текст).');
+    if (!profileUid || !text || typeof text !== 'string' || !text.trim()) {
+        throw new HttpsError('invalid-argument', 'Некорректные данные.');
     }
-    if (text.length > 1000) {
-        throw new HttpsError('invalid-argument', 'Комментарий слишком длинный.');
-    }
+    if (text.length > 1000) throw new HttpsError('invalid-argument', 'Комментарий слишком длинный.');
 
     try {
-        const db = admin.firestore();
-        const authorDoc = await db.collection('users').doc(authorUid).get();
-        if (!authorDoc.exists) {
-            throw new HttpsError('not-found', 'Профиль автора комментария не найден.');
-        }
+        const authorDoc = await db.collection('users').doc(uid).get();
+        if (!authorDoc.exists) throw new HttpsError('not-found', 'Ваш профиль не найден.');
+
         const authorData = authorDoc.data()!;
-        const newComment = {
+
+        await db.collection('users').doc(profileUid).collection('comments').add({
             text: text.trim(),
-            author_uid: authorUid,
+            author_uid: uid,
             author_username: authorData.username,
             author_avatar_url: authorData.avatar_url || '',
+            author_equipped_frame: authorData.equipped_frame || null, // Добавим рамку и сюда
             createdAt: FieldValue.serverTimestamp()
-        };
+        });
 
-        await db.collection('users').doc(profileUid).collection('comments').add(newComment);
-
-        console.log(`[addComment] Пользователь ${authorUid} оставил комментарий в профиле ${profileUid}`);
-        return { status: 'success', message: 'Комментарий успешно добавлен!' };
-
+        return { status: 'success', message: 'Комментарий добавлен!' };
     } catch (error: any) {
-        console.error(`[addComment] Ошибка при добавлении комментария:`, error);
-        if (error instanceof HttpsError) {
-            throw error;
-        }
-        throw new HttpsError('internal', 'Произошла ошибка на сервере при добавлении комментария.');
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError('internal', 'Ошибка сервера.');
     }
 });
 
-export const checkUsername = onRequest(
-  { cors: false },
-  async (request, response) => {
-    if (handleCors(request, response)) { return; }
+export const checkUsername = onRequest({ cors: false }, async (request, response) => {
+    if (handleCors(request, response)) return;
     if (request.method !== "POST") {
-      response.status(405).send("Method Not Allowed");
-      return;
+        response.status(405).send("Method Not Allowed");
+        return;
     }
 
     const username = request.body.data.username;
-
     if (!username || typeof username !== "string" || username.length < 4) {
-      response.status(400).json({ error: { message: "Имя слишком короткое" } });
-      return;
+        response.status(400).json({ error: { message: "Имя слишком короткое" } });
+        return;
     }
 
     const lowerName = username.toLowerCase();
-    const forbiddenWords = [
-        'admin', 'administrator', 'mod', 'moderator', 'system', 'root', 'support',
-        'protomap', 'owner', 'dev', 'developer', 'bot', 'server'
-    ];
-
+    const forbiddenWords = ['admin', 'moderator', 'system', 'root', 'support', 'protomap', 'owner', 'dev', 'bot'];
     if (forbiddenWords.some(word => lowerName.includes(word))) {
-         response.status(200).json({ data: { isAvailable: false, message: "Это имя зарезервировано системой." } });
+         response.status(200).json({ data: { isAvailable: false, message: "Имя зарезервировано." } });
          return;
     }
 
     try {
-      const usersRef = db.collection("users");
-      const snapshot = await usersRef.where("username", "==", username).limit(1).get();
-      const resultData = {
-        isAvailable: snapshot.empty,
-      };
-
-      response.status(200).json({ data: resultData });
-
+        const snapshot = await db.collection("users").where("username", "==", username).limit(1).get();
+        response.status(200).json({ data: { isAvailable: snapshot.empty } });
     } catch (error) {
-      console.error("Error checking username:", error);
-      response.status(500).json({ error: { message: "Internal server error" } });
+        response.status(500).json({ error: { message: "Internal server error" } });
     }
-  },
-);
+});
 
 export const updateEquippedItems = onCall({ cors: ALLOWED_ORIGINS }, async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Необходима аутентификация.');
-    }
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(uid);
 
     const { equipped_frame } = request.data;
-    const uid = request.auth.uid;
-    const db = admin.firestore();
     const userRef = db.collection('users').doc(uid);
-
-    if (equipped_frame !== null && typeof equipped_frame !== 'string') {
-        throw new HttpsError('invalid-argument', 'Неверный ID рамки.');
-    }
 
     try {
         const userDoc = await userRef.get();
-        if (!userDoc.exists) {
-            throw new HttpsError('not-found', 'Профиль пользователя не найден.');
-        }
-
+        if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
         const userData = userDoc.data() as any;
-        const ownedItems = userData.owned_items || [];
 
-        if (equipped_frame !== null && !ownedItems.includes(equipped_frame)) {
+        if (equipped_frame !== null && !userData.owned_items?.includes(equipped_frame)) {
             throw new HttpsError('permission-denied', 'Вы не владеете этим предметом.');
         }
 
-        await userRef.update({
-            equipped_frame: equipped_frame
-        });
-
-        return { data: { status: 'success', message: 'Кастомизация сохранена!' } };
-
+        await userRef.update({ equipped_frame });
+        return { data: { status: 'success', message: 'Сохранено!' } };
     } catch (error: any) {
-        console.error(`[updateEquippedItems] Ошибка для UID: ${uid}. Ошибка:`, error);
-        if (error.code) { throw error; }
-        throw new HttpsError('internal', 'Ошибка сервера при сохранении кастомизации.');
+        if (error.code) throw error;
+        throw new HttpsError('internal', 'Error saving items.');
     }
 });
 
 export const purchaseShopItem = onCall({ cors: ALLOWED_ORIGINS }, async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Необходима аутентификация.');
-    }
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(uid);
 
     const { itemId } = request.data;
-    const uid = request.auth.uid;
-    const db = admin.firestore();
-
-    if (!itemId || typeof itemId !== 'string') {
-        throw new HttpsError('invalid-argument', 'Неверный ID предмета.');
-    }
-
     const userRef = db.collection('users').doc(uid);
     const itemRef = db.collection('shop_items').doc(itemId);
 
     try {
-        await db.runTransaction(async (transaction) => {
-            const userDoc = await transaction.get(userRef);
-            const itemDoc = await transaction.get(itemRef);
+        await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+            const itemDoc = await t.get(itemRef);
 
-            if (!userDoc.exists) { throw new HttpsError('not-found', 'Профиль пользователя не найден.'); }
-            if (!itemDoc.exists) { throw new HttpsError('not-found', 'Предмет не найден в магазине.'); }
+            if (!userDoc.exists || !itemDoc.exists) throw new HttpsError('not-found', 'Data not found.');
 
             const userData = userDoc.data() as any;
             const itemData = itemDoc.data() as any;
+            const price = itemData.price || 999999;
 
-            const currentCredits = userData.casino_credits || 0;
-            const itemPrice = itemData.price || 999999;
-            const ownedItems = userData.owned_items || [];
+            if (userData.owned_items?.includes(itemId)) throw new HttpsError('already-exists', 'Уже куплено.');
+            if ((userData.casino_credits || 0) < price) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
 
-            if (ownedItems.includes(itemId)) {
-                throw new HttpsError('already-exists', 'Вы уже владеете этим предметом.');
-            }
-            if (currentCredits < itemPrice) {
-                throw new HttpsError('failed-precondition', 'Недостаточно Протокоинов.');
-            }
-
-            transaction.update(userRef, {
-                casino_credits: currentCredits - itemPrice,
+            t.update(userRef, {
+                casino_credits: userData.casino_credits - price,
                 owned_items: FieldValue.arrayUnion(itemId)
             });
         });
-
         return { data: { status: 'success', message: 'Покупка совершена!' } };
-
     } catch (error: any) {
-        console.error(`[purchaseShopItem] Ошибка для UID: ${uid}, ItemID: ${itemId}. Ошибка:`, error);
-        if (error.code) { throw error; }
-        throw new HttpsError('internal', 'Произошла ошибка на сервере во время покупки.');
+        if (error.code) throw error;
+        throw new HttpsError('internal', 'Transaction failed.');
     }
 });
 
 export const playSlotMachine = onCall(async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Необходима аутентификация.');
-    }
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(uid);
 
     const { bet } = request.data;
-    const uid = request.auth.uid;
-    const db = admin.firestore();
+    if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
+
     const userRef = db.collection('users').doc(uid);
 
-    if (typeof bet !== 'number' || !Number.isInteger(bet) || bet <= 0) {
-        throw new HttpsError('invalid-argument', 'Ставка должна быть положительным целым числом.');
-    }
-
     try {
-        const result = await db.runTransaction(async (transaction) => {
-            const userDoc = await transaction.get(userRef);
-            if (!userDoc.exists) {
-                throw new HttpsError('not-found', 'Пользователь не найден.');
-            }
+        const result = await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
 
             const data = userDoc.data() as any;
-            let currentCredits = data.casino_credits;
-            if (currentCredits === undefined) { currentCredits = 100; }
+            const credits = data.casino_credits ?? 100;
 
-            if (currentCredits < bet) {
-                throw new HttpsError('failed-precondition', 'Недостаточно кредитов для совершения ставки.');
-            }
+            if (credits < bet) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
 
-            const newBalanceAfterBet = currentCredits - bet;
-
+            const newBalanceAfterBet = credits - bet;
             let finalReels: string[] = [];
             let winMultiplier = 0;
             let lossAmount = 0;
 
-            const randomPercent = Math.random() * 100;
+            const rand = Math.random() * 100;
 
-            if (randomPercent < 0.1) {
-                finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo'];
-                winMultiplier = 100;
-            }
-            else if (randomPercent < 3.1) {
-                finalReels = ['glitch-6', 'glitch-6', 'glitch-6'];
-                lossAmount = 666;
-            }
-            else if (randomPercent < 5.1) {
-                finalReels = ['heart', 'heart', 'heart'];
-                winMultiplier = 25;
-            }
-            else if (randomPercent < 12.1) {
-                finalReels = ['ram', 'ram', 'ram'];
-                winMultiplier = 10;
-            }
-            else if (randomPercent < 27.1) {
-                finalReels = ['paw', 'paw', 'paw'];
-                winMultiplier = 5;
-            }
+            if (rand < 0.1) { finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo']; winMultiplier = 100; }
+            else if (rand < 3.1) { finalReels = ['glitch-6', 'glitch-6', 'glitch-6']; lossAmount = 666; }
+            else if (rand < 5.1) { finalReels = ['heart', 'heart', 'heart']; winMultiplier = 25; }
+            else if (rand < 12.1) { finalReels = ['ram', 'ram', 'ram']; winMultiplier = 10; }
+            else if (rand < 27.1) { finalReels = ['paw', 'paw', 'paw']; winMultiplier = 5; }
             else {
-                let reel1, reel2, reel3;
-                const baseSymbols = ['paw', 'ram', 'heart', 'protomap_logo'];
+                const sym = ['paw', 'ram', 'heart', 'protomap_logo'];
                 do {
-                    reel1 = baseSymbols[Math.floor(Math.random() * baseSymbols.length)];
-                    reel2 = baseSymbols[Math.floor(Math.random() * baseSymbols.length)];
-                    reel3 = baseSymbols[Math.floor(Math.random() * baseSymbols.length)];
-                } while (reel1 === reel2 && reel2 === reel3);
-                finalReels = [reel1, reel2, reel3];
+                    finalReels = [sym[Math.floor(Math.random()*4)], sym[Math.floor(Math.random()*4)], sym[Math.floor(Math.random()*4)]];
+                } while (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]);
             }
 
-            const winAmount = Math.floor(bet * winMultiplier);
+            const win = Math.floor(bet * winMultiplier);
+            const final = Math.max(0, newBalanceAfterBet + win - lossAmount);
 
-            const finalBalanceCalc = newBalanceAfterBet + winAmount - lossAmount;
-            const finalBalance = finalBalanceCalc < 0 ? 0 : finalBalanceCalc;
+            t.update(userRef, { casino_credits: final, last_game_played: FieldValue.serverTimestamp() });
 
-            transaction.update(userRef, {
-                casino_credits: finalBalance,
-                last_game_played: FieldValue.serverTimestamp()
-            });
+            return { reels: finalReels, winAmount: win, lossAmount, newBalance: final };
+        });
+        return { data: result };
+    } catch (error: any) {
+        if (error.code) throw error;
+        throw new HttpsError('internal', 'Game error.');
+    }
+});
 
-            return {
-                reels: finalReels,
-                winAmount: winAmount,
-                lossAmount: lossAmount,
-                newBalance: finalBalance,
-            };
+export const getDailyBonus = onCall(async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(uid);
+
+    const userRef = db.collection('users').doc(uid);
+
+    try {
+        const result = await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
+
+            const data = userDoc.data() as any;
+            const lastBonus = data.last_daily_bonus;
+            const now = Date.now();
+            const dayMs = 24 * 60 * 60 * 1000;
+
+            if (lastBonus && (now - lastBonus.toDate().getTime() < dayMs)) {
+                const wait = Math.ceil((dayMs - (now - lastBonus.toDate().getTime())) / 3600000);
+                return { status: 'error', message: `Ждите еще ${wait} ч.` };
+            }
+
+            const newBalance = (data.casino_credits ?? 100) + 25;
+            t.update(userRef, { casino_credits: newBalance, last_daily_bonus: FieldValue.serverTimestamp() });
+            return { status: 'success', message: 'Бонус получен!', new_balance: newBalance };
         });
 
-        return { data: result };
-
+        if (result.status === 'success') return { data: result };
+        throw new HttpsError('resource-exhausted', result.message);
     } catch (error: any) {
-        console.error(`[playSlotMachine] Ошибка для UID: ${uid}. Ошибка:`, error);
-        if (error.code) { throw error; }
-        throw new HttpsError('internal', 'Произошла ошибка на сервере во время игры.');
+        if (error.code === 'resource-exhausted') throw error;
+        throw new HttpsError('internal', 'Bonus error.');
+    }
+});
+
+export const playCoinFlip = onCall(async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(uid);
+
+    const { bet, choice } = request.data;
+    if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
+
+    const userRef = db.collection('users').doc(uid);
+
+    try {
+        const result = await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
+
+            const data = userDoc.data() as any;
+            const credits = data.casino_credits ?? 100;
+
+            if (credits < bet) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
+
+            const winMultiplier = 1.95;
+            const outcome = Math.random() < 0.5 ? 'heads' : 'tails';
+            const hasWon = choice === outcome;
+
+            let final = credits - bet;
+            if (hasWon) final += Math.floor(bet * winMultiplier);
+
+            t.update(userRef, { casino_credits: final });
+
+            return { outcome, hasWon, newBalance: final, creditsChange: final - credits };
+        });
+        return { data: result };
+    } catch (error: any) {
+        if (error.code) throw error;
+        throw new HttpsError('internal', 'Game error.');
     }
 });
 
 export const getLeaderboard = onCall(async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Доступ к данным закрыт для гостей.');
-    }
-
-    const db = admin.firestore();
+    // Проверка авторизации
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     try {
-        // Берем топ-10 самых богатых
+        // Берем топ-10 богачей
         const snapshot = await db.collection('users')
             .orderBy('casino_credits', 'desc')
             .limit(10)
@@ -491,504 +401,201 @@ export const getLeaderboard = onCall(async (request) => {
                 username: data.username || 'Неизвестный',
                 avatar_url: data.avatar_url || '',
                 casino_credits: data.casino_credits || 0,
-                equipped_frame: data.equipped_frame || null // Важно для красоты!
+                equipped_frame: data.equipped_frame || null
             };
         });
 
         return { data: leaderboard };
 
     } catch (error) {
-        console.error("Ошибка получения лидерборда:", error);
+        console.error("Leaderboard error:", error);
         throw new HttpsError('internal', 'Не удалось загрузить списки лидеров.');
     }
 });
 
-export const getDailyBonus = onCall(async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Необходимо войти в систему для получения бонуса.');
-    }
-    const uid = request.auth.uid;
-    const db = admin.firestore();
-    const userRef = db.collection('users').doc(uid);
-
-    try {
-        const result = await db.runTransaction(async (transaction) => {
-            const userDoc = await transaction.get(userRef);
-
-            if (!userDoc.exists) {
-                throw new HttpsError('not-found', 'Пользователь не найден.');
-            }
-
-            const data = userDoc.data() as any;
-            const lastBonusTimestamp = data.last_daily_bonus;
-            let currentCredits = data.casino_credits;
-            if (currentCredits === undefined) {
-                currentCredits = 100;
-            }
-            const now = Date.now();
-            const oneDayInMs = 24 * 60 * 60 * 1000;
-            const dailyBonusAmount = 25;
-
-            if (lastBonusTimestamp && (now - lastBonusTimestamp.toDate().getTime() < oneDayInMs)) {
-                const remainingTimeMs = oneDayInMs - (now - lastBonusTimestamp.toDate().getTime());
-                return {
-                    status: 'error',
-                    message: `Бонус уже был получен. Осталось ждать: ${Math.ceil(remainingTimeMs / (1000 * 60 * 60))} ч.`
-                };
-            }
-
-            transaction.update(userRef, {
-                casino_credits: currentCredits + dailyBonusAmount,
-                last_daily_bonus: FieldValue.serverTimestamp()
-            });
-
-            return {
-                status: 'success',
-                message: `Получен ежедневный бонус: +${dailyBonusAmount} кредитов!`,
-                new_balance: currentCredits + dailyBonusAmount
-            };
-        });
-
-        if (result.status === 'success') {
-            return { data: result };
-        } else {
-            throw new HttpsError('resource-exhausted', result.message);
-        }
-
-    } catch (error: any) {
-        if (error.code === 'resource-exhausted') {
-            throw error;
-        }
-        console.error("Ошибка при получении бонуса:", error);
-        throw new HttpsError('internal', 'Ошибка сервера при обработке бонуса.');
-    }
-});
-
-export const playCoinFlip = onCall(async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Необходима аутентификация.');
-    }
-
-    const { bet, choice } = request.data;
-    const uid = request.auth.uid;
-    const db = admin.firestore();
-    const userRef = db.collection('users').doc(uid);
-
-    if (typeof bet !== 'number' || !Number.isInteger(bet) || bet <= 0) {
-        throw new HttpsError('invalid-argument', 'Ставка должна быть положительным целым числом.');
-    }
-    if (choice !== 'heads' && choice !== 'tails') {
-        throw new HttpsError('invalid-argument', 'Выбор должен быть "heads" или "tails".');
-    }
-
-    try {
-        const result = await db.runTransaction(async (transaction) => {
-            const userDoc = await transaction.get(userRef);
-            if (!userDoc.exists) {
-                throw new HttpsError('not-found', 'Пользователь не найден.');
-            }
-
-            const data = userDoc.data() as any;
-            let currentCredits = data.casino_credits;
-            if (currentCredits === undefined) {
-            currentCredits = 100;
-            }
-            if (currentCredits < bet) {
-                throw new HttpsError('failed-precondition', 'Недостаточно кредитов для совершения ставки.');
-            }
-
-            const newBalanceAfterBet = currentCredits - bet;
-
-            const winMultiplier = 1.95;
-            const outcome: 'heads' | 'tails' = Math.random() < 0.5 ? 'heads' : 'tails';
-            const hasWon = choice === outcome;
-
-            let finalBalance = newBalanceAfterBet;
-            if (hasWon) {
-                finalBalance += Math.floor(bet * winMultiplier);
-            }
-
-            transaction.update(userRef, {
-                casino_credits: finalBalance
-            });
-
-            return {
-                outcome: outcome,
-                hasWon: hasWon,
-                newBalance: finalBalance,
-                creditsChange: finalBalance - currentCredits
-            };
-        });
-
-        return { data: result };
-
-    } catch (error: any) {
-        console.error(`[playCoinFlip] Ошибка для UID: ${uid}. Ошибка:`, error);
-        if (error.code) {
-            throw error;
-        }
-        throw new HttpsError('internal', 'Произошла ошибка на сервере во время игры.');
-    }
-});
-
+// --- GEOCODING HELPERS ---
 async function getDistrictCenterCoords(lat: number, lng: number): Promise<[string, number, number] | null> {
-    const userAgent = process.env.NOMINATIM_USER_AGENT || 'ProtoMap/1.0 (kovalevd418@gmail.com)';
-
+    const userAgent = process.env.NOMINATIM_USER_AGENT || 'ProtoMap/1.0';
     try {
-        const reverseGeocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru&zoom=18`;
-        console.log(`Этап 1: Запрос к Nominatim для (${lat}, ${lng})`);
+        // 1. Reverse
+        const revUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru&zoom=18`;
+        const revRes = await fetch(revUrl, { headers: { 'User-Agent': userAgent } });
+        if (!revRes.ok) return null;
+        const revData = await revRes.json() as any;
+        if (!revData.address) return null;
 
-        const reverseResponse = await fetch(reverseGeocodeUrl, { headers: { 'User-Agent': userAgent } });
-        if (!reverseResponse.ok) throw new Error(`Nominatim reverse API failed`);
-        const reverseData = await reverseResponse.json() as any;
-
-        if (!reverseData || !reverseData.address) {
-            console.error("Этап 1: Nominatim не вернул 'address' в ответе.");
-            return null;
-        }
-
-        const address = reverseData.address;
-        console.log("Этап 1: Получен адрес:", address);
-
+        const addr = revData.address;
         const locationHierarchy = {
-            microdistrict: address.suburb || address.quarter || address.neighbourhood,
-            district: address.city_district || address.borough,
-            city: address.city || address.town || address.village,
-            country: address.country
+            microdistrict: addr.suburb || addr.quarter || addr.neighbourhood,
+            district: addr.city_district || addr.borough,
+            city: addr.city || addr.town || addr.village,
+            country: addr.country
         };
 
-        const searchAttempts = [
-            { level: 'Микрорайон', query: locationHierarchy.microdistrict },
-            { level: 'Район города', query: locationHierarchy.district },
-            { level: 'Город/НП', query: locationHierarchy.city }
+        const attempts = [
+            { level: 'Micro', q: locationHierarchy.microdistrict },
+            { level: 'District', q: locationHierarchy.district },
+            { level: 'City', q: locationHierarchy.city }
         ];
 
-        for (const attempt of searchAttempts) {
-            if (!attempt.query) {
-                console.log(`Пропускаем уровень '${attempt.level}', так как он не определен.`);
-                continue;
-            }
+        for (const attempt of attempts) {
+            if (!attempt.q) continue;
+            const q = [attempt.q, locationHierarchy.city, locationHierarchy.country].filter(Boolean).join(', ');
 
-            const queryParts = [
-                attempt.query,
-                locationHierarchy.city,
-                locationHierarchy.country
-            ].filter((part, index, self) => part && self.indexOf(part) === index);
+            // Delay to be nice to Nominatim
+            await new Promise(r => setTimeout(r, 1000));
 
-            const searchQuery = queryParts.join(', ');
+            const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=ru&q=${encodeURIComponent(q)}`;
+            const searchRes = await fetch(searchUrl, { headers: { 'User-Agent': userAgent } });
+            if (!searchRes.ok) continue;
 
-            console.log(`Попытка поиска для уровня '${attempt.level}' по строке: "${searchQuery}"`);
-
-            const forwardUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=ru&q=${encodeURIComponent(searchQuery)}`;
-
-            await new Promise(resolve => setTimeout(resolve, 1100));
-
-            const forwardResponse = await fetch(forwardUrl, { headers: { 'User-Agent': userAgent } });
-            if (!forwardResponse.ok) {
-                console.warn(`Запрос для уровня '${attempt.level}' не удался, пробую следующий...`);
-                continue;
-            }
-
-            const forwardData = await forwardResponse.json() as any[];
-
-            if (forwardData && forwardData.length > 0) {
-                const placeLocation = forwardData[0];
-                const placeLat = parseFloat(placeLocation.lat);
-                const placeLng = parseFloat(placeLocation.lon);
-                console.log(`УСПЕХ на уровне '${attempt.level}'! Найдены координаты: ${placeLat}, ${placeLng}`);
-
-                return [attempt.query, placeLat, placeLng];
-            } else {
-                console.log(`На уровне '${attempt.level}' ничего не найдено, пробую следующий...`);
+            const searchData = await searchRes.json() as any[];
+            if (searchData && searchData.length > 0) {
+                return [attempt.q, parseFloat(searchData[0].lat), parseFloat(searchData[0].lon)];
             }
         }
-
-        console.error("Все попытки геокодирования провалились.");
         return null;
-
-    } catch (error) {
-        console.error("Глобальная ошибка в getDistrictCenterCoords:", error);
-        return null;
-    }
+    } catch (e) { return null; }
 }
 
-export const addOrUpdateLocation = onRequest(
-  { cors: false },
-  async (request, response) => {
-    if (handleCors(request, response)) { return; }
+export const addOrUpdateLocation = onRequest({ cors: false }, async (request, response) => {
+    if (handleCors(request, response)) return;
+
     const idToken = request.headers.authorization?.split('Bearer ')[1];
-    if (!idToken) {
-        response.status(401).json({ error: { message: "Unauthorized: No token provided" } });
-        return;
-    }
-
-    let decodedToken;
-    try {
-        decodedToken = await admin.auth().verifyIdToken(idToken);
-    } catch (error) {
-        response.status(401).json({ error: { message: "Unauthorized: Invalid token" } });
-        return;
-    }
-
-    const user_id = decodedToken.uid;
-    const { lat, lng } = request.body.data;
-    if (typeof lat !== 'number' || typeof lng !== 'number') {
-      response.status(400).json({ error: { message: "Invalid coordinates" } });
-      return;
-    }
-
-    const placeDetails = await getDistrictCenterCoords(lat, lng);
-    if (!placeDetails) {
-      response.status(400).json({ error: { message: "Не удалось определить местоположение (геокодер)." } });
-      return;
-    }
-    const [place_name, place_lat, place_lng] = placeDetails;
-
-    const locationsCollection = db.collection("locations");
+    if (!idToken) { response.status(401).json({ error: "Unauthorized" }); return; }
 
     try {
-        const querySnapshot = await locationsCollection.where("user_id", "==", user_id).limit(1).get();
-        let action_message: string;
-        let statusCode = 200;
+        const decoded = await admin.auth().verifyIdToken(idToken);
+        const uid = decoded.uid;
 
-        if (!querySnapshot.empty) {
-            const docId = querySnapshot.docs[0].id;
-            await locationsCollection.doc(docId).update({
-                latitude: place_lat,
-                longitude: place_lng,
-                city: place_name,
-            });
-            action_message = "Ваша метка обновлена!";
+        // Проверка бана для onRequest
+        const userDoc = await db.collection("users").doc(uid).get();
+        if (userDoc.exists && userDoc.data()?.isBanned) {
+            response.status(403).json({ error: "Banned" });
+            return;
+        }
+
+        const { lat, lng } = request.body.data;
+        if (!lat || !lng) { response.status(400).json({ error: "Invalid coords" }); return; }
+
+        const place = await getDistrictCenterCoords(lat, lng);
+        if (!place) { response.status(400).json({ error: "Geocoding failed" }); return; }
+
+        const [city, pLat, pLng] = place;
+        const locRef = db.collection("locations");
+        const q = await locRef.where("user_id", "==", uid).limit(1).get();
+
+        if (!q.empty) {
+            await locRef.doc(q.docs[0].id).update({ latitude: pLat, longitude: pLng, city });
         } else {
-            await locationsCollection.add({
-                latitude: place_lat,
-                longitude: place_lng,
-                city: place_name,
-                user_id: user_id,
-            });
-            action_message = "Ваша метка добавлена!";
-            statusCode = 201;
+            await locRef.add({ latitude: pLat, longitude: pLng, city, user_id: uid });
         }
 
-        response.status(statusCode).json({
-            data: {
-                status: 'success',
-                message: action_message,
-                foundCity: place_name,
-                placeLat: place_lat,
-                placeLng: place_lng
-            }
-        });
+        response.status(200).json({ data: { status: 'success', message: 'Метка обновлена!', foundCity: city, placeLat: pLat, placeLng: pLng } });
 
     } catch (error) {
-        console.error("Error saving location:", error);
-        response.status(500).json({ error: { message: "Internal server error" } });
+        console.error(error);
+        response.status(500).json({ error: "Server Error" });
     }
-  }
-);
+});
 
-export const getLocations = onRequest(
-  { cors: false },
-  async (request, response) => {
-    if (handleCors(request, response)) {
-      return;
-    }
-    if (handleCors(request, response)) { return; }
+export const getLocations = onRequest({ cors: false }, async (request, response) => {
+    if (handleCors(request, response)) return;
     response.set('Cache-Control', 'public, max-age=300, s-maxage=300');
-    try {
-      const locationsSnapshot = await db.collection("locations").get();
-      if (locationsSnapshot.empty) {
-        response.status(200).json({ data: [] });
-        return;
-      }
-
-      const userIds = [...new Set(locationsSnapshot.docs.map((doc) => doc.data().user_id).filter(Boolean))];
-
-      if (userIds.length === 0) {
-        response.status(200).json({ data: [] });
-        return;
-      }
-
-      const usersMap = new Map<string, any>();
-      const chunkPromises: Promise<void>[] = [];
-
-      for (let i = 0; i < userIds.length; i += 30) {
-          const chunk = userIds.slice(i, i + 30);
-
-          const promise = db.collection("users")
-              .where(admin.firestore.FieldPath.documentId(), "in", chunk)
-              .get()
-              .then(usersSnapshot => {
-                  usersSnapshot.forEach((doc) => {
-                      usersMap.set(doc.id, doc.data());
-                  });
-              });
-
-          chunkPromises.push(promise);
-      }
-
-      await Promise.all(chunkPromises);
-
-      const results = locationsSnapshot.docs.map((doc) => {
-        const locationData = doc.data();
-        const userData = usersMap.get(locationData.user_id);
-
-        return {
-          lat: locationData.latitude,
-          lng: locationData.longitude,
-          city: locationData.city,
-          user: userData ? {
-            username: userData.username || "неизвестно",
-            avatar_url: userData.avatar_url || null,
-            status: userData.status || null,
-            equipped_frame: userData.equipped_frame || null
-          } : null
-        };
-      }).filter(item => item.user && item.user.username !== "неизвестно");
-
-      response.status(200).json({ data: results });
-
-    } catch (error) {
-      console.error("Error fetching locations:", error);
-      response.removeHeader('Cache-Control');
-      response.status(500).json({ error: { message: "Internal server error" } });
-    }
-  },
-);
-
-export const deleteLocation = onCall(
-  { cors: ALLOWED_ORIGINS },
-  async (request) => {
-    if (!request.auth) {
-      console.log("Вызов deleteLocation без аутентификации.");
-      throw new HttpsError(
-        'unauthenticated',
-        'Для выполнения этой операции необходимо войти в систему.'
-      );
-    }
-
-    const user_id = request.auth.uid;
 
     try {
-      console.log(`Удаление метки для UserID=${user_id}`);
-      const querySnapshot = await db.collection("locations").where("user_id", "==", user_id).limit(1).get();
+        const locSnap = await db.collection("locations").get();
+        if (locSnap.empty) { response.status(200).json({ data: [] }); return; }
 
-      if (!querySnapshot.empty) {
-        const docId = querySnapshot.docs[0].id;
-        await db.collection("locations").doc(docId).delete();
-        console.log(`Метка для UserID=${user_id} удалена.`);
-        return { status: 'success', message: 'Ваша метка удалена.' };
-      } else {
-        console.log(`Метка для UserID=${user_id} не найдена.`);
-        return { status: 'success', message: 'Метка не найдена.' };
-      }
-    } catch (error) {
-      console.error("Ошибка удаления метки:", error);
-      throw new HttpsError('internal', 'Ошибка сервера при удалении метки.');
-    }
-  }
-);
+        const userIds = [...new Set(locSnap.docs.map(d => d.data().user_id).filter(Boolean))];
+        const usersMap = new Map();
 
-interface ProfileData {
-    about_me?: string;
-    status?: string;
-    socials?: {
-        telegram?: string;
-        discord?: string;
-        vk?: string;
-        twitter?: string;
-        website?: string;
-    }
-}
-
-export const updateProfileData = onCall<ProfileData>(
-    {},
-    async (request) => {
-        if (!request.auth) {
-            throw new HttpsError("unauthenticated", "Необходимо войти в систему для обновления профиля.");
+        // Batch fetching users
+        for (let i = 0; i < userIds.length; i += 30) {
+            const chunk = userIds.slice(i, i + 30);
+            const uSnap = await db.collection("users").where(admin.firestore.FieldPath.documentId(), "in", chunk).get();
+            uSnap.forEach(doc => usersMap.set(doc.id, doc.data()));
         }
 
-        const uid = request.auth.uid;
-        const data = request.data;
-
-        if (!data) {
-            throw new HttpsError("invalid-argument", "Данные для обновления не предоставлены.");
-        }
-
-        const fieldsToUpdate: { [key: string]: any } = {};
-
-        if (typeof data.status === 'string') {
-            fieldsToUpdate.status = data.status.trim().substring(0, 100);
-        }
-
-        if (typeof data.about_me === 'string') {
-            fieldsToUpdate.about_me = data.about_me.trim();
-        }
-
-        if (data.socials && typeof data.socials === 'object') {
-            for (const [key, rawValue] of Object.entries(data.socials)) {
-
-                if (['telegram', 'discord', 'vk', 'twitter', 'website'].includes(key)) {
-
-                    if (typeof rawValue === 'string') {
-                        let cleanedValue = rawValue.trim();
-
-                        if (key === 'vk' || key === 'twitter') {
-                            cleanedValue = cleanedValue.replace(/\s/g, '');
-                        }
-                        if (key === 'telegram') {
-                            cleanedValue = cleanedValue.replace(/\s/g, '').replace(/^@/, '');
-                        }
-
-                        if (cleanedValue) {
-                            fieldsToUpdate[`socials.${key}`] = cleanedValue;
-                        } else {
-                            fieldsToUpdate[`socials.${key}`] = FieldValue.delete();
-                        }
-                    }
+        const results = locSnap.docs.map(doc => {
+            const loc = doc.data();
+            const user = usersMap.get(loc.user_id);
+            if (!user) return null;
+            return {
+                lat: loc.latitude, lng: loc.longitude, city: loc.city,
+                user: {
+                    username: user.username || "Unknown",
+                    avatar_url: user.avatar_url || null,
+                    status: user.status || null,
+                    equipped_frame: user.equipped_frame || null
                 }
+            };
+        }).filter(Boolean);
+
+        response.status(200).json({ data: results });
+    } catch (e) {
+        response.status(500).json({ error: "Error" });
+    }
+});
+
+export const deleteLocation = onCall({ cors: ALLOWED_ORIGINS }, async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(uid);
+
+    try {
+        const q = await db.collection("locations").where("user_id", "==", uid).limit(1).get();
+        if (!q.empty) {
+            await q.docs[0].ref.delete();
+            return { status: 'success', message: 'Метка удалена.' };
+        }
+        return { status: 'success', message: 'Метка не найдена.' };
+    } catch (e) {
+        throw new HttpsError('internal', 'Error deleting location.');
+    }
+});
+
+export const updateProfileData = onCall(async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Auth required.");
+
+    const uid = request.auth.uid;
+    await assertNotBanned(uid);
+
+    const data = request.data;
+    const fields: any = {};
+
+    if (typeof data.status === 'string') fields.status = data.status.trim().substring(0, 100);
+    if (typeof data.about_me === 'string') fields.about_me = data.about_me.trim();
+
+    if (data.socials) {
+        for (const [k, v] of Object.entries(data.socials)) {
+            if (['telegram', 'discord', 'vk', 'twitter', 'website'].includes(k) && typeof v === 'string') {
+                const val = v.trim();
+                if (val) fields[`socials.${k}`] = val;
+                else fields[`socials.${k}`] = FieldValue.delete();
             }
         }
-
-        if (Object.keys(fieldsToUpdate).length === 0) {
-            console.log(`Нет данных для обновления для UID ${uid}.`);
-            return { message: "Нет изменений для сохранения." };
-        }
-
-        try {
-            await db.collection('users').doc(uid).update(fieldsToUpdate);
-            console.log(`Текстовые данные для UID ${uid} успешно обновлены.`, fieldsToUpdate);
-            return { message: "Профиль успешно обновлен!" };
-        } catch (error) {
-            console.error("Ошибка обновления профиля в Firestore:", error);
-            throw new HttpsError("internal", "Ошибка сервера при сохранении профиля.");
-        }
     }
-);
 
-interface UploadAvatarData {
-    imageBase64: string;
-}
+    if (Object.keys(fields).length === 0) return { message: "Нет изменений." };
 
-export const uploadAvatar = onCall<UploadAvatarData>(
-  {
-    secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"],
-  },
-  async (request) => {
-    if (!request.auth) {
-      throw new HttpsError("unauthenticated", "Необходимо войти в систему для загрузки аватара.");
+    try {
+        await db.collection('users').doc(uid).update(fields);
+        return { message: "Профиль обновлен!" };
+    } catch (e) {
+        throw new HttpsError("internal", "Save error.");
     }
+});
+
+export const uploadAvatar = onCall({ secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"] }, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Auth required.");
+
     const uid = request.auth.uid;
+    await assertNotBanned(uid);
 
-    const imageBase64 = request.data.imageBase64;
-    if (!imageBase64 || typeof imageBase64 !== 'string' || !imageBase64.startsWith('data:image/')) {
-        throw new HttpsError("invalid-argument", "Не предоставлены корректные данные изображения в формате base64 Data URL.");
-    }
-
-    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-        console.error("uploadAvatar: Cloudinary environment variables are not set!");
-        throw new HttpsError("internal", "Ошибка конфигурации сервера.");
-    }
+    const { imageBase64 } = request.data;
+    if (!imageBase64?.startsWith('data:image/')) throw new HttpsError("invalid-argument", "Bad image.");
 
     cloudinary.config({
         cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -998,232 +605,72 @@ export const uploadAvatar = onCall<UploadAvatarData>(
     });
 
     try {
-        const uploadResult = await cloudinary.uploader.upload(imageBase64, {
-            folder: "protomap_avatars",
-            public_id: uid,
-            overwrite: true,
-            format: "webp",
-            transformation: [{ width: 256, height: 256, crop: "fill", gravity: "face" }]
+        const res = await cloudinary.uploader.upload(imageBase64, {
+            folder: "protomap_avatars", public_id: uid, overwrite: true,
+            format: "webp", transformation: [{ width: 256, height: 256, crop: "fill", gravity: "face" }]
         });
-
-        const newAvatarUrl = uploadResult.secure_url;
-        console.log(`Cloudinary upload successful for UID ${uid}. URL: ${newAvatarUrl}`);
-
-        await db.collection('users').doc(uid).update({
-            avatar_url: newAvatarUrl
-        });
-        console.log(`Firestore updated successfully for UID ${uid}.`);
-
-        return { avatarUrl: newAvatarUrl };
-
-    } catch (error: any) {
-        console.error(`Cloudinary/Firestore error for UID ${uid}:`, error);
-
-        let errorMessage = "Ошибка обработки аватара.";
-        if (error.message) {
-            console.error("Detailed error:", error.message);
-        }
-
-        throw new HttpsError("internal", errorMessage, "Server-side processing failed.");
+        await db.collection('users').doc(uid).update({ avatar_url: res.secure_url });
+        return { avatarUrl: res.secure_url };
+    } catch (e) {
+        throw new HttpsError("internal", "Upload failed.");
     }
-  }
-  );
+});
 
-  function escapeMarkdownV2(text: string): string {
-    const sourceText = String(text || '');
-    const charsToEscape = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
-    let escapedText = sourceText;
-    for (const char of charsToEscape) {
-        escapedText = escapedText.replace(new RegExp('\\' + char, 'g'), '\\' + char);
-    }
-    return escapedText;
-}
+export const reportContent = onCall({ secrets: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"] }, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Auth required.");
 
-interface ReportData {
-    type: 'comment' | 'profile';
-    reportedContentId: string;
-    profileOwnerUid: string;
-    reason: string;
-    reportedUsername?: string;
-    reporterUsername?: string;
-    profileOwnerUsername?: string;
-}
+    const uid = request.auth.uid;
+    await assertNotBanned(uid);
 
-export const reportContent = onCall<ReportData>(
-  { secrets: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"] },
-  async (request) => {
-    if (!request.auth) {
-      throw new HttpsError("unauthenticated", "Необходимо войти в систему, чтобы отправлять жалобы.");
-    }
-
-    const reporterUid = request.auth.uid;
-    const {
-        type,
-        reportedContentId,
-        profileOwnerUid,
-        reason,
-        reportedUsername,
-        reporterUsername,
-        profileOwnerUsername
-    } = request.data;
-
-    if (!type || !reportedContentId || !profileOwnerUid || !reason) {
-        throw new HttpsError("invalid-argument", "Не предоставлены все необходимые данные для жалобы.");
-    }
-    if (type !== 'comment' && type !== 'profile') {
-        throw new HttpsError("invalid-argument", "Неверный тип контента для жалобы.");
-    }
+    const { type, reportedContentId, profileOwnerUid, reason, reportedUsername, reporterUsername } = request.data;
+    if (!reason) throw new HttpsError("invalid-argument", "No reason.");
 
     try {
-        const reportRef = db.collection('reports').doc();
+        await db.collection('reports').add({
+            type, reportedContentId, profileOwnerUid, reporterUid: uid, reason,
+            reportedUsername, reporterUsername, status: 'new', createdAt: FieldValue.serverTimestamp()
+        });
 
-        const newReport: any = {
-            type,
-            reportedContentId,
-            profileOwnerUid,
-            reporterUid,
-            reason,
-            reportedUsername: reportedUsername || null,
-            reporterUsername: reporterUsername || null,
-            profileOwnerUsername: profileOwnerUsername || null,
-            status: 'new',
-            createdAt: FieldValue.serverTimestamp()
-        };
-
-        if (type === 'comment') {
-            const commentDoc = await db.collection('users').doc(profileOwnerUid).collection('comments').doc(reportedContentId).get();
-            if (commentDoc.exists) {
-                newReport.reportedContentText = commentDoc.data()?.text || '[Текст комментария не найден]';
-            }
-        }
-
-        await reportRef.set(newReport);
-        console.log(`Новая жалоба создана: ${reportRef.id}. Тип: ${type}, ID контента: ${reportedContentId}`);
-
+        // Telegram Notification
         const botToken = process.env.TELEGRAM_BOT_TOKEN;
         const chatId = process.env.TELEGRAM_CHAT_ID;
-
         if (botToken && chatId) {
-            const baseUrl = "https://proto-map.vercel.app/profile/";
-
-            const reporterLink = reporterUsername ? `[${escapeMarkdownV2(reporterUsername)}](${baseUrl}${escapeMarkdownV2(reporterUsername)})` : `\`${reporterUid}\``;
-            const reportedUserLink = reportedUsername ? `[${escapeMarkdownV2(reportedUsername)}](${baseUrl}${escapeMarkdownV2(reportedUsername)})` : `\`${reportedContentId}\``;
-            const profileOwnerLink = profileOwnerUsername ? `[${escapeMarkdownV2(profileOwnerUsername)}](${baseUrl}${escapeMarkdownV2(profileOwnerUsername)})` : `\`${profileOwnerUid}\``;
-
-            let message = `🚨 *Новый репорт на ProtoMap\\!* 🚨
-
-*Кто жалуется:* ${reporterLink}
-*Причина:* ${escapeMarkdownV2(reason)}
-
-`;
-
-            if (type === 'profile') {
-                message += `*На профиль:* ${reportedUserLink}`;
-            } else {
-                message += `*На комментарий пользователя* ${reportedUserLink} *в профиле* ${profileOwnerLink}`;
-                if (newReport.reportedContentText) {
-                    message += `
-
-*Текст комментария:*
-\`\`\`
-${escapeMarkdownV2(newReport.reportedContentText)}
-\`\`\``
-                }
-            }
-
-            const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
-
-            try {
-                const telegramResponse = await fetch(telegramUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        text: message,
-                        parse_mode: 'MarkdownV2'
-                    })
-                });
-
-                if (!telegramResponse.ok) {
-                    const errorBody = await telegramResponse.json();
-                    console.error("ОШИБКА от Telegram API:", telegramResponse.status, errorBody);
-                } else {
-                    console.log("Уведомление в Telegram успешно отправлено.");
-                }
-            } catch (telegramError) {
-                console.error("Критическая ошибка при отправке запроса в Telegram:", telegramError);
-            }
-        } else {
-            console.warn("Переменные окружения для Telegram-бота не установлены. Уведомление не отправлено.");
+            const msg = `🚨 REPORT: ${type}\nFrom: ${reporterUsername}\nReason: ${reason}`;
+            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: msg })
+            });
         }
-
-        return { success: true, message: "Ваша жалоба была отправлена. Спасибо!" };
-
-    } catch (error) {
-        console.error("Ошибка при создании жалобы:", error);
-        throw new HttpsError("internal", "Ошибка сервера при отправке жалобы.");
+        return { success: true, message: "Отправлено." };
+    } catch (e) {
+        throw new HttpsError("internal", "Report error.");
     }
-  }
-);
+});
 
 export const deleteAccount = onCall(async (request) => {
-    if (!request.auth) {
-        throw new HttpsError('unauthenticated', 'Для выполнения этой операции необходимо войти в систему.');
-    }
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
     const uid = request.auth.uid;
-    console.log(`[deleteAccount] Получен запрос на удаление для UID: ${uid}`);
 
     try {
-        const db = admin.firestore();
-        const auth = admin.auth();
         const batch = db.batch();
 
-        console.log(`[deleteAccount] Начинаю процесс анонимизации для UID: ${uid}...`);
+        // Анонимизация комментариев
+        const comments = await db.collectionGroup('comments').where('author_uid', '==', uid).get();
+        comments.forEach(d => batch.update(d.ref, { author_username: 'Deleted', author_avatar_url: null, author_uid: null }));
 
-        const commentsSnapshot = await db.collectionGroup('comments').where('author_uid', '==', uid).get();
-        if (!commentsSnapshot.empty) {
-            console.log(`[deleteAccount] Найдено ${commentsSnapshot.size} комментариев для анонимизации.`);
-            commentsSnapshot.forEach(doc => {
-                batch.update(doc.ref, {
-                    author_username: '[Удаленный пользователь]',
-                    author_avatar_url: null,
-                    author_uid: null
-                });
-            });
-        }
+        // Анонимизация чата
+        const msgs = await db.collection('global_chat').where('author_uid', '==', uid).get();
+        msgs.forEach(d => batch.update(d.ref, { author_username: 'Deleted', author_avatar_url: null, author_uid: null }));
 
-        const chatMessagesSnapshot = await db.collection('global_chat').where('author_uid', '==', uid).get();
-        if (!chatMessagesSnapshot.empty) {
-            console.log(`[deleteAccount] Найдено ${chatMessagesSnapshot.size} сообщений в чате для анонимизации.`);
-            chatMessagesSnapshot.forEach(doc => {
-                batch.update(doc.ref, {
-                    author_username: '[Удаленный пользователь]',
-                    author_avatar_url: null,
-                    author_uid: null
-                });
-            });
-        }
-
-        console.log('[deleteAccount] Выполнение пакетной записи для анонимизации...');
         await batch.commit();
-
-        console.log(`[deleteAccount] Удаление основных документов Firestore для UID: ${uid}...`);
-
         await db.collection('users').doc(uid).delete();
 
-        const locationQuery = await db.collection('locations').where('user_id', '==', uid).limit(1).get();
-        if (!locationQuery.empty) {
-            await locationQuery.docs[0].ref.delete();
-        }
+        const locs = await db.collection('locations').where('user_id', '==', uid).get();
+        locs.forEach(d => d.ref.delete());
 
-        console.log(`[deleteAccount] Удаление пользователя из Firebase Auth для UID: ${uid}...`);
-        await auth.deleteUser(uid);
-
-        console.log(`[deleteAccount] Успешное полное удаление и анонимизация для UID: ${uid}.`);
-        return { status: 'success', message: 'Ваша учетная запись и все связанные данные были успешно удалены.' };
-
-    } catch (error: any) {
-        console.error(`[deleteAccount] Критическая ошибка при удалении UID: ${uid}. Ошибка:`, error);
-        throw new HttpsError('internal', 'Произошла ошибка на сервере при удалении вашей учетной записи. Пожалуйста, свяжитесь с поддержкой.');
+        await admin.auth().deleteUser(uid);
+        return { status: 'success', message: 'Аккаунт удален.' };
+    } catch (e) {
+        throw new HttpsError('internal', 'Delete error.');
     }
 });
