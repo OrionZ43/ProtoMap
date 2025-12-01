@@ -41,6 +41,8 @@
     let replyingTo: { id: string; author_username: string; text: string; isMedia?: boolean } | null = null;
     let inputElement: HTMLTextAreaElement;
 
+    $: isVerified = $userStore.user?.emailVerified ?? false;
+
     async function sendMessage() {
         if (isSending || !canSendMessage) return;
         if (!messageText.trim()) return;
@@ -257,30 +259,42 @@
 
         <div class="message-input-area">
             {#if $userStore.user}
-                <div class="input-wrapper">
-                    {#if replyingTo}
-                        <div class="replying-to-banner" transition:slide={{duration: 200}}>
-                            <span>Ответ на: <span class="font-bold">{replyingTo.author_username}</span></span>
-                            <button on:click={() => replyingTo = null}>&times;</button>
-                        </div>
-                    {/if}
-                    <textarea
-                        bind:this={inputElement}
-                        bind:value={messageText}
-                        on:keydown={handleKeydown}
-                        maxlength="1000"
-                        disabled={isSending || !canSendMessage}
-                        placeholder={!canSendMessage ? 'Подождите...' : 'Введите сообщение...'}
-                        class="input-field"
-                    ></textarea>
-                </div>
-                <button on:click={sendMessage} disabled={isSending || !canSendMessage || !messageText.trim()} class="send-button">
-                    {#if isSending}
-                         <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    {:else}
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg>
-                    {/if}
-                </button>
+                {#if isVerified}
+                    <!-- ОБЫЧНЫЙ ВВОД (Если подтвержден) -->
+                    <div class="input-wrapper">
+                        {#if replyingTo}
+                            <div class="replying-to-banner" transition:slide={{duration: 200}}>
+                                <span>Ответ на: <span class="font-bold">{replyingTo.author_username}</span></span>
+                                <button on:click={() => replyingTo = null}>&times;</button>
+                            </div>
+                        {/if}
+                        <textarea
+                            bind:this={inputElement}
+                            bind:value={messageText}
+                            on:keydown={handleKeydown}
+                            maxlength="1000"
+                            disabled={isSending || !canSendMessage}
+                            placeholder={!canSendMessage ? 'Подождите...' : 'Введите сообщение...'}
+                            class="input-field"
+                        ></textarea>
+                    </div>
+                    <button on:click={sendMessage} disabled={isSending || !canSendMessage || !messageText.trim()} class="send-button">
+                        {#if isSending}
+                             <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        {:else}
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg>
+                        {/if}
+                    </button>
+                {:else}
+                    <!-- ЗАГЛУШКА (Если НЕ подтвержден) -->
+                    <div class="w-full text-center py-2 bg-red-900/20 border border-red-500/30 rounded text-xs">
+                        <span class="text-red-400 block mb-1">⚠️ ДОСТУП ОГРАНИЧЕН</span>
+                        <a href="/profile/{$userStore.user.username}" class="text-cyber-yellow hover:underline font-bold">
+                            ПОДТВЕРДИТЕ EMAIL
+                        </a>
+                        <span class="text-gray-400"> для доступа к чату</span>
+                    </div>
+                {/if}
             {:else}
                 <p class="w-full text-center text-gray-400 text-sm"><a href="/login" class="text-cyber-yellow hover:underline">Войдите</a>, чтобы общаться в чате.</p>
             {/if}

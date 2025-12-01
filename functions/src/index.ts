@@ -26,7 +26,7 @@ const handleCors = (request: any, response: any): boolean => {
     return false;
 };
 
-// --- ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ПРОВЕРКИ БАНА ---
+
 async function assertNotBanned(uid: string) {
     const userRef = admin.firestore().collection('users').doc(uid);
     const userSnap = await userRef.get();
@@ -34,13 +34,21 @@ async function assertNotBanned(uid: string) {
         throw new HttpsError('permission-denied', 'Ваш аккаунт заблокирован. Доступ к этой функции ограничен.');
     }
 }
-// ---------------------------------------------
+
+function assertEmailVerified(auth: any) {
+    // Если это Google-вход, email_verified обычно true.
+    // Если Email/Pass - зависит от того, нажал ли юзер ссылку.
+    if (!auth.token.email_verified) {
+        throw new HttpsError('permission-denied', 'Требуется подтверждение почты (Email Verification).');
+    }
+}
 
 export const sendMessage = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Доступ запрещен.');
 
     const uid = request.auth.uid;
     await assertNotBanned(uid); // Проверка бана
+    assertEmailVerified(request.auth);
 
     const { text, replyTo } = request.data as any;
 
@@ -135,6 +143,7 @@ export const addComment = onCall(async (request) => {
 
     const uid = request.auth.uid;
     await assertNotBanned(uid); // <--- ИСПРАВЛЕНО (была ошибка с переменной uid)
+    assertEmailVerified(request.auth);
 
     const { profileUid, text } = request.data;
 
@@ -198,6 +207,7 @@ export const updateEquippedItems = onCall({ cors: ALLOWED_ORIGINS }, async (requ
 
     const uid = request.auth.uid;
     await assertNotBanned(uid);
+    assertEmailVerified(request.auth);
 
     const { equipped_frame } = request.data;
     const userRef = db.collection('users').doc(uid);
@@ -224,6 +234,7 @@ export const purchaseShopItem = onCall({ cors: ALLOWED_ORIGINS }, async (request
 
     const uid = request.auth.uid;
     await assertNotBanned(uid);
+    assertEmailVerified(request.auth);
 
     const { itemId } = request.data;
     const userRef = db.collection('users').doc(uid);
@@ -260,6 +271,7 @@ export const playSlotMachine = onCall(async (request) => {
 
     const uid = request.auth.uid;
     await assertNotBanned(uid);
+    assertEmailVerified(request.auth);
 
     const { bet } = request.data;
     if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
@@ -314,6 +326,7 @@ export const getDailyBonus = onCall(async (request) => {
 
     const uid = request.auth.uid;
     await assertNotBanned(uid);
+    assertEmailVerified(request.auth);
 
     const userRef = db.collection('users').doc(uid);
 
@@ -350,6 +363,7 @@ export const playCoinFlip = onCall(async (request) => {
 
     const uid = request.auth.uid;
     await assertNotBanned(uid);
+    assertEmailVerified(request.auth);
 
     const { bet, choice } = request.data;
     if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');

@@ -31,7 +31,7 @@
         }
         else if (m === 11 && day >= 1 && day < 15) {
             themeState = 'winter';
-            sideTextLeft = 'ТЕМПЕРАТУРА: -15°C';
+            sideTextLeft = 'ТЕМПЕРАТУРА: -40°C';
             sideTextRight = 'СИСТЕМА ОХЛАЖДЕНИЯ: АКТИВНА';
         }
         else if ((m === 11 && day >= 15) || (m === 0 && day <= 14)) {

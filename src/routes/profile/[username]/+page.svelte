@@ -262,9 +262,15 @@
                             {#if $userStore.user.emailVerified}
                                 <!-- ВЕРИФИЦИРОВАН -->
                                 <div class="verified-badge">
-                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                    VERIFIED
-                                </div>
+    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+    VERIFIED
+
+    <!-- ТУЛТИП (Всплывающая подсказка) -->
+    <div class="verified-tooltip">
+        <p class="font-bold text-green-400 mb-1">// ЗАЩИЩЕНО</p>
+        Ваша почта подтверждена. В случае утери пароля вы сможете восстановить доступ к аккаунту.
+    </div>
+</div>
                             {:else}
                                 <!-- НЕ ВЕРИФИЦИРОВАН -->
                                 <button class="unverified-btn" on:click={sendVerification} disabled={verificationSent}>
@@ -829,4 +835,63 @@ c-230 86 -423 199 -611 358 -243 205 -452 512 -560 824 -34 96 -34 97 -14 112
         0%, 100% { box-shadow: 0 0 2px var(--cyber-yellow); }
         50% { box-shadow: 0 0 8px var(--cyber-yellow); }
     }
+    .verified-badge {
+    /* Обязательно добавляем relative, чтобы тултип позиционировался относительно значка */
+    position: relative;
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(57, 255, 20, 0.1);
+    border: 1px solid #39ff14;
+    color: #39ff14;
+    font-size: 0.7rem; font-weight: bold;
+    padding: 4px 8px; border-radius: 4px;
+    font-family: 'Chakra Petch', monospace;
+    cursor: help;
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
+}
+
+/* Стили самого тултипа */
+.verified-tooltip {
+    position: absolute;
+    bottom: 130%; /* Чуть выше поднял */
+    left: 50%;
+    transform: translateX(-50%) translateY(5px);
+    width: 180px; /* Было 220px */
+    background: rgba(5, 10, 5, 0.95);
+    border: 1px solid #39ff14;
+    color: #ccc;
+    padding: 0.6rem; /* Было 0.8rem */
+    border-radius: 4px;
+    font-size: 0.65rem; /* Было 0.7rem */
+    line-height: 1.3;
+    font-family: 'Inter', sans-serif;
+    font-weight: normal;
+    text-align: center; /* По центру выглядит лучше в маленьком блоке */
+    text-transform: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 50;
+}
+
+/* Стрелочка вниз у тултипа */
+.verified-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #39ff14 transparent transparent transparent;
+}
+
+/* Показываем при наведении */
+.verified-badge:hover .verified-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
 </style>
