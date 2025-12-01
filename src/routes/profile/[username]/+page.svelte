@@ -87,6 +87,15 @@
         }
     }
 
+    async function checkVerificationStatus() {
+        if (!auth.currentUser) return;
+        await auth.currentUser.reload(); // Обновляем данные с сервера
+        await auth.currentUser.getIdToken(true); // Обновляем токен
+
+        // Форсируем обновление стора (грязный хак, но сработает, т.к. onAuthStateChanged среагирует на изменение токена)
+        window.location.reload();
+    }
+
     // --- КОММЕНТАРИИ ---
     async function handleAddComment() {
         if (!commentText.trim() || isSubmitting) return;
@@ -275,6 +284,9 @@
                                 <!-- НЕ ВЕРИФИЦИРОВАН -->
                                 <button class="unverified-btn" on:click={sendVerification} disabled={verificationSent}>
                                     {verificationSent ? 'ПИСЬМО ОТПРАВЛЕНО' : 'ПОДТВЕРДИТЬ ПОЧТУ'}
+                                </button>
+                                <button class="text-xs text-gray-500 underline ml-2" on:click={checkVerificationStatus}>
+                                    Я подтвердил, обновить
                                 </button>
                             {/if}
                         </div>

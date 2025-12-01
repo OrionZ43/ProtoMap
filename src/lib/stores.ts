@@ -36,37 +36,54 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
     let token: string | null = null;
 
     if (userAuth) {
-        const docRef = doc(db, "users", userAuth.uid);
-        const docSnap = await getDoc(docRef);
+        try {
+            // === ФИКС: ПРИНУДИТЕЛЬНО ОБНОВЛЯЕМ СТАТУС ===
+            // 1. Скачиваем свежие данные юзера с серверов Auth (включая emailVerified)
+            await userAuth.reload();
+            // 2. Форсируем обновление токена (true = forceRefresh), чтобы в нем прописался новый статус
+            token = await userAuth.getIdToken(true);
+            // ==============================================
 
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            userProfile = {
-                uid: userAuth.uid,
-                username: data.username,
-                email: userAuth.email,
-                emailVerified: userAuth.emailVerified,
-                avatar_url: data.avatar_url || '',
-                social_link: data.social_link || '',
-                about_me: data.about_me || '',
-                status: data.status || '',
-                casino_credits: data.casino_credits ?? 100,
-                last_daily_bonus: data.last_daily_bonus ? data.last_daily_bonus.toDate() : null,
-            };
+            const docRef = doc(db, "users", userAuth.uid);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                userProfile = {
+                    uid: userAuth.uid,
+                    username: data.username,
+                    email: userAuth.email,
+                    // Теперь тут будет актуальное значение
+                    emailVerified: userAuth.emailVerified,
+                    avatar_url: data.avatar_url || '',
+                    social_link: data.social_link || '',
+                    about_me: data.about_me || '',
+                    status: data.status || '',
+                    casino_credits: data.casino_credits ?? 100,
+                    last_daily_bonus: data.last_daily_bonus ? data.last_daily_bonus.toDate() : null,
+                    owned_items: data.owned_items || [],
+                    equipped_frame: data.equipped_frame || null,
+                    equipped_badge: data.equipped_badge || null
+                };
+            }
+        } catch (e) {
+            console.error("Ошибка обновления профиля:", e);
         }
-        token = await userAuth.getIdToken();
     }
 
+    // Синхронизация сессии с сервером SvelteKit (cookies)
     if (browser) {
-        const response = await fetch('/api/auth', {
-            method: token ? 'POST' : 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: token ? JSON.stringify({ idToken: token }) : undefined,
-        });
-        if (!response.ok) {
-            console.error("Ошибка синхронизации сессии:", await response.text());
-        } else {
-            console.log("Сессия успешно синхронизирована с сервером.");
+        try {
+            const response = await fetch('/api/auth', {
+                method: token ? 'POST' : 'DELETE', // token уже обновлен выше
+                headers: { 'Content-Type': 'application/json' },
+                body: token ? JSON.stringify({ idToken: token }) : undefined,
+            });
+            if (!response.ok) {
+                console.error("Ошибка синхронизации сессии:", await response.text());
+            }
+        } catch (e) {
+            console.error("Сбой fetch:", e);
         }
     }
 
