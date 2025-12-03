@@ -197,7 +197,6 @@
 </div>
 
 <style>
-    /* ... (Стили анимаций остаются прежними) ... */
     @keyframes float-blur-1 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(100px, 50px); } }
     @keyframes float-blur-2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-80px, -60px); } }
     @keyframes glitch-text { 0% { text-shadow: 2px 0 #ff00c1, -2px 0 #01ffff; } 25% { text-shadow: -2px 0 #ff00c1, 2px 0 #01ffff; } 50% { text-shadow: 2px 0 #01ffff, -2px 0 #ff00c1; } 100% { text-shadow: 2px 0 #ff00c1, -2px 0 #01ffff; } }
@@ -329,8 +328,26 @@
     }
     @media (max-width: 768px) {
         .title { font-size: 3rem; }
-        .user-panel { flex-direction: column; gap: 1.5rem; align-items: stretch; text-align: center; }
-        .actions-group { display: grid; grid-template-columns: repeat(3, 1fr); }
-        .panel-btn { font-size: 0.9rem; padding: 0.8rem; }
+        .user-panel {
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: stretch;
+            text-align: center;
+        }
+
+        /* ИЗМЕНЕНИЯ ЗДЕСЬ */
+        .actions-group {
+            display: flex;
+            flex-wrap: wrap; /* Разрешаем перенос на новую строку */
+            justify-content: center;
+            gap: 0.5rem; /* Чуть меньше отступ */
+        }
+
+        .panel-btn {
+            font-size: 0.8rem;
+            padding: 0.6rem 0.5rem; /* Чуть меньше паддинги по бокам */
+            flex: 1 1 auto; /* Кнопки растягиваются, но могут переноситься */
+            min-width: 90px; /* Минимальная ширина, чтобы текст не сжимался в ноль */
+        }
     }
 </style>
