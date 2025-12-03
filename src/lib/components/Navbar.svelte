@@ -4,7 +4,6 @@
     import { signOut } from 'firebase/auth';
     import { afterNavigate } from '$app/navigation';
     import NeonButton from '$lib/components/NeonButton.svelte';
-    import SettingsPopover from '$lib/components/SettingsPopover.svelte';
     import { getSeasonalContent } from '$lib/seasonal/seasonalContent';
     import { settingsStore } from '$lib/stores/settingsStore';
     import Footer from "$lib/components/Footer.svelte";
@@ -13,15 +12,16 @@
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { onMount } from 'svelte';
+    import { t, locale } from 'svelte-i18n';
 
     const seasonal = getSeasonalContent();
     let isMobileMenuOpen = false;
     let isUserMenuOpen = false;
     let isSettingsOpen = false;
 
-    // --- ЛОГИКА УВЕДОМЛЕНИЙ ---
     let hasUnreadNews = false;
     $: latestNewsDate = $page.data.latestNewsDate;
+    $: isAdmin = $page.data.isAdmin;
 
     onMount(() => {
         checkUnreadNews();
@@ -46,7 +46,11 @@
             hasUnreadNews = false;
         }
     }
-    // ---------------------------
+
+    function changeLang(newLang: string) {
+        locale.set(newLang);
+        localStorage.setItem('protomap_lang', newLang);
+    }
 
     function toggleMobileMenu() { isMobileMenuOpen = !isMobileMenuOpen; isUserMenuOpen = false; isSettingsOpen = false; }
     function toggleUserMenu() { isUserMenuOpen = !isUserMenuOpen; isSettingsOpen = false; }
@@ -79,6 +83,7 @@
     }
 </script>
 
+<!-- Прозрачная подложка -->
 {#if isUserMenuOpen || isSettingsOpen}
     <div class="fixed inset-0 z-40" on:click={handleBackdropClick}></div>
 {/if}
@@ -89,7 +94,6 @@
         <!-- 1. ЛОГОТИП -->
         <div class="flex-shrink-0 flex items-center gap-3 z-20">
             <a href="/" class="nav-brand text-2xl font-bold tracking-widest" data-text="PROTOMAP">PROTOMAP</a>
-            <!-- Сезонка видна только на очень широких экранах (xl) -->
             <span class="hidden xl:inline-block text-xs text-gray-500 border-l border-gray-700 pl-3 font-mono">
                  <a href={seasonal.link} target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition-colors">
                     {seasonal.phrase}
@@ -97,15 +101,15 @@
             </span>
         </div>
 
-        <!-- 2. ЦЕНТРАЛЬНОЕ МЕНЮ (Изменили md:flex на lg:flex) -->
+        <!-- 2. ЦЕНТРАЛЬНОЕ МЕНЮ -->
         <div class="hidden lg:flex items-center justify-center space-x-1 absolute left-1/2 transform -translate-x-1/2 h-full z-10">
             <a href="/" class="nav-tab" class:active={isActive('/')}>
-                КАРТА
+                {$t('nav.map')}
                 <div class="tab-line"></div>
             </a>
 
             <a href="/news" class="nav-tab" class:active={isActive('/news')} on:click={markNewsAsRead}>
-                НОВОСТИ
+                {$t('nav.news')}
                 {#if hasUnreadNews}
                     <span class="notification-dot"></span>
                 {/if}
@@ -113,31 +117,27 @@
             </a>
 
             <a href="/casino" class="nav-tab glitch-link" class:active={isActive('/casino')} data-text="THE GLITCH PIT">
-                THE GLITCH PIT
+                {$t('nav.casino')}
                 <div class="tab-line"></div>
             </a>
             <a href="/about" class="nav-tab" class:active={isActive('/about')}>
-                ИНФО
+                {$t('nav.about')}
                 <div class="tab-line"></div>
             </a>
         </div>
 
-        <!-- 3. ПРАВАЯ ЧАСТЬ (Изменили md:flex на lg:flex) -->
+        <!-- 3. ПРАВАЯ ЧАСТЬ -->
         <div class="hidden lg:flex items-center gap-3 z-20">
             {#if $userStore.user}
-                <div class="balance-pill" title="Ваш баланс">
+                <div class="balance-pill" title={$t('ui.balance')}>
                     <span class="text-xs text-cyber-yellow font-bold tracking-wider">PC</span>
                     <span class="font-mono font-bold">{Math.floor($displayedCredits)}</span>
                 </div>
             {/if}
 
-        {#if $page.data.isAdmin}
+            {#if isAdmin}
                 <a href="/admin" class="icon-btn admin-btn" title="ПАНЕЛЬ УПРАВЛЕНИЯ">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                        <path d="M12 8v4"></path>
-                        <path d="M12 16h.01"></path>
-                    </svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
                 </a>
             {/if}
 
@@ -147,15 +147,23 @@
                 </button>
                 {#if isSettingsOpen}
                     <div class="cyber-dropdown" transition:scale={{duration: 150, start: 0.95, opacity: 0}}>
-                        <!-- ... (внутренности без изменений) ... -->
-                        <div class="dropdown-header">// СИСТЕМА</div>
+                        <div class="dropdown-header">// {$t('menu.system')}</div>
                         <div class="px-4 py-2">
+                            <!-- ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА -->
+                            <div class="setting-row mb-3">
+                                <span class="text-sm text-gray-300 font-display">{$t('menu.lang')}</span>
+                                <div class="lang-switch">
+                                    <button class="lang-btn" class:active={$locale === 'ru'} on:click={() => changeLang('ru')}>RU</button>
+                                    <button class="lang-btn" class:active={$locale === 'en'} on:click={() => changeLang('en')}>EN</button>
+                                </div>
+                            </div>
+
                             <label class="setting-row">
-                                <span>АУДИО</span>
+                                <span>{$t('menu.sound')}</span>
                                 <input type="checkbox" bind:checked={$settingsStore.audioEnabled} class="cyber-switch">
                             </label>
                             <label class="setting-row mt-3">
-                                <span>АНИМАЦИИ</span>
+                                <span>{$t('menu.anim')}</span>
                                 <input type="checkbox" bind:checked={$settingsStore.cinematicLoadsEnabled} class="cyber-switch">
                             </label>
                         </div>
@@ -165,11 +173,9 @@
 
             <div class="h-6 w-px bg-white/10 mx-1"></div>
 
-            <!-- ПОЛЬЗОВАТЕЛЬ (Логика та же, просто скрываем до lg) -->
             {#if $userStore.loading}
                 <div class="h-9 w-24 bg-gray-800 rounded-full animate-pulse"></div>
             {:else if $userStore.user}
-                <!-- ... (все внутренности userStore.user те же) ... -->
                 <div class="relative">
                     <button on:click={toggleUserMenu} class="user-pill" class:active={isUserMenuOpen}>
                         <div class="avatar-container small {$userStore.user.equipped_frame || ''}">
@@ -185,29 +191,30 @@
 
                     {#if isUserMenuOpen}
                         <div class="cyber-dropdown" transition:scale={{duration: 150, start: 0.95, opacity: 0}}>
-                            <div class="dropdown-header">// ПРОФИЛЬ</div>
+                            <div class="dropdown-header">// {$t('menu.profile')}</div>
                             <a href="/profile/{getEncodedUsername($userStore.user.username)}" class="dropdown-item">
                                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                Личное дело
+                                {$t('menu.profile')}
                             </a>
                             <a href="/casino/inventory" class="dropdown-item">
                                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                                Инвентарь
+                                {$t('menu.inventory')}
                             </a>
                             <div class="dropdown-divider"></div>
                             <button on:click={handleLogout} class="dropdown-item text-red">
                                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                                Отключиться
+                                {$t('menu.logout')}
                             </button>
                         </div>
                     {/if}
                 </div>
             {:else}
-                <a href="/login" class="text-sm font-bold text-gray-300 hover:text-white mr-3 transition-colors font-display tracking-wide">ВОЙТИ</a>
-                <NeonButton href="/register" extraClass="text-xs px-5 py-1.5 !border-[1px]">РЕГИСТРАЦИЯ</NeonButton>
+                <a href="/login" class="text-sm font-bold text-gray-300 hover:text-white mr-3 transition-colors font-display tracking-wide">{$t('nav.login')}</a>
+                <NeonButton href="/register" extraClass="text-xs px-5 py-1.5 !border-[1px]">{$t('nav.register')}</NeonButton>
             {/if}
         </div>
 
+        <!-- 4. МОБИЛЬНОЕ МЕНЮ -->
         <div class="lg:hidden flex items-center gap-3">
             {#if $userStore.user}
                 <div class="balance-pill mobile">
@@ -229,21 +236,21 @@
         </div>
     </div>
 
-    <!-- МОБИЛЬНЫЙ СПИСОК (Изменили md:hidden на lg:hidden) -->
+    <!-- МОБИЛЬНЫЙ СПИСОК -->
     {#if isMobileMenuOpen}
         <div class="lg:hidden bg-[#050a10]/95 backdrop-blur-xl border-b border-gray-800 absolute w-full left-0 z-40 shadow-2xl" transition:slide>
             <div class="py-2 space-y-1">
-                <a href="/" class="mobile-link" class:active={isActive('/')}>КАРТА</a>
+                <a href="/" class="mobile-link" class:active={isActive('/')}>{$t('nav.map')}</a>
 
                 <a href="/news" class="mobile-link relative" class:active={isActive('/news')} on:click={markNewsAsRead}>
-                    НОВОСТИ
+                    {$t('nav.news')}
                     {#if hasUnreadNews}
                         <span class="notification-dot mobile"></span>
                     {/if}
                 </a>
 
-                <a href="/casino" class="mobile-link glitch-text-mobile" class:active={isActive('/casino')}>THE GLITCH PIT</a>
-                <a href="/about" class="mobile-link" class:active={isActive('/about')}>О ПРОЕКТЕ</a>
+                <a href="/casino" class="mobile-link glitch-text-mobile" class:active={isActive('/casino')}>{$t('nav.casino')}</a>
+                <a href="/about" class="mobile-link" class:active={isActive('/about')}>{$t('nav.about')}</a>
 
                 <div class="border-t border-white/10 my-2"></div>
 
@@ -257,15 +264,15 @@
                             <p class="text-xs text-gray-400 font-mono">ID: {$userStore.user.uid.substring(0,6)}</p>
                         </div>
                     </div>
-                    <a href="/profile/{getEncodedUsername($userStore.user.username)}" class="mobile-sub-link">Мой профиль</a>
-                    <a href="/casino/inventory" class="mobile-sub-link">Инвентарь</a>
-                    <button on:click={handleLogout} class="mobile-sub-link text-red-400">Выйти</button>
+                    <a href="/profile/{getEncodedUsername($userStore.user.username)}" class="mobile-sub-link">{$t('menu.profile')}</a>
+                    <a href="/casino/inventory" class="mobile-sub-link">{$t('menu.inventory')}</a>
+                    <button on:click={handleLogout} class="mobile-sub-link text-red-400">{$t('menu.logout')}</button>
                 {:else}
-                    <a href="/login" class="mobile-link">Войти</a>
-                    <a href="/register" class="mobile-link">Регистрация</a>
+                    <a href="/login" class="mobile-link">{$t('nav.login')}</a>
+                    <a href="/register" class="mobile-link">{$t('nav.register')}</a>
                 {/if}
 
-                {#if $page.data.isAdmin}
+                {#if isAdmin}
                     <a href="/admin" class="mobile-link text-red-500 border-l-red-500">
                         💀 GOD MODE
                     </a>
@@ -274,13 +281,23 @@
                 <div class="border-t border-white/10 my-2"></div>
 
                 <div class="px-4 py-2">
-                    <p class="text-xs text-gray-500 uppercase mb-2 font-bold tracking-wider font-mono">// НАСТРОЙКИ</p>
+                    <p class="text-xs text-gray-500 uppercase mb-2 font-bold tracking-wider font-mono">// {$t('menu.system')}</p>
+
+                    <!-- ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА (MOBILE) -->
+                    <div class="flex items-center justify-between py-3 border-b border-white/5">
+                        <span class="text-sm text-gray-300 font-display">{$t('menu.lang')}</span>
+                        <div class="lang-switch">
+                            <button class="lang-btn" class:active={$locale === 'ru'} on:click={() => changeLang('ru')}>RU</button>
+                            <button class="lang-btn" class:active={$locale === 'en'} on:click={() => changeLang('en')}>EN</button>
+                        </div>
+                    </div>
+
                     <label class="flex items-center justify-between py-3 border-b border-white/5">
-                        <span class="text-sm text-gray-300 font-display">ЗВУК</span>
+                        <span class="text-sm text-gray-300 font-display">{$t('menu.sound')}</span>
                         <input type="checkbox" bind:checked={$settingsStore.audioEnabled} class="cyber-switch">
                     </label>
                     <label class="flex items-center justify-between py-3">
-                        <span class="text-sm text-gray-300 font-display">АНИМАЦИИ</span>
+                        <span class="text-sm text-gray-300 font-display">{$t('menu.anim')}</span>
                         <input type="checkbox" bind:checked={$settingsStore.cinematicLoadsEnabled} class="cyber-switch">
                     </label>
                 </div>
@@ -300,6 +317,7 @@
         -webkit-backdrop-filter: blur(16px);
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        z-index: 5000 !important;
     }
 
     /* === УВЕДОМЛЕНИЯ (КРАСНАЯ ТОЧКА) === */
@@ -617,6 +635,34 @@
     .admin-btn:hover {
         background: rgba(255, 0, 60, 0.2);
         box-shadow: 0 0 15px #ff003c;
-        transform: scale(1.05);
+    }
+    /* === ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА === */
+    .lang-switch {
+        display: flex;
+        background: #334155;
+        border-radius: 6px;
+        padding: 2px;
+        border: 1px solid #475569;
+        margin-left: 1rem; /* Отступ от текста */
+    }
+    .lang-btn {
+        padding: 2px 8px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        color: #94a3b8;
+        border-radius: 4px;
+        transition: all 0.2s;
+        /* Сброс стилей кнопки */
+        background: transparent;
+        border: none;
+        cursor: pointer;
+    }
+    .lang-btn.active {
+        background: var(--cyber-yellow);
+        color: #000;
+        box-shadow: 0 0 5px var(--cyber-yellow);
+    }
+    .lang-btn:hover:not(.active) {
+        color: #fff;
     }
 </style>

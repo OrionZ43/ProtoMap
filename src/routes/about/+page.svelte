@@ -2,29 +2,29 @@
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
+    import { t } from 'svelte-i18n';
 
     const opacity = tweened(0, { duration: 400, easing: quintOut });
     onMount(() => { opacity.set(1); });
 </script>
 
 <svelte:head>
-    <title>О проекте | ProtoMap</title>
+    <title>{$t('nav.about')} | ProtoMap</title>
 </svelte:head>
 
 <div class="about-container cyber-panel pb-12" style="opacity: {$opacity}">
 
     <header class="about-header">
-        <h2 class="title font-display glitch" data-text="// ABOUT_PROTOMAP">// ABOUT_PROTOMAP</h2>
+        <h2 class="title font-display glitch" data-text={$t('about_page.title')}>{$t('about_page.title')}</h2>
     </header>
 
     <div class="content-text">
         <p class="mb-8 intro-text">
-            <span class="highlight">[SYSTEM_INITIATED]</span> Добро пожаловать на <strong>ProtoMap</strong> — главную точку сбора протогенов в цифровом пространстве. Этот проект начался как эксперимент, а стал домом для сотен уникальных сигналов.
+            {@html $t('about_page.intro')}
         </p>
 
-        <!-- Секция КОМАНДА -->
         <div class="team-section">
-            <h3 class="section-title">// АРХИТЕКТОРЫ СЕТИ</h3>
+            <h3 class="section-title">{$t('about_page.team_title')}</h3>
 
             <div class="team-grid">
                 <!-- ORION -->
@@ -38,9 +38,9 @@
                         />
                     </div>
                     <div class="card-content">
-                        <div class="role text-cyber-yellow">LEAD ARCHITECT</div>
+                        <div class="role text-cyber-yellow">{$t('about_page.role_architect')}</div>
                         <a href="https://t.me/Orion_Z43" target="_blank" class="name">Orion_Z43</a>
-                        <p class="desc">Создатель ядра, веб-интерфейса и безумной экономики казино. Отвечает за то, чтобы сервера не плавились, а рамки сияли.</p>
+                        <p class="desc">{$t('about_page.desc_orion')}</p>
                     </div>
                 </div>
 
@@ -55,9 +55,9 @@
                         />
                     </div>
                     <div class="card-content">
-                        <div class="role text-purple-400">MOBILE ENGINEER</div>
+                        <div class="role text-purple-400">{$t('about_page.role_mobile')}</div>
                         <a href="https://t.me/iposdev" target="_blank" class="name">iposdev</a>
-                        <p class="desc">Если вы думаете, что ProtoMap — это только веб-сайт, то iposdev готовит вам сюрприз.</p>
+                        <p class="desc">{$t('about_page.desc_ipos')}</p>
                     </div>
                 </div>
             </div>
@@ -67,13 +67,13 @@
 
         <div class="community-section text-center">
             <p class="mb-4 text-lg">
-                <span class="highlight">[COMM_LINK]</span> Проект живет благодаря вам. Присоединяйтесь к нашему Telegram-чату, чтобы общаться, предлагать идеи и первыми узнавать о скрытых обновлениях.
+                {@html $t('about_page.community_text')}
             </p>
             <a href="https://t.me/proto_map" target="_blank" class="join-btn">
-                ПРИСОЕДИНИТЬСЯ К ЧАТУ
+                {$t('about_page.join_btn')}
             </a>
             <p class="text-xs text-gray-500 mt-6 font-mono">
-                // Все метки на карте анонимизированы. Мы не храним ваши точные координаты.
+                {$t('about_page.disclaimer')}
             </p>
         </div>
     </div>

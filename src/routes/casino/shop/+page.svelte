@@ -1,19 +1,30 @@
 <script lang="ts">
     import type { PageData } from './$types';
     import { userStore } from '$lib/stores';
-    import { onMount, onDestroy } from 'svelte';
+    import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { getFunctions, httpsCallable } from 'firebase/functions';
     import { modal } from '$lib/stores/modalStore';
-    import { fade } from 'svelte/transition';
     import { Howl } from 'howler';
+    import { t } from 'svelte-i18n';
+    import { get } from 'svelte/store';
 
     export let data: PageData;
 
     let purchasingItemId: string | null = null;
-
     let ownedItems = new Set(data.ownedItemIds || []);
+
+    // Хелпер для перевода
+    const translate = (key: string) => get(t)(key);
+
+    function getRandomQuote(category: 'greeting' | 'confirm' | 'success'): string {
+        const quotes = get(t)(`shop.quotes.${category}`, { returnObjects: true }) as string[];
+        if (Array.isArray(quotes) && quotes.length > 0) {
+            return quotes[Math.floor(Math.random() * quotes.length)];
+        }
+        return "> ...";
+    }
 
     userStore.subscribe(store => {
         if (store.user && store.user.owned_items) {
@@ -25,30 +36,36 @@
     });
 
     const displayedCredits = tweened($userStore.user?.casino_credits || 0, { duration: 500, easing: quintOut });
-    $: $userStore.user?.casino_credits && displayedCredits.set($userStore.user.casino_credits);
+    $: if ($userStore.user) { displayedCredits.set($userStore.user.casino_credits); }
 
     let sounds: { [key: string]: Howl } = {};
+    let dealerMessage = "";
+
     onMount(() => {
         sounds.ambient = new Howl({ src: ['/sounds/ambient_casino.mp3'], loop: true, volume: 0.2, autoplay: true });
         sounds.purchase = new Howl({ src: ['/sounds/purchase.mp3'], volume: 0.8 });
+        dealerMessage = getRandomQuote('greeting');
         return () => { sounds.ambient?.stop(); };
     });
-
-    const dealerQuotes = {
-        greeting: ["> Ну что, пришел потратить свои кровные?", "> Смотри, но руками не трогай. Пока не заплатишь.", "> Товар эксклюзивный. Для тех, кто понимает.", "> Не отвлекай меня по пустякам. Выбирай или уходи."],
-        confirm: ["> Уверен? Назад пути не будет.", "> Хороший выбор. Но кредиты вперед.", "> Вижу, у тебя есть вкус. Или просто лишние коины."],
-        success: ["> Сделка совершена. Проваливай.", "> Перевод получен. Товар твой.", "> Приятно иметь с тобой дело. Шучу."]
-    };
-    let dealerMessage = dealerQuotes.greeting[Math.floor(Math.random() * dealerQuotes.greeting.length)];
 
     async function purchaseItem(itemId: string, itemName: string, itemPrice: number) {
         if (purchasingItemId) return;
 
-        const randomConfirmQuote = dealerQuotes.confirm[Math.floor(Math.random() * dealerQuotes.confirm.length)];
+        const confirmQuote = getRandomQuote('confirm');
 
-        modal.confirm(`Подтверждение сделки`, `${randomConfirmQuote}<br><br>Купить <strong>${itemName}</strong> за <span class="font-display text-cyber-yellow">${itemPrice} PC</span>?`, async () => {
+        // === СБОРКА ТЕКСТА (Ручная, для контроля HTML) ===
+        // "Купить [ITEM] за [PRICE] PC?"
+        const confirmText = `
+            ${confirmQuote}<br><br>
+            ${translate('shop.modal_confirm_prefix')}
+            <strong>${itemName}</strong>
+            ${translate('shop.modal_confirm_suffix')}
+            <span class="font-display text-cyber-yellow">${itemPrice} PC</span>?
+        `;
+
+        modal.confirm(translate('shop.modal_confirm_title'), confirmText, async () => {
             purchasingItemId = itemId;
-            dealerMessage = '> Обработка транзакции...';
+            dealerMessage = translate('shop.dealer_processing');
 
             try {
                 const functions = getFunctions();
@@ -65,13 +82,17 @@
                     return store;
                 });
 
-                const randomSuccessQuote = dealerQuotes.success[Math.floor(Math.random() * dealerQuotes.success.length)];
-                dealerMessage = randomSuccessQuote;
-                modal.success("Сделка завершена", `Предмет "${itemName}" добавлен в ваш инвентарь.`);
+                const successQuote = getRandomQuote('success');
+                dealerMessage = successQuote;
+
+                // "Предмет [ITEM] добавлен..."
+                const successText = `${translate('shop.modal_success_prefix')} "<strong>${itemName}</strong>" ${translate('shop.modal_success_suffix')}`;
+
+                modal.success(translate('shop.modal_success_title'), successText);
 
             } catch (error: any) {
-                dealerMessage = '> Транзакция отклонена. Проверь баланс, неудачник.';
-                modal.error("Сделка провалена", error.message || "Не удалось завершить покупку.");
+                dealerMessage = translate('shop.dealer_error');
+                modal.error(translate('shop.modal_error_title'), error.message || "Error.");
             } finally {
                 purchasingItemId = null;
             }
@@ -80,7 +101,7 @@
 </script>
 
 <svelte:head>
-    <title>Черный рынок | The Glitch Pit</title>
+    <title>{$t('shop.title')} | The Glitch Pit</title>
 </svelte:head>
 
 <div class="page-container">
@@ -96,12 +117,12 @@
 
     <div class="user-panel">
         <div class="balance-display">
-            <span class="label font-display">Твои Протокоины</span>
+            <span class="label font-display">{$t('shop.balance_label')}</span>
             <span class="amount font-display">{Math.floor($displayedCredits)} PC</span>
         </div>
         <div class="actions-group">
-             <a href="/casino/inventory" class="panel-btn inventory">Инвентарь</a>
-             <a href="/casino" class="panel-btn lobby">Вернуться в лобби</a>
+             <a href="/casino/inventory" class="panel-btn inventory">{$t('shop.btn_inventory')}</a>
+             <a href="/casino" class="panel-btn lobby">{$t('shop.btn_lobby')}</a>
         </div>
     </div>
 
@@ -124,16 +145,16 @@
                 <div class="item-footer">
                     <span class="item-price font-display">{item.price} PC</span>
                     {#if ownedItems.has(item.id)}
-                        <button class="panel-btn" disabled>В коллекции</button>
+                        <button class="panel-btn" disabled>{$t('shop.btn_owned')}</button>
                     {:else if !$userStore.user || $userStore.user.casino_credits < item.price}
-                        <button class="panel-btn" disabled>Недостаточно</button>
+                        <button class="panel-btn" disabled>{$t('shop.btn_poor')}</button>
                     {:else}
                         <button
                             class="panel-btn shop"
                             on:click={() => purchaseItem(item.id, item.name, item.price)}
                             disabled={purchasingItemId !== null}
                         >
-                            {purchasingItemId === item.id ? '...' : 'Купить'}
+                            {purchasingItemId === item.id ? $t('shop.processing') : $t('shop.btn_buy')}
                         </button>
                     {/if}
                 </div>

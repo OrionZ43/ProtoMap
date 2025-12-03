@@ -4,9 +4,8 @@
 
     export let data: PageData;
 
-    // Текст печатается по буквам для драматизма
     let displayedReason = "";
-    const fullReason = data.reason || "НАРУШЕНИЕ ПРОТОКОЛОВ СЕТИ.";
+    const fullReason = data.reason || get(t)('banned.default_reason');
 
     onMount(() => {
         let i = 0;

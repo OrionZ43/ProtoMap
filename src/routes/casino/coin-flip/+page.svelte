@@ -7,39 +7,51 @@
     import { onMount, onDestroy } from 'svelte';
     import { Howl } from 'howler';
 
-    const dealerPhrases = {
-        greeting: ["> За столом никаких резких движений."],
-        idle: ["> Ставки сделаны? Выбирай.", "> Не заставляй меня ждать.", "> Удача любит смелых... и богатых.", "> Решайся уже."],
-        thinking: ["> Считываю траекторию...", "> Анализ вероятностей...", "> Протоколы удачи запущены..."],
-        win: ["> Хмф. Новичкам везет.", "> Ладно, твоя взяла. На этот раз.", "> Не зазнавайся. Сеть переменчива."],
-        lose: ["> Как предсказуемо.", "> Сигнал потерян. Как и твои Протокоины.", "> Может, попробуешь что-то попроще?"],
-        no_credits: ["> Пустые карманы? Возвращайся, когда сможешь себе это позволить.", "> Кредиты закончились. Сеанс окончен."]
-    };
+    // Локализация
+    import { t } from 'svelte-i18n';
+    import { get } from 'svelte/store';
+
+    // Хелпер для перевода в JS
+    const translate = (key: string) => get(t)(key);
+
+    function getRandomQuote(category: 'greeting' | 'idle' | 'thinking' | 'win' | 'lose' | 'no_credits'): string {
+        const quotes = get(t)(`coin.quotes.${category}`, { returnObjects: true }) as string[];
+        if (Array.isArray(quotes) && quotes.length > 0) {
+            return quotes[Math.floor(Math.random() * quotes.length)];
+        }
+        return "> ...";
+    }
 
     let betAmount = 10;
     let isPlaying = false;
     let result: 'heads' | 'tails' | null = null;
     let lastWin = false;
-    let dealerMessage = dealerPhrases.greeting[0];
+
+    // Инициализируем сообщение (нужно подождать маунта для корректного языка,
+    // но пока поставим дефолт, а в onMount обновим)
+    let dealerMessage = "> ...";
 
     const displayedCredits = tweened($userStore.user?.casino_credits || 0, { duration: 500, easing: quintOut });
-    $: $userStore.user?.casino_credits && displayedCredits.set($userStore.user.casino_credits);
+    $: if ($userStore.user) { displayedCredits.set($userStore.user.casino_credits); }
 
     let sounds: { [key: string]: Howl } = {};
+
     onMount(() => {
         sounds.ambient = new Howl({ src: ['/sounds/ambient_casino.mp3'], loop: true, volume: 0.15, autoplay: true });
         sounds.coin_flip = new Howl({ src: ['/sounds/coin_flip.mp3'], volume: 0.7 });
         sounds.coin_win = new Howl({ src: ['/sounds/coin_win.mp3'], volume: 0.8 });
         sounds.coin_lose = new Howl({ src: ['/sounds/coin_lose.mp3'], volume: 0.7 });
 
+        // Приветствие при загрузке
+        dealerMessage = getRandomQuote('greeting');
+
         return () => {
             sounds.ambient?.stop();
         };
     });
 
-    function setDealerMessage(state: keyof typeof dealerPhrases) {
-        const phrases = dealerPhrases[state];
-        dealerMessage = phrases[Math.floor(Math.random() * phrases.length)];
+    function setDealerMessage(state: 'greeting' | 'idle' | 'thinking' | 'win' | 'lose' | 'no_credits') {
+        dealerMessage = getRandomQuote(state);
     }
 
     async function playGame(playerChoice: 'heads' | 'tails') {
@@ -48,11 +60,11 @@
         const currentBet = Number(betAmount);
         if ($userStore.user.casino_credits < currentBet) {
             setDealerMessage('no_credits');
-            modal.error("Недостаточно средств", "На вашем балансе не хватает Протокоинов для такой ставки.");
+            modal.error(translate('coin.modal_poor_title'), translate('coin.modal_poor_text'));
             return;
         }
         if (isNaN(currentBet) || currentBet <= 0) {
-            modal.error("Неверная ставка", "Ставка должна быть положительным числом.");
+            modal.error(translate('coin.modal_invalid_title'), translate('coin.modal_invalid_text'));
             return;
         }
 
@@ -93,7 +105,7 @@
             }, 2800);
 
         } catch (error: any) {
-            modal.error("Ошибка игры", error.message || "Не удалось соединиться с игровым сервером.");
+            modal.error(translate('coin.modal_error_title'), error.message || "Connection error.");
             isPlaying = false;
             setDealerMessage('idle');
         }
@@ -101,7 +113,7 @@
 </script>
 
 <svelte:head>
-    <title>Стол Ориона | The Glitch Pit</title>
+    <title>{$t('coin.title')} | The Glitch Pit</title>
 </svelte:head>
 
 <div class="page-container">
@@ -109,7 +121,7 @@
     <div class="bg-blur-2"></div>
 
     <div class="dealer-container">
-        <img src="/casino/orioncasino.png" alt="Крупье Орион" class="dealer-art" />
+        <img src="/casino/orioncasino.png" alt="Dealer Orion" class="dealer-art" />
         <div class="dealer-dialogue">
             <p>{dealerMessage}</p>
         </div>
@@ -118,23 +130,23 @@
     <div class="coin-zone">
         <div class="coin" class:flipping={isPlaying} class:heads={result === 'heads'} class:tails={result === 'tails'}>
             <div class="face front">
-                <img src="/casino/orel.png" alt="Орел" />
+                <img src="/casino/orel.png" alt="Heads" />
             </div>
             <div class="face back">
-                <img src="/casino/reshka.png" alt="Решка" />
+                <img src="/casino/reshka.png" alt="Tails" />
             </div>
         </div>
 
         {#if result !== null}
             <div class="result-feedback" class:win={lastWin} class:loss={!lastWin}>
-                {lastWin ? 'ВЫИГРЫШ' : 'ПРОВАЛ'}
+                {lastWin ? $t('coin.win_label') : $t('coin.loss_label')}
             </div>
         {/if}
     </div>
 
     <div class="controls-container">
         <div class="balance-display">
-            <span class="label">БАЛАНС</span>
+            <span class="label">{$t('ui.balance')}</span>
             <span class="value">{Math.floor($displayedCredits)} PC</span>
         </div>
         <div class="bet-control">
@@ -144,12 +156,12 @@
         </div>
         <div class="choices">
             <button class="choice-btn heads" on:click={() => playGame('heads')} disabled={isPlaying}>
-                <img src="/casino/orel.png" alt="Орел" class="btn-icon"/>
-                <span>ОРЕЛ</span>
+                <img src="/casino/orel.png" alt="Heads" class="btn-icon"/>
+                <span>{$t('coin.heads')}</span>
             </button>
             <button class="choice-btn tails" on:click={() => playGame('tails')} disabled={isPlaying}>
-                <img src="/casino/reshka.png" alt="Решка" class="btn-icon"/>
-                <span>РЕШКА</span>
+                <img src="/casino/reshka.png" alt="Tails" class="btn-icon"/>
+                <span>{$t('coin.tails')}</span>
             </button>
         </div>
     </div>

@@ -6,16 +6,18 @@
     import { goto } from '$app/navigation';
     import NeonButton from '$lib/components/NeonButton.svelte';
     import { fade, scale } from 'svelte/transition';
+    import { t } from 'svelte-i18n';
 
     let status: 'loading' | 'success' | 'error' = 'loading';
-    let message = "УСТАНОВЛЕНИЕ ЗАЩИЩЕННОГО СОЕДИНЕНИЯ...";
+    // Храним КЛЮЧ, а не текст, чтобы перевод работал реактивно
+    let messageKey = 'verify.init';
 
     onMount(async () => {
         const code = $page.url.searchParams.get('oobCode');
 
         if (!code) {
             status = 'error';
-            message = "ОШИБКА ПРОТОКОЛА: КОД ОТСУТСТВУЕТ.";
+            messageKey = 'verify.error_no_code';
             return;
         }
 
@@ -29,7 +31,7 @@
             }
 
             status = 'success';
-            message = "ИДЕНТИФИКАЦИЯ ПОДТВЕРЖДЕНА. ДОСТУП РАЗРЕШЕН.";
+            messageKey = 'verify.success';
 
             // Автопереход через 3 секунды
             setTimeout(() => {
@@ -40,18 +42,18 @@
             console.error("Verification error:", error);
             status = 'error';
             if (error.code === 'auth/invalid-action-code') {
-                message = "КОД НЕДЕЙСТВИТЕЛЕН ИЛИ УЖЕ ИСПОЛЬЗОВАН.";
+                messageKey = 'verify.error_invalid';
             } else if (error.code === 'auth/expired-action-code') {
-                message = "ВРЕМЯ ДЕЙСТВИЯ ССЫЛКИ ИСТЕКЛО.";
+                messageKey = 'verify.error_expired';
             } else {
-                message = "СБОЙ СИСТЕМЫ ПРИ ВЕРИФИКАЦИИ.";
+                messageKey = 'verify.error_generic';
             }
         }
     });
 </script>
 
 <svelte:head>
-    <title>Верификация | ProtoMap</title>
+    <title>{$t('verify.page_title')} | ProtoMap</title>
 </svelte:head>
 
 <div class="page-container">
@@ -68,22 +70,22 @@
 
         <h1 class="title font-display">
             {#if status === 'loading'}
-                // ОБРАБОТКА ДАННЫХ...
+                {$t('verify.header_loading')}
             {:else if status === 'success'}
-                // УСПЕХ
+                {$t('verify.header_success')}
             {:else}
-                // ОШИБКА
+                {$t('verify.header_error')}
             {/if}
         </h1>
 
         <p class="status-message font-mono" class:text-red-500={status === 'error'} class:text-green-400={status === 'success'}>
-            > {message}<span class="blink">_</span>
+            > {$t(messageKey)}<span class="blink">_</span>
         </p>
 
         {#if status !== 'loading'}
             <div class="action-area" in:scale>
                 <NeonButton href="/" color={status === 'error' ? 'red' : 'cyan'}>
-                    ВЕРНУТЬСЯ В СЕТЬ
+                    {$t('verify.btn_return')}
                 </NeonButton>
             </div>
         {/if}

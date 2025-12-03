@@ -12,28 +12,36 @@
     import { AudioManager } from '$lib/client/audioManager';
     import Footer from "$lib/components/Footer.svelte";
     import CookieBanner from '$lib/components/CookieBanner.svelte';
-    import { browser } from '$app/environment';
-    import { injectAnalytics } from '@vercel/analytics/sveltekit'
+    import { browser, dev } from '$app/environment';
+    import { injectAnalytics } from '@vercel/analytics/sveltekit';
+
+    // Локализация
+    import '$lib/i18n';
+    import { waitLocale } from 'svelte-i18n';
 
     let themeState = 'default';
     let sideTextLeft = 'СТАТУС СИСТЕМЫ: ОНЛАЙН';
     let sideTextRight = 'МОЩНОСТЬ СЕТИ: 99%';
+    let isReady = false; // Флаг готовности (ждем i18n)
 
     if (browser) {
         const d = new Date();
         const m = d.getMonth();
         const day = d.getDate();
 
+        // Хэллоуин (20 Окт - 2 Ноя)
         if ((m === 9 && day >= 20) || (m === 10 && day <= 2)) {
             themeState = 'halloween';
             sideTextLeft = 'СИСТЕМА: НЕСТАБИЛЬНА';
             sideTextRight = 'АНАЛИЗ АНОМАЛИИ...';
         }
+        // Зима (1 Дек - 14 Дек)
         else if (m === 11 && day >= 1 && day < 15) {
             themeState = 'winter';
-            sideTextLeft = 'ТЕМПЕРАТУРА: -40°C';
+            sideTextLeft = 'ТЕМПЕРАТУРА: -15°C';
             sideTextRight = 'СИСТЕМА ОХЛАЖДЕНИЯ: АКТИВНА';
         }
+        // Глитчмас/Новый год (15 Дек - 14 Янв)
         else if ((m === 11 && day >= 15) || (m === 0 && day <= 14)) {
             themeState = 'newyear';
             sideTextLeft = 'РЕЖИМ: GLITCHMAS';
@@ -41,8 +49,16 @@
         }
     }
 
-    onMount(() => {
+    onMount(async () => {
+        // Инициализация аналитики
+        injectAnalytics({ mode: dev ? 'development' : 'production' });
+
+        // Инициализация аудио
         AudioManager.initialize();
+
+        // Ждем загрузки переводов перед показом контента
+        await waitLocale();
+        isReady = true;
     });
 
     $: isMapPage = $page.route.id === '/';
@@ -70,55 +86,61 @@
     <link rel="stylesheet" href="/styles/cosmetics.css">
 </svelte:head>
 
-<div
-    class="min-h-screen flex flex-col font-sans antialiased relative"
-    class:no-scroll-container={isMapPage}
-    class:winter-mode={themeState === 'winter' || themeState === 'newyear'}
->
-{#if themeState === 'winter' || themeState === 'newyear'}
-        <div class="initial-snow">
-            {#each Array(50) as _, i}
-                <div class="snow">❄</div>
-            {/each}
-        </div>
-    {/if}
-
-    <div class="side-panel left z-10">
-        <div class="v-text">{sideTextLeft}</div>
-    </div>
-    <div class="side-panel right z-10">
-        <div class="v-text">{sideTextRight}</div>
-    </div>
-
-    <div class="relative z-20 flex flex-col flex-grow">
-        <Navbar />
-        <main class="flex-grow">
-            <slot />
-        </main>
-    </div>
-
-    <div class="hidden lg:block">
-        {#if !isMapPage && !$page.url.pathname.startsWith('/admin')}
-            <Footer />
-        {/if}
-    </div>
-
-    <Modal />
-    <ChatWidget />
-    <CookieBanner />
-
-    <button
-        class="chat-trigger-btn"
-        class:hidden={$chat.isOpen}
-        on:click={toggleChat}
-        title="Открыть общий чат"
-        aria-label="Открыть общий чат"
+{#if isReady}
+    <div
+        class="min-h-screen flex flex-col font-sans antialiased relative"
+        class:no-scroll-container={isMapPage}
+        class:winter-mode={themeState === 'winter' || themeState === 'newyear'}
     >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
-            <path fill-rule="evenodd" d="M4.848 2.771A49.144 49.144 0 0112 2.25c2.43 0 4.817.178 7.152.52 1.978.292 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.678-3.348 3.97a48.901 48.901 0 01-3.476.383.39.39 0 00-.297.17l-2.755 4.133a.75.75 0 01-1.248 0l-2.755-4.133a.39.39 0 00-.297-.17 48.9 48.9 0 01-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.74c0-1.946 1.37-3.68 3.348-3.97zM6.75 8.25a.75.75 0 01.75-.75h9a.75.75 0 010 1.5h-9a.75.75 0 01-.75-.75zm.75 2.25a.75.75 0 000 1.5H12a.75.75 0 000-1.5H7.5z" clip-rule="evenodd" />
-        </svg>
-    </button>
-</div>
+        <!-- СНЕГ (Только зимой) -->
+        {#if themeState === 'winter' || themeState === 'newyear'}
+            <div class="initial-snow">
+                {#each Array(50) as _, i}
+                    <div class="snow">❄</div>
+                {/each}
+            </div>
+        {/if}
+
+        <div class="side-panel left z-10">
+            <div class="v-text">{sideTextLeft}</div>
+        </div>
+        <div class="side-panel right z-10">
+            <div class="v-text">{sideTextRight}</div>
+        </div>
+
+        <div class="relative z-20 flex flex-col flex-grow">
+            <Navbar />
+            <main class="flex-grow">
+                <slot />
+            </main>
+        </div>
+
+        <div class="hidden lg:block">
+            {#if !isMapPage}
+                <Footer />
+            {/if}
+        </div>
+
+        <Modal />
+        <ChatWidget />
+        <CookieBanner />
+
+        <button
+            class="chat-trigger-btn"
+            class:hidden={$chat.isOpen}
+            on:click={toggleChat}
+            title="Открыть общий чат"
+            aria-label="Открыть общий чат"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
+                <path fill-rule="evenodd" d="M4.848 2.771A49.144 49.144 0 0112 2.25c2.43 0 4.817.178 7.152.52 1.978.292 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.678-3.348 3.97a48.901 48.901 0 01-3.476.383.39.39 0 00-.297.17l-2.755 4.133a.75.75 0 01-1.248 0l-2.755-4.133a.39.39 0 00-.297-.17 48.9 48.9 0 01-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.74c0-1.946 1.37-3.68 3.348-3.97zM6.75 8.25a.75.75 0 01.75-.75h9a.75.75 0 010 1.5h-9a.75.75 0 01-.75-.75zm.75 2.25a.75.75 0 000 1.5H12a.75.75 0 000-1.5H7.5z" clip-rule="evenodd" />
+            </svg>
+        </button>
+    </div>
+{:else}
+    <!-- ЛОАДЕР ЗАГРУЗКИ ЯЗЫКА (Опционально, черный экран, чтобы не мелькал контент) -->
+    <div class="fixed inset-0 bg-black z-[9999]"></div>
+{/if}
 
 <style>
     .chat-trigger-btn {

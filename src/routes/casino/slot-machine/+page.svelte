@@ -7,6 +7,13 @@
     import { tweened } from 'svelte/motion';
     import { Howl } from 'howler';
 
+    // Локализация
+    import { t } from 'svelte-i18n';
+    import { get } from 'svelte/store';
+
+    // Хелпер для перевода в JS
+    const translate = (key: string) => get(t)(key);
+
     const SPIN_DURATION = 3000;
     const REEL_SYMBOLS = ['paw', 'ram', 'heart', 'protomap_logo', 'glitch-6'];
 
@@ -19,7 +26,7 @@
     let winTier = 0;
 
     const displayedCredits = tweened($userStore.user?.casino_credits || 0, { duration: 500, easing: quintOut });
-    $: $userStore.user?.casino_credits && displayedCredits.set($userStore.user.casino_credits);
+    $: if ($userStore.user) { displayedCredits.set($userStore.user.casino_credits); }
 
     let audioContext: AudioContext;
     let sounds: { [key: string]: Howl } = {};
@@ -87,7 +94,7 @@
 
         const currentBet = Number(betAmount);
         if (isNaN(currentBet) || currentBet <= 0 || currentBet > $userStore.user.casino_credits) {
-            modal.error("Неверная ставка", "Введите корректную ставку (не больше вашего баланса).");
+            modal.error(translate('slots.modal_invalid_title'), translate('slots.modal_invalid_text'));
             return;
         }
 
@@ -168,14 +175,14 @@
             clearInterval(symbolAnimInterval);
             sounds.suspense?.stop();
             sounds.ambient?.fade(0.1, 0.3, 500);
-            modal.error("Ошибка игры", error.message || "Сбой соединения с игровым сервером.");
+            modal.error(translate('slots.modal_error_title'), error.message || "Connection error.");
             isSpinning = false;
         }
     }
 </script>
 
 <svelte:head>
-    <title>ПРОТО-СЛОТ | The Glitch Pit</title>
+    <title>{$t('slots.title')} | The Glitch Pit</title>
 </svelte:head>
 
 <div class="page-container"
@@ -199,7 +206,7 @@
             <div class="machine-header">
                 <h1 class="machine-title glitch" data-text="PROTO-SLOTS">PROTO-SLOTS</h1>
                 <div class="jackpot-ticker">
-                    ДЖЕКПОТ: <span class="jackpot-amount">999,999 PC</span>
+                    {$t('slots.jackpot')}: <span class="jackpot-amount">999,999 PC</span>
                 </div>
             </div>
 
@@ -241,21 +248,21 @@
 
             <div class="win-display" class:visible={(winAmount > 0 || lossAmount > 0) && !isSpinning} class:loss={lossAmount > 0}>
                 {#if lossAmount > 0}
-                    ПОТЕРЯ: <span class="win-amount">-{lossAmount} PC</span>
+                    {$t('slots.loss')}: <span class="win-amount">-{lossAmount} PC</span>
                 {:else}
-                    ВЫИГРЫШ: <span class="win-amount">+{winAmount} PC</span>
+                    {$t('slots.win')}: <span class="win-amount">+{winAmount} PC</span>
                 {/if}
             </div>
 
             <div class="control-panel-rim">
                 <div class="control-panel">
                     <div class="panel-display balance">
-                        <span class="label">ПРОТОКОИНЫ</span>
+                        <span class="label">{$t('ui.balance')}</span>
                         <span class="value">{Math.floor($displayedCredits)}</span>
                     </div>
 
                     <div class="bet-control">
-                        <label for="bet-amount">СТАВКА</label>
+                        <label for="bet-amount">{$t('slots.bet_label')}</label>
                         <div class="bet-input-wrapper">
                             <button class="bet-adjust" on:click={() => betAmount = Math.max(10, betAmount - 10)} disabled={isSpinning}>-</button>
                             <input id="bet-amount" type="number" bind:value={betAmount} min="1" disabled={isSpinning} />
@@ -264,7 +271,7 @@
                     </div>
 
                     <button class="spin-button" on:click={spinReels} disabled={isSpinning}>
-                        <div class="spin-text">{isSpinning ? '...' : 'SPIN'}</div>
+                        <div class="spin-text">{isSpinning ? $t('slots.spinning') : $t('slots.spin')}</div>
                     </button>
                 </div>
             </div>
@@ -272,7 +279,7 @@
     </div>
 
     <div class="paytable-container">
-        <h4 class="paytable-title font-display">//: КОМБИНАЦИИ</h4>
+        <h4 class="paytable-title font-display">{$t('slots.combinations')}</h4>
         <div class="paytable-grid">
             <div class="combo">
                 <div class="icons"><img src="/casino/paw.svg" alt="paw"><img src="/casino/paw.svg" alt="paw"><img src="/casino/paw.svg" alt="paw"></div>

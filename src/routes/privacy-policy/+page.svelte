@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
+    import { t } from 'svelte-i18n';
 
     const opacity = tweened(0, { duration: 400, easing: quintOut });
     onMount(() => {
@@ -10,82 +11,83 @@
 </script>
 
 <svelte:head>
-    <title>Политика Конфиденциальности | ProtoMap</title>
+    <title>{$t('privacy.title')} | ProtoMap</title>
 </svelte:head>
 
 <div class="legal-container cyber-panel" style="opacity: {$opacity}">
-    <h2 class="title font-display">//: ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ</h2>
-    <p class="subtitle">Последнее обновление: 23 ноября 2025 г.</p>
+    <h2 class="title font-display">{$t('privacy.title')}</h2>
+    <p class="subtitle">{$t('privacy.subtitle')}</p>
 
     <div class="content-text">
         <div class="disclaimer-box">
-            <strong class="text-red-500">⚠️ ОТКАЗ ОТ ОТВЕТСТВЕННОСТИ (DISCLAIMER):</strong>
-            <p>Проект <strong>ProtoMap</strong> (данный веб-сайт) является независимым, некоммерческим развлекательным сервисом. Мы <strong>не связаны, не аффилированы и не имеем отношения</strong> к компании <em class="text-white">Protomaps LLC</em> (protomaps.com) или их продуктам. Любые совпадения в названиях случайны.</p>
+            <strong class="text-red-500">{$t('privacy.disclaimer_title')}</strong>
+            <p>{@html $t('privacy.disclaimer_text')}</p>
         </div>
 
-        <p>Настоящая Политика конфиденциальности (далее — «Политика») описывает порядок сбора, использования, хранения и защиты информации о пользователях (далее — «Пользователи») сервиса ProtoMap.</p>
+        <p>{$t('privacy.intro')}</p>
 
-        <h3 class="section-title">//: 1. ОБЩИЕ ПОЛОЖЕНИЯ</h3>
+        <h3 class="section-title">{$t('privacy.sec1_title')}</h3>
         <ul>
-            <li>Используя Сервис, Пользователь выражает свое полное согласие с условиями настоящей Политики.</li>
-            <li>В случае несогласия с условиями Политики, Пользователь должен немедленно прекратить использование Сервиса.</li>
+            {#each $t('privacy.sec1_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
-        <h3 class="section-title">//: 2. СОБИРАЕМАЯ ИНФОРМАЦИЯ</h3>
-        <p>Мы собираем следующие категории данных:</p>
+        <h3 class="section-title">{$t('privacy.sec2_title')}</h3>
+        <p>{$t('privacy.sec2_intro')}</p>
         <ul>
-            <li><strong>Данные учетной записи:</strong> Адрес электронной почты (email), хэшированный пароль, уникальный идентификатор (UID), имя пользователя (username).</li>
-            <li><strong>Публичный профиль:</strong> Информация, которую Пользователь добровольно размещает в открытом доступе: аватар, статус, описание «о себе», ссылки на социальные сети.</li>
-            <li><strong>Игровые данные:</strong> Баланс виртуальной валюты («Протокоины»), история транзакций, список приобретенных виртуальных предметов (инвентарь), статистика игр.</li>
-            <li><strong>Геолокационные данные:</strong> Координаты, предоставляемые Пользователем для отображения на карте. Сервис намеренно огрубляет (анонимизирует) эти данные до уровня населенного пункта или района перед сохранением. Точные GPS-координаты на серверах не хранятся.</li>
-            <li><strong>Контент:</strong> Текстовые комментарии, сообщения в чатах и метаданные, связанные с ними (время отправки).</li>
-            <li><strong>Технические данные:</strong> IP-адреса, тип устройства, данные браузера и файлы cookie (исключительно для целей аутентификации и безопасности).</li>
+            {#each $t('privacy.sec2_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
-        <h3 class="section-title">//: 3. ЦЕЛИ ОБРАБОТКИ ДАННЫХ</h3>
-        <p>Мы используем собранную информацию для:</p>
+        <h3 class="section-title">{$t('privacy.sec3_title')}</h3>
+        <p>{$t('privacy.sec3_intro')}</p>
         <ul>
-            <li><strong>Функционирования Сервиса:</strong> Аутентификация, отображение меток на карте, работа чатов и комментариев.</li>
-            <li><strong>Геймификации:</strong> Подсчет рейтингов, отображение списков лидеров («Топ Хайроллеров»), работа механик казино и магазина.</li>
-            <li><strong>Безопасности:</strong> Выявление и блокировка нарушителей, защита от спама, предотвращение мошенничества с виртуальной валютой.</li>
+            {#each $t('privacy.sec3_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
-        <h3 class="section-title">//: 4. ВИРТУАЛЬНЫЕ ЦЕННОСТИ</h3>
+        <h3 class="section-title">{$t('privacy.sec4_title')}</h3>
         <ul>
-            <li>«Протокоины», «Рамки», «Предметы» и иные цифровые объекты внутри Сервиса являются исключительно элементами программного кода и дизайна.</li>
-            <li>Они <strong>не имеют реальной денежной стоимости</strong>, не являются криптовалютой, электронными денежными средствами или финансовыми инструментами.</li>
-            <li>Сервис не предоставляет возможности обмена виртуальных ценностей на реальные деньги (fiat) или иные материальные блага.</li>
+            {#each $t('privacy.sec4_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
-        <h3 class="section-title">//: 5. ПЕРЕДАЧА ДАННЫХ ТРЕТЬИМ ЛИЦАМ</h3>
-        <p>Мы не продаем и не передаем персональные данные Пользователей третьим лицам в маркетинговых целях. Данные могут обрабатываться следующими техническими партнерами:</p>
+        <h3 class="section-title">{$t('privacy.sec5_title')}</h3>
+        <p>{$t('privacy.sec5_intro')}</p>
         <ul>
-            <li><strong>Google Firebase (США):</strong> Хостинг базы данных, аутентификация, облачные функции.</li>
-            <li><strong>Vercel Inc. (США):</strong> Хостинг клиентской части веб-приложения.</li>
-            <li><strong>Cloudinary (США):</strong> Хранение и обработка изображений (аватаров).</li>
-            <li><strong>OpenStreetMap / Nominatim:</strong> Сервис геокодирования (используется для преобразования координат в название города без сохранения личности).</li>
+            {#each $t('privacy.sec5_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
-        <h3 class="section-title">//: 6. ПРАВА ПОЛЬЗОВАТЕЛЯ И УДАЛЕНИЕ ДАННЫХ</h3>
-        <p>Пользователь имеет право:</p>
+        <h3 class="section-title">{$t('privacy.sec6_title')}</h3>
+        <p>{$t('privacy.sec6_intro')}</p>
         <ul>
-            <li>Редактировать свои личные данные в настройках профиля.</li>
-            <li><strong>Запросить полное удаление аккаунта.</strong> Функция автоматического удаления доступна в интерфейсе Сервиса.
-                <br><span class="text-gray-400 text-sm ml-4">// При удалении аккаунта все персональные данные (Email, UID, профиль, метка) уничтожаются безвозвратно. Публичный контент (сообщения) проходит процедуру анонимизации (отвязки от личности), чтобы сохранить связность публичных бесед.</span>
-            </li>
+            {#each $t('privacy.sec6_list') as item}
+                <li>{@html item}</li>
+            {/each}
+        </ul>
+        <p class="text-gray-400 text-sm ml-4">{@html $t('privacy.sec6_note')}</p>
+
+        <h3 class="section-title">{$t('privacy.sec7_title')}</h3>
+        <ul>
+            {#each $t('privacy.sec7_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
-        <h3 class="section-title">//: 7. БЛОКИРОВКА И ОТВЕТСТВЕННОСТЬ</h3>
-        <ul>
-            <li>Администрация оставляет за собой право заблокировать доступ к Сервису любому Пользователю за нарушение правил, без предварительного уведомления.</li>
-            <li>В случае блокировки (бана) доступ к аккаунту и виртуальным ценностям прекращается. Компенсация не предусмотрена.</li>
-        </ul>
+        <h3 class="section-title">{$t('privacy.sec8_title')}</h3>
+        <p>{$t('privacy.sec8_text')}</p>
 
-        <h3 class="section-title">//: 8. ИЗМЕНЕНИЯ В ПОЛИТИКЕ</h3>
-        <p>Мы оставляем за собой право вносить изменения в настоящую Политику. Продолжение использования Сервиса после внесения изменений означает принятие новой редакции Политики.</p>
-
-        <h3 class="section-title">//: 9. КОНТАКТЫ</h3>
-        <p>По вопросам приватности и данных: <a href="https://t.me/Orion_Z43" target="_blank" class="link">Telegram @Orion_Z43</a>.</p>
+        <h3 class="section-title">{$t('privacy.sec9_title')}</h3>
+        <p>
+            {$t('privacy.sec9_text')}
+            <a href="https://t.me/Orion_Z43" target="_blank" class="link">Telegram @Orion_Z43</a>.
+        </p>
     </div>
 </div>
 

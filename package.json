@@ -49,6 +49,7 @@
 		"leaflet.markercluster": "^1.5.3",
 		"node-fetch": "^2.7.0",
 		"pixi.js": "^8.10.1",
+		"svelte-i18n": "^4.0.1",
 		"svelte-icons": "^2.1.0",
 		"three": "^0.180.0"
 	}

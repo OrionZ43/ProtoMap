@@ -4,18 +4,20 @@
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
+    import { t, locale } from 'svelte-i18n';
 
     export let data: PageData;
 
     const opacity = tweened(0, { duration: 400, easing: quintOut });
     onMount(() => { opacity.set(1); });
 
-    function formatDate(date: Date) {
-        return new Intl.DateTimeFormat('ru-RU', {
+    function formatDate(date: Date, currentLocale: string | null | undefined) {
+        return new Intl.DateTimeFormat(currentLocale || 'ru', {
             day: 'numeric', month: 'long', year: 'numeric'
         }).format(date);
     }
-function formatText(text: string) {
+
+    function formatText(text: string) {
         let safeText = text
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
@@ -30,13 +32,13 @@ function formatText(text: string) {
 </script>
 
 <svelte:head>
-    <title>Новости Сети | ProtoMap</title>
+    <title>{$t('news_page.title')} | ProtoMap</title>
 </svelte:head>
 
 <div class="page-container" style="opacity: {$opacity}">
     <div class="header">
-        <h1 class="title font-display glitch" data-text="НОВОСТИ СЕТИ">НОВОСТИ СЕТИ</h1>
-        <p class="subtitle">//: Хроники обновлений и системные сообщения</p>
+        <h1 class="title font-display glitch" data-text={$t('news_page.title')}>{$t('news_page.title')}</h1>
+        <p class="subtitle">{$t('news_page.subtitle')}</p>
     </div>
 
     <div class="news-feed">
@@ -52,7 +54,7 @@ function formatText(text: string) {
 
                     <div class="card-content">
                         <div class="meta">
-                            <span class="date">{formatDate(post.createdAt)}</span>
+                            <span class="date">{formatDate(post.createdAt, $locale)}</span>
                             {#if post.tags}
                                 <div class="tags">
                                     {#each post.tags as tag}
@@ -74,7 +76,7 @@ function formatText(text: string) {
             {/each}
         {:else}
             <div class="empty-state">
-                <p>Каналы связи молчат. Новостей пока нет.</p>
+                <p>{$t('news_page.empty')}</p>
             </div>
         {/if}
     </div>

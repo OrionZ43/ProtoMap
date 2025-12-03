@@ -5,6 +5,8 @@
     import { getFunctions, httpsCallable } from 'firebase/functions';
     import { modal } from '$lib/stores/modalStore';
     import { Howl } from 'howler';
+    import { t } from 'svelte-i18n'; // Импорт локализации
+    import { get } from 'svelte/store';
 
     export let data: PageData;
 
@@ -12,6 +14,9 @@
     let selectedFrame: string | null = data.equippedFrame;
     let currentEquippedFrame: string | null = data.equippedFrame;
     let isSaving = false;
+
+    // Хелпер для перевода в JS
+    const translate = (key: string) => get(t)(key);
 
     $: {
         ownedFrames = Object.values(data.allItems).filter(item =>
@@ -21,13 +26,10 @@
 
     let sounds: { [key: string]: Howl } = {};
     onMount(() => {
-        // --- ОБНОВЛЕННЫЙ БЛОК ---
         sounds.ambient_inventory = new Howl({ src: ['/sounds/inventory.mp3'], loop: true, volume: 0.2, autoplay: true });
         sounds.equip = new Howl({ src: ['/sounds/equip.mp3'], volume: 0.7 });
         sounds.save = new Howl({ src: ['/sounds/save.mp3'], volume: 0.8 });
-        // --- КОНЕЦ ОБНОВЛЕНИЯ ---
 
-        // --- ДОБАВЛЯЕМ ОЧИСТКУ ---
         return () => {
             sounds.ambient_inventory?.stop();
         }
@@ -60,10 +62,10 @@
             });
             currentEquippedFrame = selectedFrame;
 
-            modal.success("Сохранено", "Ваш образ обновлен!");
+            modal.success(translate('inventory.success_title'), translate('inventory.success_msg'));
 
         } catch (error: any) {
-            modal.error("Ошибка", error.message || "Не удалось сохранить изменения.");
+            modal.error(translate('inventory.error_title'), error.message || translate('inventory.error_save'));
         } finally {
             isSaving = false;
         }
@@ -74,7 +76,7 @@
 </script>
 
 <svelte:head>
-    <title>Инвентарь | The Glitch Pit</title>
+    <title>{$t('inventory.title')} | The Glitch Pit</title>
 </svelte:head>
 
 <div class="page-container">
@@ -83,8 +85,8 @@
 
     <div class="inventory-container">
         <div class="header">
-            <h1 class="title font-display glitch" data-text="Тайник">Тайник</h1>
-            <p class="subtitle">Ваши трофеи из "The Glitch Pit". Примеряйте и сохраняйте образ.</p>
+            <h1 class="title font-display glitch" data-text={$t('inventory.title')}>{$t('inventory.title')}</h1>
+            <p class="subtitle">{$t('inventory.subtitle')}</p>
         </div>
 
         <div class="wardrobe">
@@ -92,16 +94,16 @@
                 <div class="avatar-wrapper {data.allItems[selectedFrame]?.id || ''}">
                     <img
                         src={$userStore.user?.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user?.username}`}
-                        alt="Ваш аватар"
+                        alt="Preview"
                         class="preview-avatar"
                     />
                 </div>
                 <div class="actions">
                     <button class="panel-btn save" on:click={saveChanges} disabled={!hasChanges || isSaving}>
-                        {isSaving ? 'СОХРАНЕНИЕ...' : 'СОХРАНИТЬ ОБРАЗ'}
+                        {isSaving ? $t('inventory.saving') : $t('inventory.save')}
                     </button>
                     {#if selectedFrame}
-                        <button class="unequip-btn" on:click={() => selectFrame(null)}>Снять рамку</button>
+                        <button class="unequip-btn" on:click={() => selectFrame(null)}>{$t('inventory.unequip')}</button>
                     {/if}
                 </div>
             </div>
@@ -120,15 +122,15 @@
                                 </div>
                                 <span class="item-name">{item.name}</span>
                                 {#if currentEquippedFrame === item.id}
-                                    <span class="equipped-tag">Надето</span>
+                                    <span class="equipped-tag">{$t('inventory.equipped')}</span>
                                 {/if}
                             </button>
                         {/each}
                     </div>
                 {:else}
                     <div class="empty-state">
-                        <p>Ваш инвентарь пуст.</p>
-                        <a href="/casino/shop" class="panel-btn shop">На черный рынок</a>
+                        <p>{$t('inventory.empty')}</p>
+                        <a href="/casino/shop" class="panel-btn shop">{$t('inventory.go_shop')}</a>
                     </div>
                 {/if}
             </div>
@@ -207,7 +209,21 @@
         font-family: 'Chakra Petch', monospace; font-weight: bold;
     }
 
-    .empty-state { text-align: center; padding: 4rem 2rem; color: #666; }
+    /* --- ИСПРАВЛЕННЫЙ БЛОК EMPTY STATE --- */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #666;
+
+        /* Добавляем Flex, чтобы управлять отступами */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem; /* Отступ между текстом и кнопкой */
+    }
+    .empty-state p {
+        font-size: 1.2rem;
+    }
 
     .panel-btn {
         width: 100%;

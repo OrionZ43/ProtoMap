@@ -1,18 +1,19 @@
 <script lang="ts">
     export let mode: 'fixed' | 'menu' = 'fixed';
+    import { t } from 'svelte-i18n';
 </script>
 
 <div class:legal-ticker={mode === 'fixed'} class:menu-links={mode === 'menu'}>
     {#if mode === 'menu'}
-        <a href="/privacy-policy">Политика</a>
-        <a href="/terms-of-service">Соглашение</a>
-        <span>© 2025 ProtoMap</span>
+        <a href="/privacy-policy">{$t('footer.policy')}</a>
+        <a href="/terms-of-service">{$t('footer.terms')}</a>
+        <span>© 2025 {$t('footer.rights')}</span>
     {:else}
-        <p>© 2025 ProtoMap</p>
+        <p>© 2025 {$t('footer.rights')}</p>
         <div class="links">
-            <a href="/privacy-policy">ПОЛИТИКА</a>
+            <a href="/privacy-policy">{$t('footer.policy')}</a>
             <span>//</span>
-            <a href="/terms-of-service">СОГЛАШЕНИЕ</a>
+            <a href="/terms-of-service">{$t('footer.terms')}</a>
         </div>
     {/if}
 </div>

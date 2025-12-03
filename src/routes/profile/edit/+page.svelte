@@ -9,6 +9,8 @@
     import { modal } from '$lib/stores/modalStore';
     import { goto } from '$app/navigation';
     import { settingsStore } from '$lib/stores/settingsStore';
+    import { t } from 'svelte-i18n';
+    import { get } from 'svelte/store';
 
     export let data: PageData;
 
@@ -21,6 +23,7 @@
     let isSavingProfile = false;
 
     const opacity = tweened(0, { duration: 400, easing: quintOut });
+    const translate = (key: string) => get(t)(key);
 
     onMount(() => {
         opacity.set(1);
@@ -32,12 +35,12 @@
         if (!file) return;
 
         if (file.size > 5 * 1024 * 1024) {
-            modal.error('Файл слишком большой', 'Пожалуйста, выберите файл размером до 5 МБ.');
+            modal.error(translate('edit_profile.modal_size_error'), 'Max 5MB.');
             input.value = '';
             return;
         }
         if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
-            modal.error('Неверный тип файла', 'Выберите изображение (JPG, PNG, GIF, WEBP).');
+            modal.error(translate('edit_profile.modal_type_error'), 'JPG, PNG, GIF, WEBP only.');
             input.value = '';
             return;
         }
@@ -55,11 +58,11 @@
                 const imageBase64 = uploadReader.result as string;
                 const functions = getFunctions();
                 const uploadAvatarFunc = httpsCallable(functions, 'uploadAvatar');
-                modal.info('Загрузка...', 'Отправляем ваш новый аватар...');
+                modal.info(translate('ui.loading'), 'Uploading...');
                 const result = await uploadAvatarFunc({ imageBase64 });
                 const newAvatarUrl = (result.data as { avatarUrl: string }).avatarUrl;
                 imagePreviewUrl = newAvatarUrl;
-                modal.success("Успешно!", "Ваш новый аватар был сохранен.");
+                modal.success(translate('edit_profile.modal_avatar_success'), translate('edit_profile.modal_avatar_success_text'));
                 userStore.update(store => {
                     if (store.user) {
                         return { ...store, user: { ...store.user, avatar_url: newAvatarUrl } };
@@ -67,7 +70,7 @@
                     return store;
                 });
             } catch (error: any) {
-                modal.error("Ошибка загрузки", error.message || 'Не удалось обновить аватар.');
+                modal.error(translate('ui.error'), error.message || 'Upload failed.');
                 imagePreviewUrl = data.profile.avatar_url;
             } finally {
                 isLoadingAvatar = false;
@@ -75,7 +78,7 @@
             }
         };
         uploadReader.onerror = () => {
-             modal.error("Ошибка файла", "Не удалось прочитать выбранный файл.");
+             modal.error(translate('edit_profile.modal_file_error'), "Read error.");
              isLoadingAvatar = false;
         }
     }
@@ -93,7 +96,7 @@
             const result = await updateProfileFunc(profileDataToSend);
             const message = (result.data as { message: string }).message;
 
-            modal.success("Успешно!", message || "Данные профиля сохранены.");
+            modal.success(translate('inventory.success_title'), message || "Saved."); // Используем ключ из инвентаря для "Saved"
 
             userStore.update(store => {
                 if (store.user) {
@@ -107,7 +110,7 @@
             }, 1500);
 
         } catch (error: any) {
-            modal.error("Ошибка сохранения", error.message || "Не удалось сохранить данные.");
+            modal.error(translate('inventory.error_title'), error.message || "Save failed.");
         } finally {
             isSavingProfile = false;
         }
@@ -115,25 +118,25 @@
 
     async function handleDeleteAccount() {
         modal.confirm(
-            "Подтверждение удаления",
-            "Вы уверены, что хотите НАВСЕГДА удалить свою учетную запись? Все ваши данные (профиль, метка) будут стерты, а комментарии и сообщения в чате - анонимизированы. Это действие НЕЛЬЗЯ отменить.",
+            translate('edit_profile.modal_delete_title'),
+            translate('edit_profile.modal_delete_text'),
             async () => {
                 try {
                     const functions = getFunctions();
                     const deleteAccountFunc = httpsCallable(functions, 'deleteAccount');
 
-                    modal.info("Удаление...", "Запускаем протокол полного стирания данных... Пожалуйста, подождите.");
+                    modal.info(translate('ui.loading'), "Deleting...");
 
                     await deleteAccountFunc();
 
-                    modal.success("Учетная запись удалена", "Ваши данные стерты из системы. Вы будете перенаправлены на главную страницу.");
+                    modal.success(translate('edit_profile.modal_delete_success'), translate('edit_profile.modal_delete_success_text'));
 
                     setTimeout(() => {
                         window.location.href = '/';
                     }, 3000);
 
                 } catch (error: any) {
-                    modal.error("Ошибка удаления", error.message || "Не удалось удалить учетную запись. Свяжитесь с администрацией.");
+                    modal.error(translate('ui.error'), error.message || "Delete failed.");
                 }
             }
         );
@@ -141,76 +144,76 @@
 </script>
 
 <svelte:head>
-    <title>Редактирование профиля | ProtoMap</title>
+    <title>{$t('edit_profile.title')} | ProtoMap</title>
 </svelte:head>
 
 <div class="form-container cyber-panel pb-12" style="opacity: {$opacity}">
-    <h2 class="form-title font-display">РЕДАКТИРОВАНИЕ ПРОФИЛЯ</h2>
+    <h2 class="form-title font-display">{$t('edit_profile.title')}</h2>
 
     <div class="form-group space-y-4 mb-8">
-        <label for="avatar-file-input" class="form-label font-display">АВАТАР</label>
+        <label for="avatar-file-input" class="form-label font-display">{$t('edit_profile.avatar_label')}</label>
         {#if imagePreviewUrl}
-            <img src={imagePreviewUrl} alt="Аватар" class="avatar-preview" />
+            <img src={imagePreviewUrl} alt="Avatar" class="avatar-preview" />
         {/if}
         <NeonButton type="button" on:click={() => document.getElementById('avatar-file-input')?.click()} extraClass="w-full" disabled={isLoadingAvatar || isSavingProfile}>
             {#if isLoadingAvatar}
-                <span class="animate-pulse">ЗАГРУЗКА...</span>
+                <span class="animate-pulse">{$t('ui.loading')}</span>
             {:else}
-                Выбрать и загрузить новый аватар
+                {$t('edit_profile.avatar_btn')}
             {/if}
         </NeonButton>
         <input type="file" id="avatar-file-input" class="hidden-file-input" on:change={handleAvatarChange} accept="image/jpeg, image/png, image/gif, image/webp" />
-        <p class="form-help-text text-center">Аватар сохраняется сразу после загрузки.</p>
+        <p class="form-help-text text-center">{$t('edit_profile.avatar_help')}</p>
     </div>
 
     <hr class="separator"/>
 
     <div class="space-y-8">
-        <h3 class="form-label font-display text-lg">// ИНФОРМАЦИЯ И ССЫЛКИ</h3>
+        <h3 class="form-label font-display text-lg">{$t('edit_profile.info_title')}</h3>
         <div class="form-group">
-            <label for="status" class="form-label font-display">СТАТУС</label>
-            <input bind:value={status} type="text" id="status" class="input-field" placeholder="Чем вы сейчас заняты?" maxlength="100" disabled={isLoadingAvatar || isSavingProfile} />
-            <p class="form-help-text">Короткое сообщение (макс. 100 симв.), которое будет видно в вашем профиле и на карте.</p>
+            <label for="status" class="form-label font-display">{$t('edit_profile.status_label')}</label>
+            <input bind:value={status} type="text" id="status" class="input-field" placeholder={$t('edit_profile.status_placeholder')} maxlength="100" disabled={isLoadingAvatar || isSavingProfile} />
+            <p class="form-help-text">{$t('edit_profile.status_help')}</p>
         </div>
         <div class="form-group">
-            <label for="about_me" class="form-label font-display">ОБО МНЕ</label>
-            <textarea bind:value={aboutMe} id="about_me" rows="5" class="input-field" placeholder="Расскажите о себе..." disabled={isLoadingAvatar || isSavingProfile}></textarea>
+            <label for="about_me" class="form-label font-display">{$t('edit_profile.about_label')}</label>
+            <textarea bind:value={aboutMe} id="about_me" rows="5" class="input-field" placeholder={$t('edit_profile.about_placeholder')} disabled={isLoadingAvatar || isSavingProfile}></textarea>
         </div>
         <div class="form-group">
             <label for="social_telegram" class="form-label font-display">TELEGRAM</label>
-            <input bind:value={socials.telegram} type="text" id="social_telegram" class="input-field" placeholder="username (без @)" disabled={isLoadingAvatar || isSavingProfile} />
+            <input bind:value={socials.telegram} type="text" id="social_telegram" class="input-field" placeholder={$t('edit_profile.social_tg_placeholder')} disabled={isLoadingAvatar || isSavingProfile} />
         </div>
         <div class="form-group">
             <label for="social_discord" class="form-label font-display">DISCORD</label>
-            <input bind:value={socials.discord} type="text" id="social_discord" class="input-field" placeholder="username" disabled={isLoadingAvatar || isSavingProfile} />
+            <input bind:value={socials.discord} type="text" id="social_discord" class="input-field" placeholder={$t('edit_profile.social_ds_placeholder')} disabled={isLoadingAvatar || isSavingProfile} />
         </div>
         <div class="form-group">
             <label for="social_vk" class="form-label font-display">VK</label>
-            <input bind:value={socials.vk} type="text" id="social_vk" class="input-field" placeholder="id или короткое имя" disabled={isLoadingAvatar || isSavingProfile} />
+            <input bind:value={socials.vk} type="text" id="social_vk" class="input-field" placeholder={$t('edit_profile.social_vk_placeholder')} disabled={isLoadingAvatar || isSavingProfile} />
         </div>
         <div class="form-group">
             <label for="social_twitter" class="form-label font-display">X (TWITTER)</label>
-            <input bind:value={socials.twitter} type="text" id="social_twitter" class="input-field" placeholder="username (без @)" disabled={isLoadingAvatar || isSavingProfile} />
+            <input bind:value={socials.twitter} type="text" id="social_twitter" class="input-field" placeholder={$t('edit_profile.social_x_placeholder')} disabled={isLoadingAvatar || isSavingProfile} />
         </div>
         <div class="form-group">
-            <label for="social_website" class="form-label font-display">САЙТ</label>
-            <input bind:value={socials.website} type="url" id="social_website" class="input-field" placeholder="https://..." disabled={isLoadingAvatar || isSavingProfile} />
+            <label for="social_website" class="form-label font-display">{$t('edit_profile.social_website_label') || 'WEB'}</label> <!-- Добавь ключ если надо, или оставь WEB -->
+            <input bind:value={socials.website} type="url" id="social_website" class="input-field" placeholder={$t('edit_profile.social_web_placeholder')} disabled={isLoadingAvatar || isSavingProfile} />
         </div>
         <div class="flex flex-col sm:flex-row gap-4 pt-4">
             <NeonButton type="button" on:click={saveProfileData} extraClass="w-full" disabled={isLoadingAvatar || isSavingProfile}>
-                {isSavingProfile ? 'Сохранение...' : 'Сохранить информацию и ссылки'}
+                {isSavingProfile ? $t('inventory.saving') : $t('edit_profile.save_btn')}
             </NeonButton>
-            <a href="/profile/{data.profile.username || ''}" class="cancel-btn">Отмена</a>
+            <a href="/profile/{data.profile.username || ''}" class="cancel-btn">{$t('edit_profile.cancel_btn')}</a>
         </div>
     </div>
 
     <hr class="separator"/>
     <div class="space-y-4">
-         <h3 class="form-label font-display text-lg text-red-500">// ОПАСНАЯ ЗОНА</h3>
+         <h3 class="form-label font-display text-lg text-red-500">{$t('edit_profile.danger_title')}</h3>
          <div class="danger-zone-box">
-            <p class="text-gray-300">Полное и безвозвратное удаление вашей учетной записи.</p>
+            <p class="text-gray-300">{$t('edit_profile.danger_text')}</p>
             <button class="delete-account-btn" on:click={handleDeleteAccount}>
-                Удалить аккаунт
+                {$t('edit_profile.delete_btn')}
             </button>
          </div>
     </div>

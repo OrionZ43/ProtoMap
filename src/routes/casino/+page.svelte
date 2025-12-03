@@ -7,11 +7,12 @@
     import { modal } from '$lib/stores/modalStore';
     import { fade, slide } from 'svelte/transition';
     import { Howl } from 'howler';
+    import { t } from 'svelte-i18n';
+    import { get } from 'svelte/store';
 
     let loadingBonus = false;
     let loadingLeaderboard = true;
 
-    // Тип для игрока в топе
     type LeaderboardEntry = {
         username: string;
         avatar_url: string;
@@ -20,21 +21,24 @@
     };
 
     let leaderboard: LeaderboardEntry[] = [];
+    $: isVerified = $userStore.user?.emailVerified ?? false;
 
     const displayedCredits = tweened($userStore.user?.casino_credits || 0, {
         duration: 700,
         easing: quintOut
     });
-    $: $userStore.user?.casino_credits && displayedCredits.set($userStore.user.casino_credits);
+    $: if ($userStore.user) {
+        displayedCredits.set($userStore.user.casino_credits);
+    }
 
     let sounds: { [key: string]: Howl } = {};
 
+    // Хелпер для перевода в JS
+    const translate = (key: string) => get(t)(key);
+
     onMount(() => {
         sounds.ambient = new Howl({ src: ['/sounds/ambient_casino.mp3'], loop: true, volume: 0.3, autoplay: true });
-
-        // Загружаем лидерборд при входе
         loadLeaderboard();
-
         return () => {
             sounds.ambient?.stop();
         };
@@ -44,7 +48,6 @@
         loadingLeaderboard = true;
         try {
             const functions = getFunctions();
-            // Используем имя функции, которое ты создал в index.ts
             const getLeaderboardFunc = httpsCallable(functions, 'getLeaderboard');
             const result = await getLeaderboardFunc();
             leaderboard = (result.data as any).data;
@@ -71,12 +74,11 @@
                 return store;
             });
 
-            modal.success("Бонус получен!", data.message);
-            // Обновляем лидерборд, вдруг мы ворвались в топ? :)
+            modal.success(translate('casino.bonus_success'), data.message);
             loadLeaderboard();
 
         } catch (error: any) {
-            modal.error("Ошибка", error.message || "Не удалось получить бонус. Попробуйте позже.");
+            modal.error(translate('ui.error'), error.message || "Error claiming bonus.");
         } finally {
             loadingBonus = false;
         }
@@ -84,7 +86,7 @@
 </script>
 
 <svelte:head>
-    <title>Казино "The Glitch Pit" | ProtoMap</title>
+    <title>{$t('nav.casino')} | ProtoMap</title>
 </svelte:head>
 
 <div class="page-container">
@@ -92,22 +94,27 @@
     <div class="bg-blur-2"></div>
 
     <div class="header">
-        <h1 class="title font-display glitch" data-text="The Glitch Pit">The Glitch Pit</h1>
-        <p class="subtitle">//: Делай ставки, выигрывай кастомизацию, не теряй голову ://</p>
+        <h1 class="title font-display glitch" data-text={$t('nav.casino')}>{$t('nav.casino')}</h1>
+        <p class="subtitle">//: {$t('news_page.subtitle')}</p> <!-- Можно использовать subtitle из новостей или добавить свой -->
     </div>
 
     {#if $userStore.user}
         <!-- ПАНЕЛЬ ПОЛЬЗОВАТЕЛЯ -->
         <div class="user-panel">
             <div class="balance-display">
-                <span class="label font-display">Баланс</span>
+                <span class="label font-display">{$t('casino.balance')}</span>
                 <span class="amount font-display">{Math.floor($displayedCredits)} PC</span>
             </div>
             <div class="actions-group">
-                <a href="/casino/shop" class="panel-btn shop">Магазин</a>
-                <a href="/casino/inventory" class="panel-btn inventory">Инвентарь</a>
-                <button class="panel-btn bonus" on:click={claimDailyBonus} disabled={loadingBonus}>
-                    {loadingBonus ? '...' : 'Бонус'}
+                <a href="/casino/shop" class="panel-btn shop">{$t('casino.shop')}</a>
+                <a href="/casino/inventory" class="panel-btn inventory">{$t('casino.inventory')}</a>
+                <button
+                    class="panel-btn bonus"
+                    on:click={claimDailyBonus}
+                    disabled={loadingBonus || !isVerified}
+                    title={!isVerified ? "Email verification required" : ""}
+                >
+                    {!isVerified ? 'LOCK' : (loadingBonus ? '...' : $t('casino.bonus_btn'))}
                 </button>
             </div>
         </div>
@@ -116,34 +123,34 @@
         <div class="games-grid">
             <a href="/casino/coin-flip" class="game-card">
                 <div class="game-art">
-                    <img src="/casino/OaR.png" alt="Орел и Решка" class="art-img">
+                    <img src="/casino/OaR.png" alt="Coin Flip" class="art-img">
                     <div class="art-overlay"></div>
                 </div>
                 <div class="game-info">
-                    <h3 class="game-title font-display">Стол Ориона</h3>
-                    <p class="game-desc">Классическая игра "Орел или Решка". Удвой свою ставку или потеряй все.</p>
-                    <span class="play-indicator font-display">Играть</span>
+                    <h3 class="game-title font-display">{$t('casino.game_coin_title')}</h3>
+                    <p class="game-desc">{$t('casino.game_coin_desc')}</p>
+                    <span class="play-indicator font-display">{$t('casino.play')}</span>
                 </div>
             </a>
 
             <a href="/casino/slot-machine" class="game-card">
                 <div class="game-art">
-                     <img src="/casino/slots.png" alt="Прото-Слот" class="art-img">
+                     <img src="/casino/slots.png" alt="Slots" class="art-img">
                      <div class="art-overlay"></div>
                 </div>
                 <div class="game-info">
-                    <h3 class="game-title font-display">Прото-Слот</h3>
-                    <p class="game-desc">Испытай удачу на классическом слототроне. Сорви джекпот из трех лого ProtoMap!</p>
-                    <span class="play-indicator font-display">Играть</span>
+                    <h3 class="game-title font-display">{$t('casino.game_slots_title')}</h3>
+                    <p class="game-desc">{$t('casino.game_slots_desc')}</p>
+                    <span class="play-indicator font-display">{$t('casino.play')}</span>
                 </div>
             </a>
         </div>
 
-        <!-- ЛИДЕРБОРД (НОВОЕ) -->
+        <!-- ЛИДЕРБОРД -->
         <div class="leaderboard-section mt-12 max-w-3xl w-full mx-auto">
             <div class="leaderboard-header">
-                <h2 class="font-display text-2xl text-cyber-yellow">// ТОП ХАЙРОЛЛЕРОВ</h2>
-                <button class="refresh-btn" on:click={loadLeaderboard} disabled={loadingLeaderboard} title="Обновить">
+                <h2 class="font-display text-2xl text-cyber-yellow">{$t('casino.leaderboard_title')}</h2>
+                <button class="refresh-btn" on:click={loadLeaderboard} disabled={loadingLeaderboard} title="Refresh">
                     <svg class:animate-spin={loadingLeaderboard} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                 </button>
             </div>
@@ -151,7 +158,7 @@
             <div class="leaderboard-list cyber-panel">
                 {#if loadingLeaderboard && leaderboard.length === 0}
                     <div class="p-8 text-center text-gray-500 animate-pulse">
-                        СКАНИРОВАНИЕ СЕТИ...
+                        {$t('casino.leaderboard_loading')}
                     </div>
                 {:else}
                     {#each leaderboard as player, i (player.username)}
@@ -175,7 +182,7 @@
                         </div>
                     {/each}
                     {#if leaderboard.length === 0 && !loadingLeaderboard}
-                         <div class="p-8 text-center text-gray-500">Данных пока нет. Стань первым!</div>
+                         <div class="p-8 text-center text-gray-500">{$t('casino.leaderboard_empty')}</div>
                     {/if}
                 {/if}
             </div>
@@ -183,8 +190,8 @@
 
     {:else}
         <div class="guest-panel" in:fade>
-            <p class="guest-text">Для доступа в "The Glitch Pit" требуется идентификация.</p>
-            <a href="/login" class="login-btn font-display">Подключиться к сети</a>
+            <p class="guest-text">{$t('casino.guest_text')}</p>
+            <a href="/login" class="login-btn font-display">{$t('casino.guest_btn')}</a>
         </div>
     {/if}
 </div>

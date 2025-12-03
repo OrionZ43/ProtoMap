@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import { fade } from 'svelte/transition';
     import { browser } from '$app/environment';
+    import { t } from 'svelte-i18n';
 
     const COOKIE_CONSENT_KEY = 'protomap_cookie_consent';
     let showBanner = false;
@@ -24,10 +25,10 @@
 {#if showBanner}
     <div class="cookie-banner" transition:fade={{ duration: 300 }}>
         <p class="banner-text">
-            Мы используем файлы cookie для сохранения вашей сессии и настроек. Оставаясь на сайте, вы соглашаетесь с нашей <a href="/privacy-policy">Политикой Конфиденциальности</a>.
+            {$t('cookie.text')} <a href="/privacy-policy">{$t('cookie.link')}</a>.
         </p>
         <button class="accept-btn font-display" on:click={acceptCookies}>
-            Принять
+            {$t('cookie.accept')}
         </button>
     </div>
 {/if}

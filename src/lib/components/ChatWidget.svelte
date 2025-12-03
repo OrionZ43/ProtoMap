@@ -7,6 +7,7 @@
     import { modal } from '$lib/stores/modalStore';
     import { slide, fade } from 'svelte/transition';
     import { AudioManager } from '$lib/client/audioManager';
+    import { t } from 'svelte-i18n';
 
     type ReplyInfo = {
         author_username: string;
@@ -41,15 +42,13 @@
     let replyingTo: { id: string; author_username: string; text: string; isMedia?: boolean } | null = null;
     let inputElement: HTMLTextAreaElement;
 
-    $: isVerified = $userStore.user?.emailVerified ?? false;
-
     async function sendMessage() {
         if (isSending || !canSendMessage) return;
         if (!messageText.trim()) return;
 
         const currentUser = $userStore.user;
         if (!currentUser) {
-            modal.error("Ошибка", "Необходимо войти в систему, чтобы отправлять сообщения.");
+            modal.error("Ошибка", "Необходимо войти в систему.");
             return;
         }
 
@@ -88,7 +87,7 @@
             if (msg.includes('Охладите')) {
                 modal.warning("Спам-фильтр", "Вы пишете слишком часто. Подождите немного.");
             } else if (msg.includes('заблокированы') || msg.includes('permission-denied')) {
-                modal.error("БАН", "Доступ к чату ограничен. Проверьте статус аккаунта.");
+                modal.error("БАН", "Доступ к чату ограничен.");
             } else {
                 modal.error("Ошибка связи", msg);
             }
@@ -137,6 +136,7 @@
         const today = new Date();
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
+        // Здесь можно тоже добавить локализацию, но пока оставим как есть для простоты
         if (isSameDay(date, today)) return 'Сегодня';
         if (isSameDay(date, yesterday)) return 'Вчера';
         return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
@@ -186,15 +186,15 @@
 {#if $chat.isOpen}
     <div class="chat-widget" transition:slide={{ duration: 300, x: 100, y: 100 }}>
         <div class="widget-header">
-            <h3 class="font-display">// ОБЩИЙ ЧАТ</h3>
+            <h3 class="font-display">// {$t('chat.title')}</h3>
             <button on:click={closeChat} class="close-btn" aria-label="Закрыть чат">&times;</button>
         </div>
 
         <div class="messages-window" bind:this={messagesWindow}>
             {#if isLoading}
-                <p class="status-text">ЗАГРУЗКА СООБЩЕНИЙ СЕТИ...</p>
+                <p class="status-text">{$t('ui.loading')}</p>
             {:else if messages.length === 0}
-                <p class="status-text">СИГНАЛОВ НЕ ОБНАРУЖЕНО. НАЧНИТЕ ДИАЛОГ.</p>
+                <p class="status-text">{$t('chat.empty')}</p>
             {:else}
                 {#each messages as msg, i (msg.id)}
                     {@const prevMsg = messages[i - 1]}
@@ -247,7 +247,7 @@
                             <div class="message-meta">
                                 {#if $userStore.user}
                                     <div class="message-actions">
-                                        <button on:click={() => setReplyTo(msg)} class="action-btn">Ответить</button>
+                                        <button on:click={() => setReplyTo(msg)} class="action-btn">{$t('chat.reply')}</button>
                                     </div>
                                 {/if}
                             </div>
@@ -259,44 +259,32 @@
 
         <div class="message-input-area">
             {#if $userStore.user}
-                {#if isVerified}
-                    <!-- ОБЫЧНЫЙ ВВОД (Если подтвержден) -->
-                    <div class="input-wrapper">
-                        {#if replyingTo}
-                            <div class="replying-to-banner" transition:slide={{duration: 200}}>
-                                <span>Ответ на: <span class="font-bold">{replyingTo.author_username}</span></span>
-                                <button on:click={() => replyingTo = null}>&times;</button>
-                            </div>
-                        {/if}
-                        <textarea
-                            bind:this={inputElement}
-                            bind:value={messageText}
-                            on:keydown={handleKeydown}
-                            maxlength="1000"
-                            disabled={isSending || !canSendMessage}
-                            placeholder={!canSendMessage ? 'Подождите...' : 'Введите сообщение...'}
-                            class="input-field"
-                        ></textarea>
-                    </div>
-                    <button on:click={sendMessage} disabled={isSending || !canSendMessage || !messageText.trim()} class="send-button">
-                        {#if isSending}
-                             <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        {:else}
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg>
-                        {/if}
-                    </button>
-                {:else}
-                    <!-- ЗАГЛУШКА (Если НЕ подтвержден) -->
-                    <div class="w-full text-center py-2 bg-red-900/20 border border-red-500/30 rounded text-xs">
-                        <span class="text-red-400 block mb-1">⚠️ ДОСТУП ОГРАНИЧЕН</span>
-                        <a href="/profile/{$userStore.user.username}" class="text-cyber-yellow hover:underline font-bold">
-                            ПОДТВЕРДИТЕ EMAIL
-                        </a>
-                        <span class="text-gray-400"> для доступа к чату</span>
-                    </div>
-                {/if}
+                <div class="input-wrapper">
+                    {#if replyingTo}
+                        <div class="replying-to-banner" transition:slide={{duration: 200}}>
+                            <span>Ответ на: <span class="font-bold">{replyingTo.author_username}</span></span>
+                            <button on:click={() => replyingTo = null}>&times;</button>
+                        </div>
+                    {/if}
+                    <textarea
+                        bind:this={inputElement}
+                        bind:value={messageText}
+                        on:keydown={handleKeydown}
+                        maxlength="1000"
+                        disabled={isSending || !canSendMessage}
+                        placeholder={!canSendMessage ? $t('chat.wait') : $t('chat.placeholder')}
+                        class="input-field"
+                    ></textarea>
+                </div>
+                <button on:click={sendMessage} disabled={isSending || !canSendMessage || !messageText.trim()} class="send-button">
+                    {#if isSending}
+                         <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    {:else}
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg>
+                    {/if}
+                </button>
             {:else}
-                <p class="w-full text-center text-gray-400 text-sm"><a href="/login" class="text-cyber-yellow hover:underline">Войдите</a>, чтобы общаться в чате.</p>
+                <p class="w-full text-center text-gray-400 text-sm"><a href="/login" class="text-cyber-yellow hover:underline">{$t('chat.login_req')}</a></p>
             {/if}
         </div>
     </div>

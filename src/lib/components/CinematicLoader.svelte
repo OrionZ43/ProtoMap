@@ -3,13 +3,21 @@
     import { Howl } from 'howler';
     import { browser } from '$app/environment';
 
-    export let username: string = 'НЕИЗВЕСТНЫЙ_УЗЕЛ';
+    // ИМПОРТ ЛОКАЛИЗАЦИИ
+    import { t, getLocaleFromNavigator, locale } from 'svelte-i18n';
+    // Нам нужно получить переводы как обычный объект, чтобы использовать их в таймерах
+    import { get } from 'svelte/store';
+
+    export let username: string = 'UNKNOWN_NODE';
     const dispatch = createEventDispatcher();
 
+    // Логика Зимы
     let isWinter = false;
     if (browser) {
-        const m = new Date().getMonth();
-        if ((m === 11 && new Date().getDate() >= 15) || m === 11 || m === 0) {
+        const d = new Date();
+        const m = d.getMonth();
+        const day = d.getDate();
+        if ((m === 10 && day >= 15) || m === 11 || (m === 0 && day <= 15)) {
             isWinter = true;
         }
     }
@@ -25,19 +33,16 @@
     let timeouts: NodeJS.Timeout[] = [];
     let intervals: NodeJS.Timeout[] = [];
 
-    const winterLogs = [
-        'РАЗМОРОЗКА ПАКЕТОВ...', 'ПРОВЕРКА КРИО-ЯЧЕЕК...', 'ТЕМПЕРАТУРА ЯДРА ПОВЫШАЕТСЯ...',
-        'УДАЛЕНИЕ ЦИФРОВОГО ИНЕЯ...', 'СИНХРОНИЗАЦИЯ С СЕВЕРНЫМ СЕРВЕРОМ...',
-        'ОБНАРУЖЕН СЛОЙ ЛЬДА...', 'АКТИВАЦИЯ ТЕПЛОВЫХ КОНТУРОВ...',
-        'СБОРКА СНЕЖНЫХ БИТОВ...', 'ПРОГРЕВ НЕЙРОСЕТИ...'
-    ];
-
-    const defaultLogs = [
-        'ОБХОД ICE...', 'ЗАПРОС К КОРНЮ...', 'ОБНАРУЖЕНА УТЕЧКА ПАМЯТИ...',
-        'ПАТЧ ЯДРА ПРИМЕНЕН...', 'ПОДМЕНА УЧЕТНЫХ ДАННЫХ...', 'ДЕШИФРОВКА ПАКЕТА 0x7F...',
-        'NULL POINTER... ИГНОРИРУЕТСЯ.', 'ПЕРЕЗАПИСЬ ПРОТОКОЛОВ БЕЗОПАСНОСТИ...',
-        'ВНЕДРЕНИЕ ПОЛЕЗНОЙ НАГРУЗКИ...'
-    ];
+    // Функция-хелпер для получения перевода внутри JS-логики
+    // (так как $t реактивен, но внутри setTimeout нам нужно значение "здесь и сейчас")
+    const translate = (key: string) => get(t)(key);
+    const getArray = (key: string) => {
+        // svelte-i18n возвращает массив как объект, если это JSON массив.
+        // Но лучше просто запросить конкретные ключи или сделать хак.
+        // ПРОЩЕ: Мы получим весь объект переводов и достанем массив.
+        const messages = get(t)(key, { returnObjects: true });
+        return Array.isArray(messages) ? messages : [];
+    };
 
     function addLineAndType(text: string, glitch: boolean = false) {
         const lineIndex = mainLines.length;
@@ -85,8 +90,9 @@
 
         phase = 'phase1_init';
 
-        const initText = isWinter ? '> ЗАПУСК КРИО-ПРОТОКОЛА...' : '> ИНИЦИАЛИЗАЦИЯ СОЕДИНЕНИЯ...';
-        const targetText = isWinter ? '> ЦЕЛЬ ЗАМОРОЖЕНА:' : '> ЦЕЛЕВОЙ УЗЕЛ ИДЕНТИФИЦИРОВАН:';
+        // 1. ИНИЦИАЛИЗАЦИЯ
+        const initText = isWinter ? translate('loader.winter_init') : translate('loader.init');
+        const targetText = isWinter ? translate('loader.winter_target') : translate('loader.target');
 
         timeouts.push(setTimeout(() => addLineAndType(initText), 1000));
         timeouts.push(setTimeout(() => addLineAndType(targetText), 2000));
@@ -95,6 +101,7 @@
             triggerScreenGlitch();
         }, 3000));
 
+        // 2. ВЗЛОМ (Логи)
         timeouts.push(setTimeout(() => {
             phase = 'phase2_breach';
             const progressInterval = setInterval(() => {
@@ -107,13 +114,17 @@
             }, 100);
             intervals.push(progressInterval);
 
-            const logPool = isWinter ? winterLogs : defaultLogs;
-            const logInterval = setInterval(() => {
-                addLog(logPool[Math.floor(Math.random() * logPool.length)]);
-            }, 150);
-            intervals.push(logInterval);
+            const logPool = isWinter ? getArray('loader.winter_logs') : getArray('loader.logs');
+
+            if (logPool.length > 0) {
+                const logInterval = setInterval(() => {
+                    addLog(logPool[Math.floor(Math.random() * logPool.length)]);
+                }, 150);
+                intervals.push(logInterval);
+            }
         }, 4500));
 
+        // 3. АНАЛИЗ
         timeouts.push(setTimeout(() => {
             phase = 'phase3_analyze';
             intervals.forEach(clearInterval);
@@ -122,14 +133,17 @@
             triggerScreenGlitch();
 
             const analyzeTexts = isWinter
-                ? ['РАЗМОРОЗКА ЗАВЕРШЕНА.', 'СБОРКА ДАННЫХ ПРОФИЛЯ...', 'ОТРИСОВКА ИНТЕРФЕЙСА...']
-                : ['ТРАССИРОВКА ЗАВЕРШЕНА.', 'РАЗБОР НЕЙРОННЫХ МЕТАДАННЫХ...', 'ИЗВЛЕЧЕНИЕ ФРАГМЕНТОВ ПАМЯТИ...'];
+                ? getArray('loader.winter_analyze')
+                : getArray('loader.analyze');
 
-            timeouts.push(setTimeout(() => addLog(analyzeTexts[0]), 200));
-            timeouts.push(setTimeout(() => addLog(analyzeTexts[1]), 1000));
-            timeouts.push(setTimeout(() => addLog(analyzeTexts[2]), 2000));
+            if (analyzeTexts.length >= 3) {
+                timeouts.push(setTimeout(() => addLog(analyzeTexts[0]), 200));
+                timeouts.push(setTimeout(() => addLog(analyzeTexts[1]), 1000));
+                timeouts.push(setTimeout(() => addLog(analyzeTexts[2]), 2000));
+            }
         }, 6100));
 
+        // 4. ДОСТУП
         timeouts.push(setTimeout(() => {
             phase = 'phase4_granted';
             mainLines = [];
@@ -164,7 +178,7 @@
 
     <div class="background-effects">
         {#if isWinter}
-            <div class="snow-storm"></div>
+            <div class="snow-storm"></div> <!-- Если у тебя есть стили для этого, иначе оставь matrix -->
             <div class="frost-overlay"></div>
         {:else}
             <div class="matrix-rain"></div>
@@ -176,15 +190,17 @@
 
     <div class="terminal-perspective">
         <div class="terminal">
+            <!-- ЛОГИ -->
             {#if phase === 'phase2_breach' || phase === 'phase3_analyze'}
                 <div class="log-panel">
-                    <h3 class="panel-title">{isWinter ? '//: СИСТЕМНЫЙ ЖУРНАЛ' : '//: SYSTEM LOG'}</h3>
+                    <h3 class="panel-title">//: {isWinter ? $t('loader.winter_log_title') : $t('loader.log_title')}</h3>
                     {#each logLines as log, i}
                         <p class="log-line" style="opacity: {1 - i * 0.15}; transform: translateX({i * 5}px);">{log}</p>
                     {/each}
                 </div>
             {/if}
 
+            <!-- ГЛАВНЫЙ ТЕРМИНАЛ -->
             {#if phase === 'phase1_init'}
                 <div class="main-terminal">
                     {#each mainLines as line}
@@ -193,11 +209,13 @@
                 </div>
             {/if}
 
+            <!-- ПРОГРЕСС БАР -->
             {#if phase === 'phase2_breach'}
                  <div class="main-terminal breach-mode">
                     <div class="progress-bar-container">
-                        <span class="progress-label glitch" data-text={isWinter ? "РАЗМОРОЗКА ДАННЫХ..." : "ВЗЛОМ БРАНДМАУЭРА..."}>
-                            {isWinter ? "РАЗМОРОЗКА ДАННЫХ..." : "ВЗЛОМ БРАНДМАУЭРА..."}
+                        <span class="progress-label glitch"
+                              data-text={isWinter ? $t('loader.winter_breach') : $t('loader.breach')}>
+                            {isWinter ? $t('loader.winter_breach') : $t('loader.breach')}
                         </span>
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: {progress}%"></div>
@@ -207,17 +225,19 @@
                 </div>
             {/if}
 
+            <!-- ФИНАЛ -->
             {#if phase === 'phase4_granted'}
                 <div class="granted-overlay">
-                    <h1 class="granted-text glitch" data-text={isWinter ? "ДОСТУП ОТКРЫТ" : "ДОСТУП РАЗРЕШЕН"}>
-                        {isWinter ? "ДОСТУП ОТКРЫТ" : "ДОСТУП РАЗРЕШЕН"}
+                    <h1 class="granted-text glitch"
+                        data-text={isWinter ? $t('loader.winter_granted') : $t('loader.granted')}>
+                        {isWinter ? $t('loader.winter_granted') : $t('loader.granted')}
                     </h1>
                 </div>
             {/if}
         </div>
     </div>
 
-    <button class="skip-btn" on:click={skipAnimation}>[ ПРОПУСТИТЬ ]</button>
+    <button class="skip-btn" on:click={skipAnimation}>{$t('loader.skip')}</button>
 </div>
 
 <style>

@@ -11,6 +11,9 @@
     import { modal } from '$lib/stores/modalStore';
     import { userStore } from '$lib/stores';
 
+    // ИМПОРТ ЛОКАЛИЗАЦИИ
+    import { t } from 'svelte-i18n';
+
     let email = "";
     let password = "";
     let username = "";
@@ -126,24 +129,24 @@
 </script>
 
 <svelte:head>
-    <title>Регистрация | ProtoMap</title>
+    <title>{$t('auth.register_title')} | ProtoMap</title>
 </svelte:head>
 
 <div class="form-container cyber-panel pb-12" style="opacity: {$opacity}">
 
-    <h2 class="form-title font-display">СОЗДАТЬ НОВЫЙ ПРОФИЛЬ</h2>
+    <h2 class="form-title font-display">{$t('auth.register_title')}</h2>
 
     <form on:submit|preventDefault={handleRegister} class="space-y-8" novalidate>
         <div class="form-group">
-            <label for="username" class="form-label font-display">ИМЯ_ПОЛЬЗОВАТЕЛЯ</label>
+            <label for="username" class="form-label font-display">{$t('auth.username_label')}</label>
             <input bind:value={username} type="text" id="username" name="username" class="input-field">
         </div>
         <div class="form-group">
-            <label for="email" class="form-label font-display">EMAIL_ПОЛЬЗОВАТЕЛЯ</label>
+            <label for="email" class="form-label font-display">{$t('auth.email_label')}</label>
             <input bind:value={email} type="email" id="email" name="email" class="input-field">
         </div>
         <div class="form-group">
-            <label for="password" class="form-label font-display">ПАРОЛЬ</label>
+            <label for="password" class="form-label font-display">{$t('auth.password_label')}</label>
             <input bind:value={password} type="password" id="password" name="password" class="input-field">
         </div>
 
@@ -152,21 +155,28 @@
                 <input type="checkbox" bind:checked={termsAccepted} class="terms-checkbox">
                 <span class="custom-checkbox"></span>
                 <span class="text-sm text-gray-400">
-                    Я принимаю <a href="/terms-of-service" target="_blank" class="link">Пользовательское Соглашение</a> и <a href="/privacy-policy" target="_blank" class="link">Политику Конфиденциальности</a>
+                    {$t('auth.terms_agree')}
+                    <a href="/terms-of-service" target="_blank" class="link">{$t('auth.terms_link')}</a>
+                    &
+                    <a href="/privacy-policy" target="_blank" class="link">{$t('auth.privacy_link')}</a>
                 </span>
             </label>
         </div>
 
         <div class="pt-2">
             <NeonButton type="submit" disabled={loading || googleLoading || !termsAccepted} extraClass="w-full">
-                {loading ? 'Загрузка...' : 'ЗАРЕГИСТРИРОВАТЬСЯ'}
+                {#if loading}
+                    {$t('ui.loading')}
+                {:else}
+                    {$t('auth.register_btn')}
+                {/if}
             </NeonButton>
         </div>
     </form>
 
     <div class="relative my-6">
         <div class="absolute inset-0 flex items-center" aria-hidden="true"><div class="w-full border-t border-gray-700/50"></div></div>
-        <div class="relative flex justify-center text-sm"><span class="px-3 bg-gray-900 text-gray-500 uppercase font-display tracking-wider">ИЛИ</span></div>
+        <div class="relative flex justify-center text-sm"><span class="px-3 bg-gray-900 text-gray-500 uppercase font-display tracking-wider">{$t('auth.or')}</span></div>
     </div>
 
     <div class="text-center">
@@ -181,11 +191,12 @@
     </div>
 
     <p class="mt-8 text-center text-sm text-gray-500">
-        Уже есть аккаунт? <a href="/login" class="font-bold text-cyber-yellow hover:text-white">Войти</a>
+        {$t('auth.has_account')} <a href="/login" class="font-bold text-cyber-yellow hover:text-white">{$t('auth.login_btn')}</a>
     </p>
 </div>
 
 <style>
+    /* Стили остаются без изменений, они уже хороши */
     .form-container {
         @apply max-w-lg mx-auto my-10 p-8 rounded-none shadow-2xl relative;
         background: rgba(10, 10, 10, 0.5); backdrop-filter: blur(4px);
@@ -197,6 +208,7 @@
     @media (max-width: 640px) { .form-container { @apply my-4 mx-4 p-6; } }
 
     .form-title { @apply text-2xl lg:text-3xl font-bold text-center text-white mb-10;text-shadow: none; }
+    .form-group { }
     .form-label { @apply block text-sm font-bold uppercase tracking-widest text-cyber-yellow mb-2; }
     .input-field {
         @apply block w-full p-2 bg-transparent text-gray-200;

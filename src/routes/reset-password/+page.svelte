@@ -7,6 +7,8 @@
     import NeonButton from "$lib/components/NeonButton.svelte";
     import { modal } from "$lib/stores/modalStore";
     import { fade } from "svelte/transition";
+    import { t } from "svelte-i18n";
+    import { get } from "svelte/store";
 
     let newPassword = "";
     let loading = false;
@@ -15,11 +17,14 @@
     let isCodeValid = false;
     let isCheckingCode = true;
 
+    // Хелпер для перевода внутри JS
+    const translate = (key: string) => get(t)(key);
+
     onMount(async () => {
         code = $page.url.searchParams.get("oobCode") || "";
 
         if (!code) {
-            modal.error("Ошибка", "Неверная ссылка для сброса пароля.");
+            modal.error(translate('reset.error_modal_title'), translate('reset.error_missing_code'));
             goto("/");
             return;
         }
@@ -29,7 +34,7 @@
             isCodeValid = true;
         } catch (error) {
             console.error("Invalid code", error);
-            modal.error("Ссылка устарела", "Эта ссылка для сброса пароля уже недействительна или была использована.");
+            modal.error(translate('reset.error_expired_title'), translate('reset.error_expired_desc'));
             goto("/login");
         } finally {
             isCheckingCode = false;
@@ -38,7 +43,7 @@
 
     async function handlePasswordReset() {
         if (newPassword.length < 6) {
-            modal.error("Ошибка", "Пароль должен быть не менее 6 символов.");
+            modal.error(translate('reset.error_modal_title'), translate('reset.weak_password'));
             return;
         }
 
@@ -46,13 +51,13 @@
         try {
             await confirmPasswordReset(auth, code, newPassword);
 
-            modal.success("Успешно!", "Ваш пароль был изменен. Теперь вы можете войти.");
+            modal.success(translate('reset.success_title'), translate('reset.success_desc'));
             setTimeout(() => {
                 goto("/login");
             }, 2000);
         } catch (error: any) {
             console.error("Reset error", error);
-            modal.error("Ошибка", error.message || "Не удалось сменить пароль.");
+            modal.error(translate('reset.error_modal_title'), error.message || translate('reset.error_generic'));
         } finally {
             loading = false;
         }
@@ -60,7 +65,7 @@
 </script>
 
 <svelte:head>
-    <title>Новый пароль | ProtoMap</title>
+    <title>{$t('reset.page_title')} | ProtoMap</title>
 </svelte:head>
 
 <div class="page-container">
@@ -70,19 +75,19 @@
         <div class="corner bottom-left"></div>
         <div class="corner bottom-right"></div>
 
-        <h2 class="form-title font-display">СБРОС ДОСТУПА</h2>
+        <h2 class="form-title font-display">{$t('reset.header')}</h2>
 
         {#if isCheckingCode}
-            <p class="text-center text-gray-400 animate-pulse">Проверка кодов доступа...</p>
+            <p class="text-center text-gray-400 animate-pulse">{$t('reset.checking')}</p>
         {:else if isCodeValid}
             <p class="text-center text-sm text-gray-400 mb-6">
-                Укажите новый пароль для аккаунта: <br>
+                {$t('reset.instruction')} <br>
                 <span class="text-cyber-yellow font-bold">{email}</span>
             </p>
 
             <form on:submit|preventDefault={handlePasswordReset} class="space-y-6">
                 <div class="form-group">
-                    <label for="new-password" class="form-label font-display">НОВЫЙ ПАРОЛЬ</label>
+                    <label for="new-password" class="form-label font-display">{$t('reset.label')}</label>
                     <input
                         bind:value={newPassword}
                         type="password"
@@ -94,13 +99,13 @@
                 </div>
 
                 <NeonButton type="submit" disabled={loading} extraClass="w-full">
-                    {loading ? 'ПРИМЕНЕНИЕ...' : 'СОХРАНИТЬ ПАРОЛЬ'}
+                    {loading ? $t('reset.btn_applying') : $t('reset.btn_save')}
                 </NeonButton>
             </form>
         {:else}
             <div class="text-center">
-                <p class="text-red-500 mb-4">Ошибка валидации ссылки.</p>
-                <a href="/login" class="text-cyber-yellow hover:underline">Вернуться к входу</a>
+                <p class="text-red-500 mb-4">{$t('reset.error_link')}</p>
+                <a href="/login" class="text-cyber-yellow hover:underline">{$t('auth.back_to_login')}</a>
             </div>
         {/if}
     </div>

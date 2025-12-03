@@ -4,7 +4,7 @@
         signInWithEmailAndPassword,
         signInWithPopup,
         GoogleAuthProvider,
-        sendPasswordResetEmail // <--- Импортируем функцию сброса
+        sendPasswordResetEmail
     } from "firebase/auth";
     import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
     import { goto } from "$app/navigation";
@@ -14,7 +14,10 @@
     import { tweened } from 'svelte/motion';
     import { db } from '$lib/firebase';
     import { modal } from '$lib/stores/modalStore';
-    import { slide } from 'svelte/transition'; // Для плавной анимации смены режима
+    import { slide } from 'svelte/transition';
+
+    // ИМПОРТ ЛОКАЛИЗАЦИИ
+    import { t } from 'svelte-i18n';
 
     let email = "";
     let password = "";
@@ -97,7 +100,7 @@
                     social_link: "",
                     about_me: "Вошел с помощью Google",
                     createdAt: serverTimestamp(),
-                    // ВАЖНО: Добавляем стартовый капитал (исправили баг, о котором я говорила ранее)
+                    // ВАЖНО: Добавляем стартовый капитал
                     casino_credits: 100,
                     last_daily_bonus: null
                 });
@@ -113,13 +116,12 @@
 
     function toggleResetMode() {
         isResetMode = !isResetMode;
-        // Очищаем пароль при переключении
         password = '';
     }
 </script>
 
 <svelte:head>
-    <title>{isResetMode ? 'Восстановление доступа' : 'Аутентификация'} | ProtoMap</title>
+    <title>{isResetMode ? $t('auth.recover_title') : $t('auth.login_title')} | ProtoMap</title>
 </svelte:head>
 
 <div class="form-container cyber-panel pb-12" style="opacity: {$opacity}">
@@ -129,31 +131,27 @@
     <div class="corner bottom-right"></div>
 
     <h2 class="form-title font-display">
-        {isResetMode ? 'ВОССТАНОВЛЕНИЕ' : 'АУТЕНТИФИКАЦИЯ'}
+        {isResetMode ? $t('auth.recover_title') : $t('auth.login_title')}
     </h2>
 
-    <!--
-        Используем одну форму, но меняем обработчик submit
-        в зависимости от режима
-    -->
     <form on:submit|preventDefault={isResetMode ? handleResetPassword : handleLogin} class="space-y-6" novalidate>
 
         <!-- Email нужен в обоих режимах -->
         <div class="form-group">
-            <label for="email" class="form-label font-display">EMAIL_ПОЛЬЗОВАТЕЛЯ</label>
+            <label for="email" class="form-label font-display">{$t('auth.email_label')}</label>
             <input bind:value={email} type="email" id="email" name="email" class="input-field" placeholder="name@example.com">
         </div>
 
         <!-- Пароль нужен только при входе -->
         {#if !isResetMode}
             <div class="form-group" transition:slide>
-                <label for="password" class="form-label font-display">ПАРОЛЬ</label>
+                <label for="password" class="form-label font-display">{$t('auth.password_label')}</label>
                 <input bind:value={password} type="password" id="password" name="password" class="input-field">
 
                 <!-- Кнопка "Забыли пароль?" -->
                 <div class="text-right mt-2">
                     <button type="button" on:click={toggleResetMode} class="text-xs text-cyber-yellow hover:text-white underline transition-colors">
-                        Забыли пароль?
+                        {$t('auth.forgot_pass')}
                     </button>
                 </div>
             </div>
@@ -162,16 +160,16 @@
         <div class="pt-2">
             <NeonButton type="submit" disabled={loading || googleLoading} extraClass="w-full">
                 {#if loading}
-                    ОБРАБОТКА...
+                    {$t('ui.loading')}
                 {:else}
-                    {isResetMode ? 'ОТПРАВИТЬ ССЫЛКУ' : 'ВОЙТИ'}
+                    {isResetMode ? $t('auth.recover_btn') : $t('auth.login_btn')}
                 {/if}
             </NeonButton>
 
             <!-- Кнопка отмены для режима сброса -->
             {#if isResetMode}
                 <button type="button" on:click={toggleResetMode} class="w-full mt-4 text-sm text-gray-500 hover:text-white transition-colors" transition:slide>
-                    Вернуться к входу
+                    {$t('auth.back_to_login')}
                 </button>
             {/if}
         </div>
@@ -181,7 +179,7 @@
     {#if !isResetMode}
         <div class="relative my-6" transition:slide>
             <div class="absolute inset-0 flex items-center" aria-hidden="true"><div class="w-full border-t border-gray-700/50"></div></div>
-            <div class="relative flex justify-center text-sm"><span class="px-3 bg-gray-900 text-gray-500 uppercase font-display tracking-wider">ИЛИ</span></div>
+            <div class="relative flex justify-center text-sm"><span class="px-3 bg-gray-900 text-gray-500 uppercase font-display tracking-wider">{$t('auth.or')}</span></div>
         </div>
 
         <div class="text-center" transition:slide>
@@ -196,7 +194,7 @@
         </div>
 
         <p class="mt-8 text-center text-sm text-gray-500" transition:slide>
-            Нет аккаунта? <a href="/register" class="font-bold text-cyber-yellow hover:text-white">Зарегистрируйтесь</a>
+            {$t('auth.no_account')} <a href="/register" class="font-bold text-cyber-yellow hover:text-white">{$t('auth.register_btn')}</a>
         </p>
     {/if}
 </div>
