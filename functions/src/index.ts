@@ -26,6 +26,30 @@ const handleCors = (request: any, response: any): boolean => {
     return false;
 };
 
+const CASINO_CHAT_ID = "-1002885386686";
+const CASINO_TOPIC_ID = 2661;
+
+async function sendToCasinoChat(message: string) {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken || !CASINO_CHAT_ID) return;
+
+    try {
+        const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: CASINO_CHAT_ID,
+                message_thread_id: CASINO_TOPIC_ID,
+                text: message,
+                parse_mode: 'Markdown'
+            })
+        });
+    } catch (e) {
+        console.error("Ошибка отправки в Telegram:", e);
+    }
+}
+
 
 async function assertNotBanned(uid: string) {
     const userRef = admin.firestore().collection('users').doc(uid);
@@ -36,8 +60,6 @@ async function assertNotBanned(uid: string) {
 }
 
 function assertEmailVerified(auth: any) {
-    // Если это Google-вход, email_verified обычно true.
-    // Если Email/Pass - зависит от того, нажал ли юзер ссылку.
     if (!auth.token.email_verified) {
         throw new HttpsError('permission-denied', 'Требуется подтверждение почты (Email Verification).');
     }
@@ -266,61 +288,6 @@ export const purchaseShopItem = onCall({ cors: ALLOWED_ORIGINS }, async (request
     }
 });
 
-export const playSlotMachine = onCall(async (request) => {
-    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
-
-    const uid = request.auth.uid;
-    await assertNotBanned(uid);
-    assertEmailVerified(request.auth);
-
-    const { bet } = request.data;
-    if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
-
-    const userRef = db.collection('users').doc(uid);
-
-    try {
-        const result = await db.runTransaction(async (t) => {
-            const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
-
-            const data = userDoc.data() as any;
-            const credits = data.casino_credits ?? 100;
-
-            if (credits < bet) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
-
-            const newBalanceAfterBet = credits - bet;
-            let finalReels: string[] = [];
-            let winMultiplier = 0;
-            let lossAmount = 0;
-
-            const rand = Math.random() * 100;
-
-            if (rand < 0.1) { finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo']; winMultiplier = 100; }
-            else if (rand < 2.1) { finalReels = ['glitch-6', 'glitch-6', 'glitch-6']; lossAmount = 666; }
-            else if (rand < 5.1) { finalReels = ['heart', 'heart', 'heart']; winMultiplier = 25; }
-            else if (rand < 12.1) { finalReels = ['ram', 'ram', 'ram']; winMultiplier = 10; }
-            else if (rand < 27.1) { finalReels = ['paw', 'paw', 'paw']; winMultiplier = 5; }
-            else {
-                const sym = ['paw', 'ram', 'heart', 'protomap_logo'];
-                do {
-                    finalReels = [sym[Math.floor(Math.random()*4)], sym[Math.floor(Math.random()*4)], sym[Math.floor(Math.random()*4)]];
-                } while (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]);
-            }
-
-            const win = Math.floor(bet * winMultiplier);
-            const final = Math.max(0, newBalanceAfterBet + win - lossAmount);
-
-            t.update(userRef, { casino_credits: final, last_game_played: FieldValue.serverTimestamp() });
-
-            return { reels: finalReels, winAmount: win, lossAmount, newBalance: final };
-        });
-        return { data: result };
-    } catch (error: any) {
-        if (error.code) throw error;
-        throw new HttpsError('internal', 'Game error.');
-    }
-});
-
 export const getDailyBonus = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
@@ -355,6 +322,98 @@ export const getDailyBonus = onCall(async (request) => {
     } catch (error: any) {
         if (error.code === 'resource-exhausted') throw error;
         throw new HttpsError('internal', 'Bonus error.');
+    }
+});
+
+export const playSlotMachine = onCall(
+    { secrets: ["TELEGRAM_BOT_TOKEN"] },
+    async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(uid);
+
+    const { bet } = request.data;
+    const MAX_BET = 1000;
+
+    if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
+    if (bet > MAX_BET) throw new HttpsError('invalid-argument', `Max bet is ${MAX_BET}.`);
+
+    const userRef = db.collection('users').doc(uid);
+
+    try {
+        let notificationMessage: string | null = null;
+
+        const result = await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
+
+            const data = userDoc.data() as any;
+            const username = data.username || "Unknown";
+            const credits = data.casino_credits ?? 100;
+
+            if (credits < bet) throw new HttpsError('failed-precondition', 'Not enough credits.');
+
+            const newBalanceAfterBet = credits - bet;
+            let finalReels: string[] = [];
+            let winMultiplier = 0;
+            let lossAmount = 0;
+
+            const rand = Math.random() * 100;
+
+            // === БАЛАНС & УВЕДОМЛЕНИЯ ===
+
+            // 1. ДЖЕКПОТ (0.1%)
+            if (rand < 0.1) {
+                finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo'];
+                winMultiplier = 100;
+                const win = Math.floor(bet * 100);
+                notificationMessage = `🚨 *JACKPOT ALERT!* 🚨\n\nИгрок *${username}* только что сорвал куш!\nСтавка: ${bet} PC\nВыигрыш: *${win} PC* 💎\n\nКазино в шоке.`;
+            }
+            // 2. ГЛИТЧ (5%) - Смерть
+            else if (rand < 5.1) {
+                finalReels = ['glitch-6', 'glitch-6', 'glitch-6'];
+                lossAmount = Math.floor(bet * 2);
+                notificationMessage = `☠️ *GLITCHED!* ☠️\n\nИгрок *${username}* попал в аномалию.\nПотеряно: *${lossAmount} PC*.\n\nОрион: "Ничего личного, просто бизнес."`;
+            }
+            // 3. СЕРДЦА (3%) - Крупный выигрыш
+            else if (rand < 8.1) {
+                finalReels = ['heart', 'heart', 'heart'];
+                winMultiplier = 25;
+                const win = Math.floor(bet * 25);
+                // Оповещаем, только если выигрыш внушительный (например > 1000)
+                if (win >= 1000) {
+                    notificationMessage = `🔥 *BIG WIN!* 🔥\n\n*${username}* поднял *${win} PC* (x15)!`;
+                }
+            }
+            // ... остальные комбинации без уведомлений ...
+            else if (rand < 16.1) { finalReels = ['ram', 'ram', 'ram']; winMultiplier = 10; }
+            else if (rand < 31.1) { finalReels = ['paw', 'paw', 'paw']; winMultiplier = 5; }
+            else {
+                const sym = ['paw', 'ram', 'heart', 'protomap_logo'];
+                do {
+                    finalReels = [sym[Math.floor(Math.random()*4)], sym[Math.floor(Math.random()*4)], sym[Math.floor(Math.random()*4)]];
+                } while (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]);
+            }
+
+            const win = Math.floor(bet * winMultiplier);
+            const final = Math.max(0, newBalanceAfterBet + win - lossAmount);
+
+            t.update(userRef, { casino_credits: final, last_game_played: FieldValue.serverTimestamp() });
+
+            return { reels: finalReels, winAmount: win, lossAmount, newBalance: final };
+        });
+
+        // Отправляем уведомление ПОСЛЕ успешной транзакции
+        if (notificationMessage) {
+            // Не ждем await, чтобы не тормозить ответ клиенту
+            sendToCasinoChat(notificationMessage).catch(console.error);
+        }
+
+        return { data: result };
+    } catch (error: any) {
+        if (error.code) throw error;
+        throw new HttpsError('internal', 'Game error.');
     }
 });
 
@@ -630,36 +689,144 @@ export const uploadAvatar = onCall({ secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDIN
     }
 });
 
-export const reportContent = onCall({ secrets: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"] }, async (request) => {
-    if (!request.auth) throw new HttpsError("unauthenticated", "Auth required.");
-
-    const uid = request.auth.uid;
-    await assertNotBanned(uid);
-
-    const { type, reportedContentId, profileOwnerUid, reason, reportedUsername, reporterUsername } = request.data;
-    if (!reason) throw new HttpsError("invalid-argument", "No reason.");
-
-    try {
-        await db.collection('reports').add({
-            type, reportedContentId, profileOwnerUid, reporterUid: uid, reason,
-            reportedUsername, reporterUsername, status: 'new', createdAt: FieldValue.serverTimestamp()
-        });
-
-        // Telegram Notification
-        const botToken = process.env.TELEGRAM_BOT_TOKEN;
-        const chatId = process.env.TELEGRAM_CHAT_ID;
-        if (botToken && chatId) {
-            const msg = `🚨 REPORT: ${type}\nFrom: ${reporterUsername}\nReason: ${reason}`;
-            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chatId, text: msg })
-            });
-        }
-        return { success: true, message: "Отправлено." };
-    } catch (e) {
-        throw new HttpsError("internal", "Report error.");
+function escapeMarkdownV2(text: string): string {
+    const sourceText = String(text || '');
+    // Экранируем символы, которые Telegram считает разметкой
+    const charsToEscape = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
+    let escapedText = sourceText;
+    for (const char of charsToEscape) {
+        escapedText = escapedText.replace(new RegExp('\\' + char, 'g'), '\\' + char);
     }
-});
+    return escapedText;
+}
+
+// --- ФУНКЦИЯ ЖАЛОБ ---
+interface ReportData {
+    type: 'comment' | 'profile';
+    reportedContentId: string;
+    profileOwnerUid: string;
+    reason: string;
+    reportedUsername?: string;
+    reporterUsername?: string;
+    profileOwnerUsername?: string;
+}
+
+export const reportContent = onCall(
+    { secrets: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"] },
+    async (request) => {
+        if (!request.auth) {
+            throw new HttpsError("unauthenticated", "Auth required.");
+        }
+
+        const reporterUid = request.auth.uid;
+
+        // 1. ПРОВЕРКА БАНА (Оставляем защиту!)
+        await assertNotBanned(reporterUid);
+
+        const {
+            type,
+            reportedContentId,
+            profileOwnerUid,
+            reason,
+            reportedUsername,
+            reporterUsername,
+            profileOwnerUsername
+        } = request.data as ReportData;
+
+        if (!type || !reportedContentId || !profileOwnerUid || !reason) {
+            throw new HttpsError("invalid-argument", "Missing data.");
+        }
+
+        try {
+            // 2. ЕСЛИ ЭТО КОММЕНТАРИЙ - ПОЛУЧАЕМ ЕГО ТЕКСТ
+            let reportedContentText = '';
+
+            if (type === 'comment') {
+                const commentDoc = await db.collection('users')
+                    .doc(profileOwnerUid)
+                    .collection('comments')
+                    .doc(reportedContentId)
+                    .get();
+
+                if (commentDoc.exists) {
+                    reportedContentText = commentDoc.data()?.text || '';
+                }
+            }
+
+            // 3. СОХРАНЯЕМ В БАЗУ (Для истории)
+            await db.collection('reports').add({
+                type,
+                reportedContentId,
+                profileOwnerUid,
+                reporterUid,
+                reason,
+                reportedUsername: reportedUsername || null,
+                reporterUsername: reporterUsername || null,
+                profileOwnerUsername: profileOwnerUsername || null,
+                reportedContentText: reportedContentText || null, // Сохраняем текст нарушения
+                status: 'new',
+                createdAt: FieldValue.serverTimestamp()
+            });
+
+            // 4. ОТПРАВЛЯЕМ КРАСИВОЕ УВЕДОМЛЕНИЕ В TELEGRAM
+            const botToken = process.env.TELEGRAM_BOT_TOKEN;
+            const chatId = process.env.TELEGRAM_CHAT_ID;
+
+            if (botToken && chatId) {
+                const baseUrl = "https://proto-map.vercel.app/profile/";
+
+                // Формируем ссылки [Text](URL)
+                const reporterLink = reporterUsername
+                    ? `[${escapeMarkdownV2(reporterUsername)}](${baseUrl}${escapeMarkdownV2(reporterUsername)})`
+                    : `\`${reporterUid}\``;
+
+                const reportedUserLink = reportedUsername
+                    ? `[${escapeMarkdownV2(reportedUsername)}](${baseUrl}${escapeMarkdownV2(reportedUsername)})`
+                    : `\`UID: ${reportedContentId}\``;
+
+                const profileLink = profileOwnerUsername
+                    ? `[${escapeMarkdownV2(profileOwnerUsername)}](${baseUrl}${escapeMarkdownV2(profileOwnerUsername)})`
+                    : `\`${profileOwnerUid}\``;
+
+                // Собираем сообщение
+                let message = `🚨 *НОВЫЙ РЕПОРТ* 🚨\n\n`;
+                message += `*От кого:* ${reporterLink}\n`;
+                message += `*Причина:* ${escapeMarkdownV2(reason)}\n\n`;
+
+                if (type === 'profile') {
+                    message += `👉 *Жалоба на профиль:* ${reportedUserLink}`;
+                } else {
+                    message += `👉 *Жалоба на комментарий пользователя* ${reportedUserLink}\n`;
+                    message += `📍 *В профиле:* ${profileLink}\n`;
+
+                    if (reportedContentText) {
+                        message += `\n*Текст комментария:*\n\`\`\`\n${escapeMarkdownV2(reportedContentText)}\n\`\`\``;
+                    } else {
+                        message += `\n_(Текст комментария не найден или удален)_`;
+                    }
+                }
+
+                // Отправляем
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: message,
+                        parse_mode: 'MarkdownV2', // Важно для жирного текста и ссылок
+                        disable_web_page_preview: true // Чтобы не засорять чат превьюшками профилей
+                    })
+                });
+            }
+
+            return { success: true, message: "Ваша жалоба отправлена." };
+
+        } catch (error) {
+            console.error("Report error:", error);
+            throw new HttpsError("internal", "Ошибка сервера при отправке жалобы.");
+        }
+    }
+);
 
 export const deleteAccount = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');

@@ -6,16 +6,17 @@
     import { cubicOut, quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { Howl } from 'howler';
-
-    // Локализация
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
 
-    // Хелпер для перевода в JS
+    // Хелпер для перевода
     const translate = (key: string) => get(t)(key);
 
     const SPIN_DURATION = 3000;
     const REEL_SYMBOLS = ['paw', 'ram', 'heart', 'protomap_logo', 'glitch-6'];
+
+    // КОНСТАНТА МАКСИМАЛЬНОЙ СТАВКИ
+    const MAX_BET = 1000;
 
     let betAmount = 10;
     let isSpinning = false;
@@ -25,8 +26,20 @@
     let lossAmount = 0;
     let winTier = 0;
 
+    // === UX ФИКС: Ограничение ввода ===
+    // Как только значение меняется, проверяем его
+    $: if (betAmount > MAX_BET) {
+        betAmount = MAX_BET;
+    }
+    $: if (betAmount < 0) { // На всякий случай от минуса
+        betAmount = 1;
+    }
+    // =================================
+
     const displayedCredits = tweened($userStore.user?.casino_credits || 0, { duration: 500, easing: quintOut });
-    $: if ($userStore.user) { displayedCredits.set($userStore.user.casino_credits); }
+    $: if ($userStore.user) {
+        displayedCredits.set($userStore.user.casino_credits);
+    }
 
     let audioContext: AudioContext;
     let sounds: { [key: string]: Howl } = {};
@@ -93,9 +106,16 @@
         if (isSpinning || !$userStore.user) return;
 
         const currentBet = Number(betAmount);
+
+        // Проверка на превышение баланса (все еще нужна)
         if (isNaN(currentBet) || currentBet <= 0 || currentBet > $userStore.user.casino_credits) {
             modal.error(translate('slots.modal_invalid_title'), translate('slots.modal_invalid_text'));
             return;
+        }
+        // Проверка на лимит (на всякий случай, хотя UI уже не даст)
+        if (currentBet > MAX_BET) {
+             betAmount = MAX_BET;
+             return;
         }
 
         isSpinning = true;
@@ -265,8 +285,8 @@
                         <label for="bet-amount">{$t('slots.bet_label')}</label>
                         <div class="bet-input-wrapper">
                             <button class="bet-adjust" on:click={() => betAmount = Math.max(10, betAmount - 10)} disabled={isSpinning}>-</button>
-                            <input id="bet-amount" type="number" bind:value={betAmount} min="1" disabled={isSpinning} />
-                            <button class="bet-adjust" on:click={() => betAmount += 10} disabled={isSpinning}>+</button>
+                            <input id="bet-amount" type="number" bind:value={betAmount} min="1" max={MAX_BET} disabled={isSpinning} />
+                            <button class="bet-adjust" on:click={() => betAmount = Math.min(MAX_BET, betAmount + 10)} disabled={isSpinning}>+</button>
                         </div>
                     </div>
 
@@ -299,7 +319,7 @@
             </div>
             <div class="combo loss">
                 <div class="icons"><img src="/casino/glitch-6.svg" alt="glitch-6"><img src="/casino/glitch-6.svg" alt="glitch-6"><img src="/casino/glitch-6.svg" alt="glitch-6"></div>
-                <div class="multiplier">-666</div>
+                <div class="multiplier text-xs text-red-500">-2x BET</div>
             </div>
         </div>
     </div>

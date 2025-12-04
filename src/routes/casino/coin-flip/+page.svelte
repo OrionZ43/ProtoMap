@@ -32,7 +32,9 @@
     let dealerMessage = "> ...";
 
     const displayedCredits = tweened($userStore.user?.casino_credits || 0, { duration: 500, easing: quintOut });
-    $: if ($userStore.user) { displayedCredits.set($userStore.user.casino_credits); }
+    $: if ($userStore.user) {
+        displayedCredits.set($userStore.user.casino_credits);
+    }
 
     let sounds: { [key: string]: Howl } = {};
 
