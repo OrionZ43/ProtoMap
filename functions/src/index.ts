@@ -4,6 +4,7 @@ import * as admin from "firebase-admin";
 import fetch from "node-fetch";
 import { FieldValue } from "firebase-admin/firestore";
 import { v2 as cloudinary } from "cloudinary";
+import * as crypto from 'crypto';
 
 if (!admin.apps.length) {
     admin.initializeApp();
@@ -354,59 +355,126 @@ export const playSlotMachine = onCall(
 
             if (credits < bet) throw new HttpsError('failed-precondition', 'Not enough credits.');
 
+            // === ЛОГИКА СПУСКА В ЯМУ (THE DESCENT) ===
+            const now = Date.now();
+            const lastSpinTime = data.last_game_played ? data.last_game_played.toDate().getTime() : 0;
+            const ONE_HOUR = 60 * 60 * 1000;
+
+            let glitchLevel = data.glitch_level || 0;
+            let spinsInLevel = data.spins_in_level || 0;
+
+            // 1. Проверка на сброс КД (если прошел час - обнуляем уровень)
+            if (now - lastSpinTime > ONE_HOUR) {
+                glitchLevel = 0;
+                spinsInLevel = 0;
+            }
+
+            // 2. Увеличение счетчика
+            spinsInLevel++;
+
+            // 3. Повышение уровня каждые 10 спинов (макс уровень 5)
+            if (spinsInLevel >= 10) {
+                if (glitchLevel < 5) {
+                    glitchLevel++;
+                }
+                spinsInLevel = 0; // Сбрасываем счетчик десятка
+            }
+
+            // 4. Определение шанса Глитча от уровня
+            // Уровень 0: ~3% (Стандарт)
+            // Уровень 1: 10%
+            // Уровень 2: 20%
+            // Уровень 3: 30%
+            // Уровень 4: 40%
+            // Уровень 5: 50% (Смертельная зона)
+            let glitchChanceThreshold = 3.1;
+
+            if (glitchLevel === 1) glitchChanceThreshold = 10.0;
+            if (glitchLevel === 2) glitchChanceThreshold = 20.0;
+            if (glitchLevel === 3) glitchChanceThreshold = 30.0;
+            if (glitchLevel === 4) glitchChanceThreshold = 40.0;
+            if (glitchLevel === 5) glitchChanceThreshold = 50.0;
+
+            // ==========================================
+
+            // === КРИПТО-РАНДОМ ===
+            const randomInt = crypto.randomInt(0, 10000); // 0 - 9999
+            const randPercent = randomInt / 100; // 0.00 - 99.99
+
             const newBalanceAfterBet = credits - bet;
             let finalReels: string[] = [];
             let winMultiplier = 0;
             let lossAmount = 0;
 
-            const rand = Math.random() * 100;
-
-            // === БАЛАНС & УВЕДОМЛЕНИЯ ===
+            // === ТАБЛИЦА ВЕРОЯТНОСТЕЙ ===
 
             // 1. ДЖЕКПОТ (0.1%)
-            if (rand < 0.1) {
+            // Шанс джекпота не меняется от уровня, мечта должна жить
+            if (randPercent < 0.1) {
                 finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo'];
                 winMultiplier = 100;
                 const win = Math.floor(bet * 100);
-                notificationMessage = `🚨 *JACKPOT ALERT!* 🚨\n\nИгрок *${username}* только что сорвал куш!\nСтавка: ${bet} PC\nВыигрыш: *${win} PC* 💎\n\nКазино в шоке.`;
+                notificationMessage = `🚨 *JACKPOT ALERT!* 🚨\n\nИгрок *${username}* выжил в Бездне!\nУровень угрозы: ${glitchLevel}\nВыигрыш: *${win} PC* 💎`;
             }
-            // 2. ГЛИТЧ (5%) - Смерть
-            else if (rand < 5.1) {
+            // 2. ГЛИТЧ (Динамический шанс!)
+            // Если randPercent попадает в зону риска (например, < 50 на 5 уровне)
+            else if (randPercent < glitchChanceThreshold) {
                 finalReels = ['glitch-6', 'glitch-6', 'glitch-6'];
-                lossAmount = Math.floor(bet * 2);
-                notificationMessage = `☠️ *GLITCHED!* ☠️\n\nИгрок *${username}* попал в аномалию.\nПотеряно: *${lossAmount} PC*.\n\nОрион: "Ничего личного, просто бизнес."`;
+                lossAmount = Math.floor(bet * 2) + 666;
+                notificationMessage = `☠️ *GLITCHED [LVL ${glitchLevel}]* ☠️\n\n*${username}* поглощен Бездной.\nПотеряно: *${lossAmount} PC*.`;
             }
-            // 3. СЕРДЦА (3%) - Крупный выигрыш
-            else if (rand < 8.1) {
+            // 3. СЕРДЦА (2%)
+            else if (randPercent < (glitchChanceThreshold + 2.0)) {
                 finalReels = ['heart', 'heart', 'heart'];
-                winMultiplier = 25;
-                const win = Math.floor(bet * 25);
-                // Оповещаем, только если выигрыш внушительный (например > 1000)
-                if (win >= 1000) {
-                    notificationMessage = `🔥 *BIG WIN!* 🔥\n\n*${username}* поднял *${win} PC* (x15)!`;
-                }
+                winMultiplier = 10;
+                const win = Math.floor(bet * 10);
+                if (win >= 2000) notificationMessage = `🔥 *BIG WIN!* 🔥\n\n*${username}* (Lvl ${glitchLevel}) поднял *${win} PC*!`;
             }
-            // ... остальные комбинации без уведомлений ...
-            else if (rand < 16.1) { finalReels = ['ram', 'ram', 'ram']; winMultiplier = 10; }
-            else if (rand < 31.1) { finalReels = ['paw', 'paw', 'paw']; winMultiplier = 5; }
+            // 4. БАРАНЫ (7%)
+            else if (randPercent < (glitchChanceThreshold + 9.0)) {
+                finalReels = ['ram', 'ram', 'ram'];
+                winMultiplier = 5;
+            }
+            // 5. ЛАПКИ (15%)
+            else if (randPercent < (glitchChanceThreshold + 24.0)) {
+                finalReels = ['paw', 'paw', 'paw'];
+                winMultiplier = 2;
+            }
+            // 6. ПРОИГРЫШ
             else {
                 const sym = ['paw', 'ram', 'heart', 'protomap_logo'];
                 do {
-                    finalReels = [sym[Math.floor(Math.random()*4)], sym[Math.floor(Math.random()*4)], sym[Math.floor(Math.random()*4)]];
+                    finalReels = [
+                        sym[crypto.randomInt(0, 4)],
+                        sym[crypto.randomInt(0, 4)],
+                        sym[crypto.randomInt(0, 4)]
+                    ];
                 } while (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]);
             }
 
             const win = Math.floor(bet * winMultiplier);
-            const final = Math.max(0, newBalanceAfterBet + win - lossAmount);
+            const finalCalc = newBalanceAfterBet + win - lossAmount;
+            const final = finalCalc < 0 ? 0 : finalCalc;
 
-            t.update(userRef, { casino_credits: final, last_game_played: FieldValue.serverTimestamp() });
+            t.update(userRef, {
+                casino_credits: final,
+                last_game_played: FieldValue.serverTimestamp(),
+                glitch_level: glitchLevel,
+                spins_in_level: spinsInLevel
+            });
 
-            return { reels: finalReels, winAmount: win, lossAmount, newBalance: final };
+            return {
+                reels: finalReels,
+                winAmount: win,
+                lossAmount,
+                newBalance: final,
+                // Возвращаем данные о текущем уровне, чтобы фронтенд мог пугать игрока
+                currentGlitchLevel: glitchLevel,
+                spinsToNextLevel: 10 - spinsInLevel
+            };
         });
 
-        // Отправляем уведомление ПОСЛЕ успешной транзакции
         if (notificationMessage) {
-            // Не ждем await, чтобы не тормозить ответ клиенту
             sendToCasinoChat(notificationMessage).catch(console.error);
         }
 

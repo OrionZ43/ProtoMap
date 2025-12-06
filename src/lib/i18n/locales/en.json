@@ -312,7 +312,7 @@
   },
   "slots": {
     "title": "PROTO-SLOT",
-    "jackpot": "JACKPOT",
+    "jackpot": "Good luck...",
     "win": "WIN",
     "loss": "LOSS",
     "spin": "SPIN",
