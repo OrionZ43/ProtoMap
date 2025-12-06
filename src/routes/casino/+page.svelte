@@ -32,6 +32,8 @@
     }
 
     let sounds: { [key: string]: Howl } = {};
+
+    // Хелпер для перевода в JS
     const translate = (key: string) => get(t)(key);
 
     onMount(() => {
@@ -93,7 +95,7 @@
 
     <div class="header">
         <h1 class="title font-display glitch" data-text={$t('nav.casino')}>{$t('nav.casino')}</h1>
-        <p class="subtitle">//: {$t('news_page.subtitle')}</p>
+        <p class="subtitle">//: {$t('news_page.subtitle')}</p> <!-- Можно использовать subtitle из новостей или добавить свой -->
     </div>
 
     {#if $userStore.user}
@@ -119,7 +121,6 @@
 
         <!-- СПИСОК ИГР -->
         <div class="games-grid">
-            <!-- 1. МОНЕТКА (Работает) -->
             <a href="/casino/coin-flip" class="game-card">
                 <div class="game-art">
                     <img src="/casino/OaR.png" alt="Coin Flip" class="art-img">
@@ -132,25 +133,17 @@
                 </div>
             </a>
 
-            <!-- 2. СЛОТЫ (ЗАБЛОКИРОВАНО / ХОРРОР) -->
-            <div class="game-card horror-locked">
+            <a href="/casino/slot-machine" class="game-card">
                 <div class="game-art">
-                     <img src="/casino/slots.png" alt="CORRUPTED" class="art-img glitch-img">
-                     <div class="art-overlay horror-overlay"></div>
-                     <!-- Иконка замка или предупреждения -->
-                     <div class="horror-status">⚠️ FATAL ERROR</div>
+                     <img src="/casino/slots.png" alt="Slots" class="art-img">
+                     <div class="art-overlay"></div>
                 </div>
                 <div class="game-info">
-                    <!-- Глитч на тексте -->
-                    <h3 class="game-title font-display text-red-600 glitch" data-text="SYSTEM FAILURE">SYSTEM FAILURE</h3>
-                    <p class="game-desc text-red-900 font-mono text-xs uppercase">
-                        //: CONNECTION REFUSED<br>
-                        //: ANOMALY DETECTED<br>
-                        //: DO NOT ENTER
-                    </p>
-                    <span class="play-indicator font-display text-red-500">OFFLINE</span>
+                    <h3 class="game-title font-display">{$t('casino.game_slots_title')}</h3>
+                    <p class="game-desc">{$t('casino.game_slots_desc')}</p>
+                    <span class="play-indicator font-display">{$t('casino.play')}</span>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- ЛИДЕРБОРД -->
@@ -356,46 +349,5 @@
             flex: 1 1 auto; /* Кнопки растягиваются, но могут переноситься */
             min-width: 90px; /* Минимальная ширина, чтобы текст не сжимался в ноль */
         }
-    }
-    .horror-locked {
-        border-color: #500000 !important;
-        box-shadow: 0 0 20px rgba(255, 0, 0, 0.1);
-        cursor: not-allowed;
-        position: relative;
-        filter: grayscale(0.8);
-        transition: all 0.3s;
-    }
-
-    .horror-locked:hover {
-        transform: translateY(0) !important; /* Не поднимается */
-        box-shadow: 0 0 30px rgba(255, 0, 0, 0.3) !important;
-        filter: grayscale(0) contrast(1.5);
-    }
-
-    .horror-overlay {
-        background: linear-gradient(to top, rgba(50,0,0,0.9), rgba(255,0,0,0.1));
-        mix-blend-mode: multiply;
-    }
-
-    .glitch-img {
-        opacity: 0.6;
-    }
-
-    .horror-status {
-        position: absolute;
-        top: 50%; left: 50%; transform: translate(-50%, -50%);
-        background: #000; color: #ff0000; border: 2px solid #ff0000;
-        padding: 0.5rem 1rem; font-weight: bold; font-family: 'Chakra Petch', monospace;
-        letter-spacing: 0.1em; z-index: 10;
-        box-shadow: 0 0 15px #ff0000;
-        animation: blink-fast 0.2s infinite;
-    }
-
-    .text-red-600 { color: #dc2626; text-shadow: 0 0 5px #dc2626; }
-    .text-red-900 { color: #7f1d1d; }
-    .text-red-500 { color: #ef4444; }
-
-    @keyframes blink-fast {
-        0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; }
     }
 </style>
