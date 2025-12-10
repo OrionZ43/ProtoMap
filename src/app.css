@@ -1002,6 +1002,212 @@ html {
     border: 1px dashed rgba(255, 255, 255, 0.5); border-top: 2px solid #fff; border-bottom: 2px solid #fff; animation: stealth-scan 3s ease-in-out infinite;
 }
 
+/* ========================================= */
+/* === [ WINTER COLLECTION: FIXED v3 ] === */
+/* ========================================= */
+
+/* --- 0. ГЛОБАЛЬНЫЙ ФИКС КОНТЕЙНЕРОВ --- */
+/* Это лечит обрезание и странный фон на карте/в профиле */
+
+.avatar-wrapper.frame_cryo, .avatar-wrapper.frame_festive, .avatar-wrapper.frame_aurora,
+.user-avatar-marker.frame_cryo, .user-avatar-marker.frame_festive, .user-avatar-marker.frame_aurora,
+.avatar-wrapper-popup.frame_cryo, .avatar-wrapper-popup.frame_festive, .avatar-wrapper-popup.frame_aurora,
+.comment-avatar-wrapper.frame_cryo, .comment-avatar-wrapper.frame_festive, .comment-avatar-wrapper.frame_aurora {
+    overflow: visible !important; /* Разрешаем рамке вылезать */
+    border-radius: 50% !important; /* Гарантируем круг */
+    background: transparent !important; /* Убираем лишние фоны */
+    box-shadow: none !important; /* Убираем старые тени, которые могли мешать */
+    transform-style: preserve-3d; /* Фикс для некоторых браузеров */
+}
+
+/* Убираем дефолтные бордеры у картинок внутри этих рамок */
+.frame_cryo img, .frame_festive img, .frame_aurora img {
+    border: none !important;
+    border-radius: 50% !important;
+    /* Важно: Картинка должна быть сверху подложек, но снизу наложений */
+    position: relative;
+    z-index: 5;
+}
+
+
+/* --- ANIMATIONS --- */
+
+@keyframes spin-slow {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes festive-flash {
+    0%, 100% { filter: brightness(1); opacity: 0.8; }
+    50% { filter: brightness(1.3); opacity: 1; }
+}
+
+@keyframes aurora-wave {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+
+/* ------------------------------------------------ */
+/* 1. CRYO-STASIS (Ледяной щит)                     */
+/* ------------------------------------------------ */
+
+/* Внешнее кольцо (Лёд) */
+.frame_cryo::before {
+    content: ''; position: absolute;
+    inset: -4px; /* Выступает наружу */
+    border-radius: 50%;
+    border: 2px solid rgba(0, 243, 255, 0.6);
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.5), inset 0 0 10px rgba(0, 243, 255, 0.3);
+    z-index: 10; /* Поверх аватарки */
+    pointer-events: none;
+}
+
+/* Вращающиеся осколки (Тонкие) */
+.frame_cryo::after {
+    content: ''; position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: #fff;
+    border-bottom-color: rgba(0, 243, 255, 0.5);
+    z-index: 11;
+    animation: spin-slow 8s linear infinite;
+    pointer-events: none;
+}
+
+
+/* ------------------------------------------------ */
+/* 2. FESTIVE_L00P (Гирлянда)                       */
+/* ------------------------------------------------ */
+
+/* Основное свечение (Сзади) */
+.frame_festive::before {
+    content: ''; position: absolute;
+    inset: -3px; /* Чуть шире */
+    border-radius: 50%;
+    z-index: 1; /* ПОД аватаркой (z-index картинки = 5) */
+    background: conic-gradient(
+        #ff003c, #ffd700, #00ff9d,
+        #ff003c, #ffd700, #00ff9d,
+        #ff003c
+    );
+    filter: blur(2px);
+    animation: spin-slow 4s linear infinite;
+}
+
+/* Четкий контур (Сверху) */
+.frame_festive::after {
+    content: ''; position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    z-index: 10; /* ПОВЕРХ аватарки */
+    border: 2px dashed rgba(255, 255, 255, 0.6);
+    animation: spin-slow 12s linear infinite reverse, festive-flash 2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+
+/* ------------------------------------------------ */
+/* 3. AURORA (Северное сияние)                      */
+/* ------------------------------------------------ */
+
+/* Подложка с градиентом */
+.frame_aurora::before {
+    content: ''; position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    z-index: 1; /* Под аватаркой */
+    background: linear-gradient(120deg, #00ff9d, #00f3ff, #bd00ff, #00ff9d);
+    background-size: 300% 300%;
+    animation: aurora-wave 3s ease infinite;
+}
+
+/* Внутренний блик (Сверху) */
+.frame_aurora::after {
+    content: ''; position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    z-index: 10; /* Поверх */
+    box-shadow: inset 0 0 8px rgba(0, 243, 255, 0.6);
+    border: 1px solid rgba(255,255,255,0.3);
+    pointer-events: none;
+}
+
+/* ------------------------------------------------ */
+/* 4. TRUE GAMBLER (LUDOMAN) - THIN & CRISP         */
+/* ------------------------------------------------ */
+
+@keyframes money-rain-fall {
+    /* Падение на высоту паттерна (20px) */
+    0% { background-position: 0 0, 5px -10px; }
+    100% { background-position: 0 20px, 5px 10px; }
+}
+
+@keyframes gold-pulse {
+    0%, 100% { border-color: #ffd700; box-shadow: 0 0 3px #ffd700; }
+    50% { border-color: #ffec8b; box-shadow: 0 0 10px #ffd700; }
+}
+
+/* Глобальный контейнер */
+.avatar-wrapper.frame_ludoman,
+.user-avatar-marker.frame_ludoman,
+.avatar-wrapper-popup.frame_ludoman,
+.comment-avatar-wrapper.frame_ludoman {
+    position: relative;
+
+    /* УМЕНЬШИЛИ ТОЛЩИНУ: Было 2px -> Стало 1px */
+    border: 1px solid #ffd700 !important;
+
+    animation: gold-pulse 2s infinite ease-in-out;
+
+    overflow: visible !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+}
+
+/* Эффект дождя (Слой поверх) */
+.frame_ludoman::before {
+    content: '';
+    position: absolute;
+
+    /* Эффект чуть шире рамки */
+    inset: -3px;
+
+    border-radius: 50%;
+    z-index: 10;
+    pointer-events: none;
+
+    /* Золотые и белые точки (искры) */
+    background-image:
+        radial-gradient(circle, #ffd700 1.5px, transparent 1.5px),
+        radial-gradient(circle, #fff 1px, transparent 1px);
+
+    background-size: 10px 10px, 15px 15px;
+
+    animation: money-rain-fall 1s linear infinite;
+
+    /* МАСКА: Сдвинули границу маски внутрь (60%),
+       чтобы дождь был виден лучше поверх тонкой рамки */
+    -webkit-mask: radial-gradient(transparent 60%, black 61%);
+    mask: radial-gradient(transparent 60%, black 61%);
+}
+
+/* Фикс самой картинки внутри */
+.frame_ludoman img {
+    border-radius: 50% !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border: none !important;
+    display: block !important;
+    position: relative;
+    z-index: 5;
+}
+
 .leaflet-container a.leaflet-popup-close-button {
     color: rgba(255, 255, 255, 0.6) !important;
     font-size: 28px !important;

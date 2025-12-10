@@ -16,6 +16,7 @@ export type UserProfile = {
     status?: string;
     casino_credits: number;
     last_daily_bonus: Date | null;
+    daily_streak: number; // <--- ВАЖНО: ДОБАВЛЕНО ПОЛЕ
     owned_items: string[];
     equipped_frame: string | null;
     equipped_badge: string | null;
@@ -37,13 +38,8 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
 
     if (userAuth) {
         try {
-            // === ФИКС: ПРИНУДИТЕЛЬНО ОБНОВЛЯЕМ СТАТУС ===
-            // 1. Скачиваем свежие данные юзера с серверов Auth (включая emailVerified)
             await userAuth.reload();
-            // 2. Форсируем обновление токена (true = forceRefresh), чтобы в нем прописался новый статус
             token = await userAuth.getIdToken(true);
-            // ==============================================
-
             const docRef = doc(db, "users", userAuth.uid);
             const docSnap = await getDoc(docRef);
 
@@ -53,7 +49,6 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
                     uid: userAuth.uid,
                     username: data.username,
                     email: userAuth.email,
-                    // Теперь тут будет актуальное значение
                     emailVerified: userAuth.emailVerified,
                     avatar_url: data.avatar_url || '',
                     social_link: data.social_link || '',
@@ -61,6 +56,7 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
                     status: data.status || '',
                     casino_credits: data.casino_credits ?? 100,
                     last_daily_bonus: data.last_daily_bonus ? data.last_daily_bonus.toDate() : null,
+                    daily_streak: data.daily_streak || 0, // <--- ВАЖНО: ЧИТАЕМ ИЗ БАЗЫ
                     owned_items: data.owned_items || [],
                     equipped_frame: data.equipped_frame || null,
                     equipped_badge: data.equipped_badge || null
@@ -71,17 +67,13 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
         }
     }
 
-    // Синхронизация сессии с сервером SvelteKit (cookies)
     if (browser) {
         try {
-            const response = await fetch('/api/auth', {
-                method: token ? 'POST' : 'DELETE', // token уже обновлен выше
+            await fetch('/api/auth', {
+                method: token ? 'POST' : 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: token ? JSON.stringify({ idToken: token }) : undefined,
             });
-            if (!response.ok) {
-                console.error("Ошибка синхронизации сессии:", await response.text());
-            }
         } catch (e) {
             console.error("Сбой fetch:", e);
         }
@@ -89,6 +81,7 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
 
     userStore.set({ user: userProfile, loading: false });
 });
+
 type ChatState = {
     isOpen: boolean;
 };

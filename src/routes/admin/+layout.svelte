@@ -38,6 +38,11 @@
                 <span class="icon">🧬</span>
                 <span class="label">USERS</span>
             </a>
+            <a href="/admin/tracker" class="nav-item" class:active={path.includes('/tracker')}>
+                <div class="nav-indicator"></div>
+                <span class="icon">🗺️</span>
+                <span class="label">ROADMAP</span>
+            </a>
              <!-- Кнопка выхода для мобилок (вместо отдельного блока) -->
              <a href="/" class="nav-item mobile-only text-red-500">
                 <span class="icon">❌</span>

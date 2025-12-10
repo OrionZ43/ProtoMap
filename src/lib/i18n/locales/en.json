@@ -202,7 +202,14 @@
     "game_coin_title": "Orion's Table",
     "game_coin_desc": "Classic \"Heads or Tails\". Double your bet or lose it all.",
     "game_slots_title": "Proto-Slot",
-    "game_slots_desc": "Test your luck on a classic machine. Hit the jackpot with three ProtoMap logos!"
+    "game_slots_desc": "Test your luck on a classic machine. Hit the jackpot with three ProtoMap logos!",
+    "calendar_title": "DAILY REWARDS",
+    "status_ready": "READY",
+    "status_reset": "STREAK RESET",
+    "status_wait": "WAIT",
+    "day_short": "DAY",
+    "time_h": "h",
+    "time_m": "m"
   },
   "inventory": {
     "title": "Stash",

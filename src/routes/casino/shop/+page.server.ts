@@ -10,7 +10,7 @@ export type ShopItem = {
     style_value: string;
 };
 
-const HIDDEN_ITEMS = ['frame_dev', 'frame_beta'];
+const HIDDEN_ITEMS = ['frame_dev', 'frame_beta', 'frame_ludoman','frame_cryo', 'frame_festive', 'frame_aurora'];
 
 export const load: PageServerLoad = async ({ locals, setHeaders }) => {
     try {

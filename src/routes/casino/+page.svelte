@@ -33,8 +33,42 @@
 
     let sounds: { [key: string]: Howl } = {};
 
-    // Хелпер для перевода в JS
     const translate = (key: string) => get(t)(key);
+
+    $: currentStreak = $userStore.user?.daily_streak || 0;
+
+    $: lastBonusTime = $userStore.user?.last_daily_bonus ? new Date($userStore.user.last_daily_bonus).getTime() : 0;
+    $: hoursSinceLast = lastBonusTime > 0 ? (Date.now() - lastBonusTime) / (1000 * 60 * 60) : 0;
+
+    $: isAvailable = lastBonusTime === 0 || hoursSinceLast >= 20;
+    $: isReset = lastBonusTime > 0 && hoursSinceLast > 48 && currentStreak > 0;
+
+    $: nextDayIndex = isReset ? 1 : (currentStreak >= 30 ? 1 : currentStreak + 1);
+
+    function getRewardAmount(day: number) {
+        if (day === 30) return 1000;
+        if (day % 5 === 0) return 250;
+        return 50 + (Math.floor((day - 1) / 5) * 10);
+    }
+
+    function getWaitTimeStr(hoursPassed: number) {
+        const totalHoursCooldown = 20;
+        const hoursRemaining = totalHoursCooldown - hoursPassed;
+
+        if (hoursRemaining <= 0) return translate('casino.status_ready');
+
+        const h = Math.floor(hoursRemaining);
+        const m = Math.floor((hoursRemaining - h) * 60);
+
+        const hStr = translate('casino.time_h');
+        const mStr = translate('casino.time_m');
+
+        if (h > 0) {
+            return `${h}${hStr} ${m}${mStr}`;
+        } else {
+            return `${m} ${mStr}`;
+        }
+    }
 
     onMount(() => {
         sounds.ambient = new Howl({ src: ['/sounds/ambient_casino.mp3'], loop: true, volume: 0.3, autoplay: true });
@@ -52,7 +86,7 @@
             const result = await getLeaderboardFunc();
             leaderboard = (result.data as any).data;
         } catch (error) {
-            console.error("Не удалось загрузить топ:", error);
+            console.error(error);
         } finally {
             loadingLeaderboard = false;
         }
@@ -70,6 +104,10 @@
                 if (store.user) {
                     store.user.casino_credits = data.new_balance;
                     store.user.last_daily_bonus = new Date();
+                    store.user.daily_streak = data.streak;
+                    if (data.special_reward) {
+                        store.user.owned_items = [...(store.user.owned_items || []), data.special_reward];
+                    }
                 }
                 return store;
             });
@@ -78,7 +116,11 @@
             loadLeaderboard();
 
         } catch (error: any) {
-            modal.error(translate('ui.error'), error.message || "Error claiming bonus.");
+            if (error.message && error.message.includes('Ждите')) {
+                 modal.info("Cooldown", error.message);
+            } else {
+                 modal.error(translate('ui.error'), error.message || "Error claiming bonus.");
+            }
         } finally {
             loadingBonus = false;
         }
@@ -95,31 +137,91 @@
 
     <div class="header">
         <h1 class="title font-display glitch" data-text={$t('nav.casino')}>{$t('nav.casino')}</h1>
-        <p class="subtitle">//: {$t('news_page.subtitle')}</p> <!-- Можно использовать subtitle из новостей или добавить свой -->
+        <p class="subtitle">//: {$t('news_page.subtitle')}</p>
     </div>
 
     {#if $userStore.user}
-        <!-- ПАНЕЛЬ ПОЛЬЗОВАТЕЛЯ -->
         <div class="user-panel">
             <div class="balance-display">
                 <span class="label font-display">{$t('casino.balance')}</span>
                 <span class="amount font-display">{Math.floor($displayedCredits)} PC</span>
             </div>
+
             <div class="actions-group">
                 <a href="/casino/shop" class="panel-btn shop">{$t('casino.shop')}</a>
                 <a href="/casino/inventory" class="panel-btn inventory">{$t('casino.inventory')}</a>
-                <button
-                    class="panel-btn bonus"
-                    on:click={claimDailyBonus}
-                    disabled={loadingBonus || !isVerified}
-                    title={!isVerified ? "Email verification required" : ""}
-                >
-                    {!isVerified ? 'LOCK' : (loadingBonus ? '...' : $t('casino.bonus_btn'))}
-                </button>
             </div>
         </div>
 
-        <!-- СПИСОК ИГР -->
+        <div class="calendar-wrapper">
+            <div class="calendar-header">
+                <h3 class="cal-title">{$t('casino.calendar_title')}</h3>
+                {#if isReset}
+                    <span class="status-badge reset">{$t('casino.status_reset')}</span>
+                {:else if !isAvailable}
+                    <span class="status-badge wait">{$t('casino.status_wait')} {getWaitTimeStr(hoursSinceLast)}</span>
+                {:else}
+                    <span class="status-badge ready">{$t('casino.status_ready')}</span>
+                {/if}
+            </div>
+
+            <div class="calendar-grid">
+                {#each Array(30) as _, i}
+                    {@const dayNum = i + 1}
+                    {@const amount = getRewardAmount(dayNum)}
+                    {@const isClaimed = !isReset && dayNum <= currentStreak}
+                    {@const isActive = dayNum === nextDayIndex}
+                    {@const hasFrame = $userStore.user.owned_items?.includes('frame_ludoman')}
+
+                    <button
+                        class="day-cell"
+                        class:claimed={isClaimed}
+                        class:active={isActive}
+                        class:big-reward={dayNum === 30}
+                        class:milestone={dayNum % 5 === 0 && dayNum !== 30}
+                        disabled={dayNum !== nextDayIndex || !isAvailable || loadingBonus}
+                        on:click={() => { if (dayNum === nextDayIndex) claimDailyBonus(); }}
+                    >
+                        <div class="day-num">{$t('casino.day_short')} {dayNum}</div>
+
+                        {#if isClaimed}
+                            <div class="check-icon">✔</div>
+                        {:else}
+                            {#if dayNum !== 30}
+                                <div class="reward-val">{amount}</div>
+                            {:else}
+                                <div class="final-reward-content" class:only-credits={hasFrame}>
+                                    <div class="reward-text">
+                                        <div class="val">{amount} PC</div>
+                                        {#if !hasFrame}
+                                            <div class="label">TRUE GAMBLER</div>
+                                        {:else}
+                                            <div class="label">JACKPOT</div>
+                                        {/if}
+                                    </div>
+                                    {#if !hasFrame}
+                                        <div class="reward-visual">
+                                            <div class="avatar-wrapper-popup frame_ludoman" style="transform: scale(1.3);">
+                                                <img
+                                                    src={$userStore.user.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user.username}`}
+                                                    alt="Reward Preview"
+                                                    class="popup-avatar"
+                                                />
+                                            </div>
+                                        </div>
+                                    {/if}
+                                </div>
+                            {/if}
+                        {/if}
+
+                        {#if isActive && isAvailable}
+                            <div class="pulse-border"></div>
+                        {/if}
+                    </button>
+                {/each}
+            </div>
+        </div>
+
         <div class="games-grid">
             <a href="/casino/coin-flip" class="game-card">
                 <div class="game-art">
@@ -146,7 +248,6 @@
             </a>
         </div>
 
-        <!-- ЛИДЕРБОРД -->
         <div class="leaderboard-section mt-12 max-w-3xl w-full mx-auto">
             <div class="leaderboard-header">
                 <h2 class="font-display text-2xl text-cyber-yellow">{$t('casino.leaderboard_title')}</h2>
@@ -204,6 +305,11 @@
         from { box-shadow: 0 0 20px rgba(255, 255, 255, 0); border-color: rgba(255, 255, 255, 0.2); }
         to { box-shadow: 0 0 40px var(--glow-color, #fff); border-color: var(--glow-color, #fff); }
     }
+    @keyframes pulse-border-anim {
+        0% { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(1.1); }
+    }
+    @keyframes pulse-green { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
     .page-container {
         min-height: calc(100vh - 64px);
@@ -220,18 +326,18 @@
 
     .user-panel {
         width: 100%; max-width: 900px;
-        display: flex; justify-content: space-between; align-items: center;
+        display: flex; justify-content: space-between; align-items: flex-start;
         background: rgba(20, 20, 25, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 1rem;
         padding: 1rem 1.5rem; margin-bottom: 3rem;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); z-index: 2;
         gap: 1rem;
     }
-    .balance-display { font-size: 1.5rem; flex-shrink: 0; }
+    .balance-display { font-size: 1.5rem; flex-shrink: 0; margin-top: 0.5rem; }
     .balance-display .label { color: var(--text-muted-color); margin-right: 0.5rem; }
     .balance-display .amount { color: var(--cyber-yellow); letter-spacing: 0.1em; }
 
-    .actions-group { display: flex; gap: 1rem; }
+    .actions-group { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: flex-end; width: 100%; }
     .panel-btn {
         padding: 0.75rem 1.5rem;
         font-family: 'Chakra Petch', monospace;
@@ -241,13 +347,152 @@
         border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 0.75rem;
         box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1);
         transition: all 0.2s ease-in-out; white-space: nowrap;
+        height: fit-content;
     }
     .panel-btn:hover:not(:disabled) { color: #fff; transform: translateY(-2px); }
     .panel-btn:active:not(:disabled) { transform: translateY(1px); box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5); }
     .panel-btn.shop:hover:not(:disabled) { box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1), 0 0 20px var(--cyber-yellow); }
     .panel-btn.inventory:hover:not(:disabled) { box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1), 0 0 20px var(--cyber-cyan); }
-    .panel-btn.bonus:hover:not(:disabled) { box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1), 0 0 20px var(--cyber-green); }
     .panel-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+
+    .calendar-wrapper {
+        width: 100%; max-width: 900px;
+        background: rgba(10, 15, 20, 0.8);
+        border: 1px solid rgba(0, 243, 255, 0.2);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        position: relative; z-index: 5;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .cal-title { font-family: 'Chakra Petch', monospace; font-weight: bold; color: #fff; letter-spacing: 0.1em; }
+
+    .status-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-family: 'Inter', sans-serif; }
+    .status-badge.ready { background: rgba(57, 255, 20, 0.2); color: #39ff14; border: 1px solid #39ff14; animation: pulse-green 2s infinite; }
+    .status-badge.wait { background: rgba(255, 255, 255, 0.1); color: #aaa; border: 1px solid #555; }
+    .status-badge.reset { background: rgba(255, 0, 60, 0.2); color: #ff003c; border: 1px solid #ff003c; }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .day-cell {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 6px;
+        height: 70px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        position: relative;
+        transition: all 0.2s;
+        cursor: default;
+        overflow: hidden;
+    }
+
+    .day-num { font-size: 0.6rem; color: #555; position: absolute; top: 4px; left: 6px; font-family: 'Chakra Petch', monospace; z-index: 20; }
+    .reward-val { font-size: 0.9rem; font-weight: bold; color: #ccc; }
+
+    .day-cell.claimed {
+        background: rgba(0, 243, 255, 0.1);
+        border-color: rgba(0, 243, 255, 0.3);
+        color: #00f3ff;
+    }
+    .check-icon { color: #00f3ff; font-size: 1.2rem; }
+
+    .day-cell.active {
+        background: rgba(255,255,255,0.1);
+        border-color: #fff;
+        cursor: pointer;
+    }
+    .day-cell.active:hover { transform: translateY(-2px); background: rgba(255,255,255,0.15); }
+    .day-cell.active .reward-val { color: #fff; }
+
+    .day-cell:disabled { pointer-events: none; }
+    .day-cell.active:not(:disabled) { cursor: pointer; pointer-events: auto; }
+
+    .day-cell.milestone { border-color: var(--cyber-yellow); }
+    .day-cell.milestone .reward-val { color: var(--cyber-yellow); }
+
+    .day-cell.big-reward {
+        grid-column: span 2;
+        background: radial-gradient(circle, rgba(255, 215, 0, 0.1), transparent);
+        border: 1px solid #ffd700;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding: 0 10px;
+        justify-content: space-between;
+    }
+
+    .final-reward-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        padding-top: 12px;
+    }
+
+    .final-reward-content.only-credits {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .reward-text {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        z-index: 10;
+        min-width: 0;
+    }
+
+    .final-reward-content.only-credits .reward-text {
+        align-items: center;
+    }
+
+    .reward-text .val {
+        font-size: 1rem;
+        color: #ffd700;
+        font-weight: 800;
+        line-height: 1.1;
+        text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+        white-space: nowrap;
+    }
+
+    .reward-text .label {
+        font-size: 0.6rem;
+        font-weight: bold;
+        color: #fff;
+        margin-top: 2px;
+    }
+
+    .reward-text .sub-label {
+        font-size: 0.5rem;
+        color: #aaa;
+        font-family: 'Chakra Petch', monospace;
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 80px;
+    }
+
+    .reward-visual {
+        flex-shrink: 0;
+        margin-left: 5px;
+        z-index: 10;
+    }
+
+    .pulse-border {
+        position: absolute; inset: -1px; border-radius: 6px;
+        border: 2px solid #39ff14;
+        animation: pulse-border-anim 1.5s infinite;
+        pointer-events: none;
+    }
 
     .games-grid {
         width: 100%; max-width: 900px;
@@ -287,13 +532,12 @@
     .glitch::before { text-shadow: -2px 0 #ff00c1; left: 2px; animation: glitch-text 2s infinite linear alternate-reverse; }
     .glitch::after { text-shadow: 2px 0 var(--cyber-cyan); left: -2px; animation: glitch-text 2s 0.2s infinite linear alternate-reverse; }
 
-    /* === ЛИДЕРБОРД СТИЛИ === */
     .leaderboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
     .refresh-btn { color: var(--text-muted-color); transition: color 0.2s; }
     .refresh-btn:hover { color: #fff; }
 
     .leaderboard-list {
-        background: rgba(10, 10, 15, 0.6) !important; /* Переопределение для лучшей читаемости */
+        background: rgba(10, 10, 15, 0.6) !important;
         max-height: 500px;
         overflow-y: auto;
         border-radius: 0.5rem;
@@ -312,7 +556,6 @@
     .username { color: #eee; font-weight: 500; }
     .credits { color: var(--cyber-cyan); font-weight: bold; }
 
-    /* TOP 3 STYLES */
     .top-1 .rank { color: #ffd700; text-shadow: 0 0 10px #ffd700; font-size: 1.5rem; }
     .top-1 .username { color: #ffd700; }
     .top-1 .popup-avatar { border: 2px solid #ffd700; }
@@ -334,20 +577,23 @@
             align-items: stretch;
             text-align: center;
         }
-
-        /* ИЗМЕНЕНИЯ ЗДЕСЬ */
         .actions-group {
             display: flex;
-            flex-wrap: wrap; /* Разрешаем перенос на новую строку */
+            flex-wrap: wrap;
             justify-content: center;
-            gap: 0.5rem; /* Чуть меньше отступ */
+            gap: 0.5rem;
         }
-
         .panel-btn {
             font-size: 0.8rem;
-            padding: 0.6rem 0.5rem; /* Чуть меньше паддинги по бокам */
-            flex: 1 1 auto; /* Кнопки растягиваются, но могут переноситься */
-            min-width: 90px; /* Минимальная ширина, чтобы текст не сжимался в ноль */
+            padding: 0.6rem 0.5rem;
+            flex: 1 1 auto;
+            min-width: 90px;
         }
+    }
+
+    @media (max-width: 640px) {
+        .calendar-grid { grid-template-columns: repeat(5, 1fr); }
+        .day-cell { height: 60px; }
+        .day-cell.big-reward { grid-column: span 5; }
     }
 </style>

@@ -289,6 +289,12 @@ export const purchaseShopItem = onCall({ cors: ALLOWED_ORIGINS }, async (request
     }
 });
 
+function getRewardValue(day: number): number {
+    if (day === 30) return 1000;
+    if (day % 5 === 0) return 250; // День 5, 10, 15, 20, 25
+    return 50 + (Math.floor((day - 1) / 5) * 10); // Постепенный рост: 50, 60, 70...
+}
+
 export const getDailyBonus = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
@@ -304,23 +310,71 @@ export const getDailyBonus = onCall(async (request) => {
             if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
 
             const data = userDoc.data() as any;
-            const lastBonus = data.last_daily_bonus;
-            const now = Date.now();
-            const dayMs = 24 * 60 * 60 * 1000;
+            const lastBonus = data.last_daily_bonus ? data.last_daily_bonus.toDate() : null;
+            // Текущий сохраненный стрик (то, что забрали ВЧЕРА)
+            let currentStreak = data.daily_streak || 0;
 
-            if (lastBonus && (now - lastBonus.toDate().getTime() < dayMs)) {
-                const wait = Math.ceil((dayMs - (now - lastBonus.toDate().getTime())) / 3600000);
-                return { status: 'error', message: `Ждите еще ${wait} ч.` };
+            const now = new Date();
+
+            // Если бонусов не было или цикл завершен (был 30), сбрасываем на 0
+            if (currentStreak >= 30) {
+                currentStreak = 0;
             }
 
-            const newBalance = (data.casino_credits ?? 100) + 25;
-            t.update(userRef, { casino_credits: newBalance, last_daily_bonus: FieldValue.serverTimestamp() });
-            return { status: 'success', message: 'Бонус получен!', new_balance: newBalance };
+            if (lastBonus) {
+                const diff = now.getTime() - lastBonus.getTime();
+
+                // Защита от абуза (20 часов)
+                if (diff < 20 * 60 * 60 * 1000) {
+                    const hoursLeft = Math.ceil((20 * 60 * 60 * 1000 - diff) / 3600000);
+                    throw new HttpsError('resource-exhausted', `Бонус доступен через ${hoursLeft} ч.`);
+                }
+
+                // Если пропустил более 48 часов - сброс
+                if (diff > 48 * 60 * 60 * 1000) {
+                    currentStreak = 0; // Сброс на начало
+                }
+            }
+
+            // Начисляем за СЛЕДУЮЩИЙ день
+            const dayToClaim = currentStreak + 1;
+            const bonusAmount = getRewardValue(dayToClaim);
+            let rewardMessage = `День ${dayToClaim}: получено ${bonusAmount} PC.`;
+            let specialReward = null;
+
+            // Логика 30-го дня
+            if (dayToClaim === 30) {
+                if (!data.owned_items?.includes('frame_ludoman')) {
+                    specialReward = 'frame_ludoman';
+                    t.update(userRef, {
+                        owned_items: FieldValue.arrayUnion('frame_ludoman')
+                    });
+                    rewardMessage = "🎉 ЦИКЛ ЗАВЕРШЕН! ВЫ ПОЛУЧИЛИ РАМКУ И 1000 PC!";
+                } else {
+                    rewardMessage = "🎉 ЦИКЛ ЗАВЕРШЕН! МАКСИМАЛЬНАЯ НАГРАДА!";
+                }
+            }
+
+            const newBalance = (data.casino_credits ?? 100) + bonusAmount;
+
+            t.update(userRef, {
+                casino_credits: newBalance,
+                last_daily_bonus: FieldValue.serverTimestamp(),
+                daily_streak: dayToClaim // Сохраняем новый день
+            });
+
+            return {
+                status: 'success',
+                message: rewardMessage,
+                new_balance: newBalance,
+                streak: dayToClaim, // Возвращаем актуальный день (1-30)
+                special_reward: specialReward
+            };
         });
 
-        if (result.status === 'success') return { data: result };
-        throw new HttpsError('resource-exhausted', result.message);
+        return { data: result };
     } catch (error: any) {
+        if (error instanceof HttpsError) throw error;
         if (error.code === 'resource-exhausted') throw error;
         throw new HttpsError('internal', 'Bonus error.');
     }
