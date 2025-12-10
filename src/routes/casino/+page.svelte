@@ -423,7 +423,7 @@
         display: flex;
         flex-direction: row;
         align-items: center;
-        padding: 0 10px;
+        padding: 4px 8px; /* Добавили отступы для воздуха */
         justify-content: space-between;
     }
 
@@ -433,7 +433,6 @@
         align-items: center;
         width: 100%;
         height: 100%;
-        padding-top: 12px;
     }
 
     .final-reward-content.only-credits {
@@ -448,6 +447,7 @@
         justify-content: center;
         z-index: 10;
         min-width: 0;
+        padding-top: 8px; /* Чуть отодвинем текст от верхнего "DAY 30" */
     }
 
     .final-reward-content.only-credits .reward-text {
@@ -455,7 +455,7 @@
     }
 
     .reward-text .val {
-        font-size: 1rem;
+        font-size: 0.9rem; /* Уменьшили */
         color: #ffd700;
         font-weight: 800;
         line-height: 1.1;
@@ -464,26 +464,15 @@
     }
 
     .reward-text .label {
-        font-size: 0.6rem;
+        font-size: 0.55rem; /* Уменьшили */
         font-weight: bold;
         color: #fff;
         margin-top: 2px;
     }
 
-    .reward-text .sub-label {
-        font-size: 0.5rem;
-        color: #aaa;
-        font-family: 'Chakra Petch', monospace;
-        margin-top: 2px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 80px;
-    }
-
     .reward-visual {
         flex-shrink: 0;
-        margin-left: 5px;
+        margin-left: 2px; /* Уменьшили отступ */
         z-index: 10;
     }
 
