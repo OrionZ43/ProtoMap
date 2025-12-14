@@ -72,7 +72,8 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
             about_me: userProfileData.about_me,
             status: userProfileData.status || null,
             socials: userProfileData.socials || {},
-            equipped_frame: userProfileData.equipped_frame || null
+            equipped_frame: userProfileData.equipped_frame || null,
+            equipped_bg: userProfileData.equipped_bg || null
         },
         comments: comments
     };

@@ -1,5 +1,7 @@
 <script lang="ts">
     import "../app.css";
+    import "../styles/cosmetics.css";
+    import "../styles/profile-skins.css";
     import Navbar from "$lib/components/Navbar.svelte";
     import Modal from '$lib/components/Modal.svelte';
     import ChatWidget from '$lib/components/ChatWidget.svelte';
@@ -34,18 +36,21 @@
             themeState = 'halloween';
             sideTextLeft = 'СИСТЕМА: НЕСТАБИЛЬНА';
             sideTextRight = 'АНАЛИЗ АНОМАЛИИ...';
+            import('../styles/halloween.css'); // Динамический импорт
         }
         // Зима (1 Дек - 14 Дек)
         else if (m === 11 && day >= 1 && day < 15) {
             themeState = 'winter';
             sideTextLeft = 'ТЕМПЕРАТУРА: -15°C';
             sideTextRight = 'СИСТЕМА ОХЛАЖДЕНИЯ: АКТИВНА';
+            import('../styles/winter.css'); // Динамический импорт
         }
         // Глитчмас/Новый год (15 Дек - 14 Янв)
         else if ((m === 11 && day >= 15) || (m === 0 && day <= 14)) {
             themeState = 'newyear';
             sideTextLeft = 'РЕЖИМ: GLITCHMAS';
             sideTextRight = 'КРИОГЕННЫЕ ПРОТОКОЛЫ: МАКСИМУМ';
+            import('../styles/newyear.css'); // Динамический импорт
         }
     }
 
@@ -74,16 +79,7 @@
 </script>
 
 <svelte:head>
-    {#if themeState === 'halloween'}
-        <link rel="stylesheet" href="/styles/halloween.css">
-    {/if}
-    {#if themeState === 'winter' || themeState === 'newyear'}
-        <link rel="stylesheet" href="/styles/winter.css">
-    {/if}
-    {#if themeState === 'newyear'}
-        <link rel="stylesheet" href="/styles/newyear.css">
-    {/if}
-    <link rel="stylesheet" href="/styles/cosmetics.css">
+    <!-- Здесь больше нет <link rel="stylesheet"> для тем, они грузятся через import() -->
 </svelte:head>
 
 {#if isReady}

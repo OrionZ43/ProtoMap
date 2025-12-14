@@ -50,6 +50,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         return {
             ownedItemIds: userData.owned_items || [],
             equippedFrame: userData.equipped_frame || null,
+            equippedBg: userData.equipped_bg || null,
             allItems: allItems
         };
 

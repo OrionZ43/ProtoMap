@@ -1,46 +1,64 @@
 <script lang="ts">
     import type { PageData } from './$types';
     import { userStore } from '$lib/stores';
-    import { onMount, onDestroy } from 'svelte';
+    import { onMount } from 'svelte';
     import { getFunctions, httpsCallable } from 'firebase/functions';
     import { modal } from '$lib/stores/modalStore';
     import { Howl } from 'howler';
-    import { t } from 'svelte-i18n'; // Импорт локализации
+    import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
 
     export let data: PageData;
 
-    let ownedFrames: PageData['allItems'][string][] = [];
+    // === ТАБЫ И ФИЛЬТРАЦИЯ ===
+    let activeTab: 'frames' | 'backgrounds' = 'frames';
+
+    // Разделяем предметы пользователя по типам
+    $: ownedFrames = Object.values(data.allItems).filter(item =>
+        item.type === 'frame' && data.ownedItemIds.includes(item.id)
+    );
+    $: ownedBackgrounds = Object.values(data.allItems).filter(item =>
+        item.type === 'background' && data.ownedItemIds.includes(item.id)
+    );
+
+    // === СОСТОЯНИЕ ВЫБОРА ===
+    // Инициализируем текущими значениями из БД/Стора
     let selectedFrame: string | null = data.equippedFrame;
-    let currentEquippedFrame: string | null = data.equippedFrame;
+    let selectedBg: string | null = $userStore.user?.equipped_bg || null;
+
+    // Сохраняем исходные значения для сравнения (чтобы кнопка Save была активна только при изменениях)
+    let currentFrame: string | null = data.equippedFrame;
+    let currentBg: string | null = $userStore.user?.equipped_bg || null;
+
     let isSaving = false;
 
-    // Хелпер для перевода в JS
     const translate = (key: string) => get(t)(key);
-
-    $: {
-        ownedFrames = Object.values(data.allItems).filter(item =>
-            item.type === 'frame' && data.ownedItemIds.includes(item.id)
-        );
-    }
 
     let sounds: { [key: string]: Howl } = {};
     onMount(() => {
         sounds.ambient_inventory = new Howl({ src: ['/sounds/inventory.mp3'], loop: true, volume: 0.2, autoplay: true });
         sounds.equip = new Howl({ src: ['/sounds/equip.mp3'], volume: 0.7 });
         sounds.save = new Howl({ src: ['/sounds/save.mp3'], volume: 0.8 });
+        sounds.click = new Howl({ src: ['/sounds/click.mp3'], volume: 0.5 });
 
         return () => {
             sounds.ambient_inventory?.stop();
         }
     });
 
-    function selectFrame(itemId: string | null) {
+    function switchTab(tab: 'frames' | 'backgrounds') {
+        if (activeTab === tab) return;
+        sounds.click?.play();
+        activeTab = tab;
+    }
+
+    function selectItem(itemId: string | null, type: 'frame' | 'background') {
         sounds.equip?.play();
-        if (selectedFrame === itemId) {
-            selectedFrame = null;
+        if (type === 'frame') {
+            // Если кликнули на уже выбранную - снимаем, иначе выбираем новую
+            selectedFrame = (selectedFrame === itemId) ? null : itemId;
         } else {
-            selectedFrame = itemId;
+            selectedBg = (selectedBg === itemId) ? null : itemId;
         }
     }
 
@@ -52,15 +70,25 @@
         try {
             const functions = getFunctions();
             const updateFunc = httpsCallable(functions, 'updateEquippedItems');
-            await updateFunc({ equipped_frame: selectedFrame });
 
+            // Отправляем на сервер оба параметра
+            await updateFunc({
+                equipped_frame: selectedFrame,
+                equipped_bg: selectedBg
+            });
+
+            // Обновляем локальный стор
             userStore.update(store => {
                 if (store.user) {
                     store.user.equipped_frame = selectedFrame;
+                    store.user.equipped_bg = selectedBg;
                 }
                 return store;
             });
-            currentEquippedFrame = selectedFrame;
+
+            // Обновляем "текущее" состояние
+            currentFrame = selectedFrame;
+            currentBg = selectedBg;
 
             modal.success(translate('inventory.success_title'), translate('inventory.success_msg'));
 
@@ -71,7 +99,7 @@
         }
     }
 
-    $: hasChanges = selectedFrame !== currentEquippedFrame;
+    $: hasChanges = (selectedFrame !== currentFrame) || (selectedBg !== currentBg);
 
 </script>
 
@@ -89,50 +117,111 @@
             <p class="subtitle">{$t('inventory.subtitle')}</p>
         </div>
 
+        <!-- TABS -->
+        <div class="inv-tabs">
+            <button class="inv-tab" class:active={activeTab === 'frames'} on:click={() => switchTab('frames')}>
+                {$t('shop.tab_frames')}
+            </button>
+            <button class="inv-tab" class:active={activeTab === 'backgrounds'} on:click={() => switchTab('backgrounds')}>
+                {$t('shop.tab_backgrounds')}
+            </button>
+        </div>
+
         <div class="wardrobe">
+
+            <!-- PREVIEW PANEL (Слева) -->
             <div class="preview-panel">
-                <div class="avatar-wrapper {data.allItems[selectedFrame]?.id || ''}">
-                    <img
-                        src={$userStore.user?.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user?.username}`}
-                        alt="Preview"
-                        class="preview-avatar"
-                    />
+                <!-- Контейнер превью: сюда вешаем класс фона (selectedBg) -->
+                <div class="preview-box {selectedBg || ''}">
+                    <!-- Аватар: сюда вешаем класс рамки (selectedFrame) -->
+                    <!-- data.allItems[selectedFrame].id нужен, т.к. selectedFrame хранит ID документа (напр frame_dev) -->
+                    <!-- Если selectedFrame null, то класса нет -->
+                    <div class="avatar-wrapper {selectedFrame ? data.allItems[selectedFrame]?.id : ''}">
+                        <img
+                            src={$userStore.user?.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user?.username}`}
+                            alt="Preview"
+                            class="preview-avatar"
+                        />
+                    </div>
                 </div>
+
                 <div class="actions">
                     <button class="panel-btn save" on:click={saveChanges} disabled={!hasChanges || isSaving}>
                         {isSaving ? $t('inventory.saving') : $t('inventory.save')}
                     </button>
-                    {#if selectedFrame}
-                        <button class="unequip-btn" on:click={() => selectFrame(null)}>{$t('inventory.unequip')}</button>
-                    {/if}
                 </div>
             </div>
 
+            <!-- ITEMS PANEL (Справа) -->
             <div class="items-panel">
-                {#if ownedFrames.length > 0}
-                    <div class="items-grid">
-                        {#each ownedFrames as item (item.id)}
-                            <button
-                                class="item-slot"
-                                class:selected={selectedFrame === item.id}
-                                on:click={() => selectFrame(item.id)}
-                            >
-                                <div class="avatar-wrapper item-icon-preview {item.id}">
-                                    <div class="avatar-placeholder"></div>
-                                </div>
-                                <span class="item-name">{item.name}</span>
-                                {#if currentEquippedFrame === item.id}
-                                    <span class="equipped-tag">{$t('inventory.equipped')}</span>
-                                {/if}
+
+                {#if activeTab === 'frames'}
+                    <!-- СЕТКА РАМОК -->
+                    {#if ownedFrames.length > 0}
+                        <div class="items-grid">
+                            {#each ownedFrames as item (item.id)}
+                                <button
+                                    class="item-slot"
+                                    class:selected={selectedFrame === item.id}
+                                    on:click={() => selectItem(item.id, 'frame')}
+                                >
+                                    <div class="avatar-wrapper item-icon-preview {item.id}">
+                                        <div class="avatar-placeholder"></div>
+                                    </div>
+                                    <span class="item-name">{item.name}</span>
+                                    {#if currentFrame === item.id}
+                                        <span class="equipped-tag">E</span>
+                                    {/if}
+                                </button>
+                            {/each}
+                        </div>
+                        {#if selectedFrame}
+                            <button class="unequip-text-btn" on:click={() => selectItem(null, 'frame')}>
+                                {$t('inventory.unequip')}
                             </button>
-                        {/each}
-                    </div>
+                        {/if}
+                    {:else}
+                        <div class="empty-state">
+                            <p>{$t('inventory.empty')}</p>
+                            <a href="/casino/shop" class="panel-btn shop">{$t('inventory.go_shop')}</a>
+                        </div>
+                    {/if}
+
                 {:else}
-                    <div class="empty-state">
-                        <p>{$t('inventory.empty')}</p>
-                        <a href="/casino/shop" class="panel-btn shop">{$t('inventory.go_shop')}</a>
-                    </div>
+                    <!-- СЕТКА ФОНОВ -->
+                    {#if ownedBackgrounds.length > 0}
+                        <div class="items-grid">
+                            {#each ownedBackgrounds as item (item.id)}
+                                <button
+                                    class="item-slot"
+                                    class:selected={selectedBg === item.id}
+                                    on:click={() => selectItem(item.id, 'background')}
+                                >
+                                    <!-- Мини-превью фона -->
+                                    <div class="bg-icon-preview {item.id}">
+                                        <div class="mini-profile-line"></div>
+                                        <div class="mini-profile-line short"></div>
+                                    </div>
+                                    <span class="item-name">{item.name}</span>
+                                    {#if currentBg === item.id}
+                                        <span class="equipped-tag">E</span>
+                                    {/if}
+                                </button>
+                            {/each}
+                        </div>
+                        {#if selectedBg}
+                            <button class="unequip-text-btn" on:click={() => selectItem(null, 'background')}>
+                                Unequip Background
+                            </button>
+                        {/if}
+                    {:else}
+                        <div class="empty-state">
+                            <p>{$t('shop.empty_category')}</p>
+                            <a href="/casino/shop" class="panel-btn shop">{$t('inventory.go_shop')}</a>
+                        </div>
+                    {/if}
                 {/if}
+
             </div>
         </div>
     </div>
@@ -162,68 +251,113 @@
     .title { font-size: 3rem; color: #fff; text-shadow: 0 0 15px #fff; }
     .subtitle { color: var(--text-muted-color); font-family: 'Chakra Petch', monospace; }
 
+    /* TABS */
+    .inv-tabs {
+        display: flex;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .inv-tab {
+        flex: 1;
+        padding: 1rem;
+        background: transparent;
+        color: #666;
+        font-family: 'Chakra Petch', monospace;
+        font-weight: bold;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        border-bottom: 2px solid transparent;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+    .inv-tab:hover { color: #ccc; background: rgba(255,255,255,0.03); }
+    .inv-tab.active { color: var(--cyber-yellow); border-bottom-color: var(--cyber-yellow); background: rgba(255,255,255,0.05); }
+
     .wardrobe { display: grid; grid-template-columns: 400px 1fr; }
+
     .preview-panel {
         padding: 2rem;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         border-right: 1px solid rgba(255, 255, 255, 0.15);
         gap: 2rem;
     }
+
+    /* Контейнер превью (здесь применяем фон) */
+    .preview-box {
+        width: 100%;
+        height: 350px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(0,0,0,0.3); /* Дефолтный фон */
+        transition: all 0.3s;
+        overflow: hidden;
+        position: relative;
+    }
+
     .avatar-wrapper {
         position: relative;
-        display: flex; align-items: center; justify-content: center;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        z-index: 5;
     }
-    .preview-panel .avatar-wrapper {
-        width: 250px; height: 250px;
-    }
-    .preview-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
+    .preview-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
 
     .actions { display: flex; flex-direction: column; gap: 1rem; width: 100%; }
-    .unequip-btn {
+    .unequip-text-btn {
         width: 100%; background: transparent; border: none; color: #666; text-decoration: underline;
-        cursor: pointer;
+        cursor: pointer; font-size: 0.8rem; margin-top: 1rem;
     }
+    .unequip-text-btn:hover { color: #aaa; }
 
-    .items-panel { padding: 2rem; max-height: 60vh; overflow-y: auto; }
-    .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1.5rem; }
+    .items-panel { padding: 2rem; max-height: 70vh; overflow-y: auto; }
+    .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1.5rem; }
+
     .item-slot {
         background: rgba(0,0,0,0.3); border: 1px solid #333; border-radius: 0.5rem;
         padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
         text-align: center; cursor: pointer; transition: all 0.2s; position: relative;
     }
     .item-slot:hover { background: rgba(255,255,255,0.1); border-color: var(--cyber-cyan); }
-    .item-slot.selected { border-color: var(--cyber-yellow); box-shadow: 0 0 15px var(--cyber-yellow); transform: scale(1.05); }
-    .item-icon-preview {
-        width: 80px; height: 80px;
+    .item-slot.selected { border-color: var(--cyber-yellow); box-shadow: 0 0 15px var(--cyber-yellow); transform: scale(1.05); z-index: 2; }
+
+    .item-icon-preview { width: 70px; height: 70px; }
+    .avatar-placeholder { width: 100%; height: 100%; border-radius: 50%; background: #333; }
+
+    /* Иконка для фона */
+    .bg-icon-preview {
+        width: 70px; height: 70px; border-radius: 8px;
+        border: 1px solid #555;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 5px;
     }
-    .avatar-placeholder {
-        width: 100%; height: 100%;
-        border-radius: 50%;
-        background: #333;
-    }
-    .item-name { color: #ccc; font-size: 0.9rem; margin-top: 1rem; }
+    .mini-profile-line { width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; }
+    .mini-profile-line.short { width: 25px; }
+
+    .item-name { color: #ccc; font-size: 0.8rem; margin-top: 1rem; }
+
     .equipped-tag {
-        position: absolute; top: 0.5rem; right: 0.5rem;
+        position: absolute; top: 0.3rem; right: 0.3rem;
         background: var(--cyber-yellow); color: #000;
-        font-size: 0.6rem; padding: 2px 6px; border-radius: 4px;
+        font-size: 0.6rem; padding: 1px 5px; border-radius: 3px;
         font-family: 'Chakra Petch', monospace; font-weight: bold;
     }
 
-    /* --- ИСПРАВЛЕННЫЙ БЛОК EMPTY STATE --- */
     .empty-state {
         text-align: center;
         padding: 4rem 2rem;
         color: #666;
-
-        /* Добавляем Flex, чтобы управлять отступами */
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 2rem; /* Отступ между текстом и кнопкой */
+        gap: 2rem;
     }
-    .empty-state p {
-        font-size: 1.2rem;
-    }
+    .empty-state p { font-size: 1.2rem; }
 
     .panel-btn {
         width: 100%;
@@ -236,14 +370,14 @@
         transition: all 0.2s ease-in-out;
     }
     .panel-btn:hover:not(:disabled) { color: #fff; transform: translateY(-2px); }
-    .panel-btn.save:hover:not(:disabled) { box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1), 0 0 20px var(--cyber-yellow); }
-    .panel-btn.shop:hover:not(:disabled) { box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1), 0 0 20px var(--cyber-yellow); }
+    .panel-btn.save:hover:not(:disabled) { box-shadow: 0 0 20px var(--cyber-yellow); border-color: var(--cyber-yellow); }
+    .panel-btn.shop:hover:not(:disabled) { box-shadow: 0 0 20px var(--cyber-cyan); border-color: var(--cyber-cyan); }
     .panel-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
 
     @media (max-width: 1024px) {
         .wardrobe { grid-template-columns: 1fr; }
         .preview-panel { border-right: none; border-bottom: 1px solid rgba(255, 255, 255, 0.15); }
-        .preview-panel .avatar-wrapper { width: 180px; height: 180px; }
+        .preview-box { height: 250px; }
         .items-panel { max-height: none; }
     }
 
@@ -251,60 +385,8 @@
         .page-container { padding: 1rem; }
         .header { padding: 1rem; }
         .title { font-size: 2rem; }
-        .items-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem; }
+        .items-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 1rem; }
         .item-slot { padding: 0.5rem; }
-        .item-icon-preview { width: 60px; height: 60px; }
-    }
-.avatar-wrapper.frame_neon_blue {
-        border: 3px solid var(--cyber-cyan);
-        box-shadow: 0 0 15px var(--cyber-cyan), 0 0 25px var(--cyber-cyan);
-    }
-
-    /* --- Рамка "Системный Сбой" (Глитч) --- */
-    .avatar-wrapper.frame_glitch::before,
-    .avatar-wrapper.frame_glitch::after {
-        content: '';
-        position: absolute;
-        top: -3px; left: -3px; right: -3px; bottom: -3px;
-        border-radius: 50%;
-        border: 3px solid transparent;
-    }
-    .avatar-wrapper.frame_glitch::before {
-        border-color: #ff00c1;
-        animation: glitch-border-anim 1s infinite linear alternate-reverse;
-    }
-    .avatar-wrapper.frame_glitch::after {
-        border-color: #00f0ff;
-        animation: glitch-border-anim 1s 0.2s infinite linear alternate;
-    }
-
-    /* --- Рамка "Золотой Игрок" (High Roller) --- */
-    .avatar-wrapper.frame_high_roller {
-        padding: 1px;
-    }
-    .avatar-wrapper.frame_high_roller::before {
-        content: '';
-        position: absolute;
-        top: -3px; left: -3px; right: -3px; bottom: -3px;
-        border-radius: 50%;
-        padding: 3px;
-        background: conic-gradient(#ffd700, #f0e68c, #daa520, #f0e68c, #ffd700);
-        -webkit-mask:
-            linear-gradient(#fff 0 0) content-box,
-            linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-                mask-composite: exclude;
-        animation: high-roller-shine 3s linear infinite;
-        background-size: 200% 100%;
-    }
-
-    /* --- Анимации для рамок (если еще не глобальные) --- */
-    @keyframes glitch-border-anim {
-        0% { clip-path: inset(90% 0 5% 0); } 20% { clip-path: inset(5% 0 80% 0); }
-        40% { clip-path: inset(45% 0 45% 0); } 60% { clip-path: inset(2% 0 90% 0); }
-        80% { clip-path: inset(60% 0 30% 0); } 100% { clip-path: inset(90% 0 5% 0); }
-    }
-    @keyframes high-roller-shine {
-        0% { background-position: -200% 0; } 100% { background-position: 200% 0; }
+        .item-icon-preview, .bg-icon-preview { width: 50px; height: 50px; }
     }
 </style>

@@ -20,6 +20,7 @@ export type UserProfile = {
     owned_items: string[];
     equipped_frame: string | null;
     equipped_badge: string | null;
+    equipped_bg: string | null;
 };
 
 type AuthStore = {
@@ -59,7 +60,8 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
                     daily_streak: data.daily_streak || 0, // <--- ВАЖНО: ЧИТАЕМ ИЗ БАЗЫ
                     owned_items: data.owned_items || [],
                     equipped_frame: data.equipped_frame || null,
-                    equipped_badge: data.equipped_badge || null
+                    equipped_badge: data.equipped_badge || null,
+                    equipped_bg: data.equipped_bg || null
                 };
             }
         } catch (e) {

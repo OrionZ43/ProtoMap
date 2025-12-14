@@ -235,6 +235,9 @@
     "btn_owned": "Owned",
     "btn_poor": "Can't afford",
     "processing": "...",
+    "tab_frames": "FRAMES",
+    "tab_backgrounds": "BACKGROUNDS",
+    "empty_category": "No items in this category yet.",
 
     "modal_confirm_title": "Confirm Transaction",
     "modal_confirm_prefix": "Buy",

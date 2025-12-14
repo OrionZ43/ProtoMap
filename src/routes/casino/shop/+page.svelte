@@ -9,11 +9,18 @@
     import { Howl } from 'howler';
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
+    import { fade } from 'svelte/transition';
 
     export let data: PageData;
 
     let purchasingItemId: string | null = null;
     let ownedItems = new Set(data.ownedItemIds || []);
+
+    // === НОВОЕ: ТАБЫ ===
+    let activeCategory: 'frame' | 'background' = 'frame';
+
+    // Фильтруем товары на лету
+    $: visibleItems = data.items.filter(item => item.type === activeCategory);
 
     // Хелпер для перевода
     const translate = (key: string) => get(t)(key);
@@ -44,17 +51,21 @@
     onMount(() => {
         sounds.ambient = new Howl({ src: ['/sounds/ambient_casino.mp3'], loop: true, volume: 0.2, autoplay: true });
         sounds.purchase = new Howl({ src: ['/sounds/purchase.mp3'], volume: 0.8 });
+        sounds.click = new Howl({ src: ['/sounds/click.mp3'], volume: 0.5 }); // Звук клика для табов
         dealerMessage = getRandomQuote('greeting');
         return () => { sounds.ambient?.stop(); };
     });
+
+    function switchCategory(cat: 'frame' | 'background') {
+        if (activeCategory === cat) return;
+        sounds.click?.play();
+        activeCategory = cat;
+    }
 
     async function purchaseItem(itemId: string, itemName: string, itemPrice: number) {
         if (purchasingItemId) return;
 
         const confirmQuote = getRandomQuote('confirm');
-
-        // === СБОРКА ТЕКСТА (Ручная, для контроля HTML) ===
-        // "Купить [ITEM] за [PRICE] PC?"
         const confirmText = `
             ${confirmQuote}<br><br>
             ${translate('shop.modal_confirm_prefix')}
@@ -84,10 +95,7 @@
 
                 const successQuote = getRandomQuote('success');
                 dealerMessage = successQuote;
-
-                // "Предмет [ITEM] добавлен..."
                 const successText = `${translate('shop.modal_success_prefix')} "<strong>${itemName}</strong>" ${translate('shop.modal_success_suffix')}`;
-
                 modal.success(translate('shop.modal_success_title'), successText);
 
             } catch (error: any) {
@@ -126,22 +134,55 @@
         </div>
     </div>
 
+    <!-- === ТАБЫ КАТЕГОРИЙ === -->
+    <div class="shop-tabs">
+        <button
+            class="shop-tab"
+            class:active={activeCategory === 'frame'}
+            on:click={() => switchCategory('frame')}
+        >
+            {$t('shop.tab_frames')}
+        </button>
+        <button
+            class="shop-tab"
+            class:active={activeCategory === 'background'}
+            on:click={() => switchCategory('background')}
+        >
+            {$t('shop.tab_backgrounds')}
+        </button>
+    </div>
+
     <div class="items-grid">
-        {#each data.items as item (item.id)}
+        {#each visibleItems as item (item.id)}
             <div
                 class="item-card"
                 class:owned={ownedItems.has(item.id)}
                 class:purchasing={purchasingItemId === item.id}
+                in:fade={{ duration: 200 }}
             >
                 <div class="item-preview">
-                    <div class="avatar-wrapper {item.id}">
-                        <div class="avatar-placeholder"></div>
-                    </div>
+                    <!-- ЕСЛИ РАМКА -->
+                    {#if item.type === 'frame'}
+                        <div class="avatar-wrapper {item.id}">
+                            <div class="avatar-placeholder"></div>
+                        </div>
+                    <!-- ЕСЛИ ФОН -->
+                    {:else if item.type === 'background'}
+                        <div class="bg-preview-box {item.id}">
+                            <!-- Мини-контент для демонстрации фона -->
+                            <div class="mini-profile">
+                                <div class="mini-avatar"></div>
+                                <div class="mini-name">User</div>
+                            </div>
+                        </div>
+                    {/if}
                 </div>
+
                 <div class="item-info">
                     <h3 class="item-name font-display">{item.name}</h3>
                     <p class="item-desc">{item.description}</p>
                 </div>
+
                 <div class="item-footer">
                     <span class="item-price font-display">{item.price} PC</span>
                     {#if ownedItems.has(item.id)}
@@ -160,6 +201,10 @@
                 </div>
             </div>
         {/each}
+
+        {#if visibleItems.length === 0}
+            <div class="empty-message">{$t('shop.empty_category')}</div>
+        {/if}
     </div>
 </div>
 
@@ -190,7 +235,7 @@
         display: flex; justify-content: space-between; align-items: center;
         background: rgba(20, 20, 25, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 1rem;
-        padding: 1rem 1.5rem; margin-bottom: 3rem;
+        padding: 1rem 1.5rem; margin-bottom: 2rem;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); z-index: 2;
         gap: 1rem;
     }
@@ -216,6 +261,40 @@
     .panel-btn.lobby:hover:not(:disabled) { box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1), 0 0 20px var(--cyber-purple); }
     .panel-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
 
+    .shop-tabs {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 2rem;
+        gap: 1rem;
+        z-index: 5;
+    }
+
+    .shop-tab {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #888;
+        padding: 0.8rem 2rem;
+        font-family: 'Chakra Petch', monospace;
+        font-weight: bold;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+
+    .shop-tab:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #ccc;
+    }
+
+    .shop-tab.active {
+        background: rgba(0, 243, 255, 0.1);
+        border-color: var(--cyber-cyan);
+        color: var(--cyber-cyan);
+        box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+    }
 
     .items-grid {
         width: 100%; max-width: 1200px;
@@ -251,6 +330,35 @@
         background-color: #333;
     }
 
+    .bg-preview-box {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mini-profile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        pointer-events: none;
+    }
+    .mini-avatar {
+        width: 40px; height: 40px;
+        background: #555;
+        border-radius: 50%;
+    }
+    .mini-name {
+        font-size: 0.7rem;
+        font-weight: bold;
+    }
+
+    .bg_matrix .mini-name { color: #00ff00; text-shadow: 0 0 5px #00ff00; }
+    .bg_synthwave .mini-name { color: #00f3ff; text-shadow: 0 0 5px #00f3ff; }
+    .bg_carbon .mini-name { color: #fff; text-shadow: 1px 1px 0 #000; }
+
     .item-info { padding: 1rem; text-align: center; flex-grow: 1; }
     .item-name { font-size: 1.5rem; color: #fff; margin-bottom: 0.5rem; }
     .item-desc { font-size: 0.9rem; color: var(--text-muted-color); line-height: 1.5; }
@@ -263,52 +371,19 @@
     }
     .item-price { font-size: 1.25rem; color: var(--cyber-yellow); font-weight: bold; }
 
+    .empty-message {
+        width: 100%;
+        text-align: center;
+        color: #666;
+        font-family: 'Chakra Petch', monospace;
+        margin-top: 2rem;
+        grid-column: 1 / -1;
+    }
+
     @media (max-width: 768px) {
         .user-panel { flex-direction: column; gap: 1rem; }
         .actions-group { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
         .panel-btn { font-size: 0.8rem; padding: 0.6rem; }
         .items-grid { grid-template-columns: 1fr; }
-    }
-.avatar-wrapper.frame_neon_blue {
-        border: 3px solid var(--cyber-cyan);
-        box-shadow: 0 0 15px var(--cyber-cyan), 0 0 25px var(--cyber-cyan);
-    }
-
-    /* --- Рамка "Системный Сбой" (Глитч) --- */
-    .avatar-wrapper.frame_glitch::before,
-    .avatar-wrapper.frame_glitch::after {
-        content: '';
-        position: absolute;
-        top: -3px; left: -3px; right: -3px; bottom: -3px;
-        border-radius: 50%;
-        border: 3px solid transparent;
-    }
-    .avatar-wrapper.frame_glitch::before {
-        border-color: #ff00c1;
-        animation: glitch-border-anim 1s infinite linear alternate-reverse;
-    }
-    .avatar-wrapper.frame_glitch::after {
-        border-color: #00f0ff;
-        animation: glitch-border-anim 1s 0.2s infinite linear alternate;
-    }
-
-    /* --- Рамка "Золотой Игрок" (High Roller) --- */
-    .avatar-wrapper.frame_high_roller {
-        padding: 1px;
-    }
-    .avatar-wrapper.frame_high_roller::before {
-        content: '';
-        position: absolute;
-        top: -3px; left: -3px; right: -3px; bottom: -3px;
-        border-radius: 50%;
-        padding: 3px;
-        background: conic-gradient(#ffd700, #f0e68c, #daa520, #f0e68c, #ffd700);
-        -webkit-mask:
-            linear-gradient(#fff 0 0) content-box,
-            linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-                mask-composite: exclude;
-        animation: high-roller-shine 3s linear infinite;
-        background-size: 200% 100%;
     }
 </style>

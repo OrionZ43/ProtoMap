@@ -236,6 +236,9 @@
     "btn_owned": "В коллекции",
     "btn_poor": "Недостаточно",
     "processing": "...",
+    "tab_frames": "РАМКИ",
+    "tab_backgrounds": "ФОНЫ",
+    "empty_category": "В этой категории пока пусто.",
 
     "modal_confirm_title": "Подтверждение сделки",
     "modal_confirm_prefix": "Купить",

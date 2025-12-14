@@ -1,0 +1,653 @@
+/* === [ СИСТЕМА КАСТОМИЗАЦИИ: РАМКИ ПРОФИЛЯ ] === */
+
+/* --- АНИМАЦИИ --- */
+@keyframes glitch-border-anim {
+    0% { clip-path: inset(90% 0 5% 0); } 20% { clip-path: inset(5% 0 80% 0); }
+    40% { clip-path: inset(45% 0 45% 0); } 60% { clip-path: inset(2% 0 90% 0); }
+    80% { clip-path: inset(60% 0 30% 0); } 100% { clip-path: inset(90% 0 5% 0); }
+}
+@keyframes high-roller-shine {
+    0% { background-position: -200% 0; } 100% { background-position: 200% 0; }
+}
+@keyframes bio-warning-scroll {
+    0% { background-position: 0 0; } 100% { background-position: 30px 0; }
+}
+@keyframes plasma-spin {
+    0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }
+}
+@keyframes stealth-scan {
+    0%, 100% { border-color: rgba(255,255,255,0.2); box-shadow: 0 0 5px rgba(255,255,255,0.1); }
+    50% { border-color: rgba(255,255,255,0.8); box-shadow: 0 0 15px rgba(255,255,255,0.5); }
+}
+
+/* --- Базовый стиль для контейнера рамки --- */
+.avatar-wrapper {
+    position: relative;
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.avatar-wrapper img {
+    border-radius: 50%;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* --- 1. Неоновый Поток (Neon Blue) --- */
+.avatar-wrapper.frame_neon_blue img {
+    outline: 3px solid var(--cyber-cyan);
+    outline-offset: 3px;
+    box-shadow: 0 0 15px var(--cyber-cyan), 0 0 25px var(--cyber-cyan);
+}
+
+/* --- 2. Системный Сбой (Glitch) --- */
+.avatar-wrapper.frame_glitch::before,
+.avatar-wrapper.frame_glitch::after {
+    content: ''; position: absolute;
+    top: -6px; left: -6px; right: -6px; bottom: -6px;
+    border-radius: 50%; border: 3px solid transparent;
+}
+.avatar-wrapper.frame_glitch::before {
+    border-color: #ff00c1;
+    animation: glitch-border-anim 1s infinite linear alternate-reverse;
+}
+.avatar-wrapper.frame_glitch::after {
+    border-color: #00f0ff;
+    animation: glitch-border-anim 1s 0.2s infinite linear alternate;
+}
+
+/* --- 3. Золотой Игрок (High Roller) --- */
+.avatar-wrapper.frame_high_roller::before {
+    content: ''; position: absolute;
+    top: -7px; left: -7px; right: -7px; bottom: -7px;
+    border-radius: 50%; padding: 3px;
+    background: conic-gradient(#ffd700, #f0e68c, #daa520, #f0e68c, #ffd700);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: high-roller-shine 3s linear infinite;
+    background-size: 200% 100%;
+}
+
+/* --- 4. Bio-Hazard (Новая) --- */
+@keyframes bio-warning-scroll {
+    0% { background-position: 0 0; }
+    100% { background-position: 28.28px 0; } /* Точное значение для идеального цикла */
+}
+
+/* --- 4. Bio-Hazard (Фикс дергания) --- */
+.avatar-wrapper.frame_biohazard,
+.user-avatar-marker.frame_biohazard,
+.avatar-wrapper-popup.frame_biohazard,
+.comment-avatar-wrapper.frame_biohazard {
+    padding: 3px;
+    background: #000;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #39ff14;
+}
+
+.avatar-wrapper.frame_biohazard::before,
+.user-avatar-marker.frame_biohazard::before,
+.avatar-wrapper-popup.frame_biohazard::before,
+.comment-avatar-wrapper.frame_biohazard::before {
+    content: '';
+    position: absolute;
+    top: -3px; left: -3px; right: -3px; bottom: -3px;
+    border-radius: 50%;
+    z-index: -1;
+    /* Используем background-size для фиксации размера тайла */
+    background-size: 28.28px 28.28px;
+    background-image: repeating-linear-gradient(
+        45deg,
+        #39ff14,
+        #39ff14 10px,
+        #000 10px,
+        #000 20px
+    );
+    /* Ускорил до 1s, чтобы выглядело как активная тревога, а не медленная лента */
+    animation: bio-warning-scroll 1s linear infinite;
+}
+
+/* --- 5. Plasma Coil (Новая) --- */
+.avatar-wrapper.frame_plasma::before {
+    content: ''; position: absolute;
+    top: -4px; left: -4px; right: -4px; bottom: -4px;
+    border-radius: 50%;
+    background: conic-gradient(var(--cyber-purple, #bd00ff), #ff0055, var(--cyber-purple, #bd00ff), transparent, var(--cyber-purple, #bd00ff));
+    -webkit-mask-image: radial-gradient(transparent 65%, black 70%);
+    mask-image: radial-gradient(transparent 65%, black 70%);
+    animation: plasma-spin 4s linear infinite;
+    box-shadow: 0 0 15px var(--cyber-purple, #bd00ff);
+}
+
+/* --- 6. Stealth Ops (Новая) --- */
+.avatar-wrapper.frame_stealth img { filter: grayscale(0.5) brightness(0.9); }
+.avatar-wrapper.frame_stealth::after {
+    content: ''; position: absolute;
+    top: -5px; left: -5px; right: -5px; bottom: -5px;
+    border-radius: 50%; border: 1px dashed rgba(255, 255, 255, 0.5);
+    border-top: 2px solid #fff; border-bottom: 2px solid #fff;
+    animation: stealth-scan 3s ease-in-out infinite;
+}
+.avatar-wrapper.frame_stealth::before {
+    content: '+'; position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: rgba(255,255,255,0.3); font-family: monospace; font-size: 20px;
+    pointer-events: none; z-index: 2;
+}
+
+
+/* === [ КАСТОМИЗАЦИЯ МАРКЕРОВ НА КАРТЕ (FIXED) ] === */
+
+/* Базовый стиль (для пользователей БЕЗ рамки) */
+.user-avatar-marker {
+    box-shadow: 0 0 8px rgba(252, 238, 10, 0.7);
+    transition: transform 0.2s ease-out;
+    border-radius: 50%;
+    overflow: hidden; /* Важно для обрезки круга без рамки */
+}
+.user-avatar-marker img {
+    border: 2px solid var(--cyber-yellow, #fcee0a);
+    background-color: #333;
+    width: 100%; height: 100%; object-fit: cover;
+}
+.user-avatar-marker:hover { transform: scale(1.1); }
+
+
+/* --- ГЛОБАЛЬНЫЙ ФИКС ДЛЯ ВСЕХ РАМОК НА КАРТЕ --- */
+/* Это убирает желтую обводку и разрешает эффектам выходить за пределы */
+.user-avatar-marker.frame_neon_blue,
+.user-avatar-marker.frame_glitch,
+.user-avatar-marker.frame_high_roller,
+.user-avatar-marker.frame_biohazard,
+.user-avatar-marker.frame_plasma,
+.user-avatar-marker.frame_stealth {
+    overflow: visible !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.user-avatar-marker.frame_neon_blue img,
+.user-avatar-marker.frame_glitch img,
+.user-avatar-marker.frame_high_roller img,
+.user-avatar-marker.frame_biohazard img,
+.user-avatar-marker.frame_plasma img,
+.user-avatar-marker.frame_stealth img {
+    border: none !important; /* Убиваем желтую рамку */
+    border-radius: 50% !important;
+    background-color: #111;
+}
+
+/* --- Специфичные стили для маркеров --- */
+
+/* 1. Neon Blue Marker */
+.user-avatar-marker.frame_neon_blue img {
+    border: 2px solid var(--cyber-cyan) !important;
+    box-shadow: 0 0 8px var(--cyber-cyan), 0 0 12px var(--cyber-cyan);
+}
+
+/* 2. Glitch Marker */
+.user-avatar-marker.frame_glitch::before,
+.user-avatar-marker.frame_glitch::after {
+    content: ''; position: absolute;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
+    border-radius: 50%; border: 2px solid transparent; pointer-events: none;
+}
+.user-avatar-marker.frame_glitch::before { border-color: #ff00c1; animation: glitch-border-anim 1s infinite linear alternate-reverse; }
+.user-avatar-marker.frame_glitch::after { border-color: #00f0ff; animation: glitch-border-anim 1s 0.2s infinite linear alternate; }
+
+/* 3. High Roller Marker */
+.user-avatar-marker.frame_high_roller::before {
+    content: ''; position: absolute;
+    top: -3px; left: -3px; right: -3px; bottom: -3px;
+    border-radius: 50%; padding: 2px;
+    background: conic-gradient(#ffd700, #f0e68c, #daa520, #f0e68c, #ffd700);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: high-roller-shine 3s linear infinite;
+}
+
+/* 4. Biohazard Marker */
+.user-avatar-marker.frame_biohazard::before {
+    content: ''; position: absolute; z-index: -1;
+    top: -3px; left: -3px; right: -3px; bottom: -3px;
+    border-radius: 50%;
+    background: repeating-linear-gradient(45deg, #39ff14, #39ff14 5px, #000 5px, #000 10px);
+    box-shadow: 0 0 5px #39ff14;
+    animation: bio-warning-scroll 2s linear infinite;
+}
+
+/* 5. Plasma Marker */
+.user-avatar-marker.frame_plasma::before {
+    content: ''; position: absolute; z-index: -1;
+    top: -4px; left: -4px; right: -4px; bottom: -4px;
+    border-radius: 50%;
+    background: conic-gradient(var(--cyber-purple, #bd00ff), #ff0055, var(--cyber-purple, #bd00ff), transparent, var(--cyber-purple, #bd00ff));
+    animation: plasma-spin 4s linear infinite;
+}
+
+/* 6. Stealth Marker */
+.user-avatar-marker.frame_stealth::before {
+    content: '+'; position: absolute; z-index: 10;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: rgba(255,255,255,0.5); font-family: monospace; font-size: 14px;
+}
+.user-avatar-marker.frame_stealth::after {
+    content: ''; position: absolute; z-index: 20;
+    top: -3px; left: -3px; right: -3px; bottom: -3px;
+    border-radius: 50%; border: 1px dashed rgba(255, 255, 255, 0.5);
+    border-top: 2px solid #fff; border-bottom: 2px solid #fff;
+    animation: stealth-scan 3s ease-in-out infinite;
+}
+
+
+/* === [ КАСТОМИЗАЦИЯ АВАТАРОВ В ПОПАПЕ ] === */
+.avatar-wrapper-popup { position: relative; width: 48px; height: 48px; flex-shrink: 0; }
+.avatar-wrapper-popup .popup-avatar { width: 100%; height: 100%; border: none; border-radius: 50%; }
+
+.avatar-wrapper-popup.frame_neon_blue { border-radius: 50%; border: 2px solid var(--cyber-cyan); box-shadow: 0 0 8px var(--cyber-cyan), 0 0 12px var(--cyber-cyan); }
+
+.avatar-wrapper-popup.frame_glitch::before, .avatar-wrapper-popup.frame_glitch::after {
+    content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border-radius: 50%; border: 2px solid transparent;
+}
+.avatar-wrapper-popup.frame_glitch::before { border-color: #ff00c1; animation: glitch-border-anim 1s infinite linear alternate-reverse; }
+.avatar-wrapper-popup.frame_glitch::after { border-color: #00f0ff; animation: glitch-border-anim 1s 0.2s infinite linear alternate; }
+
+.avatar-wrapper-popup.frame_high_roller::before {
+    content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
+    border-radius: 50%; padding: 2px;
+    background: conic-gradient(#ffd700, #f0e68c, #daa520, #f0e68c, #ffd700);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; animation: high-roller-shine 3s linear infinite;
+}
+
+.avatar-wrapper-popup.frame_biohazard { padding: 2px; background: #000; border-radius: 50%; box-shadow: 0 0 5px #39ff14; }
+.avatar-wrapper-popup.frame_biohazard::before {
+    content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+    border-radius: 50%; z-index: -1; background: repeating-linear-gradient(45deg, #39ff14, #39ff14 5px, #000 5px, #000 10px); animation: bio-warning-scroll 2s linear infinite;
+}
+.avatar-wrapper-popup.frame_plasma::before {
+    content: ''; position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px; border-radius: 50%;
+    background: conic-gradient(var(--cyber-purple, #bd00ff), #ff0055, var(--cyber-purple, #bd00ff), transparent, var(--cyber-purple, #bd00ff));
+    -webkit-mask-image: radial-gradient(transparent 65%, black 70%); mask-image: radial-gradient(transparent 65%, black 70%); animation: plasma-spin 4s linear infinite;
+}
+.avatar-wrapper-popup.frame_stealth img { filter: grayscale(0.5) brightness(0.9); }
+.avatar-wrapper-popup.frame_stealth::after {
+    content: ''; position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px; border-radius: 50%;
+    border: 1px dashed rgba(255, 255, 255, 0.5); border-top: 2px solid #fff; border-bottom: 2px solid #fff; animation: stealth-scan 3s ease-in-out infinite;
+}
+
+
+/* === [ КАСТОМИЗАЦИЯ АВАТАРОВ В КОММЕНТАРИЯХ ] === */
+
+.comment-avatar-wrapper.frame_neon_blue { outline: 2px solid var(--cyber-cyan); outline-offset: 2px; box-shadow: 0 0 8px var(--cyber-cyan), 0 0 12px var(--cyber-cyan); }
+
+.comment-avatar-wrapper.frame_glitch::before, .comment-avatar-wrapper.frame_glitch::after {
+    content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border-radius: 50%; border: 2px solid transparent;
+}
+.comment-avatar-wrapper.frame_glitch::before { border-color: #ff00c1; animation: glitch-border-anim 1s infinite linear alternate-reverse; }
+.comment-avatar-wrapper.frame_glitch::after { border-color: #00f0ff; animation: glitch-border-anim 1s 0.2s infinite linear alternate; }
+
+.comment-avatar-wrapper.frame_high_roller::before {
+    content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px; border-radius: 50%; padding: 2px;
+    background: conic-gradient(#ffd700, #f0e68c, #daa520, #f0e68c, #ffd700);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: high-roller-shine 3s linear infinite;
+}
+
+.comment-avatar-wrapper.frame_biohazard { padding: 2px; background: #000; border-radius: 50%; box-shadow: 0 0 5px #39ff14; }
+.comment-avatar-wrapper.frame_biohazard::before {
+    content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+    border-radius: 50%; z-index: -1; background: repeating-linear-gradient(45deg, #39ff14, #39ff14 5px, #000 5px, #000 10px); animation: bio-warning-scroll 2s linear infinite;
+}
+.comment-avatar-wrapper.frame_plasma::before {
+    content: ''; position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px; border-radius: 50%;
+    background: conic-gradient(var(--cyber-purple, #bd00ff), #ff0055, var(--cyber-purple, #bd00ff), transparent, var(--cyber-purple, #bd00ff));
+    -webkit-mask-image: radial-gradient(transparent 65%, black 70%); mask-image: radial-gradient(transparent 65%, black 70%); animation: plasma-spin 4s linear infinite;
+}
+.comment-avatar-wrapper.frame_stealth img { filter: grayscale(0.5) brightness(0.9); }
+.comment-avatar-wrapper.frame_stealth::after {
+    content: ''; position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px; border-radius: 50%;
+    border: 1px dashed rgba(255, 255, 255, 0.5); border-top: 2px solid #fff; border-bottom: 2px solid #fff; animation: stealth-scan 3s ease-in-out infinite;
+}
+
+/* ========================================= */
+/* === [ WINTER COLLECTION: FIXED v3 ] === */
+/* ========================================= */
+
+/* --- 0. ГЛОБАЛЬНЫЙ ФИКС КОНТЕЙНЕРОВ --- */
+/* Это лечит обрезание и странный фон на карте/в профиле */
+
+.avatar-wrapper.frame_cryo, .avatar-wrapper.frame_festive, .avatar-wrapper.frame_aurora,
+.user-avatar-marker.frame_cryo, .user-avatar-marker.frame_festive, .user-avatar-marker.frame_aurora,
+.avatar-wrapper-popup.frame_cryo, .avatar-wrapper-popup.frame_festive, .avatar-wrapper-popup.frame_aurora,
+.comment-avatar-wrapper.frame_cryo, .comment-avatar-wrapper.frame_festive, .comment-avatar-wrapper.frame_aurora {
+    overflow: visible !important; /* Разрешаем рамке вылезать */
+    border-radius: 50% !important; /* Гарантируем круг */
+    background: transparent !important; /* Убираем лишние фоны */
+    box-shadow: none !important; /* Убираем старые тени, которые могли мешать */
+    transform-style: preserve-3d; /* Фикс для некоторых браузеров */
+}
+
+/* Убираем дефолтные бордеры у картинок внутри этих рамок */
+.frame_cryo img, .frame_festive img, .frame_aurora img {
+    border: none !important;
+    border-radius: 50% !important;
+    /* Важно: Картинка должна быть сверху подложек, но снизу наложений */
+    position: relative;
+    z-index: 5;
+}
+
+
+/* --- ANIMATIONS --- */
+
+@keyframes spin-slow {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes festive-flash {
+    0%, 100% { filter: brightness(1); opacity: 0.8; }
+    50% { filter: brightness(1.3); opacity: 1; }
+}
+
+@keyframes aurora-wave {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+
+/* ------------------------------------------------ */
+/* 1. CRYO-STASIS (Ледяной щит)                     */
+/* ------------------------------------------------ */
+
+/* Внешнее кольцо (Лёд) */
+.frame_cryo::before {
+    content: ''; position: absolute;
+    inset: -4px; /* Выступает наружу */
+    border-radius: 50%;
+    border: 2px solid rgba(0, 243, 255, 0.6);
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.5), inset 0 0 10px rgba(0, 243, 255, 0.3);
+    z-index: 10; /* Поверх аватарки */
+    pointer-events: none;
+}
+
+/* Вращающиеся осколки (Тонкие) */
+.frame_cryo::after {
+    content: ''; position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: #fff;
+    border-bottom-color: rgba(0, 243, 255, 0.5);
+    z-index: 11;
+    animation: spin-slow 8s linear infinite;
+    pointer-events: none;
+}
+
+
+/* ------------------------------------------------ */
+/* 2. FESTIVE_L00P (Гирлянда)                       */
+/* ------------------------------------------------ */
+
+/* Основное свечение (Сзади) */
+.frame_festive::before {
+    content: ''; position: absolute;
+    inset: -3px; /* Чуть шире */
+    border-radius: 50%;
+    z-index: 1; /* ПОД аватаркой (z-index картинки = 5) */
+    background: conic-gradient(
+        #ff003c, #ffd700, #00ff9d,
+        #ff003c, #ffd700, #00ff9d,
+        #ff003c
+    );
+    filter: blur(2px);
+    animation: spin-slow 4s linear infinite;
+}
+
+/* Четкий контур (Сверху) */
+.frame_festive::after {
+    content: ''; position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    z-index: 10; /* ПОВЕРХ аватарки */
+    border: 2px dashed rgba(255, 255, 255, 0.6);
+    animation: spin-slow 12s linear infinite reverse, festive-flash 2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+
+/* ------------------------------------------------ */
+/* 3. AURORA (Северное сияние)                      */
+/* ------------------------------------------------ */
+
+/* Подложка с градиентом */
+.frame_aurora::before {
+    content: ''; position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    z-index: 1; /* Под аватаркой */
+    background: linear-gradient(120deg, #00ff9d, #00f3ff, #bd00ff, #00ff9d);
+    background-size: 300% 300%;
+    animation: aurora-wave 3s ease infinite;
+}
+
+/* Внутренний блик (Сверху) */
+.frame_aurora::after {
+    content: ''; position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    z-index: 10; /* Поверх */
+    box-shadow: inset 0 0 8px rgba(0, 243, 255, 0.6);
+    border: 1px solid rgba(255,255,255,0.3);
+    pointer-events: none;
+}
+
+/* ------------------------------------------------ */
+/* 4. TRUE GAMBLER (LUDOMAN) - THIN & CRISP         */
+/* ------------------------------------------------ */
+
+@keyframes money-rain-fall {
+    /* Падение на высоту паттерна (20px) */
+    0% { background-position: 0 0, 5px -10px; }
+    100% { background-position: 0 20px, 5px 10px; }
+}
+
+@keyframes gold-pulse {
+    0%, 100% { border-color: #ffd700; box-shadow: 0 0 3px #ffd700; }
+    50% { border-color: #ffec8b; box-shadow: 0 0 10px #ffd700; }
+}
+
+/* Глобальный контейнер */
+.avatar-wrapper.frame_ludoman,
+.user-avatar-marker.frame_ludoman,
+.avatar-wrapper-popup.frame_ludoman,
+.comment-avatar-wrapper.frame_ludoman {
+    position: relative;
+
+    /* УМЕНЬШИЛИ ТОЛЩИНУ: Было 2px -> Стало 1px */
+    border: 1px solid #ffd700 !important;
+
+    animation: gold-pulse 2s infinite ease-in-out;
+
+    overflow: visible !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+}
+
+/* Эффект дождя (Слой поверх) */
+.frame_ludoman::before {
+    content: '';
+    position: absolute;
+
+    /* Эффект чуть шире рамки */
+    inset: -3px;
+
+    border-radius: 50%;
+    z-index: 10;
+    pointer-events: none;
+
+    /* Золотые и белые точки (искры) */
+    background-image:
+        radial-gradient(circle, #ffd700 1.5px, transparent 1.5px),
+        radial-gradient(circle, #fff 1px, transparent 1px);
+
+    background-size: 10px 10px, 15px 15px;
+
+    animation: money-rain-fall 1s linear infinite;
+
+    /* МАСКА: Сдвинули границу маски внутрь (60%),
+       чтобы дождь был виден лучше поверх тонкой рамки */
+    -webkit-mask: radial-gradient(transparent 60%, black 61%);
+    mask: radial-gradient(transparent 60%, black 61%);
+}
+
+/* Фикс самой картинки внутри */
+.frame_ludoman img {
+    border-radius: 50% !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border: none !important;
+    display: block !important;
+    position: relative;
+    z-index: 5;
+}
+/* === [ ЭКСКЛЮЗИВНЫЕ РАМКИ: DEV & BETA ] === */
+
+/* --- АНИМАЦИИ --- */
+@keyframes dev-spin-tech {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+@keyframes beta-scan {
+    0%, 100% { border-color: #ffb000; box-shadow: 0 0 10px #ffb000; }
+    50% { border-color: #ffea00; box-shadow: 0 0 25px #ffea00; }
+}
+@keyframes text-glitch-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; text-shadow: 0 0 5px #fff; }
+}
+
+/* --- 1. FRAME: DEVELOPER (GOD MODE) --- */
+/* Стиль: Технический круг, агрессивный красный, плашка DEV */
+
+/* База */
+.avatar-wrapper.frame_dev,
+.user-avatar-marker.frame_dev,
+.avatar-wrapper-popup.frame_dev,
+.comment-avatar-wrapper.frame_dev {
+    position: relative;
+    z-index: 10;
+    /* Небольшое свечение вокруг всего аватара */
+    filter: drop-shadow(0 0 5px rgba(255, 0, 60, 0.5));
+}
+
+/* Сама картинка - добавляем тонкую красную обводку */
+.avatar-wrapper.frame_dev img,
+.user-avatar-marker.frame_dev img,
+.avatar-wrapper-popup.frame_dev img,
+.comment-avatar-wrapper.frame_dev img {
+    border: 2px solid #ff003c !important;
+}
+
+/* Вращающийся техно-круг */
+.avatar-wrapper.frame_dev::before,
+.user-avatar-marker.frame_dev::before,
+.avatar-wrapper-popup.frame_dev::before,
+.comment-avatar-wrapper.frame_dev::before {
+    content: ''; position: absolute; z-index: 2;
+    top: -6px; left: -6px; right: -6px; bottom: -6px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: #ff003c;
+    border-bottom-color: #fff;
+    animation: dev-spin-tech 4s linear infinite;
+}
+
+/* Плашка DEV снизу */
+.avatar-wrapper.frame_dev::after,
+.user-avatar-marker.frame_dev::after,
+.avatar-wrapper-popup.frame_dev::after,
+.comment-avatar-wrapper.frame_dev::after {
+    content: 'DEV';
+    position: absolute;
+    bottom: -6px; left: 50%; transform: translateX(-50%);
+    background: #ff003c;
+    color: #fff;
+    font-family: 'Chakra Petch', monospace;
+    font-weight: 900;
+    font-size: 10px;
+    line-height: 1.2 !important; /* Восстанавливаем высоту строки */
+    padding: 2px 6px; /* Чуть больше воздуха */
+    min-width: 30px;  /* Минимальная ширина, чтобы не сжималось */
+    text-align: center;
+    border-radius: 4px;
+    border: 1px solid #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    z-index: 20;
+    letter-spacing: 0.1em;
+    animation: text-glitch-blink 2s infinite;
+}
+
+/* --- 2. FRAME: BETA TESTER (ЯНТАРНЫЙ ТЕХНИК) --- */
+/* Стиль: Пунктир, значок Бета */
+
+.avatar-wrapper.frame_beta img,
+.user-avatar-marker.frame_beta img,
+.avatar-wrapper-popup.frame_beta img,
+.comment-avatar-wrapper.frame_beta img {
+    filter: sepia(0.3);
+}
+
+.avatar-wrapper.frame_beta::before,
+.user-avatar-marker.frame_beta::before,
+.avatar-wrapper-popup.frame_beta::before,
+.comment-avatar-wrapper.frame_beta::before {
+    content: ''; position: absolute;
+    top: -4px; left: -4px; right: -4px; bottom: -4px;
+    border-radius: 50%;
+    border: 2px dashed #ffb000;
+    box-shadow: 0 0 10px rgba(255, 176, 0, 0.3);
+    animation: beta-scan 3s infinite ease-in-out;
+}
+
+/* Значок β */
+.avatar-wrapper.frame_beta::after,
+.user-avatar-marker.frame_beta::after,
+.avatar-wrapper-popup.frame_beta::after,
+.comment-avatar-wrapper.frame_beta::after {
+    content: 'β';
+    position: absolute;
+    bottom: -2px; right: -2px;
+    background: #ffb000; color: #000;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    font-family: monospace; font-weight: bold; font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid #fff;
+    z-index: 10;
+}
+
+
+/* === ВАЖНО: ФИКС ДЛЯ КАРТЫ (Leaflet) === */
+/* Разрешаем элементам вылезать за границы маркера */
+.user-avatar-marker.frame_dev,
+.user-avatar-marker.frame_beta {
+    overflow: visible !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+.user-avatar-marker.frame_dev img,
+.user-avatar-marker.frame_beta img {
+    /* Сбрасываем дефолтный желтый бордер */
+    border: none !important;
+    /* Для DEV возвращаем свой красный внутри селектора выше, а для BETA оставляем без бордера */
+}
+/* Возвращаем красный бордер конкретно для картинки внутри маркера DEV */
+.user-avatar-marker.frame_dev img {
+    border: 2px solid #ff003c !important;
+}

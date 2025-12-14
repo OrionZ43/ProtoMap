@@ -232,7 +232,8 @@ export const updateEquippedItems = onCall({ cors: ALLOWED_ORIGINS }, async (requ
     await assertNotBanned(uid);
     assertEmailVerified(request.auth);
 
-    const { equipped_frame } = request.data;
+    // Принимаем и рамку, и фон
+    const { equipped_frame, equipped_bg } = request.data;
     const userRef = db.collection('users').doc(uid);
 
     try {
@@ -240,12 +241,29 @@ export const updateEquippedItems = onCall({ cors: ALLOWED_ORIGINS }, async (requ
         if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
         const userData = userDoc.data() as any;
 
-        if (equipped_frame !== null && !userData.owned_items?.includes(equipped_frame)) {
-            throw new HttpsError('permission-denied', 'Вы не владеете этим предметом.');
+        const updates: any = {};
+
+        // Проверка рамки
+        if (equipped_frame !== undefined) {
+            if (equipped_frame !== null && !userData.owned_items?.includes(equipped_frame)) {
+                throw new HttpsError('permission-denied', 'Нет прав на эту рамку.');
+            }
+            updates.equipped_frame = equipped_frame;
         }
 
-        await userRef.update({ equipped_frame });
-        return { data: { status: 'success', message: 'Сохранено!' } };
+        // Проверка фона
+        if (equipped_bg !== undefined) {
+            if (equipped_bg !== null && !userData.owned_items?.includes(equipped_bg)) {
+                throw new HttpsError('permission-denied', 'Нет прав на этот фон.');
+            }
+            updates.equipped_bg = equipped_bg;
+        }
+
+        if (Object.keys(updates).length > 0) {
+            await userRef.update(updates);
+        }
+
+        return { data: { status: 'success', message: 'Стиль обновлен!' } };
     } catch (error: any) {
         if (error.code) throw error;
         throw new HttpsError('internal', 'Error saving items.');

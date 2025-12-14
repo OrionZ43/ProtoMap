@@ -257,7 +257,13 @@
     <div class="hidden neon-blue-frame glitch-frame high-roller-frame frame_biohazard frame_plasma frame_stealth frame_dev frame_beta"></div>
 
     <div class="container mx-auto px-4" transition:fade={{ duration: 300 }}>
-        <div class="profile-container cyber-panel pb-12" style="opacity: {$containerOpacity}">
+        {#if data.profile.equipped_bg}
+        <div class="profile-backdrop {data.profile.equipped_bg}"></div>
+    {/if}
+
+    <!-- КОНТЕЙНЕР ПРОФИЛЯ (Теперь он просто стекло, класс фона убрали отсюда) -->
+    <!-- Добавляем класс 'themed', если фон есть, чтобы поменять цвет бордеров -->
+    <div class="profile-container cyber-panel pb-12 {data.profile.equipped_bg ? 'themed ' + data.profile.equipped_bg + '-theme' : ''}" style="opacity: {$containerOpacity}">
 
             {#if $userStore.user && !isOwner}
                 <button on:click={handleReportProfile} class="report-icon-btn" title={$t('profile.report_btn')}>
@@ -689,5 +695,11 @@
     opacity: 1;
     visibility: visible;
     transform: translateX(-50%) translateY(0);
+}
+.profile-backdrop {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: -1; /* Или -1, если перекрывает */
+    pointer-events: none;
 }
 </style>
