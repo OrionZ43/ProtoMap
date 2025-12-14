@@ -1,7 +1,10 @@
 <script lang="ts">
-    import "../app.css";
-    import "../styles/cosmetics.css";
-    import "../styles/profile-skins.css";
+    import "../app.css"; // app.css обычно лежит в корне src, его не трогаем
+
+    // --- ПРАВИЛЬНЫЕ ПУТИ ---
+    import "/src/styles/cosmetics.css";
+    import "/src/styles/profile-skins.css";
+
     import Navbar from "$lib/components/Navbar.svelte";
     import Modal from '$lib/components/Modal.svelte';
     import ChatWidget from '$lib/components/ChatWidget.svelte';
@@ -17,51 +20,44 @@
     import { browser, dev } from '$app/environment';
     import { injectAnalytics } from '@vercel/analytics/sveltekit';
 
-    // Локализация
     import '$lib/i18n';
     import { waitLocale } from 'svelte-i18n';
 
     let themeState = 'default';
     let sideTextLeft = 'СТАТУС СИСТЕМЫ: ОНЛАЙН';
     let sideTextRight = 'МОЩНОСТЬ СЕТИ: 99%';
-    let isReady = false; // Флаг готовности (ждем i18n)
+    let isReady = false;
 
     if (browser) {
         const d = new Date();
         const m = d.getMonth();
         const day = d.getDate();
 
-        // Хэллоуин (20 Окт - 2 Ноя)
         if ((m === 9 && day >= 20) || (m === 10 && day <= 2)) {
             themeState = 'halloween';
             sideTextLeft = 'СИСТЕМА: НЕСТАБИЛЬНА';
             sideTextRight = 'АНАЛИЗ АНОМАЛИИ...';
-            import('../styles/halloween.css'); // Динамический импорт
+            import('/src/styles/halloween.css');
         }
-        // Зима (1 Дек - 14 Дек)
         else if (m === 11 && day >= 1 && day < 15) {
             themeState = 'winter';
             sideTextLeft = 'ТЕМПЕРАТУРА: -15°C';
             sideTextRight = 'СИСТЕМА ОХЛАЖДЕНИЯ: АКТИВНА';
-            import('../styles/winter.css'); // Динамический импорт
+            import('/src/styles/winter.css');
         }
-        // Глитчмас/Новый год (15 Дек - 14 Янв)
         else if ((m === 11 && day >= 15) || (m === 0 && day <= 14)) {
             themeState = 'newyear';
             sideTextLeft = 'РЕЖИМ: GLITCHMAS';
             sideTextRight = 'КРИОГЕННЫЕ ПРОТОКОЛЫ: МАКСИМУМ';
-            import('../styles/newyear.css'); // Динамический импорт
+            // Подключаем ОБА файла для Нового Года
+            import('/src/styles/winter.css');
+            import('/src/styles/newyear.css');
         }
     }
 
     onMount(async () => {
-        // Инициализация аналитики
         injectAnalytics({ mode: dev ? 'development' : 'production' });
-
-        // Инициализация аудио
         AudioManager.initialize();
-
-        // Ждем загрузки переводов перед показом контента
         await waitLocale();
         isReady = true;
     });
@@ -79,7 +75,7 @@
 </script>
 
 <svelte:head>
-    <!-- Здесь больше нет <link rel="stylesheet"> для тем, они грузятся через import() -->
+    <!-- Удалили отсюда все <link>, теперь они в JS -->
 </svelte:head>
 
 {#if isReady}
@@ -88,7 +84,6 @@
         class:no-scroll-container={isMapPage}
         class:winter-mode={themeState === 'winter' || themeState === 'newyear'}
     >
-        <!-- СНЕГ (Только зимой) -->
         {#if themeState === 'winter' || themeState === 'newyear'}
             <div class="initial-snow">
                 {#each Array(50) as _, i}
@@ -134,7 +129,6 @@
         </button>
     </div>
 {:else}
-    <!-- ЛОАДЕР ЗАГРУЗКИ ЯЗЫКА (Опционально, черный экран, чтобы не мелькал контент) -->
     <div class="fixed inset-0 bg-black z-[9999]"></div>
 {/if}
 
