@@ -10,10 +10,8 @@
 
     export let data: PageData;
 
-    // === ТАБЫ И ФИЛЬТРАЦИЯ ===
     let activeTab: 'frames' | 'backgrounds' = 'frames';
 
-    // Разделяем предметы пользователя по типам
     $: ownedFrames = Object.values(data.allItems).filter(item =>
         item.type === 'frame' && data.ownedItemIds.includes(item.id)
     );
@@ -21,12 +19,8 @@
         item.type === 'background' && data.ownedItemIds.includes(item.id)
     );
 
-    // === СОСТОЯНИЕ ВЫБОРА ===
-    // Инициализируем текущими значениями из БД/Стора
     let selectedFrame: string | null = data.equippedFrame;
     let selectedBg: string | null = $userStore.user?.equipped_bg || null;
-
-    // Сохраняем исходные значения для сравнения (чтобы кнопка Save была активна только при изменениях)
     let currentFrame: string | null = data.equippedFrame;
     let currentBg: string | null = $userStore.user?.equipped_bg || null;
 
@@ -55,7 +49,6 @@
     function selectItem(itemId: string | null, type: 'frame' | 'background') {
         sounds.equip?.play();
         if (type === 'frame') {
-            // Если кликнули на уже выбранную - снимаем, иначе выбираем новую
             selectedFrame = (selectedFrame === itemId) ? null : itemId;
         } else {
             selectedBg = (selectedBg === itemId) ? null : itemId;
@@ -70,14 +63,11 @@
         try {
             const functions = getFunctions();
             const updateFunc = httpsCallable(functions, 'updateEquippedItems');
-
-            // Отправляем на сервер оба параметра
             await updateFunc({
                 equipped_frame: selectedFrame,
                 equipped_bg: selectedBg
             });
 
-            // Обновляем локальный стор
             userStore.update(store => {
                 if (store.user) {
                     store.user.equipped_frame = selectedFrame;
@@ -86,7 +76,6 @@
                 return store;
             });
 
-            // Обновляем "текущее" состояние
             currentFrame = selectedFrame;
             currentBg = selectedBg;
 
@@ -117,7 +106,6 @@
             <p class="subtitle">{$t('inventory.subtitle')}</p>
         </div>
 
-        <!-- TABS -->
         <div class="inv-tabs">
             <button class="inv-tab" class:active={activeTab === 'frames'} on:click={() => switchTab('frames')}>
                 {$t('shop.tab_frames')}
@@ -129,13 +117,8 @@
 
         <div class="wardrobe">
 
-            <!-- PREVIEW PANEL (Слева) -->
             <div class="preview-panel">
-                <!-- Контейнер превью: сюда вешаем класс фона (selectedBg) -->
                 <div class="preview-box {selectedBg || ''}">
-                    <!-- Аватар: сюда вешаем класс рамки (selectedFrame) -->
-                    <!-- data.allItems[selectedFrame].id нужен, т.к. selectedFrame хранит ID документа (напр frame_dev) -->
-                    <!-- Если selectedFrame null, то класса нет -->
                     <div class="avatar-wrapper {selectedFrame ? data.allItems[selectedFrame]?.id : ''}">
                         <img
                             src={$userStore.user?.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user?.username}`}
@@ -152,11 +135,8 @@
                 </div>
             </div>
 
-            <!-- ITEMS PANEL (Справа) -->
             <div class="items-panel">
-
                 {#if activeTab === 'frames'}
-                    <!-- СЕТКА РАМОК -->
                     {#if ownedFrames.length > 0}
                         <div class="items-grid">
                             {#each ownedFrames as item (item.id)}
@@ -188,7 +168,6 @@
                     {/if}
 
                 {:else}
-                    <!-- СЕТКА ФОНОВ -->
                     {#if ownedBackgrounds.length > 0}
                         <div class="items-grid">
                             {#each ownedBackgrounds as item (item.id)}
@@ -197,7 +176,6 @@
                                     class:selected={selectedBg === item.id}
                                     on:click={() => selectItem(item.id, 'background')}
                                 >
-                                    <!-- Мини-превью фона -->
                                     <div class="bg-icon-preview {item.id}">
                                         <div class="mini-profile-line"></div>
                                         <div class="mini-profile-line short"></div>

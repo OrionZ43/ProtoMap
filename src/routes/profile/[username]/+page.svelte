@@ -13,8 +13,7 @@
     import { browser } from '$app/environment';
     import { sendEmailVerification } from "firebase/auth";
     import { auth } from "$lib/firebase";
-
-    // Локализация
+    import { invalidateAll } from '$app/navigation';
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
 
@@ -28,10 +27,8 @@
 
     const containerOpacity = tweened(0, { duration: 500, easing: quintOut });
 
-    // Хелпер для перевода
     const translate = (key: string, vars = {}) => get(t)(key, vars);
 
-    // Функция получения причин (динамический перевод)
     function getReportReasons() {
         return [
             { id: 'spam', label: translate('profile.reasons.spam'), text: 'Spam' },
@@ -71,7 +68,6 @@
     $: socials = data.profile.socials || {};
     $: hasSocials = Object.values(socials).some(link => !!link);
 
-    // --- ВЕРИФИКАЦИЯ ПОЧТЫ ---
     async function sendVerification() {
         if (!auth.currentUser) return;
 
@@ -95,7 +91,6 @@
         window.location.reload();
     }
 
-    // --- КОММЕНТАРИИ ---
     async function handleAddComment() {
         if (!commentText.trim() || isSubmitting) return;
 
@@ -110,6 +105,7 @@
             });
 
             commentText = '';
+            await invalidateAll();
 
         } catch (error: any) {
             modal.error(translate('ui.error'), error.message || "Failed to add comment.");
@@ -121,7 +117,7 @@
     async function handleDeleteComment(commentId: string) {
         modal.confirm(
             translate('ui.delete'),
-            translate('ui.confirm_delete'), // Добавь ключ "Are you sure?" в ui
+            translate('ui.confirm_delete'),
             async () => {
                 try {
                     const functions = getFunctions();
@@ -148,12 +144,11 @@
         }
         const reasons = getReportReasons();
 
-        // РУЧНАЯ СЛЕЙКА: Текст из перевода + пробел + Жирный никнейм
         const messageText = `${translate('profile.report_profile_text')} <strong>${data.profile.username}</strong>.`;
 
         modal.report(
             translate('profile.report_profile_title'),
-            messageText, // <-- Вставляем готовую строку
+            messageText,
             reasons,
             async (selectedReasonId) => {
                 const reasonObject = reasons.find(r => r.id === selectedReasonId);
@@ -175,13 +170,11 @@
             return;
         }
         const reasons = getReportReasons();
-
-        // РУЧНАЯ СЛЕЙКА: Текст из перевода + пробел + Жирный никнейм
         const messageText = `${translate('profile.report_comment_text')} <strong>${commentAuthorUsername}</strong>.`;
 
         modal.report(
             translate('profile.report_comment_title'),
-            messageText, // <-- Вставляем готовую строку
+            messageText,
             reasons,
             async (selectedReasonId) => {
                 const reasonObject = reasons.find(r => r.id === selectedReasonId);
@@ -213,7 +206,6 @@
         commentText = '';
     }
 
-    // Локализованная функция времени "назад"
     function formatTimeAgo(date: Date): string {
         if (!date || !(date instanceof Date)) return '';
         const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
@@ -231,7 +223,6 @@
         for (const [unit, secondsInUnit] of Object.entries(intervals)) {
             const interval = seconds / secondsInUnit;
             if (interval > 1) {
-                // Берем перевод единицы измерения (profile.time.y, profile.time.min и т.д.)
                 const unitText = translate(`profile.time.${unit}`);
                 return `${Math.floor(interval)} ${unitText} ${translate('profile.time.ago')}`;
             }
@@ -241,7 +232,6 @@
 </script>
 
 <svelte:head>
-    <!-- Соединяем перевод и имя вручную -->
     <title>{$t('profile.page_title')} {data.profile.username} | ProtoMap</title>
 </svelte:head>
 
@@ -253,7 +243,6 @@
 {/if}
 
 {#if isProfileVisible}
-    <!-- Предзагрузка классов рамок (скрытая) -->
     <div class="hidden neon-blue-frame glitch-frame high-roller-frame frame_biohazard frame_plasma frame_stealth frame_dev frame_beta"></div>
 
     <div class="container mx-auto px-4" transition:fade={{ duration: 300 }}>
@@ -261,8 +250,6 @@
         <div class="profile-backdrop {data.profile.equipped_bg}"></div>
     {/if}
 
-    <!-- КОНТЕЙНЕР ПРОФИЛЯ (Теперь он просто стекло, класс фона убрали отсюда) -->
-    <!-- Добавляем класс 'themed', если фон есть, чтобы поменять цвет бордеров -->
     <div class="profile-container cyber-panel pb-12 {data.profile.equipped_bg ? 'themed ' + data.profile.equipped_bg + '-theme' : ''}" style="opacity: {$containerOpacity}">
 
             {#if $userStore.user && !isOwner}
@@ -292,13 +279,10 @@
             </div>
 
             <div class="profile-content">
-
-                <!-- === ПРИВАТНАЯ СЕКЦИЯ === -->
                 {#if isOwner && $userStore.user}
                     <div class="profile-section private-section">
                         <h4 class="font-display flex items-center gap-2 text-gray-400">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                            // {$t('profile.account_data')}
                         </h4>
 
                         <div class="email-control">
@@ -308,7 +292,6 @@
                             </div>
 
                             {#if $userStore.user.emailVerified}
-                                <!-- ВЕРИФИЦИРОВАН -->
                                 <div class="verified-badge">
                                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
                                     {$t('profile.verified')}
@@ -319,7 +302,6 @@
                                     </div>
                                 </div>
                             {:else}
-                                <!-- НЕ ВЕРИФИЦИРОВАН -->
                                 <button class="unverified-btn" on:click={sendVerification} disabled={verificationSent}>
                                     {verificationSent ? $t('profile.sent_btn') : $t('profile.unverified_btn')}
                                 </button>
@@ -638,7 +620,6 @@
         50% { box-shadow: 0 0 8px var(--cyber-yellow); }
     }
     .verified-badge {
-    /* Обязательно добавляем relative, чтобы тултип позиционировался относительно значка */
     position: relative;
     display: inline-flex; align-items: center; gap: 4px;
     background: rgba(57, 255, 20, 0.1);
@@ -651,23 +632,22 @@
     box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
 }
 
-/* Стили самого тултипа */
 .verified-tooltip {
     position: absolute;
-    bottom: 130%; /* Чуть выше поднял */
+    bottom: 130%;
     left: 50%;
     transform: translateX(-50%) translateY(5px);
-    width: 180px; /* Было 220px */
+    width: 180px;
     background: rgba(5, 10, 5, 0.95);
     border: 1px solid #39ff14;
     color: #ccc;
-    padding: 0.6rem; /* Было 0.8rem */
+    padding: 0.6rem;
     border-radius: 4px;
-    font-size: 0.65rem; /* Было 0.7rem */
+    font-size: 0.65rem;
     line-height: 1.3;
     font-family: 'Inter', sans-serif;
     font-weight: normal;
-    text-align: center; /* По центру выглядит лучше в маленьком блоке */
+    text-align: center;
     text-transform: none;
     box-shadow: 0 5px 15px rgba(0,0,0,0.5);
 
@@ -678,7 +658,6 @@
     z-index: 50;
 }
 
-/* Стрелочка вниз у тултипа */
 .verified-tooltip::after {
     content: '';
     position: absolute;
@@ -690,7 +669,6 @@
     border-color: #39ff14 transparent transparent transparent;
 }
 
-/* Показываем при наведении */
 .verified-badge:hover .verified-tooltip {
     opacity: 1;
     visibility: visible;
@@ -699,7 +677,7 @@
 .profile-backdrop {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
-    z-index: -1; /* Или -1, если перекрывает */
+    z-index: -1;
     pointer-events: none;
 }
 </style>

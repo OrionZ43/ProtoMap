@@ -132,6 +132,13 @@
                 {$t('nav.about')}
                 <div class="tab-line"></div>
             </a>
+
+            <div class="nav-divider"></div>
+
+            <a href="/ai-policy" class="nav-tab text-red-500 hover:text-red-400" class:active={isActive('/ai-policy')}>
+                Censored by r/protogen
+                <div class="tab-line red"></div>
+            </a>
         </div>
 
         <!-- 3. ПРАВАЯ ЧАСТЬ (DESKTOP) -->
@@ -359,10 +366,12 @@
     @keyframes pulse-dot { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
 
     .nav-tab {
-        position: relative; padding: 0 1rem; height: 100%;
-        display: flex; align-items: center;
-        font-family: 'Chakra Petch', monospace; font-size: 0.85rem; font-weight: 700;
-        letter-spacing: 0.05em; color: #94a3b8; transition: color 0.3s; text-transform: uppercase;
+    position: relative; padding: 0 0.8rem; height: 100%;
+    display: flex; align-items: center;
+    font-family: 'Chakra Petch', monospace; font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.05em; color: #94a3b8; transition: color 0.3s; text-transform: uppercase;
+    white-space: nowrap;
     }
     .nav-tab:hover { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
     .nav-tab.active { color: #fff; }
@@ -475,4 +484,15 @@
     .lang-btn:hover:not(.active) {
         color: #fff;
     }
+    .tab-line.red {
+    background: var(--cyber-red, #ff003c);
+    box-shadow: 0 -2px 10px var(--cyber-red, #ff003c);
+    }
+    .nav-divider {
+    height: 20px;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 5px rgba(0, 243, 255, 0.3);
+    margin: 0 0.5rem; /* Отступы по бокам */
+}
 </style>

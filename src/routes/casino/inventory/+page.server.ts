@@ -20,8 +20,6 @@ export const load: PageServerLoad = async ({ locals }) => {
     try {
         const userDocRef = firestoreAdmin.collection('users').doc(uid);
         const itemsRef = firestoreAdmin.collection('shop_items');
-
-        // Загружаем данные пользователя и все предметы магазина одновременно
         const [userDocSnap, itemsSnapshot] = await Promise.all([
             userDocRef.get(),
             itemsRef.get()
@@ -31,7 +29,6 @@ export const load: PageServerLoad = async ({ locals }) => {
             throw error(404, 'Профиль не найден');
         }
 
-        // Создаем "словарь" всех предметов для удобного доступа
         const allItems: { [id: string]: ShopItem } = {};
         itemsSnapshot.forEach(doc => {
             const data = doc.data();

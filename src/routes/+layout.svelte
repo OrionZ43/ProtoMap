@@ -19,6 +19,7 @@
     import CookieBanner from '$lib/components/CookieBanner.svelte';
     import { browser, dev } from '$app/environment';
     import { injectAnalytics } from '@vercel/analytics/sveltekit';
+    import SplashModal from '$lib/components/SplashModal.svelte';
 
     import '$lib/i18n';
     import { waitLocale } from 'svelte-i18n';
@@ -115,6 +116,7 @@
         <Modal />
         <ChatWidget />
         <CookieBanner />
+        <SplashModal />
 
         <button
             class="chat-trigger-btn"
