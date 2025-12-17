@@ -20,7 +20,7 @@ function createCyberPopup(userData: MarkerUserData, city: string, isOwner: boole
     const frameClass = userData.equipped_frame || '';
     const avatarImg = `
         <div class="avatar-wrapper-popup ${frameClass}">
-            <img src="${userData.avatar_url || defaultAvatar}" alt="Аватар" class="popup-avatar" onerror="this.onerror=null; this.src='${defaultAvatar}';"/>
+            <img src="${userData.avatar_url || defaultAvatar}" alt="Avatar" class="popup-avatar" onerror="this.onerror=null; this.src='${defaultAvatar}';"/>
         </div>
     `;
 
@@ -83,6 +83,11 @@ function createUserAvatarIcon(userData: MarkerUserData): L.DivIcon {
     return L.divIcon({ html: iconHtml, className: 'custom-leaflet-div-icon', iconSize: [iconSize, iconSize], iconAnchor: [iconSize / 2, iconSize], popupAnchor: [0, -42] });
 }
 
+function clearClientCache() {
+    localStorage.removeItem('protomap_markers_cache');
+    localStorage.removeItem('protomap_markers_time');
+}
+
 export function initMap(containerId: string) {
     let currentUserProfile: UserProfile | null = null;
 
@@ -96,6 +101,8 @@ export function initMap(containerId: string) {
         minZoom: 2,
         maxBounds: bounds,
         maxBoundsViscosity: 1.0,
+        preferCanvas: true,
+        zoomAnimation: true,
     });
 
     if (map.attributionControl) {
@@ -156,8 +163,8 @@ export function initMap(containerId: string) {
     };
 
     const markers = L.markerClusterGroup({
-    iconCreateFunction: createClusterIcon,
-    showCoverageOnHover: false
+        iconCreateFunction: createClusterIcon,
+        showCoverageOnHover: false
     });
     map.addLayer(markers);
 
@@ -178,28 +185,52 @@ export function initMap(containerId: string) {
         }
     }
 
+    function renderMarkers(locations: any[]) {
+        markers.clearLayers();
+        Object.keys(userMarkers).forEach(key => delete userMarkers[key]);
+
+        locations.forEach((loc) => {
+            if (loc.user && loc.user.username && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
+                addOrUpdateMarker(loc.user, loc.lat, loc.lng, loc.city);
+            }
+        });
+    }
+
     async function loadAllMarkers() {
+        const CACHE_KEY = 'protomap_markers_cache';
+        const CACHE_TIME_KEY = 'protomap_markers_time';
+        const CLIENT_CACHE_DURATION = 5 * 60 * 1000;
+
         try {
+            const cachedData = localStorage.getItem(CACHE_KEY);
+            const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+            const now = Date.now();
+
+            if (cachedData && cachedTime && (now - parseInt(cachedTime) < CLIENT_CACHE_DURATION)) {
+                const locations = JSON.parse(cachedData);
+                renderMarkers(locations);
+                return;
+            }
+
             const functions = getFunctions();
             const getLocationsFunc = httpsCallable(functions, 'getLocations');
             const result = await getLocationsFunc();
             const locations = result.data as Array<{user: MarkerUserData, lat: number, lng: number, city: string}>;
 
-            markers.clearLayers();
-            Object.keys(userMarkers).forEach(key => delete userMarkers[key]);
+            try {
+                localStorage.setItem(CACHE_KEY, JSON.stringify(locations));
+                localStorage.setItem(CACHE_TIME_KEY, now.toString());
+            } catch (e) {
+                console.warn("Quota exceeded for localStorage");
+            }
 
-            locations.forEach((loc) => {
-                if (loc.user && loc.user.username && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
-                    addOrUpdateMarker(loc.user, loc.lat, loc.lng, loc.city);
-                }
-            });
-            console.log("Все метки из базы данных добавлены на карту.");
+            renderMarkers(locations);
         } catch (error) {
             console.error("Ошибка при обработке меток:", error);
         }
     }
 
-    async function sendLocationToServer(lat: number, lng: number, currentUser: UserProfile) {
+    async function sendLocationToServer(lat: number, lng: number, currentUser: UserProfile, isManual: boolean) {
         const geoButton = document.querySelector('.geolocation-button');
         if (geoButton) L.DomUtil.addClass(geoButton, 'loading');
         try {
@@ -208,7 +239,7 @@ export function initMap(containerId: string) {
 
             const functions = getFunctions();
             const addOrUpdateLocationFunc = httpsCallable(functions, 'addOrUpdateLocation');
-            const result = await addOrUpdateLocationFunc({ lat, lng });
+            const result = await addOrUpdateLocationFunc({ lat, lng, isManual });
 
             const data = result.data as any;
             if (data.status === 'success') {
@@ -218,6 +249,7 @@ export function initMap(containerId: string) {
                     status: currentUser.status,
                     equipped_frame: currentUser.equipped_frame
                 };
+                clearClientCache();
                 addOrUpdateMarker(currentUserData, data.placeLat, data.placeLng, data.foundCity);
                 const trimmedUsernameKey = currentUser.username.trim();
                 if (userMarkers[trimmedUsernameKey]) {
@@ -235,14 +267,13 @@ export function initMap(containerId: string) {
     }
 
     function setupMapInteraction(currentUser: UserProfile | null) {
-        console.log("Настройка интерактивности для:", currentUser?.username || "Гость");
         map.off('click');
 
         if (currentUser) {
             map.on('click', (e: L.LeafletMouseEvent) => {
                 const { lat, lng } = e.latlng;
-                modal.confirm("Подтверждение", "Добавить/переместить вашу метку в эту точку?", () => {
-                    sendLocationToServer(lat, lng, currentUser);
+                modal.confirm("Ручная установка", "Установить точное местоположение в этой точке?", () => {
+                    sendLocationToServer(lat, lng, currentUser, true);
                 });
             });
 
@@ -258,7 +289,7 @@ export function initMap(containerId: string) {
                                 L.DomUtil.addClass(container, 'loading');
                                 navigator.geolocation.getCurrentPosition(
                                     (position) => {
-                                        sendLocationToServer(position.coords.latitude, position.coords.longitude, currentUser);
+                                        sendLocationToServer(position.coords.latitude, position.coords.longitude, currentUser, false);
                                         L.DomUtil.removeClass(container, 'loading');
                                     },
                                     (geoError) => {
@@ -292,6 +323,7 @@ export function initMap(containerId: string) {
                                     const result = await deleteLocationFunc();
                                     const data = result.data as any;
                                     if (data.status === 'success') {
+                                        clearClientCache();
                                         if (userMarkers[usernameToDelete]) {
                                             markers.removeLayer(userMarkers[usernameToDelete]);
                                             delete userMarkers[usernameToDelete];

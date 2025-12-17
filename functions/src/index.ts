@@ -51,6 +51,14 @@ async function sendToCasinoChat(message: string) {
     }
 }
 
+async function clearMapCache() {
+    try {
+        await db.collection('system').doc('map_cache').delete();
+        console.log("Map cache cleared due to update.");
+    } catch (e) {
+        console.error("Failed to clear cache:", e);
+    }
+}
 
 async function assertNotBanned(uid: string) {
     const userRef = admin.firestore().collection('users').doc(uid);
@@ -261,6 +269,7 @@ export const updateEquippedItems = onCall({ cors: ALLOWED_ORIGINS }, async (requ
 
         if (Object.keys(updates).length > 0) {
             await userRef.update(updates);
+            await clearMapCache();
         }
 
         return { data: { status: 'success', message: 'Стиль обновлен!' } };
@@ -630,21 +639,31 @@ export const getLeaderboard = onCall(async (request) => {
 async function getDistrictCenterCoords(lat: number, lng: number): Promise<[string, number, number] | null> {
     const userAgent = process.env.NOMINATIM_USER_AGENT || 'ProtoMap/1.0';
     try {
-        // 1. Reverse
+        // 1. Reverse Geocoding (Узнаем адрес по координатам)
+        // zoom=18 дает подробный адрес, zoom=10 - только город/штат
         const revUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru&zoom=18`;
         const revRes = await fetch(revUrl, { headers: { 'User-Agent': userAgent } });
         if (!revRes.ok) return null;
+
         const revData = await revRes.json() as any;
         if (!revData.address) return null;
 
         const addr = revData.address;
+
+        // Определяем основные компоненты адреса (С учетом специфики США и мелких поселков)
+        const cityName = addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || addr.county;
+        const stateName = addr.state || addr.region || addr.province; // <--- ВАЖНО: Штат/Регион
+        const countryName = addr.country;
+
         const locationHierarchy = {
-            microdistrict: addr.suburb || addr.quarter || addr.neighbourhood,
-            district: addr.city_district || addr.borough,
-            city: addr.city || addr.town || addr.village,
-            country: addr.country
+            microdistrict: addr.suburb || addr.neighbourhood || addr.residential,
+            district: addr.city_district || addr.borough || addr.quarter,
+            city: cityName,
+            state: stateName,
+            country: countryName
         };
 
+        // Уровни поиска от точного к общему
         const attempts = [
             { level: 'Micro', q: locationHierarchy.microdistrict },
             { level: 'District', q: locationHierarchy.district },
@@ -653,22 +672,48 @@ async function getDistrictCenterCoords(lat: number, lng: number): Promise<[strin
 
         for (const attempt of attempts) {
             if (!attempt.q) continue;
-            const q = [attempt.q, locationHierarchy.city, locationHierarchy.country].filter(Boolean).join(', ');
+
+            // СБОРКА ЗАПРОСА: [Район, Город, Штат, Страна]
+            // Добавление Штата критично для США, где куча городов с одинаковыми именами
+            const queryParts = [
+                attempt.q,
+                // Если мы ищем район, добавляем город для уточнения
+                (attempt.level !== 'City' && attempt.q !== locationHierarchy.city) ? locationHierarchy.city : null,
+                locationHierarchy.state,
+                locationHierarchy.country
+            ].filter(Boolean);
+
+            const q = queryParts.join(', ');
 
             // Delay to be nice to Nominatim
             await new Promise(r => setTimeout(r, 1000));
 
             const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=ru&q=${encodeURIComponent(q)}`;
             const searchRes = await fetch(searchUrl, { headers: { 'User-Agent': userAgent } });
+
             if (!searchRes.ok) continue;
 
             const searchData = await searchRes.json() as any[];
             if (searchData && searchData.length > 0) {
+                // Мы нашли координаты центра!
                 return [attempt.q, parseFloat(searchData[0].lat), parseFloat(searchData[0].lon)];
             }
         }
+
+        // ФОЛЛБЭК (Если центр не найден):
+        // Если город определился, но его центр найти не удалось (часто в деревнях),
+        // используем исходные координаты с небольшим смещением (Jitter), чтобы сохранить анонимность.
+        if (cityName) {
+             const jitterLat = lat + (Math.random() - 0.5) * 0.01; // +/- ~500м
+             const jitterLng = lng + (Math.random() - 0.5) * 0.01;
+             return [cityName, jitterLat, jitterLng];
+        }
+
         return null;
-    } catch (e) { return null; }
+    } catch (e) {
+        console.error("Geocoding Error:", e);
+        return null;
+    }
 }
 
 export const addOrUpdateLocation = onRequest({ cors: false }, async (request, response) => {
@@ -681,30 +726,68 @@ export const addOrUpdateLocation = onRequest({ cors: false }, async (request, re
         const decoded = await admin.auth().verifyIdToken(idToken);
         const uid = decoded.uid;
 
-        // Проверка бана для onRequest
         const userDoc = await db.collection("users").doc(uid).get();
         if (userDoc.exists && userDoc.data()?.isBanned) {
             response.status(403).json({ error: "Banned" });
             return;
         }
 
-        const { lat, lng } = request.body.data;
+        // Получаем флаг isManual (Ручная установка)
+        const { lat, lng, isManual } = request.body.data;
+
         if (!lat || !lng) { response.status(400).json({ error: "Invalid coords" }); return; }
 
-        const place = await getDistrictCenterCoords(lat, lng);
-        if (!place) { response.status(400).json({ error: "Geocoding failed" }); return; }
+        let finalLat = lat;
+        let finalLng = lng;
+        let cityName = "Unknown Location";
 
-        const [city, pLat, pLng] = place;
+        if (isManual) {
+            // === РУЧНОЙ РЕЖИМ (Точность) ===
+            // Мы не ищем центр города, мы оставляем координаты как есть.
+            // Но нам нужно узнать название места для красоты.
+            const userAgent = process.env.NOMINATIM_USER_AGENT || 'ProtoMap/1.0';
+            const revUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru&zoom=10`;
+
+            try {
+                const revRes = await fetch(revUrl, { headers: { 'User-Agent': userAgent } });
+                if (revRes.ok) {
+                    const revData = await revRes.json() as any;
+                    const addr = revData.address;
+                    cityName = addr.city || addr.town || addr.village || addr.hamlet || addr.county || addr.state || "Custom Location";
+                }
+            } catch (e) {
+                console.error("Manual geo lookup failed:", e);
+            }
+
+        } else {
+            // === АВТО РЕЖИМ (Анонимность) ===
+            // Ищем центр района/города
+            const place = await getDistrictCenterCoords(lat, lng);
+            if (!place) { response.status(400).json({ error: "Geocoding failed" }); return; }
+
+            cityName = place[0];
+            finalLat = place[1];
+            finalLng = place[2];
+        }
+
         const locRef = db.collection("locations");
         const q = await locRef.where("user_id", "==", uid).limit(1).get();
 
         if (!q.empty) {
-            await locRef.doc(q.docs[0].id).update({ latitude: pLat, longitude: pLng, city });
+            await locRef.doc(q.docs[0].id).update({ latitude: finalLat, longitude: finalLng, city: cityName });
         } else {
-            await locRef.add({ latitude: pLat, longitude: pLng, city, user_id: uid });
+            await locRef.add({ latitude: finalLat, longitude: finalLng, city: cityName, user_id: uid });
         }
 
-        response.status(200).json({ data: { status: 'success', message: 'Метка обновлена!', foundCity: city, placeLat: pLat, placeLng: pLng } });
+        await clearMapCache();
+
+        response.status(200).json({ data: {
+            status: 'success',
+            message: isManual ? 'Координаты установлены точно!' : 'Геолокация обновлена (Центр района).',
+            foundCity: cityName,
+            placeLat: finalLat,
+            placeLng: finalLng
+        }});
 
     } catch (error) {
         console.error(error);
@@ -714,28 +797,56 @@ export const addOrUpdateLocation = onRequest({ cors: false }, async (request, re
 
 export const getLocations = onRequest({ cors: false }, async (request, response) => {
     if (handleCors(request, response)) return;
-    response.set('Cache-Control', 'public, max-age=300, s-maxage=300');
+
+    // CDN кэширование (тоже помогает)
+    response.set('Cache-Control', 'public, max-age=300, s-maxage=600');
+
+    const CACHE_DOC_REF = db.collection('system').doc('map_cache');
+    const CACHE_DURATION_MS = 24 * 60 * 60 * 1000;
 
     try {
+        const now = Date.now();
+
+        // 1. Попытка прочитать КЭШ (Всего 1 чтение!)
+        const cacheSnap = await CACHE_DOC_REF.get();
+        let cacheData = cacheSnap.exists ? cacheSnap.data() : null;
+
+        // Проверяем, свежий ли кэш
+        if (cacheData && cacheData.updatedAt && (now - cacheData.updatedAt.toMillis() < CACHE_DURATION_MS)) {
+            // КЭШ СВЕЖИЙ! Отдаем его и экономим деньги.
+            // payload храним как JSON-строку, чтобы не превышать лимиты полей
+            response.status(200).json({ data: JSON.parse(cacheData.payload) });
+            return;
+        }
+
+        // 2. Если кэш протух или его нет — делаем "ДОРОГУЮ" сборку (N чтений)
+        console.log("Cache expired or missing. Rebuilding map data...");
+
         const locSnap = await db.collection("locations").get();
-        if (locSnap.empty) { response.status(200).json({ data: [] }); return; }
+        if (locSnap.empty) {
+            response.status(200).json({ data: [] });
+            return;
+        }
 
         const userIds = [...new Set(locSnap.docs.map(d => d.data().user_id).filter(Boolean))];
         const usersMap = new Map();
 
-        // Batch fetching users
+        // Batch fetching users (как и было)
         for (let i = 0; i < userIds.length; i += 30) {
             const chunk = userIds.slice(i, i + 30);
             const uSnap = await db.collection("users").where(admin.firestore.FieldPath.documentId(), "in", chunk).get();
             uSnap.forEach(doc => usersMap.set(doc.id, doc.data()));
         }
 
+        // Собираем чистый массив данных (минимальный вес)
         const results = locSnap.docs.map(doc => {
             const loc = doc.data();
             const user = usersMap.get(loc.user_id);
             if (!user) return null;
             return {
-                lat: loc.latitude, lng: loc.longitude, city: loc.city,
+                lat: loc.latitude,
+                lng: loc.longitude,
+                city: loc.city,
                 user: {
                     username: user.username || "Unknown",
                     avatar_url: user.avatar_url || null,
@@ -745,9 +856,18 @@ export const getLocations = onRequest({ cors: false }, async (request, response)
             };
         }).filter(Boolean);
 
+        // 3. Сохраняем новый слепок в базу (1 запись)
+        // Чтобы следующие юзеры читали уже его
+        await CACHE_DOC_REF.set({
+            payload: JSON.stringify(results), // Сжимаем в строку
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
         response.status(200).json({ data: results });
+
     } catch (e) {
-        response.status(500).json({ error: "Error" });
+        console.error("Map Error:", e);
+        response.status(500).json({ error: "Error fetching map" });
     }
 });
 
@@ -761,6 +881,7 @@ export const deleteLocation = onCall({ cors: ALLOWED_ORIGINS }, async (request) 
         const q = await db.collection("locations").where("user_id", "==", uid).limit(1).get();
         if (!q.empty) {
             await q.docs[0].ref.delete();
+            await clearMapCache();
             return { status: 'success', message: 'Метка удалена.' };
         }
         return { status: 'success', message: 'Метка не найдена.' };
@@ -795,6 +916,9 @@ export const updateProfileData = onCall(async (request) => {
 
     try {
         await db.collection('users').doc(uid).update(fields);
+        if (fields.status) {
+        await clearMapCache();
+        }
         return { message: "Профиль обновлен!" };
     } catch (e) {
         throw new HttpsError("internal", "Save error.");
@@ -823,6 +947,7 @@ export const uploadAvatar = onCall({ secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDIN
             format: "webp", transformation: [{ width: 256, height: 256, crop: "fill", gravity: "face" }]
         });
         await db.collection('users').doc(uid).update({ avatar_url: res.secure_url });
+        await clearMapCache();
         return { avatarUrl: res.secure_url };
     } catch (e) {
         throw new HttpsError("internal", "Upload failed.");
@@ -988,6 +1113,8 @@ export const deleteAccount = onCall(async (request) => {
 
         const locs = await db.collection('locations').where('user_id', '==', uid).get();
         locs.forEach(d => d.ref.delete());
+
+        await clearMapCache();
 
         await admin.auth().deleteUser(uid);
         return { status: 'success', message: 'Аккаунт удален.' };

@@ -1,7 +1,5 @@
 <script lang="ts">
-    import "../app.css"; // app.css обычно лежит в корне src, его не трогаем
-
-    // --- ПРАВИЛЬНЫЕ ПУТИ ---
+    import "../app.css";
     import "/src/styles/cosmetics.css";
     import "/src/styles/profile-skins.css";
 
@@ -20,6 +18,7 @@
     import { browser, dev } from '$app/environment';
     import { injectAnalytics } from '@vercel/analytics/sveltekit';
     import SplashModal from '$lib/components/SplashModal.svelte';
+    import { settingsStore } from '$lib/stores/settingsStore';
 
     import '$lib/i18n';
     import { waitLocale } from 'svelte-i18n';
@@ -28,8 +27,9 @@
     let sideTextLeft = 'СТАТУС СИСТЕМЫ: ОНЛАЙН';
     let sideTextRight = 'МОЩНОСТЬ СЕТИ: 99%';
     let isReady = false;
+    let seasonActiveInSession = false;
 
-    if (browser) {
+    function initSeasonalTheme() {
         const d = new Date();
         const m = d.getMonth();
         const day = d.getDate();
@@ -50,7 +50,6 @@
             themeState = 'newyear';
             sideTextLeft = 'РЕЖИМ: GLITCHMAS';
             sideTextRight = 'КРИОГЕННЫЕ ПРОТОКОЛЫ: МАКСИМУМ';
-            // Подключаем ОБА файла для Нового Года
             import('/src/styles/winter.css');
             import('/src/styles/newyear.css');
         }
@@ -60,6 +59,15 @@
         injectAnalytics({ mode: dev ? 'development' : 'production' });
         AudioManager.initialize();
         await waitLocale();
+
+        const savedSeasonal = localStorage.getItem('protomap_seasonal_enabled');
+        const isSeasonalEnabled = savedSeasonal !== 'false';
+
+        if (isSeasonalEnabled) {
+            seasonActiveInSession = true;
+            initSeasonalTheme();
+        }
+
         isReady = true;
     });
 
@@ -76,18 +84,18 @@
 </script>
 
 <svelte:head>
-    <!-- Удалили отсюда все <link>, теперь они в JS -->
 </svelte:head>
+
+<svelte:body class:seasonal-on={seasonActiveInSession} />
 
 {#if isReady}
     <div
         class="min-h-screen flex flex-col font-sans antialiased relative"
         class:no-scroll-container={isMapPage}
-        class:winter-mode={themeState === 'winter' || themeState === 'newyear'}
     >
-        {#if themeState === 'winter' || themeState === 'newyear'}
+        {#if seasonActiveInSession && (themeState === 'winter' || themeState === 'newyear')}
             <div class="initial-snow">
-                {#each Array(50) as _, i}
+                {#each Array((browser && window.innerWidth < 768) ? 15 : 50) as _, i}
                     <div class="snow">❄</div>
                 {/each}
             </div>

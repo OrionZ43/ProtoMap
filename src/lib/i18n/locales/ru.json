@@ -14,7 +14,8 @@
     "system": "СИСТЕМА",
     "sound": "ЗВУК",
     "anim": "АНИМАЦИИ",
-    "lang": "ЯЗЫК / LANGUAGE"
+    "lang": "ЯЗЫК / LANGUAGE",
+    "seasonal": "СЕЗОН"
   },
   "ui": {
     "balance": "Баланс",

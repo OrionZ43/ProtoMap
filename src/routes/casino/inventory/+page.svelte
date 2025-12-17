@@ -68,6 +68,9 @@
                 equipped_bg: selectedBg
             });
 
+            localStorage.removeItem('protomap_markers_cache');
+            localStorage.removeItem('protomap_markers_time');
+
             userStore.update(store => {
                 if (store.user) {
                     store.user.equipped_frame = selectedFrame;

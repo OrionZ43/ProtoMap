@@ -96,14 +96,16 @@ export const actions: Actions = {
         const data = await request.formData();
         const targetUid = data.get('uid') as string;
 
-        const allFrames = [
+        const allItems = [
             'frame_neon_blue', 'frame_glitch', 'frame_high_roller',
-            'frame_biohazard', 'frame_plasma', 'frame_stealth'
+            'frame_biohazard', 'frame_plasma', 'frame_stealth',
+            'frame_cryo', 'frame_festive', 'frame_aurora', 'frame_ludoman',
+            'bg_carbon', 'bg_matrix', 'bg_synthwave'
         ];
 
         try {
             await firestoreAdmin.collection('users').doc(targetUid).update({
-                owned_items: FieldValue.arrayUnion(...allFrames)
+                owned_items: FieldValue.arrayUnion(...allItems)
             });
             return { actionSuccess: true, message: 'Выдан полный пакет кастомизации.' };
         } catch (e) {
@@ -145,6 +147,78 @@ export const actions: Actions = {
             return { actionSuccess: true, message: 'СУБЪЕКТ ВОССТАНОВЛЕН В ПРАВАХ.' };
         } catch (e) {
             return fail(500, { message: 'Ошибка разблокировки.' });
+        }
+    },
+
+    migrate: async ({ request, locals }) => {
+        if (!locals.user || !adminList.includes(locals.user.uid)) return fail(403);
+
+        const data = await request.formData();
+        const sourceUid = (data.get('sourceUid') as string).trim();
+        const targetUid = (data.get('targetUid') as string).trim();
+
+        if (!sourceUid || !targetUid || sourceUid === targetUid) {
+            return fail(400, { message: 'Некорректные ID аккаунтов.' });
+        }
+
+        const sourceRef = firestoreAdmin.collection('users').doc(sourceUid);
+        const targetRef = firestoreAdmin.collection('users').doc(targetUid);
+
+        try {
+            await firestoreAdmin.runTransaction(async (t) => {
+                const sourceDoc = await t.get(sourceRef);
+                const targetDoc = await t.get(targetRef);
+
+                if (!sourceDoc.exists || !targetDoc.exists) {
+                    throw new Error('Один из аккаунтов не найден.');
+                }
+
+                const sourceData = sourceDoc.data()!;
+                const targetData = targetDoc.data()!;
+
+                const newCredits = (targetData.casino_credits || 0) + (sourceData.casino_credits || 0);
+
+                const sourceItems = sourceData.owned_items || [];
+                const targetItems = targetData.owned_items || [];
+                const newItems = [...new Set([...sourceItems, ...targetItems])];
+
+                const newStreak = Math.max(sourceData.daily_streak || 0, targetData.daily_streak || 0);
+
+                const newAvatar = targetData.avatar_url || sourceData.avatar_url;
+
+                t.update(targetRef, {
+                    casino_credits: newCredits,
+                    owned_items: newItems,
+                    daily_streak: newStreak,
+                    avatar_url: newAvatar,
+                    migratedFrom: sourceUid,
+                    migratedAt: FieldValue.serverTimestamp()
+                });
+
+                t.update(sourceRef, {
+                    casino_credits: 0,
+                    daily_streak: 0,
+                    isBanned: true,
+                    banReason: `MIGRATED TO: ${targetUid}`,
+                    username: `MIGRATED_${sourceData.username}`,
+                    status: "ACCOUNT_TRANSFER_COMPLETE"
+                });
+            });
+
+            const locQuery = await firestoreAdmin.collection('locations').where('user_id', '==', sourceUid).get();
+            if (!locQuery.empty) {
+                const batch = firestoreAdmin.batch();
+                locQuery.docs.forEach(doc => {
+                    batch.update(doc.ref, { user_id: targetUid });
+                });
+                await batch.commit();
+            }
+
+            return { actionSuccess: true, message: `Миграция успешна! ${sourceUid} -> ${targetUid}` };
+
+        } catch (e: any) {
+            console.error("Migration Error:", e);
+            return fail(500, { message: `Ошибка: ${e.message}` });
         }
     }
 };

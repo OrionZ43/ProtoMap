@@ -2,7 +2,7 @@
     import { enhance } from '$app/forms';
     import { modal } from '$lib/stores/modalStore';
     import type { ActionData } from './$types';
-    import { slide, fade, fly } from 'svelte/transition';
+    import { slide, fade, fly, scale } from 'svelte/transition';
     import { quintOut } from 'svelte/easing';
 
     export let form: ActionData;
@@ -10,6 +10,7 @@
     let isSearching = false;
     let targetUser: any = null;
     let candidates: any[] = [];
+    let showMigrationModal = false;
 
     $: if (form) {
         if (form.target) {
@@ -26,9 +27,9 @@
                 isSearching = false;
             } else {
                 modal.success("ПРОТОКОЛ ВЫПОЛНЕН", form.message);
-                if (form.message.includes('ИЗОЛИРОВАН')) targetUser.isBanned = true;
-                if (form.message.includes('ВОССТАНОВЛЕН')) targetUser.isBanned = false;
-                if (form.message.includes('Баланс')) {
+                if (form.message.includes('ИЗОЛИРОВАН') && targetUser) targetUser.isBanned = true;
+                if (form.message.includes('ВОССТАНОВЛЕН') && targetUser) targetUser.isBanned = false;
+                if (form.message.includes('Баланс') && targetUser) {
                     const match = form.message.match(/([+-]?\d+)/);
                     if (match) {
                         targetUser.casino_credits += parseInt(match[0]);
@@ -58,6 +59,12 @@
         <h2 class="text-3xl font-bold text-white font-display tracking-widest mb-2">БАЗА ДАННЫХ СУБЪЕКТОВ</h2>
         <p class="text-gray-500 font-mono text-sm">/// ACCESS LEVEL: UNLIMITED</p>
     </header>
+
+    <div class="actions-header flex justify-end mb-4">
+        <button class="migration-btn" on:click={() => showMigrationModal = true}>
+            ⚠️ MIGRATION PROTOCOL
+        </button>
+    </div>
 
     <div class="search-module cyber-glass">
         <form
@@ -162,7 +169,7 @@
                     <h4 class="section-title text-purple-400">// ЛУТБОКСЫ</h4>
                     <form method="POST" action="?/grantAllItems" use:enhance>
                         <input type="hidden" name="uid" value={targetUser.uid} />
-                        <button class="cmd-btn purple w-full">ВЫДАТЬ GOD PACK (ВСЕ РАМКИ)</button>
+                        <button class="cmd-btn purple w-full">ВЫДАТЬ GOD PACK (ВСЕ ПРЕДМЕТЫ)</button>
                     </form>
                 </div>
 
@@ -183,6 +190,42 @@
                     {/if}
                 </div>
 
+            </div>
+        </div>
+    {/if}
+
+    {#if showMigrationModal}
+        <div class="modal-overlay" transition:fade>
+            <div class="migration-panel cyber-glass" transition:scale>
+                <h3 class="text-xl font-bold text-red-500 mb-4 font-display">/// ACCOUNT TRANSFER</h3>
+                <p class="text-sm text-gray-400 mb-6">
+                    Внимание! Эта операция перенесет баланс, предметы и метку со старого аккаунта на новый.
+                    Старый аккаунт будет заблокирован. Действие необратимо.
+                </p>
+
+                <form method="POST" action="?/migrate" use:enhance={() => {
+                    return async ({ update }) => {
+                        await update();
+                        showMigrationModal = false;
+                    };
+                }}>
+                    <div class="input-group">
+                        <label class="text-xs font-bold text-red-400">SOURCE UID (ОТКУДА ЗАБИРАЕМ)</label>
+                        <input type="text" name="sourceUid" required class="cyber-input red" placeholder="Старый UID" />
+                    </div>
+
+                    <div class="icon-arrow">⬇️</div>
+
+                    <div class="input-group">
+                        <label class="text-xs font-bold text-green-400">TARGET UID (КУДА КЛАДЕМ)</label>
+                        <input type="text" name="targetUid" required class="cyber-input green" placeholder="Новый UID" />
+                    </div>
+
+                    <div class="flex gap-3 mt-6">
+                        <button type="button" class="cancel-btn" on:click={() => showMigrationModal = false}>ОТМЕНА</button>
+                        <button type="submit" class="confirm-btn">ВЫПОЛНИТЬ ПЕРЕНОС</button>
+                    </div>
+                </form>
             </div>
         </div>
     {/if}
@@ -313,6 +356,54 @@
         padding: 0 1rem; color: #fff; border-radius: 8px; outline: none;
     }
     .reason-input:focus { border-color: #ff003c; }
+
+    .migration-btn {
+        background: rgba(255, 0, 60, 0.1);
+        border: 1px solid #ff003c;
+        color: #ff003c;
+        padding: 0.5rem 1rem;
+        font-family: 'Chakra Petch', monospace;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .migration-btn:hover {
+        background: #ff003c;
+        color: black;
+        box-shadow: 0 0 15px #ff003c;
+    }
+
+    .modal-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+        z-index: 100; display: flex; align-items: center; justify-content: center;
+        backdrop-filter: blur(5px);
+    }
+
+    .migration-panel {
+        width: 100%; max-width: 500px;
+        padding: 2rem;
+        border: 1px solid #ff003c;
+        box-shadow: 0 0 30px rgba(255, 0, 60, 0.2);
+    }
+
+    .input-group { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .cyber-input.red { border-color: #ff003c; }
+    .cyber-input.green { border-color: #39ff14; }
+    .cyber-input:focus { background: rgba(255,255,255,0.1); outline: none; }
+
+    .icon-arrow { text-align: center; font-size: 1.5rem; margin: 0.5rem 0; }
+
+    .cancel-btn {
+        flex: 1; padding: 0.8rem; background: transparent; border: 1px solid #555; color: #aaa;
+        font-weight: bold; cursor: pointer;
+    }
+    .confirm-btn {
+        flex: 1; padding: 0.8rem; background: #ff003c; border: none; color: white;
+        font-weight: bold; cursor: pointer; text-transform: uppercase;
+        box-shadow: 0 0 15px rgba(255, 0, 60, 0.4);
+    }
+    .confirm-btn:hover { transform: scale(1.02); }
 
     @media (max-width: 768px) {
         .dossier-grid { flex-direction: column; text-align: center; }

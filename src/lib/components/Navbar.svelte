@@ -13,6 +13,9 @@
     import { tweened } from 'svelte/motion';
     import { onMount } from 'svelte';
     import { t, locale } from 'svelte-i18n';
+    import SettingsModal from '$lib/components/SettingsModal.svelte';
+
+    let isSettingsOpenMobile = false;
 
     const seasonal = getSeasonalContent();
     let isMobileMenuOpen = false;
@@ -92,18 +95,15 @@
 
         <!-- 1. ЛОГОТИП И ФРАЗА -->
         <div class="flex-shrink-0 flex items-center gap-3 z-20">
-            <!-- Ссылка теперь одна, и она содержит и лого, и текст -->
             <a href="/" class="flex items-center gap-2 group text-decoration-none">
                 <div class="logo-container">
                     <img src="/logo.svg" alt="Logo" class="logo-icon" />
                 </div>
-                <!-- Текст "PROTOMAP" скрыт на мобильных (до lg) -->
                 <span class="nav-brand text-2xl font-bold tracking-widest hidden lg:block" data-text="PROTOMAP">
                     PROTOMAP
                 </span>
             </a>
 
-            <!-- Сезонная фраза. Теперь она в отдельном контейнере для управления переносом -->
             <div class="seasonal-phrase-container">
                  <a href={seasonal.link} target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition-colors">
                     {seasonal.phrase}
@@ -178,6 +178,10 @@
                             <label class="setting-row mt-3">
                                 <span>{$t('menu.anim')}</span>
                                 <input type="checkbox" bind:checked={$settingsStore.cinematicLoadsEnabled} class="cyber-switch">
+                            </label>
+                            <label class="setting-row mt-3">
+                                <span>{$t('menu.seasonal')}</span>
+                                <input type="checkbox" bind:checked={$settingsStore.seasonalEnabled} class="cyber-switch">
                             </label>
                         </div>
                     </div>
@@ -255,6 +259,10 @@
                 <a href="/casino" class="mobile-link glitch-text-mobile" class:active={isActive('/casino')}>{$t('nav.casino')}</a>
                 <a href="/about" class="mobile-link" class:active={isActive('/about')}>{$t('nav.about')}</a>
 
+                <a href="/ai-policy" class="mobile-link text-red-400" class:active={isActive('/ai-policy')}>
+                    Censored by r/protogen
+                </a>
+
                 <div class="border-t border-white/10 my-2"></div>
 
                 {#if $userStore.user}
@@ -283,29 +291,21 @@
 
                 <div class="border-t border-white/10 my-2"></div>
 
-                <div class="px-4 py-2">
-                    <p class="text-xs text-gray-500 uppercase mb-2 font-bold tracking-wider font-mono">// {$t('menu.system')}</p>
-                    <div class="flex items-center justify-between py-3 border-b border-white/5">
-                        <span class="text-sm text-gray-300 font-display">{$t('menu.lang')}</span>
-                        <div class="lang-switch">
-                            <button class="lang-btn" class:active={$locale === 'ru'} on:click={() => changeLang('ru')}>RU</button>
-                            <button class="lang-btn" class:active={$locale === 'en'} on:click={() => changeLang('en')}>EN</button>
-                        </div>
-                    </div>
-                    <label class="flex items-center justify-between py-3 border-b border-white/5">
-                        <span class="text-sm text-gray-300 font-display">{$t('menu.sound')}</span>
-                        <input type="checkbox" bind:checked={$settingsStore.audioEnabled} class="cyber-switch">
-                    </label>
-                    <label class="flex items-center justify-between py-3">
-                        <span class="text-sm text-gray-300 font-display">{$t('menu.anim')}</span>
-                        <input type="checkbox" bind:checked={$settingsStore.cinematicLoadsEnabled} class="cyber-switch">
-                    </label>
-                </div>
-                <div class="px-4 pb-4">
+                <!-- НОВАЯ КРАСИВАЯ КНОПКА НАСТРОЕК -->
+                <button class="settings-btn-mobile" on:click={() => isSettingsOpenMobile = true}>
+                    <span class="icon">⚙️</span>
+                    <span class="text">{$t('menu.system')}</span>
+                </button>
+
+                <div class="px-4 pb-4 mt-2">
                     <Footer mode="menu"/>
                 </div>
             </div>
         </div>
+    {/if}
+
+    {#if isSettingsOpenMobile}
+        <SettingsModal on:close={() => isSettingsOpenMobile = false} />
     {/if}
 </nav>
 
@@ -318,6 +318,7 @@
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
     }
 
+    /* ... ЛОГО И ПРОЧЕЕ (без изменений) ... */
     .logo-container {
         width: 50px; height: 50px;
         display: flex; align-items: center; justify-content: center;
@@ -330,25 +331,13 @@
         width: 100%; height: 100%; object-fit: contain;
         filter: invert(1) drop-shadow(0 0 5px var(--cyber-yellow));
     }
-
     .seasonal-phrase-container {
-        display: block;
-        font-size: 0.7rem; /* 11px */
-        line-height: 1.3;
-        color: #6b7280;
-        max-width: 150px; /* Заставляет текст переноситься */
-        font-family: 'Chakra Petch', monospace;
+        display: block; font-size: 0.7rem; line-height: 1.3; color: #6b7280;
+        max-width: 150px; font-family: 'Chakra Petch', monospace;
     }
     .seasonal-phrase-container a:hover { color: #67e8f9; }
-
-    @media (min-width: 1024px) { /* lg breakpoint */
-        .seasonal-phrase-container {
-            border-left: 1px solid #374151;
-            padding-left: 0.75rem;
-            font-size: 0.75rem;
-            max-width: none;
-            white-space: nowrap;
-        }
+    @media (min-width: 1024px) {
+        .seasonal-phrase-container { border-left: 1px solid #374151; padding-left: 0.75rem; font-size: 0.75rem; max-width: none; white-space: nowrap; }
     }
     @media (max-width: 768px) {
         .logo-container { width: 42px; height: 42px; }
@@ -356,8 +345,7 @@
 
     .notification-dot {
         position: absolute; top: 12px; right: 2px;
-        width: 8px; height: 8px;
-        background-color: var(--cyber-red, #ff003c); border-radius: 50%;
+        width: 8px; height: 8px; background-color: var(--cyber-red, #ff003c); border-radius: 50%;
         box-shadow: 0 0 8px var(--cyber-red, #ff003c);
         animation: pulse-dot 2s infinite; pointer-events: none; z-index: 10;
     }
@@ -366,12 +354,11 @@
     @keyframes pulse-dot { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
 
     .nav-tab {
-    position: relative; padding: 0 0.8rem; height: 100%;
-    display: flex; align-items: center;
-    font-family: 'Chakra Petch', monospace; font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.05em; color: #94a3b8; transition: color 0.3s; text-transform: uppercase;
-    white-space: nowrap;
+        position: relative; padding: 0 0.8rem; height: 100%;
+        display: flex; align-items: center;
+        font-family: 'Chakra Petch', monospace; font-size: 0.8rem;
+        font-weight: 700; letter-spacing: 0.05em; color: #94a3b8; transition: color 0.3s; text-transform: uppercase;
+        white-space: nowrap;
     }
     .nav-tab:hover { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
     .nav-tab.active { color: #fff; }
@@ -383,11 +370,11 @@
         transform: scaleX(0); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: center;
     }
     .nav-tab:hover .tab-line, .nav-tab.active .tab-line { transform: scaleX(1); }
+    .tab-line.red { background: var(--cyber-red, #ff003c); box-shadow: 0 -2px 10px var(--cyber-red, #ff003c); }
 
     .glitch-link:hover {
         animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
-        color: var(--cyber-red, #ff003c);
-        text-shadow: 2px 0 #00f0ff, -2px 0 #ff003c;
+        color: var(--cyber-red, #ff003c); text-shadow: 2px 0 #00f0ff, -2px 0 #ff003c;
     }
     @keyframes glitch-skew { 0% { transform: skew(0deg); } 20% { transform: skew(-2deg); } 40% { transform: skew(2deg); } 60% { transform: skew(-1deg); } 80% { transform: skew(1deg); } 100% { transform: skew(0deg); } }
 
@@ -457,42 +444,36 @@
         transform: scale(1.05);
     }
 
-    .lang-switch {
-        display: flex;
-        background: #334155;
-        border-radius: 6px;
-        padding: 2px;
-        border: 1px solid #475569;
-        margin-left: 1rem;
-    }
-    .lang-btn {
-        padding: 2px 8px;
-        font-size: 0.8rem;
-        font-weight: bold;
-        color: #94a3b8;
-        border-radius: 4px;
-        transition: all 0.2s;
-        background: transparent;
-        border: none;
-        cursor: pointer;
-    }
-    .lang-btn.active {
-        background: var(--cyber-yellow);
-        color: #000;
-        box-shadow: 0 0 5px var(--cyber-yellow);
-    }
-    .lang-btn:hover:not(.active) {
-        color: #fff;
-    }
-    .tab-line.red {
-    background: var(--cyber-red, #ff003c);
-    box-shadow: 0 -2px 10px var(--cyber-red, #ff003c);
-    }
+    .lang-switch { display: flex; background: #334155; border-radius: 6px; padding: 2px; border: 1px solid #475569; margin-left: 1rem; }
+    .lang-btn { padding: 2px 8px; font-size: 0.8rem; font-weight: bold; color: #94a3b8; border-radius: 4px; transition: all 0.2s; background: transparent; border: none; cursor: pointer; }
+    .lang-btn.active { background: var(--cyber-yellow); color: #000; box-shadow: 0 0 5px var(--cyber-yellow); }
+    .lang-btn:hover:not(.active) { color: #fff; }
+
     .nav-divider {
-    height: 20px;
-    width: 1px;
-    background: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 0 5px rgba(0, 243, 255, 0.3);
-    margin: 0 0.5rem; /* Отступы по бокам */
-}
+        height: 20px; width: 1px; background: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 0 5px rgba(0, 243, 255, 0.3); margin: 0 0.5rem;
+    }
+
+    /* === СТИЛЬ НОВОЙ КНОПКИ НАСТРОЕК В МОБИЛЬНОМ МЕНЮ === */
+    .settings-btn-mobile {
+        width: calc(100% - 2rem);
+        margin: 0.5rem 1rem;
+        display: flex; align-items: center; justify-content: center; gap: 0.8rem;
+        padding: 0.8rem;
+        background: rgba(0, 243, 255, 0.05);
+        border: 1px solid var(--cyber-cyan);
+        border-radius: 8px;
+        color: var(--cyber-cyan);
+        font-family: 'Chakra Petch', monospace;
+        font-weight: bold;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .settings-btn-mobile:hover {
+        background: var(--cyber-cyan);
+        color: #000;
+        box-shadow: 0 0 15px var(--cyber-cyan);
+    }
+    .settings-btn-mobile .icon { font-size: 1.2rem; }
 </style>

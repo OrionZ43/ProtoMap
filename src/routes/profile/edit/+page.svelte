@@ -60,6 +60,8 @@
                 const uploadAvatarFunc = httpsCallable(functions, 'uploadAvatar');
                 modal.info(translate('ui.loading'), 'Uploading...');
                 const result = await uploadAvatarFunc({ imageBase64 });
+                localStorage.removeItem('protomap_markers_cache');
+                localStorage.removeItem('protomap_markers_time');
                 const newAvatarUrl = (result.data as { avatarUrl: string }).avatarUrl;
                 imagePreviewUrl = newAvatarUrl;
                 modal.success(translate('edit_profile.modal_avatar_success'), translate('edit_profile.modal_avatar_success_text'));
@@ -94,6 +96,8 @@
                 socials: socials
             };
             const result = await updateProfileFunc(profileDataToSend);
+            localStorage.removeItem('protomap_markers_cache');
+            localStorage.removeItem('protomap_markers_time');
             const message = (result.data as { message: string }).message;
 
             modal.success(translate('inventory.success_title'), message || "Saved."); // Используем ключ из инвентаря для "Saved"
