@@ -19,6 +19,7 @@
     import { injectAnalytics } from '@vercel/analytics/sveltekit';
     import SplashModal from '$lib/components/SplashModal.svelte';
     import { settingsStore } from '$lib/stores/settingsStore';
+    import Snowfall from '$lib/components/Snowfall.svelte';
 
     import '$lib/i18n';
     import { waitLocale } from 'svelte-i18n';
@@ -94,11 +95,7 @@
         class:no-scroll-container={isMapPage}
     >
         {#if seasonActiveInSession && (themeState === 'winter' || themeState === 'newyear')}
-            <div class="initial-snow">
-                {#each Array((browser && window.innerWidth < 768) ? 15 : 50) as _, i}
-                    <div class="snow">❄</div>
-                {/each}
-            </div>
+            <Snowfall />
         {/if}
 
         <div class="side-panel left z-10">

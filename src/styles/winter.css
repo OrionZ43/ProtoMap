@@ -24,68 +24,6 @@ body::before {
     opacity: 0.8;
 }
 
-.initial-snow {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	pointer-events: none;
-	z-index: 0;
-    overflow: hidden;
-}
-
-.snow {
-	color: white;
-	position: absolute;
-	top: -5vh;
-    text-shadow: 0 0 5px rgba(255,255,255,0.5);
-}
-
-@keyframes snowfall {
-	0% { transform: translate3d(var(--left-ini), 0, 0); }
-	100% { transform: translate3d(var(--left-end), 110vh, 0); }
-}
-
-.snow:nth-child(2n) { filter: blur(1px); }
-.snow:nth-child(4n) { filter: blur(2px); opacity: 0.8; }
-.snow:nth-child(8n) { filter: blur(4px); opacity: 0.4; }
-
-.snow:nth-child(1) { --size: 0.8vw; font-size: 0.8vw; --left-ini: 70vw; --left-end: 69vw; animation: snowfall 9s linear infinite; animation-delay: -1s; }
-.snow:nth-child(2) { --size: 0.2vw; font-size: 0.2vw; --left-ini: 65vw; --left-end: 75vw; animation: snowfall 15s linear infinite; animation-delay: -8s; }
-.snow:nth-child(3) { --size: 1vw; font-size: 1vw; --left-ini: 1vw; --left-end: 7vw; animation: snowfall 9s linear infinite; animation-delay: -7s; }
-.snow:nth-child(4) { --size: 0.2vw; font-size: 0.2vw; --left-ini: 88vw; --left-end: 97vw; animation: snowfall 14s linear infinite; animation-delay: -5s; }
-.snow:nth-child(5) { --size: 0.4vw; font-size: 0.4vw; --left-ini: 74vw; --left-end: 65vw; animation: snowfall 6s linear infinite; animation-delay: -4s; }
-.snow:nth-child(6) { --size: 0.2vw; font-size: 0.2vw; --left-ini: 35vw; --left-end: 40vw; animation: snowfall 6s linear infinite; animation-delay: -7s; }
-.snow:nth-child(7) { --size: 0.4vw; font-size: 0.4vw; --left-ini: 27vw; --left-end: 25vw; animation: snowfall 10s linear infinite; animation-delay: -8s; }
-.snow:nth-child(8) { --size: 1vw; font-size: 1vw; --left-ini: 69vw; --left-end: 60vw; animation: snowfall 8s linear infinite; animation-delay: -8s; }
-.snow:nth-child(9) { --size: 0.2vw; font-size: 0.2vw; --left-ini: 84vw; --left-end: 79vw; animation: snowfall 11s linear infinite; animation-delay: -6s; }
-.snow:nth-child(10) { --size: 0.2vw; font-size: 0.2vw; --left-ini: 82vw; --left-end: 73vw; animation: snowfall 10s linear infinite; animation-delay: -3s; }
-.snow:nth-child(11) { --size: 0.6vw; font-size: 0.6vw; --left-ini: 48vw; --left-end: 47vw; animation: snowfall 10s linear infinite; animation-delay: -1s; }
-.snow:nth-child(12) { --size: 0.2vw; font-size: 0.2vw; --left-ini: 39vw; --left-end: 45vw; animation: snowfall 15s linear infinite; animation-delay: -8s; }
-.snow:nth-child(13) { --size: 0.2vw; font-size: 0.2vw; --left-ini: 3vw; --left-end: 8vw; animation: snowfall 9s linear infinite; animation-delay: -8s; }
-.snow:nth-child(14) { --size: 0.8vw; font-size: 0.8vw; --left-ini: 49vw; --left-end: 47vw; animation: snowfall 11s linear infinite; animation-delay: -8s; }
-.snow:nth-child(15) { --size: 0.6vw; font-size: 0.6vw; --left-ini: 77vw; --left-end: 81vw; animation: snowfall 7s linear infinite; animation-delay: -4s; }
-.snow:nth-child(16) { --size: 0.8vw; font-size: 0.8vw; --left-ini: 86vw; --left-end: 87vw; animation: snowfall 14s linear infinite; animation-delay: -8s; }
-.snow:nth-child(17) { --size: 1vw; font-size: 1vw; --left-ini: 18vw; --left-end: 11vw; animation: snowfall 9s linear infinite; animation-delay: -6s; }
-.snow:nth-child(18) { --size: 1vw; font-size: 1vw; --left-ini: 64vw; --left-end: 68vw; animation: snowfall 13s linear infinite; animation-delay: -7s; }
-.snow:nth-child(19) { --size: 1vw; font-size: 1vw; --left-ini: 52vw; --left-end: 45vw; animation: snowfall 15s linear infinite; animation-delay: -9s; }
-.snow:nth-child(20) { --size: 0.4vw; font-size: 0.4vw; --left-ini: 5vw; --left-end: 13vw; animation: snowfall 8s linear infinite; animation-delay: -9s; }
-
-.snow:nth-child(n+21):nth-child(-n+30) { animation-duration: 12s; font-size: 0.5vw; animation-delay: -5s; }
-.snow:nth-child(n+31):nth-child(-n+40) { animation-duration: 18s; font-size: 0.3vw; animation-delay: -10s; opacity: 0.6; }
-.snow:nth-child(n+41):nth-child(-n+50) { animation-duration: 7s; font-size: 0.7vw; animation-delay: -2s; }
-
-.snow:nth-child(21) { --left-ini: 10vw; --left-end: 5vw; }
-.snow:nth-child(22) { --left-ini: 20vw; --left-end: 25vw; }
-.snow:nth-child(23) { --left-ini: 30vw; --left-end: 25vw; }
-.snow:nth-child(24) { --left-ini: 40vw; --left-end: 45vw; }
-.snow:nth-child(25) { --left-ini: 50vw; --left-end: 45vw; }
-.snow:nth-child(26) { --left-ini: 60vw; --left-end: 65vw; }
-.snow:nth-child(27) { --left-ini: 70vw; --left-end: 65vw; }
-.snow:nth-child(28) { --left-ini: 80vw; --left-end: 85vw; }
-.snow:nth-child(29) { --left-ini: 90vw; --left-end: 85vw; }
-.snow:nth-child(30) { --left-ini: 95vw; --left-end: 100vw; }
 
 .cyber-panel,
 .user-panel,
