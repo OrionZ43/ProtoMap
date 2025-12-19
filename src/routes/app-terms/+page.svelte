@@ -11,83 +11,65 @@
 </script>
 
 <svelte:head>
-    <title>{$t('privacy.title')} | ProtoMap</title>
+    <title>{$t('app_terms.page_title')} | ProtoMap</title>
 </svelte:head>
 
 <div class="legal-container cyber-panel" style="opacity: {$opacity}">
-    <h1 class="title font-display">{$t('privacy.title')}</h1>
-    <p class="subtitle">{$t('privacy.subtitle')}</p>
+    <h1 class="title font-display">{$t('app_terms.page_title')}</h1>
+    <p class="subtitle">{$t('app_terms.last_updated')}</p>
 
     <div class="content-text">
-        <div class="disclaimer-box">
-            <strong class="text-red-500">{$t('privacy.disclaimer_title')}</strong>
-            <p>{@html $t('privacy.disclaimer_text')}</p>
+        <p>{$t('app_terms.intro')}</p>
+
+        <h3 class="section-title">{$t('app_terms.sec_license_title')}</h3>
+        <p>{$t('app_terms.sec_license_text')}</p>
+        <ul>
+            {#each $t('app_terms.sec_license_list') as item}
+                <li>{item}</li>
+            {/each}
+        </ul>
+
+        <h3 class="section-title">{$t('app_terms.sec_content_title')}</h3>
+        <p>{$t('app_terms.sec_content_text')}</p>
+
+        <div class="alert-box">
+            <p><strong>{$t('app_terms.sec_content_policy')}</strong></p>
         </div>
 
-        <p>{$t('privacy.intro')}</p>
-
-        <h3 class="section-title">{$t('privacy.sec1_title')}</h3>
         <ul>
-            {#each $t('privacy.sec1_list') as item}
-                <li>{@html item}</li>
+            {#each $t('app_terms.sec_content_prohibited') as item}
+                <li>{item}</li>
+            {/each}
+        </ul>
+        <p>{$t('app_terms.sec_content_moderation')}</p>
+
+        <h3 class="section-title">{$t('app_terms.sec_virtual_title')}</h3>
+        <p>{$t('app_terms.sec_virtual_text')}</p>
+        <ul>
+            {#each $t('app_terms.sec_virtual_list') as item}
+                <li>{item}</li>
             {/each}
         </ul>
 
-        <h3 class="section-title">{$t('privacy.sec2_title')}</h3>
-        <p>{$t('privacy.sec2_intro')}</p>
+        <h3 class="section-title">{$t('app_terms.sec_safety_title')}</h3>
+        <p>{$t('app_terms.sec_safety_text')}</p>
         <ul>
-            {#each $t('privacy.sec2_list') as item}
-                <li>{@html item}</li>
+            {#each $t('app_terms.sec_safety_list') as item}
+                <li>{item}</li>
             {/each}
         </ul>
 
-        <h3 class="section-title">{$t('privacy.sec3_title')}</h3>
-        <p>{$t('privacy.sec3_intro')}</p>
-        <ul>
-            {#each $t('privacy.sec3_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
+        <h3 class="section-title">{$t('app_terms.sec_termination_title')}</h3>
+        <p>{$t('app_terms.sec_termination_text')}</p>
 
-        <h3 class="section-title">{$t('privacy.sec4_title')}</h3>
-        <ul>
-            {#each $t('privacy.sec4_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
+        <h3 class="section-title">{$t('app_terms.sec_disclaimer_title')}</h3>
+        <p>{$t('app_terms.sec_disclaimer_text')}</p>
 
-        <h3 class="section-title">{$t('privacy.sec5_title')}</h3>
-        <ul>
-            {#each $t('privacy.sec5_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <h3 class="section-title">{$t('privacy.sec6_title')}</h3>
-        <p>{$t('privacy.sec6_intro')}</p>
-        <ul>
-            {#each $t('privacy.sec6_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <h3 class="section-title">{$t('privacy.sec7_title')}</h3>
-        <p>{$t('privacy.sec7_intro')}</p>
-        <ul>
-            {#each $t('privacy.sec7_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-        <p class="text-gray-400 text-sm ml-4 mt-2">{$t('privacy.sec7_note')}</p>
-
-        <h3 class="section-title">{$t('privacy.sec8_title')}</h3>
-        <p>{$t('privacy.sec8_text')}</p>
-
-        <h3 class="section-title">{$t('privacy.sec9_title')}</h3>
+        <h3 class="section-title">{$t('app_terms.sec_contact_title')}</h3>
         <p>
-            {$t('privacy.sec9_text')}
+            {$t('app_terms.sec_contact_text')}
             <br>
-            <a href="mailto:{$t('privacy.contact_text')}" class="link">{$t('privacy.contact_text')}</a>
+            <a href="mailto:{$t('app_terms.contact_email')}" class="link">{$t('app_terms.contact_email')}</a>
         </p>
     </div>
 </div>
@@ -102,15 +84,6 @@
         -webkit-backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         clip-path: polygon(0 20px, 20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
-    }
-
-    .disclaimer-box {
-        background: rgba(255, 0, 60, 0.1);
-        border: 1px solid var(--cyber-red, #ff003c);
-        padding: 1rem;
-        margin-bottom: 2rem;
-        font-size: 0.9rem;
-        color: #ffccd5;
     }
 
     .title {
@@ -138,7 +111,7 @@
     }
 
     .content-text p {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
         text-align: justify;
     }
 
@@ -147,8 +120,8 @@
         font-size: 1.4rem;
         font-weight: 700;
         color: var(--cyber-yellow, #fcee0a);
-        margin-top: 3rem;
-        margin-bottom: 1.5rem;
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         padding-bottom: 0.5rem;
     }
@@ -161,8 +134,8 @@
 
     .content-text li {
         position: relative;
-        padding-left: 2rem;
-        margin-bottom: 0.8rem;
+        padding-left: 1.5rem;
+        margin-bottom: 0.5rem;
     }
 
     .content-text li::before {
@@ -173,10 +146,18 @@
         font-weight: bold;
     }
 
+    .alert-box {
+        background: rgba(255, 0, 60, 0.1);
+        border: 1px solid var(--cyber-red, #ff003c);
+        padding: 1rem;
+        margin: 1.5rem 0;
+        color: #ffccd5;
+    }
+
     .link {
         color: var(--cyber-cyan, #00f0ff);
         text-decoration: none;
-        border-bottom: 1px dashed var(--cyber-cyan);
+        border-bottom: 1px dashed var(--cyber-cyan, #00f0ff);
         transition: all 0.2s;
     }
 
