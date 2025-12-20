@@ -78,20 +78,20 @@ export const sendMessage = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Доступ запрещен.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid); // Проверка бана
+    await assertNotBanned(uid);
     assertEmailVerified(request.auth);
 
-    const { text, replyTo } = request.data as any;
+    const { text, replyTo, lang } = request.data as any;
+    const messageLang = (lang === 'en' || lang === 'ru') ? lang : 'ru';
 
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
         throw new HttpsError('invalid-argument', 'Сообщение не может быть пустым.');
     }
 
-    // Очистка текста
     let cleanText = text;
-    cleanText = cleanText.replace(/[\u0300-\u036f\u20d0-\u20ff\ufe20-\ufe2f]/g, ''); // Anti-Zalgo
-    cleanText = cleanText.replace(/[\u200B-\u200D\uFEFF\u00AD]/g, ''); // Anti-Invisible
-    cleanText = cleanText.trim().replace(/(\r\n|\n|\r){3,}/g, '\n\n'); // Anti-Vertical Spam
+    cleanText = cleanText.replace(/[\u0300-\u036f\u20d0-\u20ff\ufe20-\ufe2f]/g, '');
+    cleanText = cleanText.replace(/[\u200B-\u200D\uFEFF\u00AD]/g, '');
+    cleanText = cleanText.trim().replace(/(\r\n|\n|\r){3,}/g, '\n\n');
 
     if (cleanText.length === 0) throw new HttpsError('invalid-argument', 'Сообщение не содержит допустимых символов.');
     if (cleanText.length > 1000) throw new HttpsError('invalid-argument', 'Слишком длинное сообщение.');
@@ -107,7 +107,6 @@ export const sendMessage = onCall(async (request) => {
 
             if (userData.isBanned) throw new HttpsError('permission-denied', 'Вы заблокированы.');
 
-            // Кулдаун
             const lastMessageTime = userData.last_chat_message;
             if (lastMessageTime && Date.now() - lastMessageTime.toDate().getTime() < 3000) {
                 throw new HttpsError('resource-exhausted', 'Слишком часто. Охладите трахание.');
@@ -115,10 +114,11 @@ export const sendMessage = onCall(async (request) => {
 
             const newMessage: any = {
                 text: sanitizedText,
+                lang: messageLang,
                 author_uid: uid,
                 author_username: userData.username,
                 author_avatar_url: userData.avatar_url || '',
-                createdAt: FieldValue.serverTimestamp(),
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
                 author_equipped_frame: userData.equipped_frame || null,
                 image: false,
                 voiceMessage: false
@@ -132,7 +132,7 @@ export const sendMessage = onCall(async (request) => {
 
             const chatRef = db.collection('global_chat').doc();
             t.set(chatRef, newMessage);
-            t.update(userRef, { last_chat_message: FieldValue.serverTimestamp() });
+            t.update(userRef, { last_chat_message: admin.firestore.FieldValue.serverTimestamp() });
         });
         return { status: 'success' };
     } catch (error: any) {

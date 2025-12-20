@@ -31,6 +31,7 @@ export const actions: Actions = {
         const content = data.get('content') as string;
         const imageUrl = data.get('imageUrl') as string;
         const tagsString = data.get('tags') as string;
+        const lang = (data.get('lang') as string) || 'ru';
 
         if (!title || !content) {
             return fail(400, { message: 'Заголовок и текст обязательны', title, content, imageUrl, tagsString });
@@ -46,6 +47,7 @@ export const actions: Actions = {
                 content,
                 image: imageUrl || null,
                 tags,
+                lang,
                 createdAt: FieldValue.serverTimestamp(),
                 authorId: locals.user.uid,
                 authorName: locals.user.username

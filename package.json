@@ -47,6 +47,7 @@
 		"howler": "^2.2.4",
 		"leaflet": "^1.9.4",
 		"leaflet.markercluster": "^1.5.3",
+		"marked": "^17.0.1",
 		"node-fetch": "^2.7.0",
 		"pixi.js": "^8.10.1",
 		"svelte-i18n": "^4.0.1",

@@ -8,6 +8,7 @@ export type NewsPost = {
     image?: string;
     createdAt: Date;
     tags?: string[];
+    lang?: string;
 };
 
 export const load: PageServerLoad = async ({ setHeaders }) => {
@@ -25,7 +26,8 @@ export const load: PageServerLoad = async ({ setHeaders }) => {
                 content: data.content || '',
                 image: data.image || null,
                 createdAt: data.createdAt?.toDate() || new Date(),
-                tags: data.tags || []
+                tags: data.tags || [],
+                lang: data.lang || 'ru'
             };
         });
 

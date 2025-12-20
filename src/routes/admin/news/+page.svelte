@@ -7,12 +7,10 @@
     export let form: ActionData;
 
     let isSubmitting = false;
-    // Предпросмотр изображения
     let imageUrl = '';
 
     $: if (form?.success) {
         modal.success("Опубликовано!", "Новость успешно добавлена в ленту.");
-        // Сбрасываем форму (визуально)
         imageUrl = '';
     } else if (form?.message) {
         modal.error("Ошибка", form.message);
@@ -32,7 +30,6 @@
 
     <div class="editor-grid">
 
-        <!-- ФОРМА РЕДАКТИРОВАНИЯ -->
         <div class="editor-panel cyber-glass">
             <form
                 method="POST"
@@ -46,26 +43,36 @@
                 }}
                 class="editor-form"
             >
-                <!-- ЗАГОЛОВОК -->
+                <div class="form-group">
+                    <label class="cyber-label">ЦЕЛЕВАЯ АУДИТОРИЯ</label>
+                    <div class="lang-selector">
+                        <label class="radio-label">
+                            <input type="radio" name="lang" value="ru" checked>
+                            <span class="radio-btn">RU (Russian)</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="lang" value="en">
+                            <span class="radio-btn">EN (English)</span>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label class="cyber-label">ЗАГОЛОВОК ТРАНСЛЯЦИИ</label>
                     <input type="text" name="title" required placeholder="Пример: THE GLITCH PIT 2.0" class="cyber-input header-input" autocomplete="off" />
                 </div>
 
-                <!-- ТЕКСТ -->
                 <div class="form-group">
                     <label class="cyber-label">ТЕКСТ СООБЩЕНИЯ</label>
                     <textarea name="content" required rows="12" placeholder="Введите текст новости..." class="cyber-input text-area"></textarea>
                 </div>
 
                 <div class="meta-grid">
-                    <!-- КАРТИНКА -->
                     <div class="form-group">
                         <label class="cyber-label">URL ИЗОБРАЖЕНИЯ</label>
                         <input type="url" name="imageUrl" bind:value={imageUrl} placeholder="https://..." class="cyber-input" />
                     </div>
 
-                    <!-- ТЕГИ -->
                     <div class="form-group">
                         <label class="cyber-label">ТЕГИ (CSV)</label>
                         <input type="text" name="tags" placeholder="update, event, system" class="cyber-input" />
@@ -81,7 +88,6 @@
             </form>
         </div>
 
-        <!-- ПРЕВЬЮ (Визуализация того, как это будет выглядеть) -->
         <div class="preview-panel">
             <h3 class="preview-title">ПРЕДПРОСМОТР СИГНАЛА</h3>
 
@@ -172,7 +178,6 @@
     .broadcast-btn:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(0, 243, 255, 0.4); }
     .broadcast-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
 
-    /* PREVIEW PANEL */
     .preview-title {
         font-family: 'Chakra Petch', monospace; font-size: 0.8rem; color: #64748b;
         margin-bottom: 1rem; text-align: center; letter-spacing: 0.1em;
@@ -199,8 +204,21 @@
     .title-mock { font-family: 'Chakra Petch', sans-serif; font-weight: bold; font-size: 1.2rem; color: #fff; margin-bottom: 1rem; opacity: 0.5; }
     .text-mock .line { height: 10px; background: rgba(255,255,255,0.1); margin-bottom: 8px; border-radius: 2px; }
 
+    .lang-selector { display: flex; gap: 1rem; }
+    .radio-label input { display: none; }
+    .radio-btn {
+        display: block; padding: 0.5rem 1rem;
+        border: 1px solid #555; border-radius: 4px;
+        color: #888; font-weight: bold; cursor: pointer;
+        font-family: 'Chakra Petch', monospace; transition: all 0.2s;
+    }
+    .radio-label input:checked + .radio-btn {
+        background: var(--cyber-yellow); color: #000; border-color: var(--cyber-yellow);
+        box-shadow: 0 0 10px rgba(252, 238, 10, 0.3);
+    }
+
     @media (max-width: 1024px) {
         .editor-grid { grid-template-columns: 1fr; }
-        .preview-panel { display: none; } /* Скрываем превью на мобилках */
+        .preview-panel { display: none; }
     }
 </style>

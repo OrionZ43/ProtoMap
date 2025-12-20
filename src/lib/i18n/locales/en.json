@@ -62,7 +62,9 @@
     "wait": "Wait...",
     "empty": "NO SIGNALS DETECTED. START TRANSMISSION.",
     "login_req": "Login to chat.",
-    "reply": "Reply"
+    "reply": "Reply",
+    "load_more": "LOAD PREVIOUS SIGNALS",
+    "no_more": "REACHED THE BEGINNING"
   },
   "cookie": {
     "text": "We use cookies to save your session and settings. By staying on the site, you agree to our",
@@ -101,16 +103,24 @@
     ]
   },
   "about_page": {
-    "title": "// ABOUT PROTOMAP",
-    "intro": "<span class=\"highlight\">[SYSTEM_INITIATED]</span> Welcome to <strong>ProtoMap</strong> — the main gathering point for protogens in digital space. This project started as an experiment but became home to hundreds of unique signals.",
-    "team_title": "// NETWORK ARCHITECTS",
-    "role_architect": "LEAD ARCHITECT",
-    "desc_orion": "Creator of the core, web interface, and the crazy casino economy. Ensures servers don't melt and frames keep shining.",
-    "role_mobile": "MOBILE ENGINEER",
-    "desc_ipos": "If you think ProtoMap is just a website, iposdev is preparing a surprise for you.",
-    "community_text": "<span class=\"highlight\">[COMM_LINK]</span> The project lives thanks to you. Join our Telegram chat to talk, suggest ideas, and be the first to know about hidden updates.",
-    "join_btn": "JOIN TELEGRAM CHAT",
-    "disclaimer": "// All map markers are anonymized. We do not store your exact coordinates."
+    "title": "PROTOMAP",
+    "intro": "Hi! You are at <strong>ProtoMap</strong>. This isn't just a map — it's an attempt to connect us all on one screen. This project started as a crazy idea at 3 AM, and now signals are lighting up from all over the world.",
+    "team_title": "THE TEAM",
+    "role_architect": "CORE DEV",
+    "desc_orion": "Founder. Writes code, breaks code, fixes code. Ensures the map lives and the casino doesn't bankrupt players (too much).",
+    "role_mobile": "MOBILE DEV",
+    "desc_ipos": "Mobile architecture engineer. Makes sure ProtoMap is in your pocket wherever you go.",
+
+    "species_title": "ALL ARE WELCOME",
+    "species_text": "We don't have 'species police' here. ProtoMap is open territory. <br>Is your protogen canon? Great. Modded, rare, or built in a garage? Even better! <br><br>We also welcome our cousins — <strong>Synths</strong> and rare <strong>Primagens</strong>. If you have a visor and a tail (or not) — jack in.",
+
+    "origin_title": "SPECIES ORIGINS",
+    "credits_zor": "Creator of Protogens & Primagens",
+    "credits_synth": "Creator of Synths",
+
+    "community_text": "This project is free and lives thanks to the community. Hop into our chat — we don't bite (usually).",
+    "join_btn": "TELEGRAM CHAT",
+    "disclaimer": "Privacy is key. We do not store your exact GPS coordinates."
   },
   "banned": {
     "page_title": "ACCESS DENIED",
@@ -442,6 +452,8 @@
     "copy_success": "Copied!",
     "copy_text": "Discord tag <strong>{tag}</strong> copied.",
     "time": {
+      "today": "Today",
+      "yesterday": "Yesterday",
       "just_now": "just now",
       "ago": "ago",
       "y": "y.",

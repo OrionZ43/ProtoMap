@@ -133,6 +133,9 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
                 <path fill-rule="evenodd" d="M4.848 2.771A49.144 49.144 0 0112 2.25c2.43 0 4.817.178 7.152.52 1.978.292 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.678-3.348 3.97a48.901 48.901 0 01-3.476.383.39.39 0 00-.297.17l-2.755 4.133a.75.75 0 01-1.248 0l-2.755-4.133a.39.39 0 00-.297-.17 48.9 48.9 0 01-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.74c0-1.946 1.37-3.68 3.348-3.97zM6.75 8.25a.75.75 0 01.75-.75h9a.75.75 0 010 1.5h-9a.75.75 0 01-.75-.75zm.75 2.25a.75.75 0 000 1.5H12a.75.75 0 000-1.5H7.5z" clip-rule="evenodd" />
             </svg>
+            {#if $chat.hasUnread}
+                <div class="unread-dot"></div>
+            {/if}
         </button>
     </div>
 {:else}
@@ -166,4 +169,13 @@
             display: none;
         }
     }
+    .unread-dot {
+        position: absolute; top: 0; right: 0;
+        width: 14px; height: 14px;
+        background: #ff003c; border-radius: 50%;
+        border: 2px solid #000;
+        box-shadow: 0 0 10px #ff003c;
+        animation: pulse-dot 1s infinite;
+    }
+    @keyframes pulse-dot { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 </style>
