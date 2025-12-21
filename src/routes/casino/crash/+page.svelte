@@ -60,8 +60,6 @@
                 canvas.width = rect.width * dpr;
                 canvas.height = rect.height * dpr;
                 ctx.scale(dpr, dpr);
-                canvas.style.width = `${rect.width}px`;
-                canvas.style.height = `${rect.height}px`;
             }
             if (!isPlaying) drawIdle();
         }
@@ -433,7 +431,7 @@
     .page-container {
         min-height: calc(100vh - 64px);
         display: flex; justify-content: center; align-items: center;
-        padding: 1rem; overflow: hidden; position: relative;
+        padding: 0.5rem; overflow: hidden; position: relative;
         background: #050505;
     }
 
@@ -452,20 +450,20 @@
     }
 
     .history-bar {
-        display: flex; align-items: center; padding: 0.8rem;
+        display: flex; align-items: center; padding: 0.5rem;
         background: rgba(0,0,0,0.5); border-bottom: 1px solid rgba(255,255,255,0.1);
-        overflow: hidden; height: 50px;
+        overflow: hidden; height: 40px;
     }
-    .history-bar .label { font-size: 0.7rem; color: #666; margin-right: 1rem; font-weight: bold; letter-spacing: 0.1em; }
-    .history-track { display: flex; gap: 0.5rem; flex-direction: row-reverse; justify-content: flex-end; width: 100%; overflow: hidden; }
+    .history-bar .label { font-size: 0.6rem; color: #666; margin-right: 0.5rem; font-weight: bold; letter-spacing: 0.1em; }
+    .history-track { display: flex; gap: 0.3rem; flex-direction: row-reverse; justify-content: flex-end; width: 100%; overflow: hidden; }
     .history-pill {
-        padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; font-family: monospace; white-space: nowrap;
+        padding: 1px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: bold; font-family: monospace; white-space: nowrap;
         background: rgba(57, 255, 20, 0.1); color: #39ff14; border: 1px solid #39ff14;
     }
     .history-pill.crash { background: rgba(255, 0, 60, 0.1); color: #ff003c; border-color: #ff003c; }
 
     .screen-wrapper {
-        position: relative; height: 400px; width: 100%;
+        position: relative; height: 350px; width: 100%;
         background: #020406; overflow: hidden;
         border-bottom: 1px solid rgba(255,255,255,0.1);
     }
@@ -475,70 +473,90 @@
         position: absolute; inset: 0; pointer-events: none; z-index: 20;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         text-align: center;
+        padding: 1rem;
     }
 
     .big-multiplier {
-        font-size: 6rem; font-weight: 900; font-family: 'Chakra Petch', sans-serif;
+        font-size: 4rem; font-weight: 900; font-family: 'Chakra Petch', sans-serif;
         transition: color 0.2s, text-shadow 0.2s;
         line-height: 1;
     }
-    .big-multiplier .x { font-size: 3rem; opacity: 0.7; }
+    .big-multiplier .x { font-size: 2rem; opacity: 0.7; }
 
-    .status-box h2 { font-size: 2rem; color: #fff; letter-spacing: 0.2em; font-weight: bold; }
-    .status-box p { color: var(--cyber-cyan); font-family: monospace; margin-top: 1rem; }
+    .status-box h2 { font-size: 1.5rem; color: #fff; letter-spacing: 0.2em; font-weight: bold; }
+    .status-box p { color: var(--cyber-cyan); font-family: monospace; margin-top: 0.5rem; font-size: 0.8rem; }
 
-    .crash-box h2 { font-size: 3rem; color: #ff003c; text-shadow: 0 0 20px #ff003c; animation: glitch-skew 0.3s infinite; }
-    .crash-box .final-val { font-size: 2rem; color: #fff; font-family: monospace; }
+    .crash-box h2 { font-size: 2rem; color: #ff003c; text-shadow: 0 0 20px #ff003c; animation: glitch-skew 0.3s infinite; }
+    .crash-box .final-val { font-size: 1.5rem; color: #fff; font-family: monospace; }
 
     .cashed-out-badge {
-        background: #39ff14; color: #000; padding: 0.5rem 1.5rem;
-        font-weight: 900; font-size: 1.2rem; transform: rotate(-5deg);
+        background: #39ff14; color: #000; padding: 0.3rem 1rem;
+        font-weight: 900; font-size: 1rem; transform: rotate(-5deg);
         box-shadow: 0 0 20px #39ff14; border: 2px solid #fff;
     }
 
-    .controls-panel { padding: 1.5rem; display: grid; grid-template-columns: 1fr 1.5fr; gap: 2rem; align-items: stretch; }
+    .controls-panel { padding: 1rem; display: grid; grid-template-columns: 1fr 1.5fr; gap: 1.5rem; align-items: stretch; }
 
-    .input-label { font-size: 0.7rem; color: #666; font-weight: bold; margin-bottom: 0.5rem; }
-    .bet-input-group { display: flex; height: 3.5rem; }
-    .cyber-input { flex: 1; background: #0a0c10; border: 1px solid #333; color: #fff; text-align: center; font-size: 1.5rem; font-weight: bold; border-left: none; border-right: none; font-family: 'Chakra Petch', monospace; }
+    .input-label { font-size: 0.6rem; color: #666; font-weight: bold; margin-bottom: 0.3rem; }
+    .bet-input-group { display: flex; height: 3rem; width: 100%; }
+    .cyber-input {
+        flex: 1; min-width: 0; /* Резина */
+        background: #0a0c10; border: 1px solid #333; color: #fff;
+        text-align: center; font-size: 1.2rem; font-weight: bold;
+        border-left: none; border-right: none; font-family: 'Chakra Petch', monospace;
+    }
     .cyber-input:focus { outline: none; border-color: var(--cyber-cyan); }
-    .adj { width: 3.5rem; background: #1a1d24; border: 1px solid #333; color: #888; font-size: 1.5rem; cursor: pointer; transition: all 0.1s; }
+
+    .adj {
+        flex: 0 0 3rem; /* Фиксированная ширина кнопок */
+        background: #1a1d24; border: 1px solid #333; color: #888; font-size: 1.2rem;
+        cursor: pointer; transition: all 0.1s; display: flex; align-items: center; justify-content: center;
+    }
     .adj:first-child { border-radius: 4px 0 0 4px; border-right: none; }
     .adj:last-child { border-radius: 0 4px 4px 0; border-left: none; }
     .adj:hover:not(:disabled) { background: #2a2d35; color: #fff; }
 
-    .quick-bets { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
-    .quick-bets button { flex: 1; background: rgba(255,255,255,0.05); border: none; color: #666; font-size: 0.7rem; padding: 6px; border-radius: 2px; cursor: pointer; transition: all 0.2s; font-weight: bold; }
+    .quick-bets { display: flex; gap: 0.3rem; margin-top: 0.5rem; flex-wrap: wrap; }
+    .quick-bets button {
+        flex: 1; min-width: 40px;
+        background: rgba(255,255,255,0.05); border: none; color: #666;
+        font-size: 0.65rem; padding: 6px; border-radius: 2px;
+        cursor: pointer; transition: all 0.2s; font-weight: bold;
+    }
     .quick-bets button:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #fff; }
 
     .launch-btn, .abort-btn {
-        width: 100%; height: 100%; border: none; border-radius: 4px; cursor: pointer;
+        width: 100%; height: 100%; min-height: 80px; /* Мин высота для пальца */
+        border: none; border-radius: 4px; cursor: pointer;
         position: relative; overflow: hidden; transition: transform 0.1s;
         display: flex; align-items: center; justify-content: center;
-        clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+        clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
     }
     .launch-btn:active, .abort-btn:active { transform: scale(0.98); }
 
-    .launch-btn { background: var(--cyber-cyan); box-shadow: 0 0 30px rgba(0, 240, 255, 0.2); }
-    .launch-btn:hover { background: #00d0dd; box-shadow: 0 0 50px rgba(0, 240, 255, 0.4); }
+    .launch-btn { background: var(--cyber-cyan); box-shadow: 0 0 20px rgba(0, 240, 255, 0.2); }
+    .launch-btn:hover { background: #00d0dd; box-shadow: 0 0 40px rgba(0, 240, 255, 0.4); }
     .launch-btn:disabled { background: #222; color: #444; box-shadow: none; cursor: not-allowed; }
 
-    .abort-btn { background: var(--cyber-yellow); box-shadow: 0 0 30px rgba(252, 238, 10, 0.3); animation: pulse-red 0.5s infinite; }
+    .abort-btn { background: var(--cyber-yellow); box-shadow: 0 0 20px rgba(252, 238, 10, 0.3); animation: pulse-red 0.5s infinite; }
     .abort-btn:hover { background: #ffd700; }
 
     .btn-content { display: flex; flex-direction: column; align-items: center; line-height: 1.1; color: #000; z-index: 2; }
-    .btn-content .big { font-size: 2rem; font-weight: 900; font-family: 'Chakra Petch', monospace; letter-spacing: 0.05em; }
-    .btn-content .small { font-size: 0.9rem; font-weight: bold; opacity: 0.7; }
+    .btn-content .big { font-size: 1.5rem; font-weight: 900; font-family: 'Chakra Petch', monospace; letter-spacing: 0.05em; }
+    .btn-content .small { font-size: 0.8rem; font-weight: bold; opacity: 0.7; }
 
     .footer-status {
-        padding: 0.5rem 1.5rem; display: flex; justify-content: space-between;
+        padding: 0.4rem 1rem; display: flex; justify-content: space-between;
         background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.05);
-        font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #444;
+        font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: #444;
     }
 
     @media (max-width: 640px) {
-        .controls-panel { grid-template-columns: 1fr; gap: 1.5rem; }
-        .action-section { height: 100px; }
-        .screen-wrapper { height: 300px; }
+        .page-container { padding: 0.5rem; }
+        .controls-panel { grid-template-columns: 1fr; gap: 1rem; padding: 1rem; }
+        .screen-wrapper { height: 250px; }
+        .action-section { height: 70px; }
+        .big-multiplier { font-size: 3.5rem; }
+        .crash-box h2, .win-msg h2 { font-size: 1.5rem; }
     }
 </style>
