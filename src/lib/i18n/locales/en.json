@@ -295,7 +295,9 @@
     "status_wait": "WAIT",
     "day_short": "DAY",
     "time_h": "h",
-    "time_m": "m"
+    "time_m": "m",
+    "game_crash_title": "Data Uplink",
+    "game_crash_desc": "Hack the corp server. The longer you stay, the more you earn. Disconnect before the connection gets terminated!"
   },
   "inventory": {
     "title": "Stash",

@@ -407,6 +407,144 @@ export const getDailyBonus = onCall(async (request) => {
     }
 });
 
+export const startCrashGame = onCall(async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+    const uid = request.auth.uid;
+    await assertNotBanned(uid);
+
+    const { bet } = request.data;
+    const MAX_BET = 1000;
+
+    if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
+    if (bet > MAX_BET) throw new HttpsError('invalid-argument', `Max bet is ${MAX_BET}.`);
+
+    const userRef = db.collection('users').doc(uid);
+
+    try {
+        const result = await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
+            const userData = userDoc.data()!;
+
+            if ((userData.casino_credits || 0) < bet) {
+                throw new HttpsError('failed-precondition', 'Not enough credits.');
+            }
+
+            // === [ CRYPTO RNG CORE: HARD MODE ] ===
+            let crashPoint = 1.00;
+
+            // 1. Шанс мгновенного краша (House Edge)
+            // Подняли до 6% (было ~3-4%)
+            const riskRoll = crypto.randomInt(0, 100);
+
+            if (riskRoll < 6) {
+                crashPoint = 1.00;
+            } else {
+                // 2. Генерация множителя
+                const buffer = crypto.randomBytes(4);
+                const randomInt = buffer.readUInt32BE(0);
+                const maxUint32 = 0xFFFFFFFF;
+                const randomFloat = randomInt / maxUint32;
+
+                // НЕРФ: Меняем коэффициент с 0.99 на 0.94
+                // Это делает рост графика более "тяжелым", высокие иксы падают реже
+                const calculatedMultiplier = 0.94 / (1 - randomFloat);
+
+                crashPoint = Math.floor(calculatedMultiplier * 100) / 100;
+
+                // 3. ЖЕСТКИЙ ЛИМИТ (HARD CAP)
+                // Больше 50x выиграть нельзя.
+                // При ставке 2000 это макс выигрыш 100,000 PC.
+                const HARD_CAP = 50.00;
+
+                if (crashPoint > HARD_CAP) crashPoint = HARD_CAP;
+
+                // Технический минимум (если формула выдала меньше)
+                if (crashPoint < 1.01) crashPoint = 1.01;
+            }
+            // ======================================
+
+            const newBalance = (userData.casino_credits || 0) - bet;
+
+            const gameId = db.collection('crash_games').doc().id;
+            const gameRef = db.collection('crash_games').doc(gameId);
+            const expireAt = admin.firestore.Timestamp.fromMillis(Date.now() + 2 * 60 * 60 * 1000);
+
+            t.set(gameRef, {
+                uid,
+                bet,
+                crashPoint,
+                status: 'active',
+                createdAt: FieldValue.serverTimestamp(),
+                expireAt: expireAt
+            });
+
+            t.update(userRef, { casino_credits: newBalance });
+
+            const obfuscatedCrash = Buffer.from(crashPoint.toString()).toString('base64');
+
+            return {
+                gameId,
+                newBalance,
+                token: obfuscatedCrash
+            };
+        });
+
+        return { data: result };
+    } catch (error: any) {
+        throw new HttpsError('internal', error.message || 'Game error.');
+    }
+});
+
+// 2. ВЫВОД ДЕНЕГ (CASHOUT)
+export const cashOutCrashGame = onCall(async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+    const uid = request.auth.uid;
+
+    const { gameId, multiplier } = request.data;
+
+    const gameRef = db.collection('crash_games').doc(gameId);
+    const userRef = db.collection('users').doc(uid);
+
+    try {
+        const result = await db.runTransaction(async (t) => {
+            const gameDoc = await t.get(gameRef);
+
+            if (!gameDoc.exists) throw new HttpsError('not-found', 'Game session expired.');
+            const gameData = gameDoc.data()!;
+
+            if (gameData.uid !== uid) throw new HttpsError('permission-denied', 'Not your game.');
+            if (gameData.status !== 'active') throw new HttpsError('failed-precondition', 'Game already finished.');
+
+            // ГЛАВНАЯ ПРОВЕРКА
+            // Если игрок пытается забрать больше, чем выпало (читерство или лаг)
+            if (multiplier > gameData.crashPoint) {
+                t.update(gameRef, { status: 'crashed_attempt' });
+                return { status: 'lost', message: 'Too late! Signal lost.' };
+            }
+
+            // Победа!
+            const winAmount = Math.floor(gameData.bet * multiplier);
+
+            t.update(userRef, {
+                casino_credits: FieldValue.increment(winAmount)
+            });
+
+            t.update(gameRef, {
+                status: 'cashed_out',
+                cashOutAt: multiplier,
+                winAmount
+            });
+
+            return { status: 'won', winAmount };
+        });
+
+        return { data: result };
+    } catch (error: any) {
+        throw new HttpsError('internal', error.message || 'Cashout error.');
+    }
+});
+
 export const playSlotMachine = onCall(
     { secrets: ["TELEGRAM_BOT_TOKEN"] },
     async (request) => {

@@ -201,7 +201,7 @@
                                     </div>
                                     {#if !hasFrame}
                                         <div class="reward-visual">
-                                            <div class="avatar-wrapper-popup frame_ludoman" style="transform: scale(1.3);">
+                                            <div class="avatar-wrapper-popup frame_ludoman" style="transform: scale(1.1);">
                                                 <img
                                                     src={$userStore.user.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user.username}`}
                                                     alt="Reward Preview"
@@ -223,6 +223,7 @@
         </div>
 
         <div class="games-grid">
+            <!-- COIN FLIP -->
             <a href="/casino/coin-flip" class="game-card">
                 <div class="game-art">
                     <img src="/casino/OaR.png" alt="Coin Flip" class="art-img">
@@ -235,6 +236,7 @@
                 </div>
             </a>
 
+            <!-- SLOTS -->
             <a href="/casino/slot-machine" class="game-card">
                 <div class="game-art">
                      <img src="/casino/slots.png" alt="Slots" class="art-img">
@@ -243,6 +245,20 @@
                 <div class="game-info">
                     <h3 class="game-title font-display">{$t('casino.game_slots_title')}</h3>
                     <p class="game-desc">{$t('casino.game_slots_desc')}</p>
+                    <span class="play-indicator font-display">{$t('casino.play')}</span>
+                </div>
+            </a>
+
+            <!-- CRASH (DATA UPLINK) -->
+            <a href="/casino/crash" class="game-card">
+                <div class="game-art">
+                     <div class="new-badge">NEW</div>
+                     <img src="/casino/crash.png" alt="Crash" class="art-img">
+                     <div class="art-overlay"></div>
+                </div>
+                <div class="game-info">
+                    <h3 class="game-title font-display">{$t('casino.game_crash_title')}</h3>
+                    <p class="game-desc">{$t('casino.game_crash_desc')}</p>
                     <span class="play-indicator font-display">{$t('casino.play')}</span>
                 </div>
             </a>
@@ -423,7 +439,7 @@
         display: flex;
         flex-direction: row;
         align-items: center;
-        padding: 4px 8px; /* Добавили отступы для воздуха */
+        padding: 0 10px;
         justify-content: space-between;
     }
 
@@ -433,6 +449,7 @@
         align-items: center;
         width: 100%;
         height: 100%;
+        padding-top: 12px;
     }
 
     .final-reward-content.only-credits {
@@ -447,7 +464,6 @@
         justify-content: center;
         z-index: 10;
         min-width: 0;
-        padding-top: 8px; /* Чуть отодвинем текст от верхнего "DAY 30" */
     }
 
     .final-reward-content.only-credits .reward-text {
@@ -455,7 +471,7 @@
     }
 
     .reward-text .val {
-        font-size: 0.9rem; /* Уменьшили */
+        font-size: 1rem;
         color: #ffd700;
         font-weight: 800;
         line-height: 1.1;
@@ -464,15 +480,26 @@
     }
 
     .reward-text .label {
-        font-size: 0.55rem; /* Уменьшили */
+        font-size: 0.6rem;
         font-weight: bold;
         color: #fff;
         margin-top: 2px;
     }
 
+    .reward-text .sub-label {
+        font-size: 0.5rem;
+        color: #aaa;
+        font-family: 'Chakra Petch', monospace;
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 80px;
+    }
+
     .reward-visual {
         flex-shrink: 0;
-        margin-left: 2px; /* Уменьшили отступ */
+        margin-left: 5px;
         z-index: 10;
     }
 
@@ -495,6 +522,7 @@
         display: flex; flex-direction: column; overflow: hidden;
         text-decoration: none; color: inherit;
         transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+        position: relative;
     }
     .game-card:hover { transform: translateY(-10px); --glow-color: var(--cyber-yellow); animation: card-hover-glow 0.5s forwards; }
     .game-card.disabled { pointer-events: none; filter: grayscale(0.8) brightness(0.5); }
@@ -506,6 +534,17 @@
         background: linear-gradient(to top, rgba(10,10,10,0.8) 0%, transparent 50%); transition: background 0.3s;
     }
     .game-card:hover .art-overlay { background: linear-gradient(to top, rgba(20,20,25,1) 0%, transparent 70%); }
+
+    .new-badge {
+        position: absolute; top: 10px; right: 10px;
+        background: #ff003c; color: #fff;
+        font-family: 'Chakra Petch', monospace; font-weight: 900; font-size: 0.8rem;
+        padding: 2px 8px; border-radius: 4px;
+        box-shadow: 0 0 10px #ff003c;
+        z-index: 10;
+        animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
     .game-info { padding: 1.5rem; display: flex; flex-direction: column; flex-grow: 1; }
     .game-title { font-size: 1.75rem; color: #fff; margin-bottom: 0.5rem; }
