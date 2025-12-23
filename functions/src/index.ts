@@ -407,141 +407,126 @@ export const getDailyBonus = onCall(async (request) => {
     }
 });
 
-export const startCrashGame = onCall(async (request) => {
+export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
-
     const { bet } = request.data;
     const MAX_BET = 1000;
 
-    if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
-    if (bet > MAX_BET) throw new HttpsError('invalid-argument', `Max bet is ${MAX_BET}.`);
+    if (bet > MAX_BET || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
 
     const userRef = db.collection('users').doc(uid);
+    const gameId = db.collection('crash_games').doc().id;
+
+    const rtdb = admin.app().database("https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app");
+    const gameRtdbRef = rtdb.ref(`crash_games/${gameId}`);
 
     try {
-        const result = await db.runTransaction(async (t) => {
+        let crashPoint = 1.00;
+        const riskRoll = crypto.randomInt(0, 100);
+        if (riskRoll < 6) {
+            crashPoint = 1.00;
+        } else {
+            const buffer = crypto.randomBytes(4);
+            const randomInt = buffer.readUInt32BE(0);
+            const randomFloat = randomInt / 0xFFFFFFFF;
+            crashPoint = Math.floor((0.94 / (1 - randomFloat)) * 100) / 100;
+            if (crashPoint > 50) crashPoint = 50;
+            if (crashPoint < 1.01) crashPoint = 1.01;
+        }
+
+        await db.runTransaction(async (t) => {
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
-            const userData = userDoc.data()!;
+            if ((userDoc.data()?.casino_credits || 0) < bet) throw new Error("No money");
 
-            if ((userData.casino_credits || 0) < bet) {
-                throw new HttpsError('failed-precondition', 'Not enough credits.');
-            }
-
-            // === [ CRYPTO RNG CORE: HARD MODE ] ===
-            let crashPoint = 1.00;
-
-            // 1. Шанс мгновенного краша (House Edge)
-            // Подняли до 6% (было ~3-4%)
-            const riskRoll = crypto.randomInt(0, 100);
-
-            if (riskRoll < 6) {
-                crashPoint = 1.00;
-            } else {
-                // 2. Генерация множителя
-                const buffer = crypto.randomBytes(4);
-                const randomInt = buffer.readUInt32BE(0);
-                const maxUint32 = 0xFFFFFFFF;
-                const randomFloat = randomInt / maxUint32;
-
-                // НЕРФ: Меняем коэффициент с 0.99 на 0.94
-                // Это делает рост графика более "тяжелым", высокие иксы падают реже
-                const calculatedMultiplier = 0.94 / (1 - randomFloat);
-
-                crashPoint = Math.floor(calculatedMultiplier * 100) / 100;
-
-                // 3. ЖЕСТКИЙ ЛИМИТ (HARD CAP)
-                // Больше 50x выиграть нельзя.
-                // При ставке 2000 это макс выигрыш 100,000 PC.
-                const HARD_CAP = 50.00;
-
-                if (crashPoint > HARD_CAP) crashPoint = HARD_CAP;
-
-                // Технический минимум (если формула выдала меньше)
-                if (crashPoint < 1.01) crashPoint = 1.01;
-            }
-            // ======================================
-
-            const newBalance = (userData.casino_credits || 0) - bet;
-
-            const gameId = db.collection('crash_games').doc().id;
-            const gameRef = db.collection('crash_games').doc(gameId);
-            const expireAt = admin.firestore.Timestamp.fromMillis(Date.now() + 2 * 60 * 60 * 1000);
-
-            t.set(gameRef, {
-                uid,
-                bet,
-                crashPoint,
+            t.update(userRef, { casino_credits: FieldValue.increment(-bet) });
+            t.set(db.collection('crash_games').doc(gameId), {
+                uid, bet, crashPoint,
                 status: 'active',
                 createdAt: FieldValue.serverTimestamp(),
-                expireAt: expireAt
+                expireAt: admin.firestore.Timestamp.fromMillis(Date.now() + 3600000)
             });
-
-            t.update(userRef, { casino_credits: newBalance });
-
-            const obfuscatedCrash = Buffer.from(crashPoint.toString()).toString('base64');
-
-            return {
-                gameId,
-                newBalance,
-                token: obfuscatedCrash
-            };
         });
 
-        return { data: result };
-    } catch (error: any) {
-        throw new HttpsError('internal', error.message || 'Game error.');
+        await gameRtdbRef.set({
+            m: 1.00,
+            s: 'run',
+            uid: uid
+        });
+
+        runGameLoopRTDB(gameId, crashPoint);
+        const easterEgg = Buffer.from("Hello Kuraga! The real math happens in RTDB now. Catch me if you can! 🚀").toString('base64');
+
+        return {
+            data: {
+                gameId,
+                debug_token: easterEgg
+            }
+        };
+
+    } catch (e: any) {
+        throw new HttpsError('internal', e.message);
     }
 });
 
-// 2. ВЫВОД ДЕНЕГ (CASHOUT)
-export const cashOutCrashGame = onCall(async (request) => {
-    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
-    const uid = request.auth.uid;
+async function runGameLoopRTDB(gameId: string, crashPoint: number) {
+    const rtdb = admin.app().database("https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app");
+    const gameRef = rtdb.ref(`crash_games/${gameId}`);
 
+    const fsGameRef = db.collection('crash_games').doc(gameId);
+
+    const startTime = Date.now();
+    let current = 1.00;
+
+    const interval = setInterval(async () => {
+        const t = (Date.now() - startTime) / 1000;
+        current = Math.exp(0.08 * t);
+        if (current >= crashPoint) {
+            clearInterval(interval);
+
+            await gameRef.update({ m: crashPoint, s: 'bang' });
+
+            await fsGameRef.update({ status: 'crashed', finalMultiplier: crashPoint });
+
+            setTimeout(() => gameRef.remove(), 5000);
+        } else {
+            gameRef.update({ m: parseFloat(current.toFixed(2)) });
+        }
+    }, 200);
+}
+
+export const cashOutCrashGame = onCall(async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth');
+    const uid = request.auth.uid;
     const { gameId, multiplier } = request.data;
 
     const gameRef = db.collection('crash_games').doc(gameId);
     const userRef = db.collection('users').doc(uid);
+    const rtdbRef = admin.app()
+    .database("https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app")
+    .ref(`crash_games/${gameId}`);
 
     try {
         const result = await db.runTransaction(async (t) => {
             const gameDoc = await t.get(gameRef);
+            if (!gameDoc.exists) throw new Error('Game expired');
+            const data = gameDoc.data()!;
 
-            if (!gameDoc.exists) throw new HttpsError('not-found', 'Game session expired.');
-            const gameData = gameDoc.data()!;
+            if (data.status !== 'active') throw new Error('Too late');
+            if (multiplier > data.crashPoint) throw new Error('Cheating detected');
 
-            if (gameData.uid !== uid) throw new HttpsError('permission-denied', 'Not your game.');
-            if (gameData.status !== 'active') throw new HttpsError('failed-precondition', 'Game already finished.');
+            const winAmount = Math.floor(data.bet * multiplier);
 
-            // ГЛАВНАЯ ПРОВЕРКА
-            // Если игрок пытается забрать больше, чем выпало (читерство или лаг)
-            if (multiplier > gameData.crashPoint) {
-                t.update(gameRef, { status: 'crashed_attempt' });
-                return { status: 'lost', message: 'Too late! Signal lost.' };
-            }
+            t.update(userRef, { casino_credits: FieldValue.increment(winAmount) });
+            t.update(gameRef, { status: 'cashed_out', winAmount, cashOutAt: multiplier });
 
-            // Победа!
-            const winAmount = Math.floor(gameData.bet * multiplier);
-
-            t.update(userRef, {
-                casino_credits: FieldValue.increment(winAmount)
-            });
-
-            t.update(gameRef, {
-                status: 'cashed_out',
-                cashOutAt: multiplier,
-                winAmount
-            });
-
-            return { status: 'won', winAmount };
+            return { winAmount };
         });
+        await rtdbRef.update({ s: 'done', m: multiplier });
 
         return { data: result };
-    } catch (error: any) {
-        throw new HttpsError('internal', error.message || 'Cashout error.');
+    } catch (e: any) {
+        throw new HttpsError('internal', e.message);
     }
 });
 
@@ -574,7 +559,6 @@ export const playSlotMachine = onCall(
 
             if (credits < bet) throw new HttpsError('failed-precondition', 'Not enough credits.');
 
-            // === ЛОГИКА СПУСКА В ЯМУ (THE DESCENT) ===
             const now = Date.now();
             const lastSpinTime = data.last_game_played ? data.last_game_played.toDate().getTime() : 0;
             const ONE_HOUR = 60 * 60 * 1000;
@@ -582,30 +566,20 @@ export const playSlotMachine = onCall(
             let glitchLevel = data.glitch_level || 0;
             let spinsInLevel = data.spins_in_level || 0;
 
-            // 1. Проверка на сброс КД (если прошел час - обнуляем уровень)
             if (now - lastSpinTime > ONE_HOUR) {
                 glitchLevel = 0;
                 spinsInLevel = 0;
             }
 
-            // 2. Увеличение счетчика
             spinsInLevel++;
 
-            // 3. Повышение уровня каждые 10 спинов (макс уровень 5)
             if (spinsInLevel >= 10) {
                 if (glitchLevel < 5) {
                     glitchLevel++;
                 }
-                spinsInLevel = 0; // Сбрасываем счетчик десятка
+                spinsInLevel = 0;
             }
 
-            // 4. Определение шанса Глитча от уровня
-            // Уровень 0: ~3% (Стандарт)
-            // Уровень 1: 10%
-            // Уровень 2: 20%
-            // Уровень 3: 30%
-            // Уровень 4: 40%
-            // Уровень 5: 50% (Смертельная зона)
             let glitchChanceThreshold = 3.1;
 
             if (glitchLevel === 1) glitchChanceThreshold = 10.0;
@@ -614,52 +588,44 @@ export const playSlotMachine = onCall(
             if (glitchLevel === 4) glitchChanceThreshold = 40.0;
             if (glitchLevel === 5) glitchChanceThreshold = 50.0;
 
-            // ==========================================
-
-            // === КРИПТО-РАНДОМ ===
-            const randomInt = crypto.randomInt(0, 10000); // 0 - 9999
-            const randPercent = randomInt / 100; // 0.00 - 99.99
+            const randomInt = crypto.randomInt(0, 10000);
+            const randPercent = randomInt / 100;
 
             const newBalanceAfterBet = credits - bet;
             let finalReels: string[] = [];
             let winMultiplier = 0;
             let lossAmount = 0;
 
-            // === ТАБЛИЦА ВЕРОЯТНОСТЕЙ ===
-
-            // 1. ДЖЕКПОТ (0.1%)
-            // Шанс джекпота не меняется от уровня, мечта должна жить
             if (randPercent < 0.1) {
                 finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo'];
                 winMultiplier = 100;
                 const win = Math.floor(bet * 100);
                 notificationMessage = `🚨 *JACKPOT ALERT!* 🚨\n\nИгрок *${username}* выжил в Бездне!\nУровень угрозы: ${glitchLevel}\nВыигрыш: *${win} PC* 💎`;
             }
-            // 2. ГЛИТЧ (Динамический шанс!)
-            // Если randPercent попадает в зону риска (например, < 50 на 5 уровне)
+
             else if (randPercent < glitchChanceThreshold) {
                 finalReels = ['glitch-6', 'glitch-6', 'glitch-6'];
                 lossAmount = Math.floor(bet * 2) + 666;
                 notificationMessage = `☠️ *GLITCHED [LVL ${glitchLevel}]* ☠️\n\n*${username}* поглощен Бездной.\nПотеряно: *${lossAmount} PC*.`;
             }
-            // 3. СЕРДЦА (2%)
+
             else if (randPercent < (glitchChanceThreshold + 2.0)) {
                 finalReels = ['heart', 'heart', 'heart'];
                 winMultiplier = 10;
                 const win = Math.floor(bet * 10);
                 if (win >= 2000) notificationMessage = `🔥 *BIG WIN!* 🔥\n\n*${username}* (Lvl ${glitchLevel}) поднял *${win} PC*!`;
             }
-            // 4. БАРАНЫ (7%)
+
             else if (randPercent < (glitchChanceThreshold + 9.0)) {
                 finalReels = ['ram', 'ram', 'ram'];
                 winMultiplier = 5;
             }
-            // 5. ЛАПКИ (15%)
+
             else if (randPercent < (glitchChanceThreshold + 24.0)) {
                 finalReels = ['paw', 'paw', 'paw'];
                 winMultiplier = 2;
             }
-            // 6. ПРОИГРЫШ
+
             else {
                 const sym = ['paw', 'ram', 'heart', 'protomap_logo'];
                 do {
@@ -687,7 +653,6 @@ export const playSlotMachine = onCall(
                 winAmount: win,
                 lossAmount,
                 newBalance: final,
-                // Возвращаем данные о текущем уровне, чтобы фронтенд мог пугать игрока
                 currentGlitchLevel: glitchLevel,
                 spinsToNextLevel: 10 - spinsInLevel
             };
@@ -745,11 +710,9 @@ export const playCoinFlip = onCall(async (request) => {
 });
 
 export const getLeaderboard = onCall(async (request) => {
-    // Проверка авторизации
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     try {
-        // Берем топ-10 богачей
         const snapshot = await db.collection('users')
             .orderBy('casino_credits', 'desc')
             .limit(10)

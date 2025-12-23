@@ -2,10 +2,10 @@
     import { userStore } from '$lib/stores';
     import { onMount, onDestroy } from 'svelte';
     import { getFunctions, httpsCallable } from 'firebase/functions';
+    import { getDatabase, ref, onValue, off } from 'firebase/database';
     import { modal } from '$lib/stores/modalStore';
     import { Howl } from 'howler';
     import { tweened } from 'svelte/motion';
-    import { cubicOut } from 'svelte/easing';
     import { fade, scale } from 'svelte/transition';
 
     let canvas: HTMLCanvasElement;
@@ -17,7 +17,6 @@
     let isPlaying = false;
     let isCrashed = false;
     let gameId: string | null = null;
-    let targetCrashPoint = 0;
     let startTime = 0;
 
     let gameStatus = 'IDLE';
@@ -25,6 +24,7 @@
 
     let history: { val: number, crashed: boolean }[] = [];
     let sounds: { [key: string]: Howl } = {};
+    let unsubscribeRTDB: (() => void) | null = null;
 
     const displayedCredits = tweened($userStore.user?.casino_credits || 0, { duration: 500 });
     $: if ($userStore.user) displayedCredits.set($userStore.user.casino_credits);
@@ -33,22 +33,35 @@
     let shakeIntensity = 0;
     let themeColor = '#00f3ff';
 
+    const SPEED_CONST = 0.08;
+
     onMount(() => {
         ctx = canvas.getContext('2d')!;
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
         drawIdle();
 
+        (window as any).CheatMenu = {
+            enableWin: () => {
+                console.warn("%c⚠️ SYSTEM ALERT:", "color: red; font-size: 20px; font-weight: bold;");
+                console.log("%cNice try, Kuraga. Your IP has been logged... just kidding. Love you! <3", "color: #00f3ff; font-size: 14px;");
+                return "ACCESS_DENIED";
+            },
+            predictCrash: () => {
+                return "42.069x (Trust me bro)";
+            }
+        };
+
         sounds.engine = new Howl({ src: ['/sounds/suspense_music.mp3'], loop: true, volume: 0, rate: 0.8 });
         sounds.crash = new Howl({ src: ['/sounds/fail.mp3'], volume: 1.0 });
         sounds.win = new Howl({ src: ['/sounds/sucsess.mp3'], volume: 0.8 });
         sounds.click = new Howl({ src: ['/sounds/click.mp3'] });
-        sounds.tick = new Howl({ src: ['/sounds/click_for_other_buttons.mp3'], volume: 0.2 });
 
         return () => {
             window.removeEventListener('resize', resizeCanvas);
             cancelAnimationFrame(animationFrame);
             sounds.engine?.stop();
+            if (unsubscribeRTDB) unsubscribeRTDB();
         };
     });
 
@@ -60,6 +73,8 @@
                 canvas.width = rect.width * dpr;
                 canvas.height = rect.height * dpr;
                 ctx.scale(dpr, dpr);
+                canvas.style.width = `${rect.width}px`;
+                canvas.style.height = `${rect.height}px`;
             }
             if (!isPlaying) drawIdle();
         }
@@ -75,11 +90,11 @@
 
     async function startGame() {
         if (betAmount > ($userStore.user?.casino_credits || 0)) {
-            modal.error("ОШИБКА", "НЕДОСТАТОЧНО ЭНЕРГИИ (PC).");
+            modal.error("ОШИБКА", "НЕДОСТАТОЧНО СРЕДСТВ");
             return;
         }
         if (betAmount > 1000) {
-            modal.error("ОШИБКА", "МАКСИМАЛЬНАЯ СТАВКА 1000 PC.");
+            modal.error("ОШИБКА", "МАКСИМАЛЬНАЯ СТАВКА 1000 PC");
             betAmount = 1000;
             return;
         }
@@ -99,11 +114,40 @@
             const functions = getFunctions();
             const startFunc = httpsCallable(functions, 'startCrashGame');
             const result: any = await startFunc({ bet: betAmount });
-            const data = result.data.data;
+            gameId = result.data.data.gameId;
 
-            gameId = data.gameId;
-            targetCrashPoint = parseFloat(atob(data.token));
-            userStore.update(s => { if(s.user) s.user.casino_credits = data.newBalance; return s; });
+            if ($userStore.user) {
+                userStore.update(s => {
+                    if(s.user) s.user.casino_credits -= betAmount;
+                    return s;
+                });
+            }
+
+            const db = getDatabase(undefined, "https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app");
+            const gameRef = ref(db, `crash_games/${gameId}`);
+
+            if (unsubscribeRTDB) unsubscribeRTDB();
+
+            unsubscribeRTDB = onValue(gameRef, (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+
+                if (data.s === 'bang') {
+                    if (gameStatus === 'CASHED_OUT') {
+                        if (unsubscribeRTDB) unsubscribeRTDB();
+                        return;
+                    }
+
+                    crash(data.m);
+                    if (unsubscribeRTDB) unsubscribeRTDB();
+                    return;
+                }
+
+                if (data.s === 'done') {
+                    if (unsubscribeRTDB) unsubscribeRTDB();
+                    return;
+                }
+            });
 
             startTime = Date.now();
             sounds.engine?.volume(0.5);
@@ -121,22 +165,30 @@
 
     async function cashOut() {
         if (!isPlaying || gameStatus !== 'UPLOADING') return;
-        const currentMult = multiplier;
+
+        isPlaying = false;
         gameStatus = 'CASHED_OUT';
+
+        const currentMult = multiplier;
+
         sounds.engine?.stop();
         sounds.win?.play();
+
         winAmount = Math.floor(betAmount * currentMult);
         addToHistory(currentMult, false);
+
+        drawFrame(currentMult);
 
         try {
             const functions = getFunctions();
             const cashOutFunc = httpsCallable(functions, 'cashOutCrashGame');
             await cashOutFunc({ gameId, multiplier: currentMult });
+
             userStore.update(s => { if(s.user) s.user.casino_credits += winAmount; return s; });
         } catch (e) {
             gameStatus = 'CRASHED';
             isCrashed = true;
-            addToHistory(targetCrashPoint, true);
+            crash(currentMult);
         }
     }
 
@@ -148,61 +200,46 @@
         if (!isPlaying) return;
 
         const timeElapsed = (Date.now() - startTime) / 1000;
-        const speed = 0.08;
-        let nextMult = Math.exp(speed * timeElapsed);
 
-        if (nextMult >= targetCrashPoint) {
-            crash(targetCrashPoint);
-            return;
-        }
-
-        if (gameStatus !== 'CASHED_OUT') {
-            multiplier = nextMult;
-            updateTheme(multiplier);
-        }
+        multiplier = Math.exp(SPEED_CONST * timeElapsed);
+        updateTheme(multiplier);
 
         const rate = 0.8 + (timeElapsed * 0.05);
         sounds.engine?.rate(Math.min(rate, 3.0));
 
         if (multiplier > 10) shakeIntensity = Math.min((multiplier - 10) * 0.5, 5);
 
-        drawFrame(timeElapsed, nextMult);
+        drawFrame(multiplier);
+
         animationFrame = requestAnimationFrame(loop);
     }
 
     function crash(finalVal: number) {
         multiplier = finalVal;
         isCrashed = true;
+        gameStatus = 'CRASHED';
         isPlaying = false;
-        shakeIntensity = 10;
+
+        shakeIntensity = 20;
         updateTheme(finalVal);
 
-        if (gameStatus !== 'CASHED_OUT') {
-            gameStatus = 'CRASHED';
-            sounds.crash?.play();
-            addToHistory(finalVal, true);
-        }
-
         sounds.engine?.stop();
+        sounds.crash?.play();
+        addToHistory(finalVal, true);
 
-        drawFrame((Date.now() - startTime) / 1000, finalVal);
+        drawFrame(finalVal);
 
         const shakeDecay = setInterval(() => {
-            shakeIntensity *= 0.8;
-            if (shakeIntensity < 0.1) {
+            shakeIntensity *= 0.85;
+            if (shakeIntensity < 0.5) {
                 shakeIntensity = 0;
                 clearInterval(shakeDecay);
-                setTimeout(() => {
-                   if (gameStatus === 'CASHED_OUT' || gameStatus === 'CRASHED') {
-                       isPlaying = false;
-                   }
-                }, 1000);
             }
-            drawFrame((Date.now() - startTime) / 1000, finalVal);
+            drawFrame(finalVal);
         }, 16);
     }
 
-    function drawFrame(t: number, val: number) {
+    function drawFrame(val: number) {
         if (!canvas) return;
         const rect = canvas.getBoundingClientRect();
         const w = rect.width;
@@ -215,19 +252,18 @@
         ctx.translate(dx, dy);
 
         ctx.fillStyle = '#050a10';
-        ctx.fillRect(-10, -10, w + 20, h + 20);
+        ctx.fillRect(-20, -20, w + 40, h + 40);
 
-        const gridSpeed = 50 + (val * 20);
-        drawGrid(t * gridSpeed, w, h);
+        const gridOffset = (val - 1) * 200;
+        drawGrid(gridOffset, w, h);
 
-        const x = Math.min(t * 100, w - 100);
+        const x = w - 100;
 
         const normY = 1 - (1 / val);
         const y = h - 50 - (normY * (h - 100));
 
         ctx.beginPath();
         ctx.moveTo(0, h);
-
         ctx.quadraticCurveTo(x * 0.5, h, x, y);
 
         ctx.lineCap = 'round';
@@ -246,7 +282,7 @@
         ctx.fillStyle = gradient;
         ctx.fill();
 
-        if (!isCrashed && gameStatus !== 'CASHED_OUT') {
+        if (!isCrashed && gameStatus === 'UPLOADING') {
             for(let i=0; i<3; i++) {
                 particles.push({
                     x: x,
@@ -264,22 +300,23 @@
             ctx.save();
             ctx.translate(x, y);
             ctx.rotate(-0.5);
-
             ctx.beginPath();
-            ctx.moveTo(10, 0);
-            ctx.lineTo(-10, 7);
-            ctx.lineTo(-10, -7);
+            ctx.moveTo(10, 0); ctx.lineTo(-10, 7); ctx.lineTo(-10, -7);
             ctx.closePath();
             ctx.fillStyle = '#fff';
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 15; ctx.shadowColor = '#fff';
             ctx.fill();
             ctx.restore();
         } else {
             ctx.beginPath();
-            ctx.arc(x, y, 30 + Math.random() * 10, 0, Math.PI * 2);
+            ctx.arc(x, y, 20 + Math.random() * 20, 0, Math.PI * 2);
             ctx.fillStyle = '#fff';
             ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x, y, 40 + Math.random() * 20, 0, Math.PI * 2);
+            ctx.strokeStyle = '#ff003c';
+            ctx.lineWidth = 2;
+            ctx.stroke();
         }
 
         ctx.restore();
@@ -500,7 +537,7 @@
     .input-label { font-size: 0.6rem; color: #666; font-weight: bold; margin-bottom: 0.3rem; }
     .bet-input-group { display: flex; height: 3rem; width: 100%; }
     .cyber-input {
-        flex: 1; min-width: 0; /* Резина */
+        flex: 1; min-width: 0;
         background: #0a0c10; border: 1px solid #333; color: #fff;
         text-align: center; font-size: 1.2rem; font-weight: bold;
         border-left: none; border-right: none; font-family: 'Chakra Petch', monospace;
@@ -508,7 +545,7 @@
     .cyber-input:focus { outline: none; border-color: var(--cyber-cyan); }
 
     .adj {
-        flex: 0 0 3rem; /* Фиксированная ширина кнопок */
+        flex: 0 0 3rem;
         background: #1a1d24; border: 1px solid #333; color: #888; font-size: 1.2rem;
         cursor: pointer; transition: all 0.1s; display: flex; align-items: center; justify-content: center;
     }
@@ -526,24 +563,23 @@
     .quick-bets button:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #fff; }
 
     .launch-btn, .abort-btn {
-        width: 100%; height: 100%; min-height: 80px; /* Мин высота для пальца */
-        border: none; border-radius: 4px; cursor: pointer;
+        width: 100%; height: 100%; border: none; border-radius: 4px; cursor: pointer;
         position: relative; overflow: hidden; transition: transform 0.1s;
         display: flex; align-items: center; justify-content: center;
-        clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
     }
     .launch-btn:active, .abort-btn:active { transform: scale(0.98); }
 
-    .launch-btn { background: var(--cyber-cyan); box-shadow: 0 0 20px rgba(0, 240, 255, 0.2); }
-    .launch-btn:hover { background: #00d0dd; box-shadow: 0 0 40px rgba(0, 240, 255, 0.4); }
+    .launch-btn { background: var(--cyber-cyan); box-shadow: 0 0 30px rgba(0, 240, 255, 0.2); }
+    .launch-btn:hover { background: #00d0dd; box-shadow: 0 0 50px rgba(0, 240, 255, 0.4); }
     .launch-btn:disabled { background: #222; color: #444; box-shadow: none; cursor: not-allowed; }
 
-    .abort-btn { background: var(--cyber-yellow); box-shadow: 0 0 20px rgba(252, 238, 10, 0.3); animation: pulse-red 0.5s infinite; }
+    .abort-btn { background: var(--cyber-yellow); box-shadow: 0 0 30px rgba(252, 238, 10, 0.3); animation: pulse-red 0.5s infinite; }
     .abort-btn:hover { background: #ffd700; }
 
     .btn-content { display: flex; flex-direction: column; align-items: center; line-height: 1.1; color: #000; z-index: 2; }
-    .btn-content .big { font-size: 1.5rem; font-weight: 900; font-family: 'Chakra Petch', monospace; letter-spacing: 0.05em; }
-    .btn-content .small { font-size: 0.8rem; font-weight: bold; opacity: 0.7; }
+    .btn-content .big { font-size: 2rem; font-weight: 900; font-family: 'Chakra Petch', monospace; letter-spacing: 0.05em; }
+    .btn-content .small { font-size: 0.9rem; font-weight: bold; opacity: 0.7; }
 
     .footer-status {
         padding: 0.4rem 1rem; display: flex; justify-content: space-between;
@@ -552,10 +588,9 @@
     }
 
     @media (max-width: 640px) {
-        .page-container { padding: 0.5rem; }
-        .controls-panel { grid-template-columns: 1fr; gap: 1rem; padding: 1rem; }
-        .screen-wrapper { height: 250px; }
-        .action-section { height: 70px; }
+        .controls-panel { grid-template-columns: 1fr; gap: 1.5rem; }
+        .action-section { height: 100px; }
+        .screen-wrapper { height: 300px; }
         .big-multiplier { font-size: 3.5rem; }
         .crash-box h2, .win-msg h2 { font-size: 1.5rem; }
     }
