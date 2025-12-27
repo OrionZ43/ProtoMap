@@ -1,8 +1,7 @@
-import { Howl } from 'howler';
+import { Howl, Howler } from 'howler'; // <--- Добавили Howler
 import { settingsStore } from '$lib/stores/settingsStore';
 import { get } from 'svelte/store';
 import { browser } from '$app/environment';
-
 
 export type SoundName =
     | 'click'
@@ -44,23 +43,37 @@ function initialize() {
         });
     }
 
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    settingsStore.subscribe((state) => {
+        if (!document.hidden) {
+            Howler.mute(!state.audioEnabled);
+        }
+    });
+
+    const { audioEnabled } = get(settingsStore);
+    Howler.mute(!audioEnabled);
+
     isInitialized = true;
-    console.log('[AudioManager] Звуки загружены.');
+    console.log('[AudioManager] Звуки загружены. Слушатели установлены.');
+}
+
+function handleVisibilityChange() {
+    if (document.hidden) {
+        Howler.mute(true);
+    } else {
+        const { audioEnabled } = get(settingsStore);
+        Howler.mute(!audioEnabled);
+    }
 }
 
 function play(soundName: SoundName) {
-    if (!browser) {
-        return;
-    }
+    if (!browser) return;
 
     const { audioEnabled } = get(settingsStore);
-
-    if (!audioEnabled) {
-        return;
-    }
+    if (!audioEnabled) return;
 
     const sound = sounds[soundName];
-
     if (sound) {
         sound.play();
     } else {

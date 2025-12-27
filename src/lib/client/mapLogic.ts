@@ -176,10 +176,38 @@ export function initMap(containerId: string) {
         const customUserIcon = createUserAvatarIcon(userData);
         const usernameKey = userData.username.trim();
 
+        // [FIX]: Логика для северных регионов
+        // Если широта > 80, попап улетит за экран.
+        // Мы задаем offset [0, 340].
+        // Почему 340? Это примерная высота попапа (~250px) + отступ.
+        // Leaflet строит попап "снизу-вверх" от точки привязки.
+        // Сместив точку привязки сильно вниз, мы заставляем "верхушку" попапа оказаться под маркером.
+        let popupOptions: L.PopupOptions = {
+            autoPan: true
+        };
+
+        if (lat > 80) {
+            popupOptions = {
+                offset: [0, 340], // Смещаем точку "роста" попапа вниз
+                className: 'popup-inverted', // Класс для переворота стрелочки CSS
+                autoPan: true
+            };
+        }
+
         if (userMarkers[usernameKey]) {
-            userMarkers[usernameKey].setLatLng([lat, lng]).setIcon(customUserIcon).setPopupContent(popupContent);
+            const marker = userMarkers[usernameKey];
+            marker.setLatLng([lat, lng]).setIcon(customUserIcon);
+
+            // Важно: unbind/bind нужен, чтобы применить новые options (offset),
+            // так как setPopupContent меняет только HTML.
+            marker.unbindPopup();
+            marker.bindPopup(popupContent, popupOptions);
+
+            // Если это наш маркер и мы только что обновили его - можно открыть,
+            // но лучше оставить на усмотрение пользователя, чтобы не спамить.
         } else {
-            const newMarker = L.marker([lat, lng], { icon: customUserIcon }).bindPopup(popupContent);
+            const newMarker = L.marker([lat, lng], { icon: customUserIcon })
+                .bindPopup(popupContent, popupOptions);
             markers.addLayer(newMarker);
             userMarkers[usernameKey] = newMarker;
         }

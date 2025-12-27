@@ -74,7 +74,25 @@ function assertEmailVerified(auth: any) {
     }
 }
 
+function logSuspiciousActivity(request: any, reason: string) {
+    const ip = request.rawRequest.headers['x-forwarded-for'] || request.rawRequest.socket.remoteAddress;
+    const userAgent = request.rawRequest.headers['user-agent'] || 'Unknown Device';
+    console.warn(`🚨 SECURITY ALERT: ${reason}`, {
+        structuredData: true,
+        uid: request.auth?.uid || "ANONYMOUS",
+        email: request.auth?.token?.email || "NO_EMAIL",
+        name: request.auth?.token?.name || "NO_NAME",
+        ip: ip,
+        userAgent: userAgent,
+        inputData: request.data,
+        appCheck: !!request.app
+    });
+}
+
 export const sendMessage = onCall(async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Доступ запрещен.');
 
     const uid = request.auth.uid;
@@ -142,10 +160,13 @@ export const sendMessage = onCall(async (request) => {
 });
 
 export const deleteComment = onCall(async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Необходима авторизация.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid); // Забаненный не может удалять (даже свое)
+    await assertNotBanned(uid);
 
     const { profileUid, commentId } = request.data;
 
@@ -155,7 +176,6 @@ export const deleteComment = onCall(async (request) => {
 
         if (!commentDoc.exists) throw new HttpsError('not-found', 'Комментарий не найден.');
 
-        // Удалить может автор коммента ИЛИ владелец профиля
         const commentData = commentDoc.data()!;
         if (commentData.author_uid !== uid && profileUid !== uid) {
             throw new HttpsError('permission-denied', 'Нет прав на удаление.');
@@ -170,10 +190,13 @@ export const deleteComment = onCall(async (request) => {
 });
 
 export const addComment = onCall(async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Необходима авторизация.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid); // <--- ИСПРАВЛЕНО (была ошибка с переменной uid)
+    await assertNotBanned(uid);
     assertEmailVerified(request.auth);
 
     const { profileUid, text } = request.data;
@@ -234,13 +257,15 @@ export const checkUsername = onRequest({ cors: false }, async (request, response
 });
 
 export const updateEquippedItems = onCall({ cors: ALLOWED_ORIGINS }, async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
     await assertNotBanned(uid);
     assertEmailVerified(request.auth);
 
-    // Принимаем и рамку, и фон
     const { equipped_frame, equipped_bg } = request.data;
     const userRef = db.collection('users').doc(uid);
 
@@ -251,7 +276,6 @@ export const updateEquippedItems = onCall({ cors: ALLOWED_ORIGINS }, async (requ
 
         const updates: any = {};
 
-        // Проверка рамки
         if (equipped_frame !== undefined) {
             if (equipped_frame !== null && !userData.owned_items?.includes(equipped_frame)) {
                 throw new HttpsError('permission-denied', 'Нет прав на эту рамку.');
@@ -259,7 +283,6 @@ export const updateEquippedItems = onCall({ cors: ALLOWED_ORIGINS }, async (requ
             updates.equipped_frame = equipped_frame;
         }
 
-        // Проверка фона
         if (equipped_bg !== undefined) {
             if (equipped_bg !== null && !userData.owned_items?.includes(equipped_bg)) {
                 throw new HttpsError('permission-denied', 'Нет прав на этот фон.');
@@ -280,6 +303,9 @@ export const updateEquippedItems = onCall({ cors: ALLOWED_ORIGINS }, async (requ
 });
 
 export const purchaseShopItem = onCall({ cors: ALLOWED_ORIGINS }, async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
@@ -323,6 +349,9 @@ function getRewardValue(day: number): number {
 }
 
 export const getDailyBonus = onCall(async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
@@ -408,12 +437,36 @@ export const getDailyBonus = onCall(async (request) => {
 });
 
 export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) => {
+    // 1. App Check (Защита от скриптов вне браузера)
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'App Check required.');
+    }
+
+    // 2. Auth (Защита от анонимов)
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
     const uid = request.auth.uid;
+
+    // 3. Ban Check (Защита от известных нарушителей)
+    // Это быстрый отлуп, чтобы не грузить транзакцию
+    await assertNotBanned(uid);
+
+    // 4. Email Verification (Защита от мультиаккаунтов/ботов)
+    // <--- ДОБАВИЛИ ЭТО. Теперь он не сможет просто создать новый акк и спамить.
+    assertEmailVerified(request.auth);
+
     const { bet } = request.data;
     const MAX_BET = 1000;
 
-    if (bet > MAX_BET || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
+    // Валидация входных данных
+    if (typeof bet !== 'number' || bet <= 0) {
+        logSuspiciousActivity(request, `Invalid bet value: ${bet}`);
+        throw new HttpsError('invalid-argument', 'Invalid bet.');
+    }
+
+    if (bet > MAX_BET) {
+        logSuspiciousActivity(request, `Bet limit exceeded: ${bet} PC`);
+        throw new HttpsError('invalid-argument', `Max bet is ${MAX_BET}.`);
+    }
 
     const userRef = db.collection('users').doc(uid);
     const gameId = db.collection('crash_games').doc().id;
@@ -422,6 +475,7 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
     const gameRtdbRef = rtdb.ref(`crash_games/${gameId}`);
 
     try {
+        // Генерация краша (твоя логика)
         let crashPoint = 1.00;
         const riskRoll = crypto.randomInt(0, 100);
         if (riskRoll < 6) {
@@ -437,9 +491,33 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
 
         await db.runTransaction(async (t) => {
             const userDoc = await t.get(userRef);
-            if ((userDoc.data()?.casino_credits || 0) < bet) throw new Error("No money");
+            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
 
-            t.update(userRef, { casino_credits: FieldValue.increment(-bet) });
+            const userData = userDoc.data()!;
+
+            // 5. Rate Limiting (Защита от спама кнопкой)
+            // Проверяем, когда он играл в последний раз
+            const lastPlayed = userData.last_crash_game ? userData.last_crash_game.toDate().getTime() : 0;
+            const now = Date.now();
+
+            // Кулдаун 5 секунд (или 3, как решишь)
+            if (now - lastPlayed < 5000) {
+                 throw new HttpsError('resource-exhausted', 'Слишком часто. Ждите завершения игры.');
+            }
+
+            // Проверка баланса
+            const currentCredits = userData.casino_credits || 0;
+            if (currentCredits < bet) {
+                throw new Error("No money");
+            }
+
+            // Списываем ставку и обновляем время последней игры
+            t.update(userRef, {
+                casino_credits: FieldValue.increment(-bet),
+                last_crash_game: FieldValue.serverTimestamp() // <--- ЗАПИСЫВАЕМ ВРЕМЯ ДЛЯ КУЛДАУНА
+            });
+
+            // Создаем игру
             t.set(db.collection('crash_games').doc(gameId), {
                 uid, bet, crashPoint,
                 status: 'active',
@@ -448,6 +526,7 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
             });
         });
 
+        // RTDB логика
         await gameRtdbRef.set({
             m: 1.00,
             s: 'run',
@@ -455,7 +534,8 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
         });
 
         runGameLoopRTDB(gameId, crashPoint);
-        const easterEgg = Buffer.from("Hello Kuraga! The real math happens in RTDB now. Catch me if you can! 🚀").toString('base64');
+
+        const easterEgg = Buffer.from("Hello Kuraga! Rate limited and verified. Good luck! 🚀").toString('base64');
 
         return {
             data: {
@@ -465,6 +545,14 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
         };
 
     } catch (e: any) {
+        if (e.message === "No money") {
+             throw new HttpsError('failed-precondition', 'Недостаточно средств.');
+        }
+        // Если это наша ошибка кулдауна - прокидываем её
+        if (e.code === 'resource-exhausted') {
+            throw e;
+        }
+        console.error("Internal Game Error", e);
         throw new HttpsError('internal', e.message);
     }
 });
@@ -496,6 +584,9 @@ async function runGameLoopRTDB(gameId: string, crashPoint: number) {
 }
 
 export const cashOutCrashGame = onCall(async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth');
     const uid = request.auth.uid;
     const { gameId, multiplier } = request.data;
@@ -533,6 +624,9 @@ export const cashOutCrashGame = onCall(async (request) => {
 export const playSlotMachine = onCall(
     { secrets: ["TELEGRAM_BOT_TOKEN"] },
     async (request) => {
+        if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
@@ -670,6 +764,9 @@ export const playSlotMachine = onCall(
 });
 
 export const playCoinFlip = onCall(async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
@@ -710,6 +807,9 @@ export const playCoinFlip = onCall(async (request) => {
 });
 
 export const getLeaderboard = onCall(async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     try {
@@ -973,6 +1073,9 @@ export const getLocations = onRequest({ cors: false }, async (request, response)
 });
 
 export const deleteLocation = onCall({ cors: ALLOWED_ORIGINS }, async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
@@ -992,6 +1095,9 @@ export const deleteLocation = onCall({ cors: ALLOWED_ORIGINS }, async (request) 
 });
 
 export const updateProfileData = onCall(async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError("unauthenticated", "Auth required.");
 
     const uid = request.auth.uid;
@@ -1027,6 +1133,9 @@ export const updateProfileData = onCall(async (request) => {
 });
 
 export const uploadAvatar = onCall({ secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"] }, async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError("unauthenticated", "Auth required.");
 
     const uid = request.auth.uid;
@@ -1080,6 +1189,9 @@ interface ReportData {
 export const reportContent = onCall(
     { secrets: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"] },
     async (request) => {
+        if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+        }
         if (!request.auth) {
             throw new HttpsError("unauthenticated", "Auth required.");
         }
@@ -1195,6 +1307,9 @@ export const reportContent = onCall(
 );
 
 export const deleteAccount = onCall(async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
+    }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
     const uid = request.auth.uid;
 

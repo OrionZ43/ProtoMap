@@ -120,7 +120,17 @@
 
     "community_text": "This project is free and lives thanks to the community. Hop into our chat — we don't bite (usually).",
     "join_btn": "TELEGRAM CHAT",
-    "disclaimer": "Privacy is key. We do not store your exact GPS coordinates."
+    "disclaimer": "Privacy is key. We do not store your exact GPS coordinates.",
+    "testers_title": "// HALL OF FAME (BETA TESTERS)",
+    "testers": {
+      "kess": { "role": "BUG HUNTER", "desc": "Found more bugs than lines of code. Developer's nightmare." },
+      "kuraga": { "role": "SECURITY HAZARD", "desc": "Single-handedly flooded our Google Cloud logs and forced a rewrite." },
+      "artho": { "role": "VOLUNTEER #1", "desc": "Voluntarily signed the soul contract. There is no escape." },
+      "sarevus": { "role": "DRAGON UNIT", "desc": "Not a toaster, but valid. Just a cute dragon." },
+      "jokl": { "role": "CUTE.EXE", "desc": "Running cuteness protocols 24/7." },
+      "mikhail": { "role": "INFINIX WARRIOR", "desc": "If it runs on his Infinix without lag, the optimization is god-tier." },
+      "bogdan": { "role": "REDMI SURVIVOR", "desc": "Field testing on the edge of hardware limits." }
+    }
   },
   "banned": {
     "page_title": "ACCESS DENIED",

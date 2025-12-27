@@ -6,6 +6,55 @@
 
     const opacity = tweened(0, { duration: 400, easing: quintOut });
     onMount(() => { opacity.set(1); });
+
+    const testers = [
+        {
+            id: 'kess',
+            username: 'Кесс Мирун',
+            color: '#a855f7',
+            avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1766635490/protomap_avatars/Jjsi5AbW5iaRWN8b2JvejR73GHq2.webp'
+        },
+        {
+            id: 'kuraga',
+            username: 'kuraga',
+            color: '#ff003c',
+            avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1765912349/protomap_avatars/t3KN8N2O6HWmHh2eK2DV9gNkIjO2.webp'
+        },
+        {
+            id: 'artho',
+            username: 'ARTHO',
+            color: '#39ff14',
+            avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1764673819/protomap_avatars/KRyygW2X1NQnMdzGp7aUzBt1kYt1.webp'
+        },
+        {
+            id: 'sarevus',
+            username: 'sarevus',
+            color: '#ffffff',
+            avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1764612207/protomap_avatars/42VXz0odbXObACimwupWb179HO42.webp'
+        },
+        {
+            id: 'jokl',
+            username: 'джокл',
+            color: '#ffd700',
+            avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1750097263/protomap_avatars/Wg5wynJ63tYHXi9sHbk0g5qODI43.webp'
+        },
+        {
+            id: 'mikhail',
+            username: 'Anchor_play',
+            color: '#00f3ff',
+            avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1763604687/protomap_avatars/UJQAvOKcO9Zwo4e7Nsy2kGdj0kv1.webp'
+        },
+        {
+            id: 'bogdan',
+            username: 'Nexus',
+            color: '#ff5500',
+            avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1750888278/protomap_avatars/D6e7GrJFSZWYfcAyYV9TFXpXnUi1.webp'
+        }
+    ];
+
+    function getProfileLink(username: string) {
+        return `/profile/${encodeURIComponent(username)}`;
+    }
 </script>
 
 <svelte:head>
@@ -23,12 +72,10 @@
             {@html $t('about_page.intro')}
         </p>
 
-        <!-- === КОМАНДА === -->
         <div class="team-section">
             <h3 class="section-title">{$t('about_page.team_title')}</h3>
 
             <div class="team-grid">
-                <!-- ORION -->
                 <div class="team-card">
                     <div class="card-visual">
                         <div class="avatar-glow orion"></div>
@@ -45,7 +92,6 @@
                     </div>
                 </div>
 
-                <!-- IPOSDEV -->
                 <div class="team-card">
                     <div class="card-visual">
                         <div class="avatar-glow ipos"></div>
@@ -66,34 +112,53 @@
 
         <hr class="separator" />
 
-        <!-- === ВИДЫ (ТЕКСТ) === -->
+        <div class="testers-section">
+            <h3 class="section-title">{$t('about_page.testers_title')}</h3>
+            <div class="testers-grid">
+                {#each testers as tester}
+                    <a href={getProfileLink(tester.username)} class="tester-card" target="_blank">
+                        <img
+                            src={tester.avatar.includes('http') ? tester.avatar : `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(tester.username)}`}
+                            alt={tester.username}
+                            class="tester-avatar"
+                            style="border-color: {tester.color}; box-shadow: 0 0 10px {tester.color};"
+                        >
+                        <div class="tester-info">
+                            <span class="tester-name" style="color: {tester.color}">{tester.username}</span>
+                            <span class="tester-role">{$t(`about_page.testers.${tester.id}.role`)}</span>
+                            <p class="tester-desc">{$t(`about_page.testers.${tester.id}.desc`)}</p>
+                        </div>
+                    </a>
+                {/each}
+            </div>
+        </div>
+
+        <hr class="separator" />
+
         <div class="species-text-section text-center mb-8">
             <h3 class="section-title">{$t('about_page.species_title')}</h3>
             <p class="text-gray-300">{@html $t('about_page.species_text')}</p>
         </div>
 
-        <!-- === СОЗДАТЕЛИ (АВАТАРКИ) === -->
         <div class="origins-section">
             <h4 class="section-subtitle">{$t('about_page.origin_title')}</h4>
 
             <div class="team-grid origins-grid">
-                <!-- MALICE-RISU -->
                 <div class="team-card mini">
                     <div class="card-visual mini">
                         <div class="avatar-glow zor"></div>
                         <img
-                            src="https://dthezntil550i.cloudfront.net/a2/0004296348/43dfb232-1515-4823-8770-17bcc444f7e8.gif"
-                            alt="Malice-Risu"
+                            src="https://pbs.twimg.com/profile_images/1963918921490468864/b2zWH8ob_400x400.jpg"
+                            alt="CoolKoinu"
                             class="team-avatar"
                         />
                     </div>
                     <div class="card-content">
-                        <a href="https://runes-of-the-arbiter.fandom.com/wiki/Zenith%27s_Outer_Reach" target="_blank" class="name mini">Malice-Risu</a>
+                        <a href="https://x.com/CoolKoinu" target="_blank" class="name mini">CoolKoinu</a>
                         <p class="desc text-xs text-gray-500">{$t('about_page.credits_zor')}</p>
                     </div>
                 </div>
 
-                <!-- VADER-SAN -->
                 <div class="team-card mini">
                     <div class="card-visual mini">
                         <div class="avatar-glow synth"></div>
@@ -104,7 +169,7 @@
                         />
                     </div>
                     <div class="card-content">
-                        <a href="https://synthspecies.com/" target="_blank" class="name mini">Vader-San</a>
+                        <a href="https://x.com/VaderSan" target="_blank" class="name mini">Vader-San</a>
                         <p class="desc text-xs text-gray-500">{$t('about_page.credits_synth')}</p>
                     </div>
                 </div>
@@ -118,7 +183,10 @@
                 {@html $t('about_page.community_text')}
             </p>
             <a href="https://t.me/proto_map" target="_blank" class="join-btn">
-                {$t('about_page.join_btn')}
+                <svg class="tg-icon" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M128 0C57.307 0 0 57.307 0 128s57.307 128 128 128 128-57.307 128-128S198.693 0 128 0zm58.544 87.276l-20.308 95.844c-.628 4.248-3.484 5.284-7.056 3.288l-19.532-14.404-9.428-7.668-26.656 25.86c-2.368 2.372-4.364 4.368-8.924 4.368l3.96-45.108 82.164-74.22c3.572-3.176-.776-4.94-5.548-1.78l-101.54 63.932-43.764-13.66c-9.52-2.972-9.676-9.488 1.984-14.124l170.98-65.92c7.92-2.852 14.86 1.836 12.16 11.592z" fill="currentColor"/>
+                </svg>
+                <span>{$t('about_page.join_btn')}</span>
             </a>
             <p class="text-xs text-gray-500 mt-8 font-mono opacity-50">
                 {$t('about_page.disclaimer')}
@@ -139,7 +207,6 @@
     .about-header { text-align: center; margin-bottom: 2rem; }
     .title { font-size: 3rem; font-weight: bold; color: #fff; margin-bottom: 0.5rem; position: relative; display: inline-block; }
 
-    /* Глитч на заголовке */
     .glitch { position: relative; }
     .glitch::before, .glitch::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,10,15,0.8); overflow: hidden; }
     .glitch::before { left: 2px; text-shadow: -1px 0 #ff00c1; animation: glitch-anim-1 2s infinite linear alternate-reverse; }
@@ -150,7 +217,6 @@
     .content-text { font-size: 1.1rem; line-height: 1.8; color: #e2e8f0; }
     .intro-text { text-align: center; max-width: 90%; margin: 0 auto 3rem auto; font-weight: 300; }
 
-    /* TEAM SECTION */
     .section-title {
         font-family: 'Chakra Petch', monospace; font-size: 1.5rem; font-weight: bold;
         color: var(--cyber-yellow, #fcee0a); margin-bottom: 2rem;
@@ -173,12 +239,36 @@
     }
     .team-card:hover { transform: translateY(-5px); border-color: var(--cyber-yellow, #fcee0a); background: rgba(255,255,255,0.05); }
 
-    /* Compact cards for Origins */
     .team-card.mini { padding: 1.5rem; background: rgba(0,0,0,0.2); }
     .card-visual.mini { width: 80px; height: 80px; margin-bottom: 1rem; }
     .name.mini { font-size: 1.2rem; }
 
-    /* АВАТАРЫ */
+    .testers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    .tester-card {
+        background: rgba(20, 20, 25, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 1rem;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: transform 0.2s, background 0.2s;
+        text-decoration: none;
+    }
+    .tester-card:hover { transform: translateY(-3px); background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
+
+    .tester-avatar {
+        width: 50px; height: 50px; border-radius: 50%; border: 2px solid #555; object-fit: cover; flex-shrink: 0;
+    }
+    .tester-info { display: flex; flex-direction: column; overflow: hidden; }
+    .tester-name { font-weight: bold; font-size: 0.9rem; font-family: 'Chakra Petch', monospace; }
+    .tester-role { font-size: 0.6rem; color: #666; font-weight: bold; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
+    .tester-desc { font-size: 0.75rem; color: #9ca3af; line-height: 1.2; }
+
     .card-visual { position: relative; width: 120px; height: 120px; margin-bottom: 1.5rem; }
     .team-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; position: relative; z-index: 1; border: 2px solid rgba(255,255,255,0.2); }
 
@@ -189,8 +279,8 @@
     }
     .avatar-glow.orion { background: var(--cyber-yellow, #fcee0a); }
     .avatar-glow.ipos { background: #a855f7; }
-    .avatar-glow.zor { background: #00f0ff; } /* Голубой для ZOR */
-    .avatar-glow.synth { background: #ff5500; } /* Оранжевый для Синтов */
+    .avatar-glow.zor { background: #00f0ff; }
+    .avatar-glow.synth { background: #ff5500; }
 
     @keyframes pulse-glow { 0% { opacity: 0.3; transform: scale(0.9); } 100% { opacity: 0.7; transform: scale(1.1); } }
 
@@ -205,18 +295,22 @@
     .separator { border-top: 1px dashed rgba(255,255,255,0.1); margin: 3rem 0; }
 
     .join-btn {
-        display: inline-block; padding: 1rem 2.5rem; background: transparent;
+        display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem;
+        padding: 1rem 2.5rem; background: transparent;
         border: 2px solid var(--cyber-cyan, #00f0ff); color: var(--cyber-cyan, #00f0ff);
         font-family: 'Chakra Petch', monospace; font-weight: bold; letter-spacing: 0.1em;
         transition: all 0.2s; text-decoration: none;
     }
     .join-btn:hover { background: var(--cyber-cyan, #00f0ff); color: #000; box-shadow: 0 0 20px var(--cyber-cyan, #00f0ff); transform: scale(1.05); }
 
+    .tg-icon { width: 24px; height: 24px; }
+
     @media (max-width: 768px) {
         .about-container { margin: 1rem; padding: 1.5rem; }
         .title { font-size: 2rem; }
         .team-grid { grid-template-columns: 1fr; }
         .intro-text { max-width: 100%; }
-        .origins-grid { grid-template-columns: 1fr 1fr; gap: 1rem; } /* Два в ряд на мобилке для создателей */
+        .origins-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .join-btn { padding: 0.8rem 1.5rem; font-size: 0.9rem; }
     }
 </style>

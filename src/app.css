@@ -729,3 +729,17 @@ html {
 .map-black {
     filter: invert(100%) hue-rotate(200deg) grayscale(70%) brightness(90%) contrast(90%) !important;
 }
+.popup-inverted .leaflet-popup-tip-container {
+    top: -19px; /* Поднимаем контейнер стрелки наверх */
+    bottom: auto !important; /* Убираем привязку к низу */
+    transform: rotate(180deg); /* Переворачиваем стрелку */
+}
+
+/* Компенсируем тень, так как свет теперь падает иначе на перевернутый элемент */
+.popup-inverted .leaflet-popup-tip {
+    box-shadow: none !important;
+    border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1)) !important;
+    border-right: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1)) !important;
+    border-left: none !important;
+    border-top: none !important;
+}
