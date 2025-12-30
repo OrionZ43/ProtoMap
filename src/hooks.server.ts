@@ -10,40 +10,49 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
 
     try {
-        // 1. Проверяем валидность токена
+        // 1. Проверяем токен
+        // checkRevoked: true обязательно, чтобы поймать момент нажатия "БАН" в админке
         const decodedClaims = await authAdmin.verifySessionCookie(sessionCookie, true);
 
-        // 2. СРАЗУ читаем актуальные данные из БД (Source of Truth)
-        // Это решает проблему цикла: даже если в токене старое клеймо, база скажет правду.
+        // 2. Получаем "Свежую правду" из БД
         const userDocRef = firestoreAdmin.collection('users').doc(decodedClaims.uid);
         const userDocSnap = await userDocRef.get();
         const userData = userDocSnap.data();
 
-        // 3. Определяем статус бана СТРОГО по базе данных (если запись есть)
-        // Если записи нет (странно), верим токену.
-        const isBannedReal = userData ? (userData.isBanned === true) : (decodedClaims.banned === true);
+        // 3. === АМНИСТИЯ (Конфликт версий) ===
+        // Токен говорит "Забанен", а База говорит "Чист".
+        // Токен "грязный". Нельзя пускать юзера с ним, иначе Security Rules не дадут писать в базу.
+        // РЕШЕНИЕ: Принудительный разлогин. Пусть зайдет и получит чистый токен.
+        if (decodedClaims.banned === true && (!userData || userData.isBanned === false)) {
+            console.log("Hooks: Обнаружен старый токен бана после амнистии. Сброс сессии.");
+            event.cookies.delete('__session', { path: '/' });
+            event.locals.user = null;
+            return new Response('Redirect', { status: 303, headers: { Location: '/login' } });
+        }
 
-        // 4. Логика Редиректов (The Traffic Controller)
-        if (isBannedReal) {
-            // Если забанен реально — не пускаем никуда кроме /banned
+        // 4. === РЕАЛЬНЫЙ БАН ===
+        // Если в базе стоит бан (неважно, что в токене)
+        if (userData?.isBanned === true) {
+            // Если он еще не на странице бана — редирект
             if (!event.url.pathname.startsWith('/banned')) {
                 return new Response('Redirect', { status: 303, headers: { Location: '/banned' } });
             }
-        } else {
-            // Если НЕ забанен — не пускаем на /banned (выпинываем на волю)
-            if (event.url.pathname.startsWith('/banned')) {
-                return new Response('Redirect', { status: 303, headers: { Location: '/' } });
-            }
         }
 
-        // 5. Заполняем сессию
+        // 5. === ОБЫЧНЫЙ ЮЗЕР ===
+        // Если бана в базе нет, но он пытается зайти на /banned (по старой памяти)
+        else if (event.url.pathname.startsWith('/banned')) {
+            return new Response('Redirect', { status: 303, headers: { Location: '/' } });
+        }
+
+        // Заполняем сессию
         if (userData) {
             event.locals.user = {
                 uid: decodedClaims.uid,
                 email: decodedClaims.email,
                 username: userData.username || 'Unknown',
                 emailVerified: decodedClaims.email_verified || false,
-                isBanned: isBannedReal // Передаем актуальный статус
+                isBanned: userData.isBanned || false
             };
         } else {
             event.locals.user = null;
@@ -51,20 +60,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 
     } catch (e: any) {
         // === [ ZOMBIE PROTOCOL ] ===
-        // Если токен отозван (админ нажал БАН), Firebase кидает ошибку.
-        // Мы ловим её, чтобы мягко отправить юзера в тюрьму, а не разлогинивать.
+        // Токен был отозван (Revoked) через админку.
         if (e.code === 'auth/session-cookie-revoked') {
             try {
-                // Читаем "мертвый" токен локально
+                // Читаем UID из "мертвого" токена
                 const zombieClaims = await authAdmin.verifySessionCookie(sessionCookie, false);
 
-                // Проверяем актуальный статус в БД для Зомби тоже!
-                // Вдруг мы его разбанили, но токен все еще считается отозванным?
+                // Проверяем, забанен ли он СЕЙЧАС в базе?
                 const zDoc = await firestoreAdmin.collection('users').doc(zombieClaims.uid).get();
                 const zData = zDoc.data();
 
                 if (zData?.isBanned === true) {
-                    // Реально забанен -> в тюрьму
+                    // РЕАЛЬНЫЙ БАН: Пускаем только на /banned
                     if (!event.url.pathname.startsWith('/banned')) {
                         return new Response('Redirect', { status: 303, headers: { Location: '/banned' } });
                     }
@@ -76,20 +83,20 @@ export const handle: Handle = async ({ event, resolve }) => {
                     };
                     return resolve(event);
                 } else {
-                    // Если в базе он уже разбанен (isBanned: false), но токен отозван ->
-                    // Значит, ему нужно просто перелогиниться, чтобы получить новый чистый токен.
-                    // Удаляем куку, пусть входит заново.
+                    // ЛОЖНАЯ ТРЕВОГА (Амнистия):
+                    // Токен отозван, но в базе бана нет. Значит, это была амнистия (unbanUser делает revoke тоже?)
+                    // Или просто старая сессия.
+                    // В любом случае токен мертв. Сбрасываем куку, редирект на логин.
                     event.cookies.delete('__session', { path: '/' });
                     event.locals.user = null;
                     return new Response('Redirect', { status: 303, headers: { Location: '/login' } });
                 }
             } catch (inner) {
-                console.error("Zombie check died:", inner);
+                console.error("Zombie Protocol Failed:", inner);
             }
         }
 
-        // Любые другие ошибки -> полный сброс
-        console.error("Auth Hook Error:", e.code || e.message);
+        // Остальные ошибки (истек срок и т.д.) -> Разлогин
         event.cookies.delete('__session', { path: '/' });
         event.locals.user = null;
 
