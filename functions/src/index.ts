@@ -74,15 +74,20 @@ async function clearMapCache() {
     }
 }
 
-async function assertNotBanned(context: any) {
-    if (context.auth?.token?.banned === true) {
-        throw new HttpsError('permission-denied', 'Ваш аккаунт заблокирован (Token Check).');
+async function assertNotBanned(request: any) {
+    if (request.auth?.token?.banned === true) {
+        console.warn(`Block by Token Claim: ${request.auth.uid}`);
+        throw new HttpsError('permission-denied', 'Account banned (Token).');
     }
-    const uid = context.auth.uid;
-    const userRef = admin.firestore().collection('users').doc(uid);
-    const userSnap = await userRef.get();
-    if (userSnap.exists && userSnap.data()?.isBanned) {
-        throw new HttpsError('permission-denied', 'Ваш аккаунт заблокирован (DB Check).');
+
+    const uid = request.auth?.uid;
+    if (uid) {
+        const userRef = admin.firestore().collection('users').doc(uid);
+        const userSnap = await userRef.get();
+        if (userSnap.exists && userSnap.data()?.isBanned) {
+             console.warn(`Block by DB Check: ${uid}`);
+             throw new HttpsError('permission-denied', 'Account banned (DB).');
+        }
     }
 }
 

@@ -4,41 +4,29 @@ import type { Handle } from '@sveltejs/kit';
 export const handle: Handle = async ({ event, resolve }) => {
     const sessionCookie = event.cookies.get('__session');
 
-    // Если куки нет — сразу аноним
     if (!sessionCookie) {
         event.locals.user = null;
         return resolve(event);
     }
 
     try {
-        // 1. Пытаемся проверить токен ПОЛНОСТЬЮ (включая проверку на отзыв/бан на серверах Google)
-        // Это гарантирует, что токен жив и валиден.
+        // 1. Проверка живого токена
         const decodedClaims = await authAdmin.verifySessionCookie(sessionCookie, true);
 
-        // 2. Проверка Custom Claims (быстрая, без БД)
-        // Если бан только что прилетел и токен еще валиден (не отозван), но в нем уже есть метка
-        if (decodedClaims.banned === true) {
-            if (!event.url.pathname.startsWith('/banned')) {
-                // Принудительная переадресация в изолятор
-                return new Response('Redirect', { status: 303, headers: { Location: '/banned' } });
-            }
-        }
-
-        // Если юзер НЕ забанен (метки нет), но пытается зайти на /banned — выпускаем на волю
-        if (!decodedClaims.banned && event.url.pathname.startsWith('/banned')) {
-            return new Response('Redirect', { status: 303, headers: { Location: '/' } });
-        }
-
-        // 3. Синхронизация с БД (для актуального username/avatar)
-        // Если ты хочешь сэкономить чтения, можно это завернуть в условие,
-        // но для консистентности данных лучше оставить.
+        // Получаем свежие данные из БД
         const userDocRef = firestoreAdmin.collection('users').doc(decodedClaims.uid);
         const userDocSnap = await userDocRef.get();
         const userData = userDocSnap.data();
 
-        // Fallback: В токене метки нет (старый токен), но в базе бан уже стоит
-        if (userData?.isBanned && !event.url.pathname.startsWith('/banned')) {
-             return new Response('Redirect', { status: 303, headers: { Location: '/banned' } });
+        const isBanned = userData?.isBanned || decodedClaims.banned === true;
+
+        if (isBanned) {
+            if (!event.url.pathname.startsWith('/banned')) {
+                return new Response('Redirect', { status: 303, headers: { Location: '/banned' } });
+            }
+        } else if (event.url.pathname.startsWith('/banned')) {
+            // Если НЕ забанен, но ломится на страницу бана — на главную
+            return new Response('Redirect', { status: 303, headers: { Location: '/' } });
         }
 
         if (userData) {
@@ -46,57 +34,46 @@ export const handle: Handle = async ({ event, resolve }) => {
                 uid: decodedClaims.uid,
                 email: decodedClaims.email,
                 username: userData.username || 'Unknown',
-                isBanned: userData.isBanned || false
+                isBanned: !!isBanned
             };
         } else {
-            // Токен валиден, но юзера нет в базе (удален?)
             event.locals.user = null;
         }
 
     } catch (e: any) {
-        // === [ ZOMBIE PROTOCOL: START ] ===
-        // Ошибка 'auth/session-cookie-revoked' означает, что админ нажал "ЗАБЛОКИРОВАТЬ" (revoke tokens).
-        // Мы хотим показать юзеру страницу бана, а не просто выкинуть его.
-
+        // === [ ИСПРАВЛЕННЫЙ ZOMBIE PROTOCOL ] ===
         if (e.code === 'auth/session-cookie-revoked') {
             try {
-                // Проверяем токен "вхолостую" (checkRevoked: false).
-                // Это парсит JWT локально, игнорируя статус отзыва на сервере.
+                // Читаем claims без проверки на отзыв
                 const zombieClaims = await authAdmin.verifySessionCookie(sessionCookie, false);
 
-                if (zombieClaims.banned === true) {
-                    // АГА! Это наш клиент.
+                // КРИТИЧЕСКИЙ ФИКС: Проверяем реальный статус в БД перед редиректом
+                const dbSnap = await firestoreAdmin.collection('users').doc(zombieClaims.uid).get();
+                const dbData = dbSnap.data();
 
-                    // Если он ломится куда-то кроме бана — редирект
+                if (dbData?.isBanned) {
+                    // Если в базе реально БАН — шлем в изолятор
                     if (!event.url.pathname.startsWith('/banned')) {
                         return new Response('Redirect', { status: 303, headers: { Location: '/banned' } });
                     }
-
-                    // Пускаем "Зомби" только на страницу /banned.
-                    // Наполняем locals минимальными данными для загрузки страницы бана.
-                    event.locals.user = {
-                        uid: zombieClaims.uid,
-                        email: zombieClaims.email,
-                        username: 'BANNED_SUBJECT',
-                        isBanned: true
-                    };
-
-                    // Пропускаем запрос дальше (на load функцию страницы banned)
+                    event.locals.user = { uid: zombieClaims.uid, email: zombieClaims.email, username: 'BANNED_SUBJECT', isBanned: true };
                     return resolve(event);
+                } else {
+                    // Если в базе БАНА НЕТ, значит его только что разбанили!
+                    // Удаляем плохую куку и шлем на логин, чтобы он получил новую
+                    console.log(`User ${zombieClaims.uid} was unbanned. Clearing revoked session.`);
+                    event.cookies.delete('__session', { path: '/' });
+                    return new Response('Redirect', { status: 303, headers: { Location: '/login' } });
                 }
-            } catch (innerError) {
-                console.error("Zombie check failed (Token completely dead):", innerError);
+            } catch (inner) {
+                console.error("Critical Auth failure:", inner);
             }
         }
-        // === [ ZOMBIE PROTOCOL: END ] ===
 
-        // Любая другая ошибка (истек срок, неверная подпись и т.д.) -> Разлогин
-        // console.error("Auth Error:", e.code || e.message); // Можно раскомментить для дебага
-
+        // Для всех остальных ошибок (истек срок и т.д.)
         event.cookies.delete('__session', { path: '/' });
         event.locals.user = null;
 
-        // Если юзер был на защищенном роуте — кидаем на логин
         if (event.url.pathname.startsWith('/admin') || event.url.pathname.startsWith('/profile') || event.url.pathname.startsWith('/casino')) {
              return new Response('Redirect', { status: 303, headers: { Location: '/login' } });
         }
