@@ -1,19 +1,15 @@
 declare global {
     namespace App {
-        // interface Error {}
-        
         interface Locals {
             user: {
                 uid: string;
                 email: string | undefined;
                 username: string | null;
+                emailVerified?: boolean;
+                isBanned?: boolean;
             } | null;
         }
-
-        // interface PageData {}
-        // interface PageState {}
-        // interface Platform {}
+        // ...
     }
 }
-
 export {};

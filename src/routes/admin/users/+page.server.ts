@@ -1,4 +1,5 @@
-import { firestoreAdmin } from '$lib/server/firebase.admin';
+// 👇 ДОБАВИЛ authAdmin В ИМПОРТЫ
+import { firestoreAdmin, authAdmin } from '$lib/server/firebase.admin';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { ADMIN_UIDS } from '$env/static/private';
@@ -30,18 +31,11 @@ export const actions: Actions = {
         try {
             const usersRef = firestoreAdmin.collection('users');
 
-            const snapshot = await usersRef
-                .where('username', '>=', query)
-                .where('username', '<=', query + '\uf8ff')
-                .limit(5)
-                .get();
+            // Сначала ищем точное совпадение по username (самый частый кейс)
+            const exactSnapshot = await usersRef.where('username', '==', query).limit(1).get();
 
-            if (snapshot.empty) {
-                return fail(404, { message: 'Цель не обнаружена в этом измерении.' });
-            }
-
-            if (snapshot.size === 1 && snapshot.docs[0].data().username === query) {
-                const doc = snapshot.docs[0];
+            if (!exactSnapshot.empty) {
+                const doc = exactSnapshot.docs[0];
                 const userData = doc.data();
                 return {
                     success: true,
@@ -55,6 +49,17 @@ export const actions: Actions = {
                         isBanned: userData.isBanned || false
                     }
                 };
+            }
+
+            // Если точно не нашли, ищем похожее (но аккуратно, чтобы не грузить базу)
+            const snapshot = await usersRef
+                .where('username', '>=', query)
+                .where('username', '<=', query + '\uf8ff')
+                .limit(5)
+                .get();
+
+            if (snapshot.empty) {
+                return fail(404, { message: 'Цель не обнаружена в этом измерении.' });
             }
 
             const candidates = snapshot.docs.map(doc => ({
@@ -121,15 +126,23 @@ export const actions: Actions = {
         const reason = data.get('reason') as string;
 
         try {
+            // 1. Ставим "Клеймо" в токен (Custom Claim)
+            await authAdmin.setCustomUserClaims(targetUid, { banned: true });
+
+            // 2. Сбрасываем все текущие сессии (выкидываем из приложения)
+            await authAdmin.revokeRefreshTokens(targetUid);
+
+            // 3. Обновляем запись в БД
             await firestoreAdmin.collection('users').doc(targetUid).update({
                 isBanned: true,
-                banReason: reason || 'Нарушение правил сообщества.',
+                banReason: reason || 'Нарушение протоколов сети.',
                 bannedAt: FieldValue.serverTimestamp()
             });
 
-            return { actionSuccess: true, message: 'СУБЪЕКТ ИЗОЛИРОВАН.' };
-        } catch (e) {
-            return fail(500, { message: 'Сбой протокола блокировки.' });
+            return { actionSuccess: true, message: 'СУБЪЕКТ ИЗОЛИРОВАН (TOKEN REVOKED).' };
+        } catch (e: any) {
+            console.error("Ban Error:", e);
+            return fail(500, { message: 'Сбой протокола блокировки: ' + e.message });
         }
     },
 
@@ -139,14 +152,19 @@ export const actions: Actions = {
         const targetUid = data.get('uid') as string;
 
         try {
+            // 1. Снимаем клеймо
+            await authAdmin.setCustomUserClaims(targetUid, { banned: false });
+
+            // 2. Обновляем БД
             await firestoreAdmin.collection('users').doc(targetUid).update({
                 isBanned: false,
                 banReason: FieldValue.delete(),
                 bannedAt: FieldValue.delete()
             });
+
             return { actionSuccess: true, message: 'СУБЪЕКТ ВОССТАНОВЛЕН В ПРАВАХ.' };
-        } catch (e) {
-            return fail(500, { message: 'Ошибка разблокировки.' });
+        } catch (e: any) {
+            return fail(500, { message: 'Ошибка разблокировки: ' + e.message });
         }
     },
 
@@ -176,16 +194,15 @@ export const actions: Actions = {
                 const sourceData = sourceDoc.data()!;
                 const targetData = targetDoc.data()!;
 
+                // Слияние данных
                 const newCredits = (targetData.casino_credits || 0) + (sourceData.casino_credits || 0);
-
                 const sourceItems = sourceData.owned_items || [];
                 const targetItems = targetData.owned_items || [];
                 const newItems = [...new Set([...sourceItems, ...targetItems])];
-
                 const newStreak = Math.max(sourceData.daily_streak || 0, targetData.daily_streak || 0);
+                const newAvatar = targetData.avatar_url || sourceData.avatar_url; // Оставляем целевой, если есть
 
-                const newAvatar = targetData.avatar_url || sourceData.avatar_url;
-
+                // Обновляем целевой
                 t.update(targetRef, {
                     casino_credits: newCredits,
                     owned_items: newItems,
@@ -195,6 +212,8 @@ export const actions: Actions = {
                     migratedAt: FieldValue.serverTimestamp()
                 });
 
+                // Блокируем старый (Мягкий бан, без claims, просто пометка)
+                // Или можно использовать banUser логику, но здесь достаточно флагов БД
                 t.update(sourceRef, {
                     casino_credits: 0,
                     daily_streak: 0,
@@ -205,6 +224,7 @@ export const actions: Actions = {
                 });
             });
 
+            // Перенос локаций (отдельно, так как Query не работает в транзакции так просто)
             const locQuery = await firestoreAdmin.collection('locations').where('user_id', '==', sourceUid).get();
             if (!locQuery.empty) {
                 const batch = firestoreAdmin.batch();

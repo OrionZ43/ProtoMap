@@ -52,19 +52,37 @@ async function sendToCasinoChat(message: string) {
 }
 
 async function clearMapCache() {
+    const cacheRef = db.collection('system').doc('map_cache');
+
     try {
-        await db.collection('system').doc('map_cache').delete();
-        console.log("Map cache cleared due to update.");
+        const doc = await cacheRef.get();
+        if (doc.exists) {
+            const data = doc.data();
+            const lastUpdated = data?.updatedAt?.toMillis() || 0;
+            // ЗАЩИТА: Если кэш обновлялся менее 60 секунд назад — не трогаем его.
+            // Пусть новые юзеры видят карту с задержкой в минуту, зато мы не разоримся.
+            if (Date.now() - lastUpdated < 60000) {
+                console.log("Cache clear throttled.");
+                return;
+            }
+        }
+        // Вместо удаления просто помечаем как устаревший или удаляем (как было)
+        await cacheRef.delete();
+        console.log("Map cache cleared.");
     } catch (e) {
         console.error("Failed to clear cache:", e);
     }
 }
 
-async function assertNotBanned(uid: string) {
+async function assertNotBanned(context: any) {
+    if (context.auth?.token?.banned === true) {
+        throw new HttpsError('permission-denied', 'Ваш аккаунт заблокирован (Token Check).');
+    }
+    const uid = context.auth.uid;
     const userRef = admin.firestore().collection('users').doc(uid);
     const userSnap = await userRef.get();
     if (userSnap.exists && userSnap.data()?.isBanned) {
-        throw new HttpsError('permission-denied', 'Ваш аккаунт заблокирован. Доступ к этой функции ограничен.');
+        throw new HttpsError('permission-denied', 'Ваш аккаунт заблокирован (DB Check).');
     }
 }
 
@@ -96,7 +114,7 @@ export const sendMessage = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Доступ запрещен.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
     assertEmailVerified(request.auth);
 
     const { text, replyTo, lang } = request.data as any;
@@ -166,7 +184,7 @@ export const deleteComment = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Необходима авторизация.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
 
     const { profileUid, commentId } = request.data;
 
@@ -196,7 +214,7 @@ export const addComment = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Необходима авторизация.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
     assertEmailVerified(request.auth);
 
     const { profileUid, text } = request.data;
@@ -263,7 +281,7 @@ export const updateEquippedItems = onCall({ cors: ALLOWED_ORIGINS }, async (requ
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
     assertEmailVerified(request.auth);
 
     const { equipped_frame, equipped_bg } = request.data;
@@ -309,7 +327,7 @@ export const purchaseShopItem = onCall({ cors: ALLOWED_ORIGINS }, async (request
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
     assertEmailVerified(request.auth);
 
     const { itemId } = request.data;
@@ -355,7 +373,7 @@ export const getDailyBonus = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
     assertEmailVerified(request.auth);
 
     const userRef = db.collection('users').doc(uid);
@@ -448,7 +466,7 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
 
     // 3. Ban Check (Защита от известных нарушителей)
     // Это быстрый отлуп, чтобы не грузить транзакцию
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
 
     // 4. Email Verification (Защита от мультиаккаунтов/ботов)
     // <--- ДОБАВИЛИ ЭТО. Теперь он не сможет просто создать новый акк и спамить.
@@ -630,7 +648,7 @@ export const playSlotMachine = onCall(
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
 
     const { bet } = request.data;
     const MAX_BET = 1000;
@@ -770,7 +788,7 @@ export const playCoinFlip = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
     assertEmailVerified(request.auth);
 
     const { bet, choice } = request.data;
@@ -917,83 +935,98 @@ async function getDistrictCenterCoords(lat: number, lng: number): Promise<[strin
     }
 }
 
-export const addOrUpdateLocation = onRequest({ cors: false }, async (request, response) => {
-    if (handleCors(request, response)) return;
-
-    const idToken = request.headers.authorization?.split('Bearer ')[1];
-    if (!idToken) { response.status(401).json({ error: "Unauthorized" }); return; }
-
-    try {
-        const decoded = await admin.auth().verifyIdToken(idToken);
-        const uid = decoded.uid;
-
-        const userDoc = await db.collection("users").doc(uid).get();
-        if (userDoc.exists && userDoc.data()?.isBanned) {
-            response.status(403).json({ error: "Banned" });
-            return;
-        }
-
-        // Получаем флаг isManual (Ручная установка)
-        const { lat, lng, isManual } = request.body.data;
-
-        if (!lat || !lng) { response.status(400).json({ error: "Invalid coords" }); return; }
-
-        let finalLat = lat;
-        let finalLng = lng;
-        let cityName = "Unknown Location";
-
-        if (isManual) {
-            // === РУЧНОЙ РЕЖИМ (Точность) ===
-            // Мы не ищем центр города, мы оставляем координаты как есть.
-            // Но нам нужно узнать название места для красоты.
-            const userAgent = process.env.NOMINATIM_USER_AGENT || 'ProtoMap/1.0';
-            const revUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru&zoom=10`;
-
-            try {
-                const revRes = await fetch(revUrl, { headers: { 'User-Agent': userAgent } });
-                if (revRes.ok) {
-                    const revData = await revRes.json() as any;
-                    const addr = revData.address;
-                    cityName = addr.city || addr.town || addr.village || addr.hamlet || addr.county || addr.state || "Custom Location";
-                }
-            } catch (e) {
-                console.error("Manual geo lookup failed:", e);
-            }
-
-        } else {
-            // === АВТО РЕЖИМ (Анонимность) ===
-            // Ищем центр района/города
-            const place = await getDistrictCenterCoords(lat, lng);
-            if (!place) { response.status(400).json({ error: "Geocoding failed" }); return; }
-
-            cityName = place[0];
-            finalLat = place[1];
-            finalLng = place[2];
-        }
-
-        const locRef = db.collection("locations");
-        const q = await locRef.where("user_id", "==", uid).limit(1).get();
-
-        if (!q.empty) {
-            await locRef.doc(q.docs[0].id).update({ latitude: finalLat, longitude: finalLng, city: cityName });
-        } else {
-            await locRef.add({ latitude: finalLat, longitude: finalLng, city: cityName, user_id: uid });
-        }
-
-        await clearMapCache();
-
-        response.status(200).json({ data: {
-            status: 'success',
-            message: isManual ? 'Координаты установлены точно!' : 'Геолокация обновлена (Центр района).',
-            foundCity: cityName,
-            placeLat: finalLat,
-            placeLng: finalLng
-        }});
-
-    } catch (error) {
-        console.error(error);
-        response.status(500).json({ error: "Server Error" });
+export const addOrUpdateLocation = onCall(async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
     }
+
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Auth required.');
+    }
+
+    const uid = request.auth.uid;
+    await assertNotBanned(request);
+
+    const { lat, lng, isManual } = request.data;
+
+    if (!lat || !lng || typeof lat !== 'number' || typeof lng !== 'number') {
+        throw new HttpsError('invalid-argument', 'Invalid coordinates.');
+    }
+
+    const userRef = db.collection("users").doc(uid);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+        throw new HttpsError('not-found', 'User profile not found.');
+    }
+
+    const userData = userDoc.data()!;
+    const lastUpdate = userData.last_location_update ? userData.last_location_update.toMillis() : 0;
+
+    if (Date.now() - lastUpdate < 10000) {
+        throw new HttpsError('resource-exhausted', 'Please wait 10 seconds before updating location.');
+    }
+
+    let finalLat = lat;
+    let finalLng = lng;
+    let cityName = "Unknown Location";
+
+    if (isManual) {
+        const userAgent = process.env.NOMINATIM_USER_AGENT || 'ProtoMap/1.0';
+        const revUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru&zoom=10`;
+
+        try {
+            const revRes = await fetch(revUrl, { headers: { 'User-Agent': userAgent } });
+            if (revRes.ok) {
+                const revData = await revRes.json() as any;
+                const addr = revData.address;
+                cityName = addr.city || addr.town || addr.village || addr.hamlet || addr.county || addr.state || "Custom Location";
+            }
+        } catch (e) {
+            console.error("Manual geo lookup failed:", e);
+        }
+    } else {
+        const place = await getDistrictCenterCoords(lat, lng);
+        if (!place) {
+            throw new HttpsError('internal', 'Geocoding failed. Try again.');
+        }
+        cityName = place[0];
+        finalLat = place[1];
+        finalLng = place[2];
+    }
+
+    const batch = db.batch();
+    const locRef = db.collection("locations");
+    const q = await locRef.where("user_id", "==", uid).limit(1).get();
+
+    if (!q.empty) {
+        batch.update(locRef.doc(q.docs[0].id), {
+            latitude: finalLat,
+            longitude: finalLng,
+            city: cityName
+        });
+    } else {
+        const newDoc = locRef.doc();
+        batch.set(newDoc, {
+            latitude: finalLat,
+            longitude: finalLng,
+            city: cityName,
+            user_id: uid
+        });
+    }
+
+    batch.update(userRef, { last_location_update: FieldValue.serverTimestamp() });
+
+    await batch.commit();
+    await clearMapCache();
+
+    return {
+        status: 'success',
+        message: isManual ? 'Координаты установлены точно!' : 'Геолокация обновлена (Центр района).',
+        foundCity: cityName,
+        placeLat: finalLat,
+        placeLng: finalLng
+    };
 });
 
 export const getLocations = onRequest({ cors: false }, async (request, response) => {
@@ -1079,7 +1112,7 @@ export const deleteLocation = onCall({ cors: ALLOWED_ORIGINS }, async (request) 
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
 
     try {
         const q = await db.collection("locations").where("user_id", "==", uid).limit(1).get();
@@ -1101,7 +1134,7 @@ export const updateProfileData = onCall(async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Auth required.");
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
 
     const data = request.data;
     const fields: any = {};
@@ -1139,7 +1172,7 @@ export const uploadAvatar = onCall({ secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDIN
     if (!request.auth) throw new HttpsError("unauthenticated", "Auth required.");
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
 
     const { imageBase64 } = request.data;
     if (!imageBase64?.startsWith('data:image/')) throw new HttpsError("invalid-argument", "Bad image.");
@@ -1196,10 +1229,9 @@ export const reportContent = onCall(
             throw new HttpsError("unauthenticated", "Auth required.");
         }
 
-        const reporterUid = request.auth.uid;
+        await assertNotBanned(request);
 
-        // 1. ПРОВЕРКА БАНА (Оставляем защиту!)
-        await assertNotBanned(reporterUid);
+        const reporterUid = request.auth.uid;
 
         const {
             type,

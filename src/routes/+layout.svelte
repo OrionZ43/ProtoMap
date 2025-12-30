@@ -20,6 +20,7 @@
     import SplashModal from '$lib/components/SplashModal.svelte';
     import { settingsStore } from '$lib/stores/settingsStore';
     import Snowfall from '$lib/components/Snowfall.svelte';
+    import { goto, beforeNavigate } from '$app/navigation'; // Импортируем защиту навигации
 
     import '$lib/i18n';
     import { waitLocale } from 'svelte-i18n';
@@ -29,6 +30,28 @@
     let sideTextRight = 'МОЩНОСТЬ СЕТИ: 99%';
     let isReady = false;
     let seasonActiveInSession = false;
+
+    // === [ BANHAMMER LOGIC ] ===
+    // Определяем статус бана реактивно от данных страницы (которые приходят из hooks.server.ts)
+    $: user = $page.data.user;
+    $: isBanned = user?.isBanned === true;
+    $: isBannedPage = $page.url.pathname.startsWith('/banned');
+
+    // ЗАЩИТА 1: Мгновенный редирект, если статус изменился на клиенте
+    $: if (isBanned && !isBannedPage && browser) {
+        goto('/banned');
+    }
+
+    // ЗАЩИТА 2: Перехват любых попыток уйти со страницы бана
+    beforeNavigate(({ to, cancel }) => {
+        // Если юзер забанен и пытается перейти куда-то, кроме /banned
+        if (isBanned && to?.url.pathname !== '/banned') {
+            cancel(); // Отменяем переход
+            if (!isBannedPage) {
+                goto('/banned'); // Если он еще не там, шлем туда
+            }
+        }
+    });
 
     function initSeasonalTheme() {
         const d = new Date();
@@ -98,45 +121,58 @@
             <Snowfall />
         {/if}
 
-        <div class="side-panel left z-10">
-            <div class="v-text">{sideTextLeft}</div>
-        </div>
-        <div class="side-panel right z-10">
-            <div class="v-text">{sideTextRight}</div>
-        </div>
+        <!-- СКРЫВАЕМ БОКОВЫЕ ПАНЕЛИ ДЛЯ ЗАБАНЕННЫХ -->
+        {#if !isBanned}
+            <div class="side-panel left z-10">
+                <div class="v-text">{sideTextLeft}</div>
+            </div>
+            <div class="side-panel right z-10">
+                <div class="v-text">{sideTextRight}</div>
+            </div>
+        {/if}
 
         <div class="relative z-20 flex flex-col flex-grow">
-            <Navbar />
+            <!-- СКРЫВАЕМ НАВБАР ДЛЯ ЗАБАНЕННЫХ -->
+            {#if !isBanned}
+                <Navbar />
+            {/if}
+
             <main class="flex-grow">
                 <slot />
             </main>
         </div>
 
         <div class="hidden lg:block">
-            {#if !isMapPage}
+            <!-- СКРЫВАЕМ ФУТЕР ДЛЯ ЗАБАНЕННЫХ -->
+            {#if !isMapPage && !isBanned}
                 <Footer />
             {/if}
         </div>
 
+        <!-- МОДАЛКИ ОСТАВЛЯЕМ (для вывода ошибок и апелляций) -->
         <Modal />
-        <ChatWidget />
-        <CookieBanner />
-        <SplashModal />
 
-        <button
-            class="chat-trigger-btn"
-            class:hidden={$chat.isOpen}
-            on:click={toggleChat}
-            title="Открыть общий чат"
-            aria-label="Открыть общий чат"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
-                <path fill-rule="evenodd" d="M4.848 2.771A49.144 49.144 0 0112 2.25c2.43 0 4.817.178 7.152.52 1.978.292 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.678-3.348 3.97a48.901 48.901 0 01-3.476.383.39.39 0 00-.297.17l-2.755 4.133a.75.75 0 01-1.248 0l-2.755-4.133a.39.39 0 00-.297-.17 48.9 48.9 0 01-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.74c0-1.946 1.37-3.68 3.348-3.97zM6.75 8.25a.75.75 0 01.75-.75h9a.75.75 0 010 1.5h-9a.75.75 0 01-.75-.75zm.75 2.25a.75.75 0 000 1.5H12a.75.75 0 000-1.5H7.5z" clip-rule="evenodd" />
-            </svg>
-            {#if $chat.hasUnread}
-                <div class="unread-dot"></div>
-            {/if}
-        </button>
+        <!-- ВСЕ ОСТАЛЬНЫЕ ВИДЖЕТЫ СКРЫВАЕМ -->
+        {#if !isBanned}
+            <ChatWidget />
+            <CookieBanner />
+            <SplashModal />
+
+            <button
+                class="chat-trigger-btn"
+                class:hidden={$chat.isOpen}
+                on:click={toggleChat}
+                title="Открыть общий чат"
+                aria-label="Открыть общий чат"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
+                    <path fill-rule="evenodd" d="M4.848 2.771A49.144 49.144 0 0112 2.25c2.43 0 4.817.178 7.152.52 1.978.292 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.678-3.348 3.97a48.901 48.901 0 01-3.476.383.39.39 0 00-.297.17l-2.755 4.133a.75.75 0 01-1.248 0l-2.755-4.133a.39.39 0 00-.297-.17 48.9 48.9 0 01-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.74c0-1.946 1.37-3.68 3.348-3.97zM6.75 8.25a.75.75 0 01.75-.75h9a.75.75 0 010 1.5h-9a.75.75 0 01-.75-.75zm.75 2.25a.75.75 0 000 1.5H12a.75.75 0 000-1.5H7.5z" clip-rule="evenodd" />
+                </svg>
+                {#if $chat.hasUnread}
+                    <div class="unread-dot"></div>
+                {/if}
+            </button>
+        {/if}
     </div>
 {:else}
     <div class="fixed inset-0 bg-black z-[9999]"></div>
