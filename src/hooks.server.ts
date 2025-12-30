@@ -4,121 +4,82 @@ import type { Handle } from '@sveltejs/kit';
 export const handle: Handle = async ({ event, resolve }) => {
     const sessionCookie = event.cookies.get('__session');
 
+    // 1. Нет куки — аноним
     if (!sessionCookie) {
         event.locals.user = null;
         return resolve(event);
     }
 
-    // Переменные для принятия решений
-    let uid = '';
-    let email: string | undefined = '';
-    let tokenHasBanClaim = false;
-    let dbIsBanned = false;
-    let userData: any = null;
-
     try {
-        // 1. Проверяем токен
-        // checkRevoked: true - важно для мгновенного бана
+        // 2. Жесткая проверка токена.
+        // Если токен отозван (Revoked) — это сразу Error.
+        // Мы НЕ ловим ошибку, чтобы "спасти" зомби. Пусть умирает.
         const decodedClaims = await authAdmin.verifySessionCookie(sessionCookie, true);
-        uid = decodedClaims.uid;
-        email = decodedClaims.email;
-        tokenHasBanClaim = decodedClaims.banned === true;
+
+        // 3. Получаем данные из БД (Source of Truth)
+        const userDocRef = firestoreAdmin.collection('users').doc(decodedClaims.uid);
+        const userDocSnap = await userDocRef.get();
+        const userData = userDocSnap.data();
+
+        // 4. Определение статуса бана
+        // Бан есть, если он есть в БД ИЛИ если он "выжжен" в токене
+        const isBanned = (userData?.isBanned === true) || (decodedClaims.banned === true);
+
+        // === БЛОКИРОВКА ===
+        if (isBanned) {
+            // Если юзер забанен, но токен все еще валиден (не отозван)
+            // Мы просто держим его на странице /banned
+            if (!event.url.pathname.startsWith('/banned')) {
+                return new Response('Redirect', { status: 303, headers: { Location: '/banned' } });
+            }
+        }
+        // === ОБЫЧНЫЙ ЮЗЕР ===
+        else {
+            // Если НЕ забанен, но зашел на /banned — выгоняем на главную
+            if (event.url.pathname.startsWith('/banned')) {
+                return new Response('Redirect', { status: 303, headers: { Location: '/' } });
+            }
+        }
+
+        // Заполняем сессию
+        if (userData) {
+            event.locals.user = {
+                uid: decodedClaims.uid,
+                email: decodedClaims.email,
+                username: userData.username || 'Unknown',
+                emailVerified: decodedClaims.email_verified || false,
+                isBanned: isBanned
+            };
+        } else {
+            event.locals.user = null; // Токен есть, юзера в базе нет
+        }
 
     } catch (e: any) {
-        // === [ ZOMBIE PROTOCOL: Если токен отозван (revoked) ] ===
-        if (e.code === 'auth/session-cookie-revoked') {
-            try {
-                // Читаем данные из "мертвого" токена
-                const zombieClaims = await authAdmin.verifySessionCookie(sessionCookie, false);
-                uid = zombieClaims.uid;
-                email = zombieClaims.email;
-                tokenHasBanClaim = true; // Считаем, что отозванный токен подозрителен
-                console.log("Hooks: Обнаружен отозванный токен для", uid);
-            } catch (inner) {
-                // Если токен совсем мертв - просто сбрасываем
-                return forceLogout(event, "Dead Token");
-            }
-        } else {
-            // Любая другая ошибка (истек срок, неверная подпись)
-            return forceLogout(event, "Invalid Token");
-        }
-    }
+        // 5. ОБРАБОТКА ОШИБОК (Включая Revoked Token)
+        // Если мы здесь — токен невалиден (истек, подделка или ОТОЗВАН админом).
+        // Единственное правильное действие — убить сессию.
 
-    // 2. Получаем АКТУАЛЬНЫЙ статус из БД (Source of Truth)
-    if (uid) {
-        try {
-            const userDoc = await firestoreAdmin.collection('users').doc(uid).get();
-            userData = userDoc.data();
-            dbIsBanned = userData?.isBanned === true;
-        } catch (dbError) {
-            console.error("Hooks: DB Error", dbError);
-            // Если база лежит, лучше пустить (или показать ошибку), но не циклить.
-            // Допустим, считаем, что не забанен, если не можем проверить.
-        }
-    }
+        console.log("Auth Hook: Invalid/Revoked Token. Destroying session.");
 
-    // 3. === ЛОГИКА МАРШРУТИЗАЦИИ ===
+        // Удаляем куку с параметрами (важно для надежности)
+        event.cookies.delete('__session', { path: '/' });
 
-    // СЦЕНАРИЙ А: Реально забанен (в БД стоит бан)
-    if (dbIsBanned) {
-        // Если юзер не на странице бана - редирект туда
-        if (!event.url.pathname.startsWith('/banned')) {
-            return new Response('Redirect', { status: 303, headers: { Location: '/banned' } });
-        }
-    }
+        // На всякий случай чистим locals
+        event.locals.user = null;
 
-    // СЦЕНАРИЙ Б: Не забанен в БД (Амнистия или обычный юзер)
-    else {
-        // Проблема: В БД чисто, но токен "грязный" (содержит banned: true или был отозван).
-        // С таким токеном нельзя работать (Cloud Functions его отвергнут).
-        // Решение: Принудительный разлогин, чтобы получить чистый токен.
-        if (tokenHasBanClaim) {
-            console.log("Hooks: Конфликт версий (Амнистия). Сброс сессии.");
-            return forceLogout(event, "Amnesty Reset");
+        // Если это API-запрос — 401
+        if (event.url.pathname.startsWith('/api')) {
+             return new Response(JSON.stringify({ error: 'Session expired' }), { status: 401 });
         }
 
-        // Если юзер на странице бана, но он чист - выпускаем
-        if (event.url.pathname.startsWith('/banned')) {
-            return new Response('Redirect', { status: 303, headers: { Location: '/' } });
+        // Если юзер уже на логине — пусть там и остается
+        if (event.url.pathname === '/login' || event.url.pathname === '/register') {
+            return resolve(event);
         }
-    }
 
-    // 4. Заполняем locals (если дошли сюда)
-    if (userData) {
-        event.locals.user = {
-            uid: uid,
-            email: email,
-            username: userData.username || 'Unknown',
-            emailVerified: userData.emailVerified || false, // Если есть в базе
-            isBanned: dbIsBanned
-        };
-    } else if (uid) {
-        // Если юзера нет в базе, но есть токен (странно)
-        // Пускаем как анонима или сбрасываем. Давай сбросим для надежности.
-        return forceLogout(event, "User not in DB");
+        // Иначе — редирект на вход
+        return new Response('Redirect', { status: 303, headers: { Location: '/login' } });
     }
 
     return resolve(event);
 };
-
-// Хелпер для сброса сессии и редиректа
-function forceLogout(event: any, reason: string) {
-    console.log(`Hooks: Force Logout (${reason})`);
-
-    // Удаляем куку
-    event.cookies.delete('__session', { path: '/' });
-
-    // Обнуляем locals
-    event.locals.user = null;
-
-    // Если это API запрос - возвращаем JSON, иначе редирект
-    if (event.url.pathname.startsWith('/api')) {
-        return new Response(JSON.stringify({ error: 'Session expired' }), {
-            status: 401,
-            headers: { 'Content-Type': 'application/json' }
-        });
-    }
-
-    // Редирект на логин, чтобы юзер вошел заново и получил ЧИСТЫЙ токен
-    return new Response('Redirect', { status: 303, headers: { Location: '/login' } });
-}
