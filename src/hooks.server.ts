@@ -4,69 +4,67 @@ import type { Handle } from '@sveltejs/kit';
 export const handle: Handle = async ({ event, resolve }) => {
     const sessionCookie = event.cookies.get('__session');
 
-    // 1. Если куки нет — сразу аноним
     if (!sessionCookie) {
         event.locals.user = null;
         return resolve(event);
     }
 
     try {
-        // 2. Проверяем токен на валидность и отзыв (revocation)
+        // 1. Проверяем валидность токена
         const decodedClaims = await authAdmin.verifySessionCookie(sessionCookie, true);
 
-        // 3. Загружаем реальный статус из БД
+        // 2. СРАЗУ читаем актуальные данные из БД (Source of Truth)
+        // Это решает проблему цикла: даже если в токене старое клеймо, база скажет правду.
         const userDocRef = firestoreAdmin.collection('users').doc(decodedClaims.uid);
         const userDocSnap = await userDocRef.get();
         const userData = userDocSnap.data();
 
-        // --- [ AMNESTY CHECK: РАЗРЫВАЕМ ПЕТЛЮ ] ---
-        // Если в токене стоит бан, а в БД его НЕТ (амнистия), токен "грязный".
-        if (decodedClaims.banned === true && !userData?.isBanned) {
-            console.log(`[System] Амнистия для ${decodedClaims.uid}. Сброс грязной сессии.`);
-            event.cookies.delete('__session', { path: '/' });
-            return new Response('Redirect', { status: 303, headers: { Location: '/login' } });
-        }
+        // 3. Определяем статус бана СТРОГО по базе данных (если запись есть)
+        // Если записи нет (странно), верим токену.
+        const isBannedReal = userData ? (userData.isBanned === true) : (decodedClaims.banned === true);
 
-        // --- [ BAN ENFORCEMENT ] ---
-        // Если забанен (в токене или в БД), не пускаем никуда кроме /banned
-        const isActuallyBanned = decodedClaims.banned === true || userData?.isBanned === true;
-
-        if (isActuallyBanned) {
+        // 4. Логика Редиректов (The Traffic Controller)
+        if (isBannedReal) {
+            // Если забанен реально — не пускаем никуда кроме /banned
             if (!event.url.pathname.startsWith('/banned')) {
                 return new Response('Redirect', { status: 303, headers: { Location: '/banned' } });
             }
         } else {
-            // Если НЕ забанен, но сидит в тюрьме — выпускаем на волю
+            // Если НЕ забанен — не пускаем на /banned (выпинываем на волю)
             if (event.url.pathname.startsWith('/banned')) {
                 return new Response('Redirect', { status: 303, headers: { Location: '/' } });
             }
         }
 
+        // 5. Заполняем сессию
         if (userData) {
             event.locals.user = {
                 uid: decodedClaims.uid,
                 email: decodedClaims.email,
                 username: userData.username || 'Unknown',
-                isBanned: !!isActuallyBanned
+                emailVerified: decodedClaims.email_verified || false,
+                isBanned: isBannedReal // Передаем актуальный статус
             };
         } else {
             event.locals.user = null;
         }
 
     } catch (e: any) {
-        // --- [ ZOMBIE PROTOCOL ] ---
-        // Срабатывает, если токен отозван (админ нажал "БАН")
+        // === [ ZOMBIE PROTOCOL ] ===
+        // Если токен отозван (админ нажал БАН), Firebase кидает ошибку.
+        // Мы ловим её, чтобы мягко отправить юзера в тюрьму, а не разлогинивать.
         if (e.code === 'auth/session-cookie-revoked') {
             try {
-                // Читаем токен без запроса к Google (checkRevoked: false)
+                // Читаем "мертвый" токен локально
                 const zombieClaims = await authAdmin.verifySessionCookie(sessionCookie, false);
 
-                // Проверяем актуальность бана в базе
-                const userDoc = await firestoreAdmin.collection('users').doc(zombieClaims.uid).get();
-                const userData = userDoc.data();
+                // Проверяем актуальный статус в БД для Зомби тоже!
+                // Вдруг мы его разбанили, но токен все еще считается отозванным?
+                const zDoc = await firestoreAdmin.collection('users').doc(zombieClaims.uid).get();
+                const zData = zDoc.data();
 
-                if (userData?.isBanned) {
-                    // Это реальный бан. Пускаем "Зомби" только в изолятор.
+                if (zData?.isBanned === true) {
+                    // Реально забанен -> в тюрьму
                     if (!event.url.pathname.startsWith('/banned')) {
                         return new Response('Redirect', { status: 303, headers: { Location: '/banned' } });
                     }
@@ -78,22 +76,24 @@ export const handle: Handle = async ({ event, resolve }) => {
                     };
                     return resolve(event);
                 } else {
-                    // Амнистия! Токен отозван, но бан в базе снят.
-                    // Просто заставляем перелогиниться.
+                    // Если в базе он уже разбанен (isBanned: false), но токен отозван ->
+                    // Значит, ему нужно просто перелогиниться, чтобы получить новый чистый токен.
+                    // Удаляем куку, пусть входит заново.
                     event.cookies.delete('__session', { path: '/' });
+                    event.locals.user = null;
                     return new Response('Redirect', { status: 303, headers: { Location: '/login' } });
                 }
-            } catch (innerError) {
-                console.error("Zombie recovery failed:", innerError);
+            } catch (inner) {
+                console.error("Zombie check died:", inner);
             }
         }
 
-        // Любая другая ошибка сессии (истекла, повреждена)
+        // Любые другие ошибки -> полный сброс
+        console.error("Auth Hook Error:", e.code || e.message);
         event.cookies.delete('__session', { path: '/' });
         event.locals.user = null;
 
-        // Если пытался зайти в личный кабинет или админку без прав
-        if (event.url.pathname.startsWith('/admin') || event.url.pathname.startsWith('/profile')) {
+        if (['/admin', '/profile', '/casino'].some(p => event.url.pathname.startsWith(p))) {
              return new Response('Redirect', { status: 303, headers: { Location: '/login' } });
         }
     }
