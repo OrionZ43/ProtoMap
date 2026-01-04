@@ -132,6 +132,23 @@
       "bogdan": { "role": "REDMI SURVIVOR", "desc": "Field testing on the edge of hardware limits." }
     }
   },
+  "beta": {
+    "title": "MOBILE PROTOCOL",
+    "subtitle": "OPEN BETA TEST (ANDROID)",
+    "desc": "To release the app, we need 12 active testers. We can't do it without you!",
+    "step1_title": "STEP 1: JOIN THE GROUP",
+    "step1_desc": "Google requires testers to be in a Google Group. Without this, the download link will NOT work.",
+    "btn_group": "JOIN GOOGLE GROUP",
+    "step2_title": "STEP 2: DOWNLOAD APP",
+    "step2_desc": "After joining the group, go to Play Market and install.",
+    "btn_download": "DOWNLOAD ON GOOGLE PLAY",
+    "footer": "Thank you for building the Network! 🦾"
+  },
+  "splash_beta": {
+    "title": "⚠ GENERAL MOBILIZATION ⚠",
+    "text": "Don't panic, cyborg! We are <strong>MOBILE/strong>-izing to Android. 📱\n\nYour device has been drafted into the beta-testers squad. No deferments. Dodgers will be left without DMs and notifications.",
+    "btn": "REPORT FOR DUTY"
+  },
   "banned": {
     "page_title": "ACCESS DENIED",
     "header": "CRITICAL ERROR",

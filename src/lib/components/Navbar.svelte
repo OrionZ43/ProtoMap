@@ -187,7 +187,11 @@
                     </div>
                 {/if}
             </div>
-
+            <a href="/mobile-beta" class="icon-btn android-btn" title="Download App">
+                <svg width="20" height="20" viewBox="0 0 512 512" fill="currentColor">
+                    <path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/>
+                </svg>
+            </a>
             <div class="h-6 w-px bg-white/10 mx-1"></div>
 
             {#if $userStore.loading}
@@ -288,6 +292,10 @@
                         💀 GOD MODE
                     </a>
                 {/if}
+
+                <a href="/mobile-beta" class="mobile-link text-green-400 border-l-green-400">
+                    📱 ANDROID APP (BETA)
+                </a>
 
                 <div class="border-t border-white/10 my-2"></div>
 
@@ -476,4 +484,15 @@
         box-shadow: 0 0 15px var(--cyber-cyan);
     }
     .settings-btn-mobile .icon { font-size: 1.2rem; }
+    .android-btn {
+        color: #39ff14; /* Cyber Green */
+        border: 1px solid rgba(57, 255, 20, 0.3);
+        background: rgba(57, 255, 20, 0.1);
+    }
+    .android-btn:hover {
+        background: rgba(57, 255, 20, 0.2);
+        box-shadow: 0 0 15px #39ff14;
+        transform: scale(1.05);
+        color: #fff;
+    }
 </style>
