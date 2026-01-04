@@ -237,17 +237,21 @@
             </a>
 
             <!-- SLOTS -->
-            <a href="/casino/slot-machine" class="game-card">
-                <div class="game-art">
+            <div class="game-card disabled relative">
+                <div class="maintenance-badge">
+                    <span>🚧 UPDATE IN PROGRESS</span>
+                </div>
+
+                <div class="game-art" style="filter: grayscale(1);">
                      <img src="/casino/slots.png" alt="Slots" class="art-img">
                      <div class="art-overlay"></div>
                 </div>
                 <div class="game-info">
-                    <h3 class="game-title font-display">{$t('casino.game_slots_title')}</h3>
-                    <p class="game-desc">{$t('casino.game_slots_desc')}</p>
-                    <span class="play-indicator font-display">{$t('casino.play')}</span>
+                    <h3 class="game-title font-display text-gray-500">{$t('casino.game_slots_title')}</h3>
+                    <p class="game-desc">Внедрение механики Артефактов...</p> <!-- Поменяли описание -->
+                    <span class="play-indicator font-display text-gray-600">LOCKED</span>
                 </div>
-            </a>
+            </div>
 
             <!-- CRASH (DATA UPLINK) -->
             <a href="/casino/crash" class="game-card">
@@ -623,5 +627,38 @@
         .calendar-grid { grid-template-columns: repeat(5, 1fr); }
         .day-cell { height: 60px; }
         .day-cell.big-reward { grid-column: span 5; }
+    }
+    .game-card.disabled {
+        cursor: not-allowed;
+        opacity: 0.7;
+        border-color: #333;
+    }
+
+    .maintenance-badge {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%) rotate(-15deg);
+        z-index: 20;
+        background: repeating-linear-gradient(
+            45deg,
+            #ffd700,
+            #ffd700 10px,
+            #000 10px,
+            #000 20px
+        );
+        padding: 5px;
+        box-shadow: 0 0 20px #000;
+        border: 2px solid #fff;
+    }
+
+    .maintenance-badge span {
+        display: block;
+        background: #000;
+        color: #ffd700;
+        padding: 0.5rem 1rem;
+        font-family: 'Chakra Petch', monospace;
+        font-weight: 900;
+        font-size: 1.2rem;
+        white-space: nowrap;
     }
 </style>
