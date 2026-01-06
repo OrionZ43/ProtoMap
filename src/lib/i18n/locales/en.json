@@ -327,46 +327,28 @@
     "game_crash_desc": "Hack the corp server. The longer you stay, the more you earn. Disconnect before the connection gets terminated!"
   },
   "artifacts": {
-    "toast": {
-      "name": "Burnt Toast",
-      "desc": "Breakfast of champions. A bit bitter."
-    },
-    "ram_stick": {
-      "name": "RAM Stick",
-      "desc": "Crunchy. Protogens' favorite snack."
-    },
-    "energy_drink": {
-      "name": "Energy Drink",
-      "desc": "Liquid adrenaline. Hands shaking, code flowing."
-    },
-    "gpu_fan": {
-      "name": "GPU Turbine",
-      "desc": "Sounds like a jet, cools your temper."
-    },
-    "spaghetti": {
-      "name": "Spaghetti Code",
-      "desc": "No one knows how it works. Not even the creator."
-    },
-    "blue_screen": {
-      "name": "BSOD",
-      "desc": "CRITICAL_PROCESS_DIED. Very sad."
-    },
-    "bug": {
-      "name": "The Bug",
-      "desc": "It's not a bug, it's an undocumented feature."
-    },
-    "banhammer": {
-      "name": "Banhammer",
-      "desc": "A heavy argument in any dispute."
-    },
-    "source_code": {
-      "name": "Source Code",
-      "desc": "The Holy Grail. Don't lose it on GitHub."
-    },
-    "orion_tear": {
-      "name": "Orion's Tear",
-      "desc": "Harvested after 72h of debugging without sleep. Legendary."
-    }
+    "toast": { "name": "Burnt Toast", "desc": "+150 PC. Breakfast of champions." },
+    "ram_stick": { "name": "RAM Stick", "desc": "+300 PC. Crunchy." },
+    "energy_drink": { "name": "Energy Drink", "desc": "Base x2. Liquid code." },
+    "gpu_fan": { "name": "GPU Turbine", "desc": "Base x3. Whoosh!" },
+    "spaghetti": { "name": "Spaghetti Code", "desc": "Total ÷ 2. Who wrote this?!" },
+    "blue_screen": { "name": "BSOD", "desc": "Total ÷ 2. Sad face." },
+    "bug": { "name": "The Bug", "desc": "-100 PC. It's a feature." },
+    "banhammer": { "name": "Banhammer", "desc": "+666 PC. Heavy argument." },
+    "source_code": { "name": "Source Code", "desc": "Base x5. The Matrix." },
+    "orion_tear": { "name": "Orion's Tear", "desc": "Total x10. Legendary drop." },
+    "rubber_duck": { "name": "Rubber Duck", "desc": "+200 PC. It listens. It understands." },
+    "rtx_card": { "name": "RTX 9090", "desc": "Base x4. Runs Cyberpunk in 8K." },
+    "404_error": { "name": "Error 404", "desc": "-200 PC. Reward not found." },
+    "ransomware": { "name": "Ransomware", "desc": "Total ÷ 3. Your files are encrypted." },
+    "admin_key": { "name": "Admin Key", "desc": "Total x20. Sudo make me rich." }
+  },
+  "synthesis": {
+    "title": "ARTIFACT SYNTHESIS",
+    "processing": "FUSING SHARDS...",
+    "btn_collect": "COLLECT",
+    "total": "TOTAL:",
+    "formula": "BASE (100)"
   },
   "inventory": {
     "title": "Stash",

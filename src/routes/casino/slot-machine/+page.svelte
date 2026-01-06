@@ -3,17 +3,16 @@
     import { getFunctions, httpsCallable } from 'firebase/functions';
     import { modal } from '$lib/stores/modalStore';
     import { onMount, onDestroy } from 'svelte';
-    import { cubicOut, quintOut, elasticOut } from 'svelte/easing';
+    import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { Howl } from 'howler';
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
+    import { scale, fade } from 'svelte/transition';
     import GlitchOverlay from '$lib/components/casino/GlitchOverlay.svelte';
+    import ArtifactSynthesis from '$lib/components/casino/ArtifactSynthesis.svelte';
 
     const translate = (key: string) => get(t)(key);
-
-    const SPIN_DURATION = 2000;
-    const REEL_SYMBOLS = ['paw', 'ram', 'heart', 'protomap_logo', 'glitch-6'];
     const MAX_BET = 1000;
 
     let betAmount = 10;
@@ -23,17 +22,25 @@
     let reels: string[] = ['protomap_logo', 'protomap_logo', 'protomap_logo'];
 
     let winAmount = 0;
-    let lossAmount = 0;
     let winTier = 0;
     let currentGlitchLevel = 0;
+
+    let glitchShards = 0;
+    let showSynthesisModal = false;
+    let synthesisResult: { runes: string[], totalWin: number } | null = null;
+
+    // Переменная для таймера звука вращения (вынесена сюда, чтобы очистить при выходе)
+    let spinSoundInterval: any;
 
     $: if (betAmount > MAX_BET) betAmount = MAX_BET;
     $: if (betAmount < 0) betAmount = 1;
 
     const displayedCredits = tweened($userStore.user?.casino_credits || 0, { duration: 500, easing: quintOut });
 
-    $: if ($userStore.user) {
+    // СИНХРОНИЗАЦИЯ
+    $: if ($userStore.user && !isGlobalSpinning) {
         displayedCredits.set($userStore.user.casino_credits);
+        glitchShards = $userStore.user.glitch_shards || 0;
     }
 
     let audioContext: AudioContext;
@@ -41,38 +48,29 @@
 
     function createSynthSound(type: 'reel_spin' | 'reel_stop') {
         if (!audioContext) return;
+        // Проверка состояния контекста, чтобы не было ошибок при быстром переходе
+        if (audioContext.state === 'closed') return;
+
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
 
         if (type === 'reel_spin') {
-            const osc = audioContext.createOscillator();
-            const gain = audioContext.createGain();
             osc.type = 'square';
             osc.frequency.setValueAtTime(100, audioContext.currentTime);
             osc.frequency.linearRampToValueAtTime(600, audioContext.currentTime + 0.1);
-
             gain.gain.setValueAtTime(0.05, audioContext.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
-
-            osc.connect(gain);
-            gain.connect(audioContext.destination);
-            osc.start();
-            osc.stop(audioContext.currentTime + 0.1);
-        }
-        if (type === 'reel_stop') {
-            // ИСПРАВЛЕНО: osc вместо oscillator
-            const osc = audioContext.createOscillator();
-            const gain = audioContext.createGain();
+        } else {
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(150, audioContext.currentTime);
             osc.frequency.exponentialRampToValueAtTime(40, audioContext.currentTime + 0.15);
-
             gain.gain.setValueAtTime(0.3, audioContext.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.15);
-
-            osc.connect(gain);
-            gain.connect(audioContext.destination);
-            osc.start();
-            osc.stop(audioContext.currentTime + 0.15);
         }
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.start();
+        osc.stop(audioContext.currentTime + 0.15);
     }
 
     onMount(() => {
@@ -85,12 +83,28 @@
             sounds.win3 = new Howl({ src: ['/sounds/win3.mp3'], volume: 0.8 });
             sounds.jackpot = new Howl({ src: ['/sounds/main_jackpot.mp3'], volume: 1.0 });
             sounds.glitchJackpot = new Howl({ src: ['/sounds/glitch_jackpot.mp3'], volume: 0.9 });
+            sounds.click = new Howl({ src: ['/sounds/click.mp3'], volume: 0.5 });
+            sounds.synthesis = new Howl({ src: ['/sounds/purchase.mp3'], volume: 1.0 });
         } catch (e) { console.error("Audio init failed", e); }
+    });
 
-        return () => {
-            Object.values(sounds).forEach(s => s.stop());
-            if (audioContext) audioContext.close();
-        };
+    // ВАЖНО: ОЧИСТКА ПАМЯТИ ПРИ УХОДЕ СО СТРАНИЦЫ
+    onDestroy(() => {
+        // 1. Останавливаем таймер звука вращения
+        if (spinSoundInterval) clearInterval(spinSoundInterval);
+
+        // 2. Выгружаем все звуки Howler из памяти
+        if (sounds) {
+            Object.values(sounds).forEach(s => {
+                s.stop();
+                s.unload();
+            });
+        }
+
+        // 3. Закрываем AudioContext
+        if (audioContext && audioContext.state !== 'closed') {
+            audioContext.close();
+        }
     });
 
     async function spinReels() {
@@ -104,24 +118,24 @@
         if (currentBet > MAX_BET) { betAmount = MAX_BET; return; }
 
         isGlobalSpinning = true;
-        winAmount = 0; lossAmount = 0; winTier = 0;
+        winAmount = 0;
+        winTier = 0;
         reelStates = ['spinning', 'spinning', 'spinning'];
 
         sounds.ambient?.fade(0.3, 0.1, 500);
         sounds.suspense?.play();
 
-        const spinSoundInterval = setInterval(() => createSynthSound('reel_spin'), 150);
+        // Запускаем звук вращения
+        spinSoundInterval = setInterval(() => createSynthSound('reel_spin'), 150);
 
         try {
             const functions = getFunctions();
             const playSlotMachineFunc = httpsCallable(functions, 'playSlotMachine');
+
             const response = await playSlotMachineFunc({ bet: currentBet });
             const gameResult = (response.data as any).data;
 
-            if (gameResult.currentGlitchLevel !== undefined) {
-                currentGlitchLevel = gameResult.currentGlitchLevel;
-            }
-
+            // Ждем завершения спина (1с)
             await new Promise(r => setTimeout(r, 1000));
 
             clearInterval(spinSoundInterval);
@@ -130,36 +144,45 @@
             createSynthSound('reel_stop');
 
             await new Promise(r => setTimeout(r, 500));
-
             reels[1] = gameResult.reels[1];
             reelStates[1] = 'stopped';
             createSynthSound('reel_stop');
 
             await new Promise(r => setTimeout(r, 600));
-
             reels[2] = gameResult.reels[2];
             reelStates[2] = 'stopped';
             createSynthSound('reel_stop');
 
+            // === ФИНАЛ СПИНА ===
             sounds.suspense?.stop();
             sounds.ambient?.fade(0.1, 0.3, 500);
 
             winAmount = gameResult.winAmount;
-            lossAmount = gameResult.lossAmount;
 
-            if (lossAmount > 0) {
-                winTier = -1;
-                sounds.glitchJackpot?.play();
-            } else if (winAmount > 0) {
+            // 1. Обновляем визуально осколки
+            if (gameResult.shards !== undefined) {
+                glitchShards = gameResult.shards;
+            }
+
+            // 2. Обработка победы
+            if (winAmount > 0) {
                 const winRatio = winAmount / currentBet;
                 if (winRatio >= 100) { winTier = 4; sounds.jackpot?.play(); }
                 else if (winRatio >= 25) { winTier = 3; sounds.win3?.play(); }
                 else if (winRatio >= 10) { winTier = 2; sounds.win2?.play(); }
                 else { winTier = 1; sounds.win1?.play(); }
+            } else {
+                if (gameResult.shardsAdded > 0) {
+                    sounds.glitchJackpot?.play();
+                }
             }
 
+            // 3. Обновляем UserStore
             userStore.update(store => {
-                if (store.user) store.user.casino_credits = gameResult.newBalance;
+                if (store.user) {
+                    store.user.casino_credits = gameResult.newBalance;
+                    store.user.glitch_shards = gameResult.shards;
+                }
                 return store;
             });
 
@@ -176,6 +199,39 @@
             isGlobalSpinning = false;
         }
     }
+
+    async function handleSynthesis() {
+        if (glitchShards < 10 || isGlobalSpinning) return;
+
+        isGlobalSpinning = true;
+        sounds.click?.play();
+
+        try {
+            const functions = getFunctions();
+            const synthFunc = httpsCallable(functions, 'synthesizeArtifact');
+
+            const res = await synthFunc();
+            const data = (res.data as any).data;
+
+            sounds.synthesis?.play();
+            synthesisResult = data;
+            showSynthesisModal = true;
+
+            userStore.update(s => {
+                if (s.user) {
+                    s.user.casino_credits = data.newBalance;
+                    s.user.glitch_shards = 0;
+                }
+                return s;
+            });
+            glitchShards = 0;
+
+        } catch (e: any) {
+            modal.error(translate('ui.error'), e.message);
+        } finally {
+            isGlobalSpinning = false;
+        }
+    }
 </script>
 
 <svelte:head>
@@ -189,6 +245,16 @@
     class:win-tier-4={winTier === 4}
     class:win-tier-negative={winTier === -1}
 >
+    <!-- 1. МОДАЛКА СИНТЕЗА (НОВОЕ) -->
+    {#if showSynthesisModal && synthesisResult}
+        <ArtifactSynthesis
+            artifactIds={synthesisResult.runes}
+            totalWin={synthesisResult.totalWin}
+            on:close={() => showSynthesisModal = false}
+        />
+    {/if}
+
+    <!-- ЭФФЕКТЫ ФОНА -->
     <GlitchOverlay
         level={currentGlitchLevel}
         on:stopMusic={() => {
@@ -202,6 +268,8 @@
 
     <div class="bg-blur-1"></div>
     <div class="bg-blur-2"></div>
+
+    <!-- ЧАСТИЦЫ ПОБЕДЫ -->
     <div class="win-effects">
         {#each Array(20) as _, i}
             <div class="particle" style="--i: {i}"></div>
@@ -209,19 +277,24 @@
         <div class="jackpot-flash"></div>
     </div>
 
+    <!-- ИГРОВОЙ АВТОМАТ -->
     <div class="slot-machine-container">
         <div class="machine-frame">
+
+            <!-- ШАПКА -->
             <div class="machine-header">
                 <h1 class="machine-title glitch" data-text="PROTO-SLOTS">PROTO-SLOTS</h1>
                 <div class="jackpot-ticker">
-                    {$t('slots.jackpot')} <span class="jackpot-amount"></span>
+                    {$t('slots.jackpot')}
                 </div>
             </div>
 
+            <!-- БАРАБАНЫ -->
             <div class="reels-window-rim">
                 <div class="reels-window">
                     <div class="payline"></div>
 
+                    <!-- REEL 1 -->
                     <div class="reel-col">
                         <div class="reel-viewport">
                             {#if reelStates[0] === 'spinning'}
@@ -231,7 +304,6 @@
                                     <img src="/casino/heart.svg" alt="" class="blur-icon">
                                     <img src="/casino/protomap_logo.svg" alt="" class="blur-icon">
                                     <img src="/casino/glitch-6.svg" alt="" class="blur-icon">
-                                    <img src="/casino/paw.svg" alt="" class="blur-icon">
                                 </div>
                             {:else}
                                 <div class="static-symbol bounce">
@@ -241,6 +313,7 @@
                         </div>
                     </div>
 
+                    <!-- REEL 2 -->
                     <div class="reel-col">
                         <div class="reel-viewport">
                             {#if reelStates[1] === 'spinning'}
@@ -250,7 +323,6 @@
                                     <img src="/casino/protomap_logo.svg" alt="" class="blur-icon">
                                     <img src="/casino/glitch-6.svg" alt="" class="blur-icon">
                                     <img src="/casino/paw.svg" alt="" class="blur-icon">
-                                    <img src="/casino/ram.svg" alt="" class="blur-icon">
                                 </div>
                             {:else}
                                 <div class="static-symbol bounce">
@@ -260,6 +332,7 @@
                         </div>
                     </div>
 
+                    <!-- REEL 3 -->
                     <div class="reel-col">
                         <div class="reel-viewport">
                             {#if reelStates[2] === 'spinning'}
@@ -269,7 +342,6 @@
                                     <img src="/casino/glitch-6.svg" alt="" class="blur-icon">
                                     <img src="/casino/paw.svg" alt="" class="blur-icon">
                                     <img src="/casino/ram.svg" alt="" class="blur-icon">
-                                    <img src="/casino/heart.svg" alt="" class="blur-icon">
                                 </div>
                             {:else}
                                 <div class="static-symbol bounce">
@@ -282,14 +354,33 @@
                 </div>
             </div>
 
-            <div class="win-display" class:visible={(winAmount > 0 || lossAmount > 0) && !isGlobalSpinning} class:loss={lossAmount > 0}>
-                {#if lossAmount > 0}
-                    {$t('slots.loss')}: <span class="win-amount">-{lossAmount} PC</span>
-                {:else}
-                    {$t('slots.win')}: <span class="win-amount">+{winAmount} PC</span>
+            <!-- 2. ШКАЛА ХАОСА (НОВОЕ) -->
+            <div class="chaos-meter-container">
+                <div class="meter-label">
+                    <span>CHAOS CHARGE</span>
+                    <span class="count" class:ready={glitchShards >= 10}>{glitchShards} / 10</span>
+                </div>
+
+                <div class="meter-track">
+                    <div class="meter-fill" style="width: {(glitchShards / 10) * 100}%" class:full={glitchShards >= 10}></div>
+                    {#each Array(9) as _, i}
+                        <div class="meter-tick" style="left: {(i + 1) * 10}%"></div>
+                    {/each}
+                </div>
+
+                {#if glitchShards >= 10}
+                    <button class="synthesize-btn" on:click={handleSynthesis} transition:scale>
+                        ⚠️ SYNTHESIZE ARTIFACT ⚠️
+                    </button>
                 {/if}
             </div>
 
+            <!-- ВЫИГРЫШ -->
+            <div class="win-display" class:visible={(winAmount > 0) && !isGlobalSpinning}>
+                {$t('slots.win')}: <span class="win-amount">+{winAmount} PC</span>
+            </div>
+
+            <!-- ПАНЕЛЬ УПРАВЛЕНИЯ -->
             <div class="control-panel-rim">
                 <div class="control-panel">
                     <div class="panel-display balance">
@@ -306,7 +397,7 @@
                         </div>
                     </div>
 
-                    <button class="spin-button" on:click={spinReels} disabled={isGlobalSpinning}>
+                    <button class="spin-button" on:click={spinReels} disabled={isGlobalSpinning || (glitchShards >= 10)}>
                         <div class="spin-text">{isGlobalSpinning ? $t('slots.spinning') : $t('slots.spin')}</div>
                     </button>
                 </div>
@@ -314,6 +405,7 @@
         </div>
     </div>
 
+    <!-- ТАБЛИЦА ВЫПЛАТ (ОБНОВЛЕННАЯ) -->
     <div class="paytable-container">
         <h4 class="paytable-title font-display">{$t('slots.combinations')}</h4>
         <div class="paytable-grid">
@@ -330,12 +422,15 @@
                 <div class="multiplier">x10</div>
             </div>
             <div class="combo jackpot">
-                <div class="icons"><img src="/casino/protomap_logo.svg" alt="protomap_logo"><img src="/casino/protomap_logo.svg" alt="protomap_logo"><img src="/casino/protomap_logo.svg" alt="protomap_logo"></div>
+                <div class="icons"><img src="/casino/protomap_logo.svg" alt="logo"><img src="/casino/protomap_logo.svg" alt="logo"><img src="/casino/protomap_logo.svg" alt="logo"></div>
                 <div class="multiplier">x100</div>
             </div>
-            <div class="combo loss">
-                <div class="icons"><img src="/casino/glitch-6.svg" alt="glitch-6"><img src="/casino/glitch-6.svg" alt="glitch-6"><img src="/casino/glitch-6.svg" alt="glitch-6"></div>
-                <div class="multiplier text-xs text-red-500">-(BETx2+666)</div>
+            <!-- Обновил описание для Глитча -->
+            <div class="combo">
+                <div class="icons"><img src="/casino/glitch-6.svg" alt="glitch"><img src="/casino/glitch-6.svg" alt="glitch"><img src="/casino/glitch-6.svg" alt="glitch"></div>
+                <div class="multiplier text-xs" style="color: #bd00ff; text-shadow: 0 0 10px #bd00ff; font-weight: 900;">
+                    FULL CHARGE
+                </div>
             </div>
         </div>
     </div>
@@ -450,6 +545,45 @@
     .multiplier { font-family: 'Chakra Petch', monospace; font-size: 1.2rem; color: #fff; font-weight: bold; }
     .combo.jackpot .multiplier { color: #fcee0a; animation: win-pulse 2s infinite; }
     .combo.loss .multiplier { color: #ff003c; }
+
+    /* CHAOS METER */
+    .chaos-meter-container {
+        width: 100%; margin: 1rem 0; padding: 0 1rem;
+    }
+    .meter-label {
+        display: flex; justify-content: space-between; font-family: 'Chakra Petch', monospace;
+        font-size: 0.8rem; color: #666; margin-bottom: 4px; font-weight: bold;
+    }
+    .meter-label .count.ready { color: #bd00ff; text-shadow: 0 0 5px #bd00ff; animation: pulse-text 1s infinite; }
+
+    .meter-track {
+        height: 12px; background: #111; border: 1px solid #333;
+        border-radius: 6px; position: relative; overflow: hidden;
+    }
+    .meter-fill {
+        height: 100%; background: linear-gradient(90deg, #5500aa, #bd00ff);
+        width: 0%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 10px #bd00ff;
+    }
+    .meter-fill.full { background: #fff; box-shadow: 0 0 15px #fff, 0 0 30px #bd00ff; animation: pulse-bar 0.5s infinite alternate; }
+
+    .meter-tick {
+        position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(0,0,0,0.5);
+    }
+
+    .synthesize-btn {
+        width: 100%; margin-top: 10px; padding: 0.8rem;
+        background: #bd00ff; color: #fff; font-weight: 900;
+        font-family: 'Chakra Petch', monospace; border: 2px solid #fff;
+        border-radius: 4px; cursor: pointer;
+        animation: glitch-skew 2s infinite; /* Твоя существующая анимация глитча */
+        box-shadow: 0 0 20px #bd00ff;
+        text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .synthesize-btn:hover { background: #fff; color: #bd00ff; }
+
+    @keyframes pulse-text { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+    @keyframes pulse-bar { from { opacity: 0.8; } to { opacity: 1; filter: brightness(1.2); } }
 
     @media (max-width: 768px) {
         .page-container { padding: 1rem; }

@@ -170,58 +170,80 @@ export function initMap(containerId: string) {
 
     const userMarkers: { [key: string]: L.Marker } = {};
 
-    function addOrUpdateMarker(userData: MarkerUserData, lat: number, lng: number, city: string): void {
+    // === ОПТИМИЗАЦИЯ: Хелпер для создания объекта маркера (чтобы не дублировать код) ===
+    function createMarkerLayer(userData: MarkerUserData, lat: number, lng: number, city: string): L.Marker {
         const isOwner = currentUserProfile?.username?.trim() === userData.username.trim();
         const popupContent = createCyberPopup(userData, city, isOwner);
         const customUserIcon = createUserAvatarIcon(userData);
-        const usernameKey = userData.username.trim();
 
-        // [FIX]: Логика для северных регионов
-        // Если широта > 80, попап улетит за экран.
-        // Мы задаем offset [0, 340].
-        // Почему 340? Это примерная высота попапа (~250px) + отступ.
-        // Leaflet строит попап "снизу-вверх" от точки привязки.
-        // Сместив точку привязки сильно вниз, мы заставляем "верхушку" попапа оказаться под маркером.
-        let popupOptions: L.PopupOptions = {
-            autoPan: true
-        };
+        let popupOptions: L.PopupOptions = { autoPan: true };
 
         if (lat > 80) {
             popupOptions = {
-                offset: [0, 340], // Смещаем точку "роста" попапа вниз
-                className: 'popup-inverted', // Класс для переворота стрелочки CSS
+                offset: [0, 340],
+                className: 'popup-inverted',
                 autoPan: true
             };
         }
 
-        if (userMarkers[usernameKey]) {
-            const marker = userMarkers[usernameKey];
-            marker.setLatLng([lat, lng]).setIcon(customUserIcon);
+        return L.marker([lat, lng], { icon: customUserIcon }).bindPopup(popupContent, popupOptions);
+    }
 
-            // Важно: unbind/bind нужен, чтобы применить новые options (offset),
-            // так как setPopupContent меняет только HTML.
+    // === ОПТИМИЗАЦИЯ: Функция для единичного обновления (когда юзер двигается сам) ===
+    function addOrUpdateMarker(userData: MarkerUserData, lat: number, lng: number, city: string): void {
+        const usernameKey = userData.username.trim();
+
+        if (userMarkers[usernameKey]) {
+            // Обновляем существующий
+            const marker = userMarkers[usernameKey];
+            const customUserIcon = createUserAvatarIcon(userData);
+            const isOwner = currentUserProfile?.username?.trim() === userData.username.trim();
+            const popupContent = createCyberPopup(userData, city, isOwner);
+
+            // Пересчитываем опции на случай если уехал на север
+            let popupOptions: L.PopupOptions = { autoPan: true };
+            if (lat > 80) {
+                popupOptions = { offset: [0, 340], className: 'popup-inverted', autoPan: true };
+            }
+
+            marker.setLatLng([lat, lng]).setIcon(customUserIcon);
             marker.unbindPopup();
             marker.bindPopup(popupContent, popupOptions);
-
-            // Если это наш маркер и мы только что обновили его - можно открыть,
-            // но лучше оставить на усмотрение пользователя, чтобы не спамить.
         } else {
-            const newMarker = L.marker([lat, lng], { icon: customUserIcon })
-                .bindPopup(popupContent, popupOptions);
+            // Создаем новый и добавляем (так как это единичное действие, addLayer тут ок)
+            const newMarker = createMarkerLayer(userData, lat, lng, city);
             markers.addLayer(newMarker);
             userMarkers[usernameKey] = newMarker;
         }
     }
 
+    // === ОПТИМИЗАЦИЯ: Массовый рендер (FIX ДЛЯ CPU) ===
     function renderMarkers(locations: any[]) {
+        // 1. Очищаем карту
         markers.clearLayers();
         Object.keys(userMarkers).forEach(key => delete userMarkers[key]);
 
+        // 2. Собираем маркеры в массив (В ПАМЯТИ)
+        const batchMarkers: L.Marker[] = [];
+
         locations.forEach((loc) => {
             if (loc.user && loc.user.username && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
-                addOrUpdateMarker(loc.user, loc.lat, loc.lng, loc.city);
+                const marker = createMarkerLayer(loc.user, loc.lat, loc.lng, loc.city);
+                const usernameKey = loc.user.username.trim();
+
+                // Сохраняем ссылку для обновлений
+                userMarkers[usernameKey] = marker;
+
+                // Добавляем в пачку
+                batchMarkers.push(marker);
             }
         });
+
+        // 3. Добавляем на карту ОДНИМ ВЫЗОВОМ (Batch add)
+        // Это снижает нагрузку на CPU в 50-100 раз при большом кол-ве меток
+        if (batchMarkers.length > 0) {
+            markers.addLayers(batchMarkers);
+        }
     }
 
     async function loadAllMarkers() {

@@ -644,147 +644,288 @@ export const cashOutCrashGame = onCall(async (request) => {
     }
 });
 
-export const playSlotMachine = onCall(
-    { secrets: ["TELEGRAM_BOT_TOKEN"] },
-    async (request) => {
-        if (request.app == undefined) {
-        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
-    }
+export const synthesizeArtifact = onCall(async (request) => {
+    // 1. Проверки безопасности
+    if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(request);
-
-    const { bet } = request.data;
-    const MAX_BET = 1000;
-
-    if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
-    if (bet > MAX_BET) throw new HttpsError('invalid-argument', `Max bet is ${MAX_BET}.`);
+    await assertNotBanned(uid);      // Проверка бана
+    assertEmailVerified(request.auth); // Проверка почты
 
     const userRef = db.collection('users').doc(uid);
+    const BASE_VALUE = 100; // Базовая ценность (100 PC)
 
     try {
-        let notificationMessage: string | null = null;
-
         const result = await db.runTransaction(async (t) => {
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
 
-            const data = userDoc.data() as any;
-            const username = data.username || "Unknown";
-            const credits = data.casino_credits ?? 100;
+            const userData = userDoc.data()!;
+            if (userData.isBanned) throw new HttpsError('permission-denied', 'Banned.');
 
-            if (credits < bet) throw new HttpsError('failed-precondition', 'Not enough credits.');
+            const currentShards = userData.glitch_shards || 0;
 
-            const now = Date.now();
-            const lastSpinTime = data.last_game_played ? data.last_game_played.toDate().getTime() : 0;
-            const ONE_HOUR = 60 * 60 * 1000;
-
-            let glitchLevel = data.glitch_level || 0;
-            let spinsInLevel = data.spins_in_level || 0;
-
-            if (now - lastSpinTime > ONE_HOUR) {
-                glitchLevel = 0;
-                spinsInLevel = 0;
+            // 2. Проверка: Есть ли 10 осколков?
+            if (currentShards < 10) {
+                throw new HttpsError('failed-precondition', 'Нужно 10 осколков для синтеза.');
             }
 
-            spinsInLevel++;
+            // 3. Таблица лута (ID должны совпадать с твоей локализацией)
+            const runePool = [
+                // === ОБЫЧНЫЕ (Common) ===
+                { id: 'toast',        weight: 25, type: 'flat', val: 150 },
+                { id: 'rubber_duck',  weight: 25, type: 'flat', val: 200 }, // NEW
+                { id: 'ram_stick',    weight: 20, type: 'flat', val: 300 },
 
-            if (spinsInLevel >= 10) {
-                if (glitchLevel < 5) {
-                    glitchLevel++;
+                // === НЕОБЫЧНЫЕ (Uncommon) ===
+                { id: 'energy_drink', weight: 15, type: 'mult', val: 2 },
+                { id: 'gpu_fan',      weight: 10, type: 'mult', val: 3 },
+
+                // === РЕДКИЕ (Rare) ===
+                { id: 'rtx_card',     weight: 5,  type: 'mult', val: 4 }, // NEW
+                { id: 'source_code',  weight: 3,  type: 'mult', val: 5 },
+                { id: 'banhammer',    weight: 3,  type: 'flat', val: 666 },
+
+                // === ПРОКЛЯТЫЕ (Cursed) ===
+                { id: 'bug',          weight: 8,  type: 'flat', val: -100 },
+                { id: '404_error',    weight: 6,  type: 'flat', val: -200 }, // NEW
+                { id: 'spaghetti',    weight: 5,  type: 'bad',  val: 0.5 }, // /2
+                { id: 'blue_screen',  weight: 4,  type: 'bad',  val: 0.5 }, // /2
+                { id: 'ransomware',   weight: 2,  type: 'bad',  val: 0.3 }, // NEW (Делит на 3!)
+
+                // === ЛЕГЕНДАРНЫЕ (Legendary) ===
+                { id: 'orion_tear',   weight: 0.5, type: 'super', val: 10 },
+                { id: 'admin_key',    weight: 0.1, type: 'super', val: 20 } // NEW (x20!)
+            ];
+
+            // Хелпер для рандома
+            const getRandomRune = () => {
+                const totalWeight = runePool.reduce((sum, item) => sum + item.weight, 0);
+                let random = Math.random() * totalWeight;
+                for (const rune of runePool) {
+                    if (random < rune.weight) return rune;
+                    random -= rune.weight;
                 }
-                spinsInLevel = 0;
-            }
+                return runePool[0];
+            };
 
-            let glitchChanceThreshold = 3.1;
+            // Генерируем 3 предмета
+            const runes = [getRandomRune(), getRandomRune(), getRandomRune()];
 
-            if (glitchLevel === 1) glitchChanceThreshold = 10.0;
-            if (glitchLevel === 2) glitchChanceThreshold = 20.0;
-            if (glitchLevel === 3) glitchChanceThreshold = 30.0;
-            if (glitchLevel === 4) glitchChanceThreshold = 40.0;
-            if (glitchLevel === 5) glitchChanceThreshold = 50.0;
+            // 4. Расчет выигрыша
+            let totalWin = BASE_VALUE;
 
-            const randomInt = crypto.randomInt(0, 10000);
-            const randPercent = randomInt / 100;
-
-            const newBalanceAfterBet = credits - bet;
-            let finalReels: string[] = [];
-            let winMultiplier = 0;
-            let lossAmount = 0;
-
-            if (randPercent < 0.1) {
-                finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo'];
-                winMultiplier = 100;
-                const win = Math.floor(bet * 100);
-                notificationMessage = `🚨 *JACKPOT ALERT!* 🚨\n\nИгрок *${username}* выжил в Бездне!\nУровень угрозы: ${glitchLevel}\nВыигрыш: *${win} PC* 💎`;
-            }
-
-            else if (randPercent < glitchChanceThreshold) {
-                finalReels = ['glitch-6', 'glitch-6', 'glitch-6'];
-                lossAmount = Math.floor(bet * 2) + 666;
-                notificationMessage = `☠️ *GLITCHED [LVL ${glitchLevel}]* ☠️\n\n*${username}* поглощен Бездной.\nПотеряно: *${lossAmount} PC*.`;
-            }
-
-            else if (randPercent < (glitchChanceThreshold + 2.0)) {
-                finalReels = ['heart', 'heart', 'heart'];
-                winMultiplier = 10;
-                const win = Math.floor(bet * 10);
-                if (win >= 2000) notificationMessage = `🔥 *BIG WIN!* 🔥\n\n*${username}* (Lvl ${glitchLevel}) поднял *${win} PC*!`;
-            }
-
-            else if (randPercent < (glitchChanceThreshold + 9.0)) {
-                finalReels = ['ram', 'ram', 'ram'];
-                winMultiplier = 5;
-            }
-
-            else if (randPercent < (glitchChanceThreshold + 24.0)) {
-                finalReels = ['paw', 'paw', 'paw'];
-                winMultiplier = 2;
-            }
-
-            else {
-                const sym = ['paw', 'ram', 'heart', 'protomap_logo'];
-                do {
-                    finalReels = [
-                        sym[crypto.randomInt(0, 4)],
-                        sym[crypto.randomInt(0, 4)],
-                        sym[crypto.randomInt(0, 4)]
-                    ];
-                } while (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]);
-            }
-
-            const win = Math.floor(bet * winMultiplier);
-            const finalCalc = newBalanceAfterBet + win - lossAmount;
-            const final = finalCalc < 0 ? 0 : finalCalc;
-
-            t.update(userRef, {
-                casino_credits: final,
-                last_game_played: FieldValue.serverTimestamp(),
-                glitch_level: glitchLevel,
-                spins_in_level: spinsInLevel
+            // Сначала применяем множители базы
+            runes.forEach(r => { if (r.type === 'mult') totalWin += (BASE_VALUE * (r.val - 1)); });
+            // Потом добавляем фиксированные суммы
+            runes.forEach(r => { if (r.type === 'flat') totalWin += r.val; });
+            // Потом глобальные модификаторы (деление или супер-множитель)
+            runes.forEach(r => {
+                if (r.type === 'bad') totalWin = Math.floor(totalWin * r.val);
+                if (r.type === 'super') totalWin = Math.floor(totalWin * r.val);
             });
 
+            // Минимум 50 монет, чтобы не было обидно
+            if (totalWin < 50) totalWin = 50;
+
+            // 5. Сохраняем в базу
+            const newBalance = (userData.casino_credits || 0) + totalWin;
+
+            t.update(userRef, {
+                glitch_shards: 0, // Сбрасываем осколки
+                casino_credits: newBalance,
+                last_bonus_game: FieldValue.serverTimestamp()
+            });
+
+            // Возвращаем данные клиенту для анимации
             return {
-                reels: finalReels,
-                winAmount: win,
-                lossAmount,
-                newBalance: final,
-                currentGlitchLevel: glitchLevel,
-                spinsToNextLevel: 10 - spinsInLevel
+                runes: runes.map(r => r.id),
+                totalWin: totalWin,
+                newBalance: newBalance
             };
         });
 
-        if (notificationMessage) {
-            sendToCasinoChat(notificationMessage).catch(console.error);
-        }
-
         return { data: result };
-    } catch (error: any) {
-        if (error.code) throw error;
-        throw new HttpsError('internal', 'Game error.');
+
+    } catch (e: any) {
+        throw e instanceof HttpsError ? e : new HttpsError('internal', e.message);
     }
 });
+
+export const playSlotMachine = onCall(
+    { secrets: ["TELEGRAM_BOT_TOKEN"] },
+    async (request) => {
+        // 1. SECURITY CHECKS
+        if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
+        if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+        const uid = request.auth.uid;
+        await assertNotBanned(uid);
+
+        const { bet } = request.data;
+        const MAX_BET = 1000;
+
+        if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
+        if (bet > MAX_BET) throw new HttpsError('invalid-argument', `Max bet is ${MAX_BET}.`);
+
+        const userRef = db.collection('users').doc(uid);
+
+        try {
+            const result = await db.runTransaction(async (t) => {
+                const userDoc = await t.get(userRef);
+                if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
+
+                const data = userDoc.data() as any;
+                const username = data.username || "Unknown";
+                const credits = data.casino_credits ?? 100;
+                let currentShards = data.glitch_shards || 0;
+                const MAX_SHARDS = 10;
+
+                if (credits < bet) throw new HttpsError('failed-precondition', 'Not enough credits.');
+
+                // === RNG (0 - 100,000) ===
+                const roll = crypto.randomInt(0, 100000);
+
+                let winMultiplier = 0;
+                let finalReels: string[] = [];
+                let shardsToAdd = 0;
+                let resultType = 'LOSS';
+                let txNotification: string | null = null;
+
+                // === 📉 HARDCORE ODDS (RTP ~80%) ===
+                // 0 - 100       (0.1%)  = JACKPOT (x100)
+                // 101 - 1000    (0.9%)  = GLITCH  (Shards +5)
+                // 1001 - 2500   (1.5%)  = HEART   (x10)
+                // 2501 - 7500   (5.0%)  = RAM     (x5)
+                // 7501 - 21500  (14.0%) = PAW     (x2)
+                // 21501+        (78.5%) = LOSS
+
+                if (roll <= 100) resultType = 'JACKPOT';
+                else if (roll <= 1000) resultType = 'GLITCH';
+                else if (roll <= 2500) resultType = 'HEART';
+                else if (roll <= 7500) resultType = 'RAM';
+                else if (roll <= 21500) resultType = 'PAW';
+                else resultType = 'LOSS';
+
+                const symbols = ['paw', 'ram', 'heart', 'protomap_logo', 'glitch-6'];
+                const safeSymbols = ['paw', 'ram', 'heart', 'protomap_logo'];
+
+                switch (resultType) {
+                    case 'JACKPOT':
+                        finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo'];
+                        winMultiplier = 100;
+                        txNotification = `🚨 *JACKPOT ALERT!* 🚨\n\nИгрок *${username}* сорвал куш!\nВыигрыш: *${Math.floor(bet * 100)} PC* 💎`;
+                        break;
+
+                    case 'GLITCH':
+                        finalReels = ['glitch-6', 'glitch-6', 'glitch-6'];
+                        winMultiplier = 0;
+                        shardsToAdd = 10;
+                        break;
+
+                    case 'HEART':
+                        finalReels = ['heart', 'heart', 'heart'];
+                        winMultiplier = 10;
+                        break;
+
+                    case 'RAM':
+                        finalReels = ['ram', 'ram', 'ram'];
+                        winMultiplier = 5;
+                        break;
+
+                    case 'PAW':
+                        finalReels = ['paw', 'paw', 'paw'];
+                        winMultiplier = 2;
+                        break;
+
+                    case 'LOSS':
+                        const shardRoll = crypto.randomInt(0, 100);
+
+                        // А. УТЕШИТЕЛЬНЫЙ ПРИЗ (Гринд осколков) - 8% шанс (было 10%)
+                        // Чуть усложнили получение осколков, раз основной RTP упал
+                        if (shardRoll < 8) {
+                            const count = (shardRoll < 2) ? 2 : 1; // 2% на два осколка, 6% на один
+                            shardsToAdd = count;
+
+                            // Гарантируем отсутствие случайного третьего глитча
+                            finalReels = [
+                                safeSymbols[crypto.randomInt(0, 4)],
+                                safeSymbols[crypto.randomInt(0, 4)],
+                                safeSymbols[crypto.randomInt(0, 4)]
+                            ];
+
+                            // Вставляем глитчи
+                            let positions = [0, 1, 2].sort(() => 0.5 - Math.random());
+                            for(let i=0; i<count; i++) {
+                                finalReels[positions[i]] = 'glitch-6';
+                            }
+                        }
+                        // Б. ОБЫЧНЫЙ ПРОИГРЫШ
+                        else {
+                            const nearMissRoll = crypto.randomInt(0, 100);
+
+                            // Дразнилка (Near Miss) - 25% (Увеличили частоту, чтобы было веселее проигрывать)
+                            if (nearMissRoll < 25) {
+                                const teaseSym = symbols[crypto.randomInt(0, 4)];
+                                const trashSym = symbols.filter(s => s !== teaseSym && s !== 'glitch-6')[crypto.randomInt(0, 3)];
+                                finalReels = [teaseSym, teaseSym, trashSym];
+                            }
+                            // Полный рандом
+                            else {
+                                do {
+                                    finalReels = [
+                                        symbols[crypto.randomInt(0, 5)],
+                                        symbols[crypto.randomInt(0, 5)],
+                                        symbols[crypto.randomInt(0, 5)]
+                                    ];
+                                } while (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]);
+
+                                // Чистка от случайных глитчей
+                                finalReels = finalReels.map(s => s === 'glitch-6' ? 'paw' : s);
+                                if (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]) {
+                                    finalReels[2] = 'ram';
+                                }
+                            }
+                        }
+                        break;
+                }
+
+                const win = Math.floor(bet * winMultiplier);
+                const finalCalc = credits - bet + win;
+                const finalBalance = finalCalc < 0 ? 0 : finalCalc;
+
+                let newShards = currentShards + shardsToAdd;
+                if (newShards > MAX_SHARDS) newShards = MAX_SHARDS;
+
+                t.update(userRef, {
+                    casino_credits: finalBalance,
+                    last_game_played: FieldValue.serverTimestamp(),
+                    glitch_shards: newShards
+                });
+
+                return {
+                    reels: finalReels,
+                    winAmount: win,
+                    newBalance: finalBalance,
+                    shards: newShards,
+                    shardsAdded: shardsToAdd,
+                    notification: txNotification
+                };
+            });
+
+            if ((result as any).notification) {
+                sendToCasinoChat((result as any).notification).catch(console.error);
+            }
+            delete (result as any).notification;
+
+            return { data: result };
+        } catch (error: any) {
+            if (error.code) throw error;
+            throw new HttpsError('internal', 'Game error.');
+        }
+    }
+);
 
 export const playCoinFlip = onCall(async (request) => {
     if (request.app == undefined) {
