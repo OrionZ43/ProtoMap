@@ -32,22 +32,11 @@
 }
 
 body {
-    @apply bg-gray-900 text-gray-200 font-sans;
-    overflow-x: hidden;
-    background-color: #050a10; /* Fallback color */
-}
-
-body::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    z-index: -1;
+    @apply bg-cyber-bg text-gray-200 font-sans;
     background-image:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23ffffff' fill-opacity='0.03' d='M0 2h2v2H0zM2 0h2v2H2z'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23ffffff' fill-opacity='0.02' d='M0 2h2v2H0zM2 0h2v2H2z'/%3E%3C/svg%3E"),
         radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
-    background-size: auto, cover;
-    pointer-events: none;
-    will-change: transform; /* Подсказка браузеру держать это в GPU */
+    background-attachment: fixed;
 }
 
 .no-scroll {
@@ -55,21 +44,18 @@ body::before {
 }
 
 .side-panel {
-    @apply fixed top-0 h-full w-16 hidden lg:flex items-center justify-center;
-    background: rgba(0, 0, 0, 0.2); /* Без блюра для боковушек */
-    border-color: rgba(255, 255, 255, 0.05);
+    @apply fixed top-0 h-full w-16 bg-black/20 hidden lg:flex items-center justify-center;
     writing-mode: vertical-rl;
     text-orientation: mixed;
     z-index: 5;
-    pointer-events: none; /* Чтобы клики проходили сквозь пустые места */
 }
 .side-panel.left {
     @apply left-1.5;
-    border-right-width: 1px;
+    border-right: 1px solid var(--border-color);
 }
 .side-panel.right {
     @apply right-1.5;
-    border-left-width: 1px;
+    border-left: 1px solid var(--border-color);
 }
 
 .v-text {
@@ -88,77 +74,109 @@ body::before {
     }
 }
 
-/* === GLASSMORPHISM & PANELS === */
-
-/* Базовый класс панели */
-.cyber-panel {
-    position: relative;
-    background: rgba(15, 20, 25, 0.9); /* Более плотный фон по дефолту */
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    /* backdrop-filter включаем только на мощных устройствах через @media ниже */
-}
-
-/* Эффект сканирующей линии (оставляем, он дешевый для GPU) */
-@keyframes light-sweep {
-    0% { transform: translateY(-100%); }
-    100% { transform: translateY(100%); }
-}
-
-.cyber-panel::before, .cyber-panel::after {
-    content: ''; position: absolute; top: 0; width: 2px; height: 100%;
-    background: linear-gradient(to bottom, transparent, var(--cyber-yellow), transparent);
-    opacity: 0.3; pointer-events: none;
-}
-.cyber-panel::before { left: 0; animation: light-sweep 4s linear infinite; }
-.cyber-panel::after { right: 0; animation: light-sweep 4s linear infinite reverse; }
-
 #map-container, .leaflet-container {
-    background: #050a10 !important; /* Темный фон пока карта грузится */
+    position: relative;
     z-index: 0;
 }
 
-/* Оптимизированный попап */
+@keyframes light-sweep {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.cyber-panel {
+    position: relative;
+    overflow: hidden;
+}
+
+.cyber-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        var(--cyber-yellow, #fcee0a) 50%,
+        transparent 100%
+    );
+    opacity: 0.5;
+    animation: light-sweep 4s linear infinite;
+    animation-delay: 1s;
+}
+
+.cyber-panel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        var(--cyber-yellow, #fcee0a) 50%,
+        transparent 100%
+    );
+    opacity: 0.5;
+    animation: light-sweep 4s linear infinite reverse;
+}
+
 .leaflet-popup-content-wrapper {
-    background-color: #1a1d21 !important; /* Плоский цвет вместо стекла */
-    color: #e1e1e1 !important;
-    border: 1px solid rgba(0, 240, 255, 0.3) !important;
-    border-radius: 4px !important;
-    padding: 0 !important;
-    /* Убираем тяжелые тени */
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5) !important;
+    background-color: var(--glass-bg, rgba(32, 35, 42, 0.92)) !important;
+    color: var(--text-color, #e1e1e1) !important;
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1)) !important;
+    border-radius: var(--border-radius, 6px) !important;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2), 0 0 15px rgba(0, 240, 255, 0.15) !important;
+    backdrop-filter: blur(var(--blur-intensity, 8px)) !important;
+    -webkit-backdrop-filter: blur(var(--blur-intensity, 8px)) !important;
 }
 
-/* Включаем стекло только на десктопах */
-@media (min-width: 769px) {
-    .leaflet-popup-content-wrapper {
-        background-color: rgba(20, 25, 30, 0.9) !important;
-        backdrop-filter: blur(8px) !important;
-    }
+.leaflet-popup-tip-container {
+    width: 40px;
+    height: 20px;
 }
-
 .leaflet-popup-tip {
-    background-color: #1a1d21 !important;
-    border: 1px solid rgba(0, 240, 255, 0.3) !important;
-    border-left: none !important; border-top: none !important;
+    background-color: var(--glass-bg, rgba(32, 35, 42, 0.92)) !important;
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1)) !important;
+    border-left: none !important;
+    border-top: none !important;
     box-shadow: none !important;
+    transform: rotate(45deg);
+    margin: -1px;
 }
 
 .leaflet-popup-content {
-    margin: 0 !important;
-    min-width: 260px;
-    line-height: 1.5;
+    margin: 14px 20px !important;
+    line-height: 1.6;
+    font-size: 0.95em;
+    font-family: 'Inter', sans-serif;
 }
 
-.liquid-glass-popup {
-    padding: 1rem;
+.leaflet-popup-content a {
+    color: var(--primary-color, #4fc3f7);
+    font-weight: 700;
+    transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+.leaflet-popup-content a:hover {
+    color: var(--link-hover-color, #ffffff);
+    text-shadow: 0 0 5px var(--primary-color, #4fc3f7);
 }
 
 .leaflet-popup-close-button {
-    color: #888 !important;
-    font-size: 24px !important;
-    right: 8px !important; top: 8px !important;
+    color: var(--text-muted-color, #8899a6) !important;
+    transition: color 0.2s ease, transform 0.2s ease;
 }
-.leaflet-popup-close-button:hover { color: #fff !important; }
+.leaflet-popup-close-button:hover {
+    color: #fff !important;
+    transform: scale(1.2);
+}
 
 .delete-marker-btn {
     @apply w-full mt-3 px-3 py-1.5 text-xs uppercase tracking-widest;
@@ -726,40 +744,3 @@ html {
     border-left: none !important;
     border-top: none !important;
 }
-/* === MOBILE & PERFORMANCE OPTIMIZATIONS === */
-
-/* 1. Отключаем тяжелые эффекты на мобильных устройствах */
-@media (max-width: 768px) {
-    .cyber-panel, .glass-card, .modal-container,
-    .synthesis-panel, .artifact-card {
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-        background: #0a0c10 !important; /* Сплошной цвет */
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important;
-    }
-
-    /* Упрощаем анимацию частиц и свечения */
-    .particle { display: none !important; }
-    .card-glow { opacity: 0.05 !important; }
-
-    /* Отключаем сложные тени */
-    .machine-title, .jackpot-ticker {
-        text-shadow: 1px 1px 0 #000 !important;
-    }
-}
-
-/* 2. Для пользователей, включивших "Уменьшение движения" в ОС */
-@media (prefers-reduced-motion: reduce) {
-    *, ::before, ::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-    .particle, .lightning-canvas { display: none !important; }
-}
-
-/* === UTILS === */
-.text-cyber-yellow { color: var(--cyber-yellow); }
-.text-cyber-red { color: var(--cyber-red); }
-.text-cyber-cyan { color: var(--cyber-cyan); }
