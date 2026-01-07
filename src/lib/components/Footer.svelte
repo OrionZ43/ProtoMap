@@ -1,15 +1,16 @@
 <script lang="ts">
     export let mode: 'fixed' | 'menu' = 'fixed';
     import { t } from 'svelte-i18n';
+    const currentYear = new Date().getFullYear();
 </script>
 
 <div class:legal-ticker={mode === 'fixed'} class:menu-links={mode === 'menu'}>
     {#if mode === 'menu'}
         <a href="/privacy-policy">{$t('footer.policy')}</a>
         <a href="/terms-of-service">{$t('footer.terms')}</a>
-        <span>© 2025 {$t('footer.rights')}</span>
+        <span>© {currentYear} {$t('footer.rights')}</span>
     {:else}
-        <p>© 2025 {$t('footer.rights')}</p>
+        <p>© {currentYear} {$t('footer.rights')}</p>
         <div class="links">
             <a href="/privacy-policy">{$t('footer.policy')}</a>
             <span>//</span>
