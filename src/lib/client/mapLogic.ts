@@ -217,21 +217,32 @@ export function initMap(containerId: string) {
         }
     }
 
-    // === ОПТИМИЗАЦИЯ: Массовый рендер (FIX ДЛЯ CPU) ===
+    // === ОПТИМИЗАЦИЯ: Массовый рендер (С ЗАЩИТОЙ ОТ ДУБЛЕЙ) ===
     function renderMarkers(locations: any[]) {
-        // 1. Очищаем карту
+        // 1. Очищаем карту от старого мусора
         markers.clearLayers();
+
+        // Очищаем хеш-таблицу ссылок
         Object.keys(userMarkers).forEach(key => delete userMarkers[key]);
 
-        // 2. Собираем маркеры в массив (В ПАМЯТИ)
         const batchMarkers: L.Marker[] = [];
 
+        // 2. Проходимся по данным
         locations.forEach((loc) => {
             if (loc.user && loc.user.username && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
-                const marker = createMarkerLayer(loc.user, loc.lat, loc.lng, loc.city);
                 const usernameKey = loc.user.username.trim();
 
-                // Сохраняем ссылку для обновлений
+                // 🔥 ЗАЩИТА ОТ ДУБЛИКАТОВ 🔥
+                // Если мы УЖЕ добавили этого юзера в текущем цикле рендера — пропускаем его.
+                // Это спасет, если в базе задвоились записи.
+                if (userMarkers[usernameKey]) {
+                    console.warn(`[Map] Duplicate signal detected for: ${usernameKey}. Ignoring echo.`);
+                    return;
+                }
+
+                const marker = createMarkerLayer(loc.user, loc.lat, loc.lng, loc.city);
+
+                // Сохраняем ссылку (и заодно помечаем, что юзер уже есть)
                 userMarkers[usernameKey] = marker;
 
                 // Добавляем в пачку
@@ -239,8 +250,7 @@ export function initMap(containerId: string) {
             }
         });
 
-        // 3. Добавляем на карту ОДНИМ ВЫЗОВОМ (Batch add)
-        // Это снижает нагрузку на CPU в 50-100 раз при большом кол-ве меток
+        // 3. Добавляем на карту ОДНИМ ВЫЗОВОМ
         if (batchMarkers.length > 0) {
             markers.addLayers(batchMarkers);
         }
