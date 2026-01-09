@@ -145,6 +145,22 @@
             }
         );
     }
+    let tgLinkCode = "";
+    let isGeneratingCode = false;
+
+    async function generateTgCode() {
+        isGeneratingCode = true;
+        try {
+            const functions = getFunctions();
+            const getCodeFunc = httpsCallable(functions, 'getTelegramAuthCode');
+            const res = await getCodeFunc();
+            tgLinkCode = (res.data as any).code;
+        } catch (e: any) {
+            modal.error(translate('ui.error'), e.message);
+        } finally {
+            isGeneratingCode = false;
+        }
+    }
 </script>
 
 <svelte:head>
@@ -209,6 +225,30 @@
             </NeonButton>
             <a href="/profile/{data.profile.username || ''}" class="cancel-btn">{$t('edit_profile.cancel_btn')}</a>
         </div>
+        <!-- TELEGRAM LINKING SECTION -->
+    <div class="form-group border border-gray-700 p-4 rounded-lg bg-black/20 mt-6">
+        <h3 class="form-label font-display text-cyber-cyan mb-2">TELEGRAM UPLINK</h3>
+        <p class="text-xs text-gray-400 mb-4">
+            Привяжите Telegram для участия в дуэлях и получения уведомлений.
+        </p>
+
+        {#if !tgLinkCode}
+            <NeonButton type="button" on:click={generateTgCode} disabled={isGeneratingCode} extraClass="w-full text-xs">
+                {isGeneratingCode ? 'GENERATING...' : 'ПОЛУЧИТЬ КОД СВЯЗИ'}
+            </NeonButton>
+        {:else}
+            <div class="text-center">
+                <p class="text-sm text-gray-300 mb-2">Отправьте этот код боту:</p>
+                <div class="text-2xl font-mono font-bold text-cyber-yellow bg-black/50 p-2 rounded border border-dashed border-gray-600 select-all">
+                    /link {tgLinkCode}
+                </div>
+                <p class="text-[10px] text-gray-500 mt-2">Код действует 5 минут</p>
+                <a href="https://t.me/ProtoMapBot" target="_blank" class="text-cyber-cyan text-xs hover:underline mt-2 block">
+                    Перейти к боту ->
+                </a>
+            </div>
+        {/if}
+    </div>
     </div>
 
     <hr class="separator"/>

@@ -5,6 +5,22 @@ import fetch from "node-fetch";
 import { FieldValue } from "firebase-admin/firestore";
 import { v2 as cloudinary } from "cloudinary";
 import * as crypto from 'crypto';
+import { telegramWebhook } from './telegramBot';
+
+exports.telegramWebhook = telegramWebhook;
+
+export const getTelegramAuthCode = onCall(async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+    const uid = request.auth.uid;
+    const code = "PM-" + crypto.randomBytes(3).toString('hex').toUpperCase();
+    await db.collection('system').doc('telegram_codes').collection('active_codes').doc(code).set({
+        uid: uid,
+        createdAt: FieldValue.serverTimestamp(),
+        expiresAt: Date.now() + 5 * 60 * 1000
+    });
+
+    return { code };
+});
 
 if (!admin.apps.length) {
     admin.initializeApp();
