@@ -243,7 +243,7 @@
                     /link {tgLinkCode}
                 </div>
                 <p class="text-[10px] text-gray-500 mt-2">Код действует 5 минут</p>
-                <a href="https://t.me/ProtoMapBot" target="_blank" class="text-cyber-cyan text-xs hover:underline mt-2 block">
+                <a href="https://t.me/OrionNeurobot" target="_blank" class="text-cyber-cyan text-xs hover:underline mt-2 block">
                     Перейти к боту ->
                 </a>
             </div>
