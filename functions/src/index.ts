@@ -769,10 +769,17 @@ export const synthesizeArtifact = onCall(async (request) => {
     }
 });
 
+interface UserData {
+    username?: string;
+    casino_credits?: number;
+    glitch_shards?: number;
+    isBanned?: boolean;
+}
+
 export const playSlotMachine = onCall(
     { secrets: ["TELEGRAM_BOT_TOKEN"] },
     async (request) => {
-        // 1. SECURITY CHECKS
+        // 1. SECURITY & VALIDATION
         if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
         if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
@@ -792,41 +799,34 @@ export const playSlotMachine = onCall(
                 const userDoc = await t.get(userRef);
                 if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
 
-                const data = userDoc.data() as any;
+                const data = userDoc.data() as UserData;
                 const username = data.username || "Unknown";
                 const credits = data.casino_credits ?? 100;
                 let currentShards = data.glitch_shards || 0;
                 const MAX_SHARDS = 10;
 
-                if (credits < bet) throw new HttpsError('failed-precondition', 'Not enough credits.');
+                if (credits < bet) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
 
-                // === RNG (0 - 100,000) ===
+                // 2. RNG CORE (0 - 99999)
                 const roll = crypto.randomInt(0, 100000);
 
                 let winMultiplier = 0;
                 let finalReels: string[] = [];
                 let shardsToAdd = 0;
-                let resultType = 'LOSS';
+                let resultType: 'JACKPOT' | 'GLITCH' | 'HEART' | 'RAM' | 'PAW' | 'LOSS';
                 let txNotification: string | null = null;
 
-                // === 📉 HARDCORE ODDS (RTP ~80%) ===
-                // 0 - 100       (0.1%)  = JACKPOT (x100)
-                // 101 - 1000    (0.9%)  = GLITCH  (Shards +5)
-                // 1001 - 2500   (1.5%)  = HEART   (x10)
-                // 2501 - 7500   (5.0%)  = RAM     (x5)
-                // 7501 - 21500  (14.0%) = PAW     (x2)
-                // 21501+        (78.5%) = LOSS
+                // === ⚖️ BALANCED ODDS (RTP ~91.5%) ===
+                if (roll < 100) resultType = 'JACKPOT';       // 0.1%
+                else if (roll < 1100) resultType = 'GLITCH';  // 1.0%
+                else if (roll < 2600) resultType = 'HEART';   // 1.5%
+                else if (roll < 8100) resultType = 'RAM';     // 5.5%
+                else if (roll < 27600) resultType = 'PAW';    // 19.5%
+                else resultType = 'LOSS';                     // 72.4%
 
-                if (roll <= 100) resultType = 'JACKPOT';
-                else if (roll <= 1000) resultType = 'GLITCH';
-                else if (roll <= 2500) resultType = 'HEART';
-                else if (roll <= 7500) resultType = 'RAM';
-                else if (roll <= 21500) resultType = 'PAW';
-                else resultType = 'LOSS';
-
-                const symbols = ['paw', 'ram', 'heart', 'protomap_logo', 'glitch-6'];
                 const safeSymbols = ['paw', 'ram', 'heart', 'protomap_logo'];
 
+                // 3. OUTCOME GENERATION
                 switch (resultType) {
                     case 'JACKPOT':
                         finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo'];
@@ -857,56 +857,41 @@ export const playSlotMachine = onCall(
 
                     case 'LOSS':
                         const shardRoll = crypto.randomInt(0, 100);
-
-                        // А. УТЕШИТЕЛЬНЫЙ ПРИЗ (Гринд осколков) - 8% шанс (было 10%)
-                        // Чуть усложнили получение осколков, раз основной RTP упал
-                        if (shardRoll < 8) {
-                            const count = (shardRoll < 2) ? 2 : 1; // 2% на два осколка, 6% на один
+                        if (shardRoll < 12) {
+                            const count = (shardRoll < 3) ? 2 : 1;
                             shardsToAdd = count;
-
-                            // Гарантируем отсутствие случайного третьего глитча
                             finalReels = [
                                 safeSymbols[crypto.randomInt(0, 4)],
                                 safeSymbols[crypto.randomInt(0, 4)],
                                 safeSymbols[crypto.randomInt(0, 4)]
                             ];
-
-                            // Вставляем глитчи
                             let positions = [0, 1, 2].sort(() => 0.5 - Math.random());
-                            for(let i=0; i<count; i++) {
+                            for(let i = 0; i < count; i++) {
                                 finalReels[positions[i]] = 'glitch-6';
                             }
-                        }
-                        // Б. ОБЫЧНЫЙ ПРОИГРЫШ
-                        else {
+                        } else {
                             const nearMissRoll = crypto.randomInt(0, 100);
-
-                            // Дразнилка (Near Miss) - 25% (Увеличили частоту, чтобы было веселее проигрывать)
-                            if (nearMissRoll < 25) {
-                                const teaseSym = symbols[crypto.randomInt(0, 4)];
-                                const trashSym = symbols.filter(s => s !== teaseSym && s !== 'glitch-6')[crypto.randomInt(0, 3)];
-                                finalReels = [teaseSym, teaseSym, trashSym];
-                            }
-                            // Полный рандом
-                            else {
+                            if (nearMissRoll < 30) {
+                                const teaseSym = safeSymbols[crypto.randomInt(0, 4)];
+                                const trashSym = safeSymbols.filter(s => s !== teaseSym)[crypto.randomInt(0, 3)];
+                                finalReels = [teaseSym, teaseSym, trashSym]
+                                    .map(v => ({ v, s: Math.random() }))
+                                    .sort((a, b) => a.s - b.s)
+                                    .map(({ v }) => v);
+                            } else {
                                 do {
                                     finalReels = [
-                                        symbols[crypto.randomInt(0, 5)],
-                                        symbols[crypto.randomInt(0, 5)],
-                                        symbols[crypto.randomInt(0, 5)]
+                                        safeSymbols[crypto.randomInt(0, 4)],
+                                        safeSymbols[crypto.randomInt(0, 4)],
+                                        safeSymbols[crypto.randomInt(0, 4)]
                                     ];
                                 } while (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]);
-
-                                // Чистка от случайных глитчей
-                                finalReels = finalReels.map(s => s === 'glitch-6' ? 'paw' : s);
-                                if (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]) {
-                                    finalReels[2] = 'ram';
-                                }
                             }
                         }
                         break;
                 }
 
+                // 4. CALCULATION
                 const win = Math.floor(bet * winMultiplier);
                 const finalCalc = credits - bet + win;
                 const finalBalance = finalCalc < 0 ? 0 : finalCalc;
@@ -914,11 +899,15 @@ export const playSlotMachine = onCall(
                 let newShards = currentShards + shardsToAdd;
                 if (newShards > MAX_SHARDS) newShards = MAX_SHARDS;
 
+                // 5. DATABASE UPDATE
                 t.update(userRef, {
                     casino_credits: finalBalance,
-                    last_game_played: FieldValue.serverTimestamp(),
+                    last_game_played: admin.firestore.FieldValue.serverTimestamp(),
                     glitch_shards: newShards
                 });
+
+                // 📡 ДОБАВЛЕНО: СИСТЕМНОЕ ЛОГИРОВАНИЕ
+                console.log(`[SLOTS] User: ${username} (${uid}) | Bet: ${bet} | Roll: ${roll} | Type: ${resultType} | Win: ${win} | Shards: ${newShards}`);
 
                 return {
                     reels: finalReels,
@@ -930,15 +919,20 @@ export const playSlotMachine = onCall(
                 };
             });
 
-            if ((result as any).notification) {
-                sendToCasinoChat((result as any).notification).catch(console.error);
+            // 6. NOTIFICATIONS
+            if (result.notification) {
+                sendToCasinoChat(result.notification).catch(console.error);
             }
-            delete (result as any).notification;
 
-            return { data: result };
+            const clientResponse = { ...result };
+            delete (clientResponse as any).notification;
+
+            return { data: clientResponse };
+
         } catch (error: any) {
+            console.error("[SLOTS CRITICAL]:", error);
             if (error.code) throw error;
-            throw new HttpsError('internal', 'Game error.');
+            throw new HttpsError('internal', 'Game server error.');
         }
     }
 );

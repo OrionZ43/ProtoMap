@@ -496,7 +496,7 @@
     .ticker { @apply inline-block whitespace-nowrap; animation: ticker-scroll 30s linear infinite; }
 
     .comments-container {
-        @apply mt-12 max-w-4xl mx-auto;
+        @apply mt-12 max-w-4xl mx-auto pb-32;
     }
     .comments-container h4 {
         @apply text-2xl text-center mb-6;

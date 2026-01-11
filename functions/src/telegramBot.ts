@@ -423,6 +423,57 @@ bot.command("warn", async (ctx) => {
     });
 });
 
+bot.command("unwarn", async (ctx) => {
+    if (!(await isAdmin(ctx))) return;
+
+    let targetId: number | null = null;
+    let targetName = "Пользователя";
+
+    const replyMsg = (ctx.message as any).reply_to_message;
+    if (replyMsg) {
+        targetId = replyMsg.from.id;
+        targetName = replyMsg.from.first_name;
+    } else {
+        const args = ctx.message.text.split(' ');
+        if (args.length > 1) {
+            targetId = parseInt(args[1]);
+            targetName = `ID ${targetId}`;
+        }
+    }
+
+    if (!targetId || isNaN(targetId)) {
+        await ctx.reply("ℹ️ Используйте: ответьте на сообщение ИЛИ напишите /unwarn ID");
+        return;
+    }
+
+    const warnRef = db.collection('telegram_moderation').doc(String(targetId));
+
+    try {
+        await db.runTransaction(async (t) => {
+            const doc = await t.get(warnRef);
+            if (!doc.exists || !doc.data()?.warns) {
+                throw new Error("No warns");
+            }
+
+            const newWarns = doc.data()!.warns - 1;
+
+            if (newWarns <= 0) {
+                t.delete(warnRef); // Удаляем, если варнов 0
+            } else {
+                t.update(warnRef, { warns: newWarns });
+            }
+        });
+        await ctx.reply(`✅ Одно предупреждение снято с ${targetName}.`);
+    } catch (e: any) {
+        if (e.message === "No warns") {
+            await ctx.reply("ℹ️ У этого пользователя нет активных предупреждений.");
+        } else {
+            console.error("Unwarn Error:", e);
+            await ctx.reply("Ошибка базы данных.");
+        }
+    }
+});
+
 bot.command("ban", async (ctx) => {
     if (!(await isAdmin(ctx))) return;
 
