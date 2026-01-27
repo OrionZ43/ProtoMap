@@ -59,7 +59,9 @@
     async function playGame(playerChoice: 'heads' | 'tails') {
         if (isPlaying || !$userStore.user) return;
 
-        const currentBet = Number(betAmount);
+        betAmount = Math.floor(betAmount);
+        const currentBet = betAmount;
+
         if ($userStore.user.casino_credits < currentBet) {
             setDealerMessage('no_credits');
             modal.error(translate('coin.modal_poor_title'), translate('coin.modal_poor_text'));
@@ -153,7 +155,16 @@
         </div>
         <div class="bet-control">
             <button class="bet-adjust" on:click={() => betAmount = Math.max(10, betAmount - 10)} disabled={isPlaying}>-</button>
-            <input id="bet-amount" type="number" bind:value={betAmount} min="1" max={$userStore.user?.casino_credits} disabled={isPlaying} />
+            <input
+                id="bet-amount"
+                type="number"
+                bind:value={betAmount}
+                min="1"
+                max={$userStore.user?.casino_credits}
+                step="1"
+                on:input={() => betAmount = Math.floor(betAmount)}
+                disabled={isPlaying}
+            />
             <button class="bet-adjust" on:click={() => betAmount += 10} disabled={isPlaying}>+</button>
         </div>
         <div class="choices">

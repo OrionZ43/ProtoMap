@@ -137,7 +137,7 @@
 
     <div class="header">
         <h1 class="title font-display glitch" data-text={$t('nav.casino')}>{$t('nav.casino')}</h1>
-        <p class="subtitle">//: {$t('news_page.subtitle')}</p>
+        <p class="subtitle">{$t('casino.subtitle')}</p>
     </div>
 
     {#if $userStore.user}
@@ -240,7 +240,6 @@
             <a href="/casino/slot-machine" class="game-card">
                 <div class="game-art">
                      <!-- Можно добавить бейджик NEW, если хочешь привлечь внимание -->
-                     <div class="new-badge">UPDATED</div>
                      <img src="/casino/slots.png" alt="Slots" class="art-img">
                      <div class="art-overlay"></div>
                 </div>

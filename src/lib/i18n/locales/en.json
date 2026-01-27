@@ -15,7 +15,8 @@
     "sound": "AUDIO",
     "anim": "CINEMATIC FX",
     "lang": "LANGUAGE / ЯЗЫК",
-    "seasonal": "SEASONAL FX"
+    "seasonal": "SEASONAL FX",
+    "security": "SECURITY"
   },
   "ui": {
     "balance": "Balance",
@@ -30,6 +31,19 @@
     "success": "Success",
     "error": "Error",
     "confirm_delete": "Are you sure? This cannot be undone."
+  },
+  "verify": {
+    "page_title": "VERIFICATION",
+    "header_loading": "PROCESSING DATA...",
+    "header_success": "ACCESS GRANTED",
+    "header_error": "PROTOCOL ERROR",
+    "init": "Initializing...",
+    "success": "Email successfully verified. System updated.",
+    "error_no_code": "Authorization code missing.",
+    "error_invalid": "Invalid access code. Is this a password reset link?",
+    "error_expired": "Link expired.",
+    "error_generic": "Critical verification failure.",
+    "btn_return": "RETURN TO SYSTEM"
   },
   "auth": {
     "login_title": "AUTHENTICATION",
@@ -51,6 +65,38 @@
     "privacy_link": "Privacy Policy",
     "check_email": "Check your email {email}. Click the link in the message."
   },
+  "security": {
+    "page_title": "SECURITY PROTOCOLS",
+    "tab_title": "Security",
+
+    "email_title": "/// IDENTITY LINK (EMAIL)",
+    "verified": "VERIFIED",
+    "verified_desc": "Your account is secured. Recovery is available.",
+    "not_verified": "NOT VERIFIED",
+    "not_verified_desc": "Verify email to access full functionality.",
+    "btn_sent": "EMAIL SENT",
+    "btn_verify": "SEND CODE",
+
+    "tg_title": "/// NEURAL UPLINK (TELEGRAM)",
+    "status": "STATUS:",
+    "connected": "CONNECTED",
+    "user": "USER:",
+    "tg_connected_desc": "Account linked. Notifications and duels active.",
+    "tg_desc": "Link Telegram to participate in duels, get login alerts and bonuses.",
+    "btn_generating": "GENERATING...",
+    "btn_gen": "GENERATE CODE",
+    "code_instruction": "Send to bot:",
+    "bot_link": "Go to bot ->",
+
+    "danger_title": "/// TERMINATION PROTOCOL",
+    "danger_desc": "Complete account deletion. Cannot be undone.",
+    "btn_delete": "DELETE ACCOUNT",
+
+    "modal_del_title": "DELETE ACCOUNT",
+    "modal_del_text": "Are you sure? Irreversible. All data, items, and achievements will be wiped.",
+    "modal_wiping": "Wiping data from Matrix..."
+  },
+
   "footer": {
     "policy": "PRIVACY POLICY",
     "terms": "TERMS OF SERVICE",
@@ -300,6 +346,7 @@
     "contact_email": "orion.z43studios@gmail.com"
   },
   "casino": {
+    "subtitle": "//: Unstable sector of entertainment and anomalies",
     "balance": "Balance:",
     "play": "Play",
     "jackpot": "JACKPOT",
@@ -470,7 +517,15 @@
     "bet_label": "BET",
     "modal_invalid_title": "Invalid Bet",
     "modal_invalid_text": "Enter a valid bet (not exceeding your balance).",
-    "modal_error_title": "Game Error"
+    "modal_error_title": "Game Error",
+    "info_title": "CHAOS MECHANIC",
+    "info_text": "This meter accumulates Abyss energy.\n\n**How to charge:**\nCatch **Glitch (6)** symbols. Each symbol grants **+1** charge. A `6-6-6` combo gives instant **FULL CHARGE**.\n\n**What is it for:**\nWhen full (10/10), you can synthesize an **Artifact** — a special item that grants profit bonuses (or curses).",
+    "odds_btn": "Odds",
+    "odds_title": "PROBABILITY PROTOCOL",
+    "col_outcome": "OUTCOME",
+    "col_chance": "CHANCE",
+    "col_reward": "REWARD",
+    "odds_note": "Chance to get an Abyss Shard: **~9.7%** (drops via Glitch or as a consolation prize)."
   },
   "profile": {
     "page_title": "Profile",
@@ -504,6 +559,8 @@
     "report_success_text": "Thanks! We will review your report.",
     "copy_success": "Copied!",
     "copy_text": "Discord tag <strong>{tag}</strong> copied.",
+    "reply": "REPLY",
+    "reply_to": "Replying to",
     "time": {
       "today": "Today",
       "yesterday": "Yesterday",
@@ -531,7 +588,7 @@
     "info_title": "// INFO & LINKS",
     "status_label": "STATUS",
     "status_placeholder": "What are you up to?",
-    "status_help": "Short message (max 100 chars) visible on your profile and map.",
+    "status_help": "Short message visible on your profile and map.",
     "about_label": "ABOUT ME",
     "about_placeholder": "Tell us about yourself...",
     "social_tg_placeholder": "username (no @)",
@@ -557,6 +614,24 @@
     "modal_avatar_uploading_text": "Sending your new avatar...",
     "modal_avatar_success": "Success!",
     "modal_avatar_success_text": "Your new avatar has been saved."
+  },
+  "reset": {
+    "page_title": "New Password",
+    "header": "ACCESS RESET",
+    "checking": "Verifying access codes...",
+    "instruction": "Enter a new password for your account:",
+    "label": "NEW PASSWORD",
+    "btn_applying": "APPLYING...",
+    "btn_save": "SAVE PASSWORD",
+    "error_link": "Link validation error.",
+    "error_modal_title": "Error",
+    "error_missing_code": "Invalid password reset link.",
+    "error_expired_title": "Link Expired",
+    "error_expired_desc": "This password reset link is invalid or has already been used.",
+    "weak_password": "Password must be at least 6 characters.",
+    "success_title": "Success!",
+    "success_desc": "Your password has been changed. You can now log in.",
+    "error_generic": "Failed to change password."
   },
   "ai_policy": {
     "title": "Our Stance on AI",

@@ -2,21 +2,24 @@
     import { onMount } from 'svelte';
     import { tweened } from 'svelte/motion';
     import { cubicOut } from 'svelte/easing';
+    import type { PageData } from './$types';
 
-    // Фейковые метрики
-    const egoLevel = tweened(0, { duration: 3000, easing: cubicOut });
-    const coffeeLevel = tweened(0, { duration: 2000, easing: cubicOut });
+    export let data: PageData;
+
+    // Анимированные значения
+    const animatedBank = tweened(0, { duration: 2000, easing: cubicOut });
+    const animatedUsers = tweened(0, { duration: 1500, easing: cubicOut });
 
     onMount(() => {
-        egoLevel.set(9999);
-        coffeeLevel.set(12);
+        animatedBank.set(data.bankBalance);
+        animatedUsers.set(data.totalUsers);
     });
 
+    // Логи можно оставить фейковыми или прикрутить реальные, если есть коллекция логов
     const logs = [
         { type: 'info', text: "Система охлаждения: НОРМА" },
-        { type: 'warn', text: "Обнаружен юзер, пытающийся выиграть. Смешно." },
-        { type: 'crit', text: "Критический уровень пафоса в админке." },
-        { type: 'success', text: "писечки попочки какашечки" }
+        { type: 'warn', text: "Нагрузка на ядро: 12%" },
+        { type: 'success', text: "Банк успешно инициализирован." }
     ];
 </script>
 
@@ -31,34 +34,34 @@
 
 <div class="dashboard-grid">
 
-    <!-- STAT 1 -->
+    <!-- STAT 1: USERS -->
     <div class="glass-card">
-        <div class="card-icon text-green-400">⚡</div>
+        <div class="card-icon text-green-400">👥</div>
         <div class="card-content">
-            <div class="label">СЕРВЕР</div>
-            <div class="value">ONLINE</div>
+            <div class="label">ПОЛЬЗОВАТЕЛИ</div>
+            <div class="value">{Math.floor($animatedUsers)}</div>
         </div>
         <div class="decor-line green"></div>
     </div>
 
-    <!-- STAT 2 -->
+    <!-- STAT 2: BANKROLL -->
     <div class="glass-card">
         <div class="card-icon text-cyber-yellow">💰</div>
         <div class="card-content">
-            <div class="label">КАЗНА</div>
-            <div class="value">UNLIMITED</div>
+            <div class="label">КАЗНА (БАНК)</div>
+            <div class="value">{Math.floor($animatedBank).toLocaleString()} PC</div>
         </div>
         <div class="decor-line yellow"></div>
     </div>
 
-    <!-- STAT 3 (EGO) -->
+    <!-- STAT 3: HEALTH (Фейк для атмосферы) -->
     <div class="glass-card wide">
         <div class="card-header">
-            <span class="label">GOD_COMPLEX_LEVEL</span>
-            <span class="value-sm text-red-500">{Math.floor($egoLevel)}%</span>
+            <span class="label">SYSTEM_INTEGRITY</span>
+            <span class="value-sm text-blue-400">100%</span>
         </div>
         <div class="progress-track">
-            <div class="progress-fill" style="width: 100%"></div>
+            <div class="progress-fill" style="width: 100%; background: #3b82f6; box-shadow: 0 0 15px #3b82f6;"></div>
         </div>
     </div>
 
@@ -74,16 +77,14 @@
                     <span class="log-text">{log.text}</span>
                 </div>
             {/each}
-            <div class="log-row animate-pulse">
-                <span class="log-type info">[WAIT]</span>
-                <span class="log-text">Ожидание событий...</span>
-            </div>
         </div>
     </div>
 
 </div>
 
+<!-- ... (стили те же) ... -->
 <style>
+/* ... копируй стили из прошлого ответа, они хорошие ... */
     .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
     .page-title { font-family: 'Chakra Petch', monospace; font-size: 1.5rem; font-weight: bold; color: #fff; letter-spacing: 0.1em; }
     .date-badge { background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 8px; font-family: 'Chakra Petch', monospace; font-size: 0.8rem; color: #888; border: 1px solid rgba(255,255,255,0.1); }

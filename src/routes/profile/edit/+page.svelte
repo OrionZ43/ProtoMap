@@ -119,48 +119,6 @@
             isSavingProfile = false;
         }
     }
-
-    async function handleDeleteAccount() {
-        modal.confirm(
-            translate('edit_profile.modal_delete_title'),
-            translate('edit_profile.modal_delete_text'),
-            async () => {
-                try {
-                    const functions = getFunctions();
-                    const deleteAccountFunc = httpsCallable(functions, 'deleteAccount');
-
-                    modal.info(translate('ui.loading'), "Deleting...");
-
-                    await deleteAccountFunc();
-
-                    modal.success(translate('edit_profile.modal_delete_success'), translate('edit_profile.modal_delete_success_text'));
-
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 3000);
-
-                } catch (error: any) {
-                    modal.error(translate('ui.error'), error.message || "Delete failed.");
-                }
-            }
-        );
-    }
-    let tgLinkCode = "";
-    let isGeneratingCode = false;
-
-    async function generateTgCode() {
-        isGeneratingCode = true;
-        try {
-            const functions = getFunctions();
-            const getCodeFunc = httpsCallable(functions, 'getTelegramAuthCode');
-            const res = await getCodeFunc();
-            tgLinkCode = (res.data as any).code;
-        } catch (e: any) {
-            modal.error(translate('ui.error'), e.message);
-        } finally {
-            isGeneratingCode = false;
-        }
-    }
 </script>
 
 <svelte:head>
@@ -194,10 +152,12 @@
             <label for="status" class="form-label font-display">{$t('edit_profile.status_label')}</label>
             <input bind:value={status} type="text" id="status" class="input-field" placeholder={$t('edit_profile.status_placeholder')} maxlength="100" disabled={isLoadingAvatar || isSavingProfile} />
             <p class="form-help-text">{$t('edit_profile.status_help')}</p>
+            <p class="text-right text-xs text-gray-500 mt-1">{status.length} / 100</p>
         </div>
         <div class="form-group">
             <label for="about_me" class="form-label font-display">{$t('edit_profile.about_label')}</label>
-            <textarea bind:value={aboutMe} id="about_me" rows="5" class="input-field" placeholder={$t('edit_profile.about_placeholder')} disabled={isLoadingAvatar || isSavingProfile}></textarea>
+            <textarea bind:value={aboutMe} id="about_me" rows="5" class="input-field" placeholder={$t('edit_profile.about_placeholder')} maxlength="500" disabled={isLoadingAvatar || isSavingProfile}></textarea>
+            <p class="text-right text-xs text-gray-500 mt-1">{aboutMe.length} / 500</p>
         </div>
         <div class="form-group">
             <label for="social_telegram" class="form-label font-display">TELEGRAM</label>
@@ -225,41 +185,6 @@
             </NeonButton>
             <a href="/profile/{data.profile.username || ''}" class="cancel-btn">{$t('edit_profile.cancel_btn')}</a>
         </div>
-        <!-- TELEGRAM LINKING SECTION -->
-    <div class="form-group border border-gray-700 p-4 rounded-lg bg-black/20 mt-6">
-        <h3 class="form-label font-display text-cyber-cyan mb-2">TELEGRAM UPLINK</h3>
-        <p class="text-xs text-gray-400 mb-4">
-            Привяжите Telegram для участия в дуэлях и получения уведомлений.
-        </p>
-
-        {#if !tgLinkCode}
-            <NeonButton type="button" on:click={generateTgCode} disabled={isGeneratingCode} extraClass="w-full text-xs">
-                {isGeneratingCode ? 'GENERATING...' : 'ПОЛУЧИТЬ КОД СВЯЗИ'}
-            </NeonButton>
-        {:else}
-            <div class="text-center">
-                <p class="text-sm text-gray-300 mb-2">Отправьте этот код боту:</p>
-                <div class="text-2xl font-mono font-bold text-cyber-yellow bg-black/50 p-2 rounded border border-dashed border-gray-600 select-all">
-                    /link {tgLinkCode}
-                </div>
-                <p class="text-[10px] text-gray-500 mt-2">Код действует 5 минут</p>
-                <a href="https://t.me/OrionNeurobot" target="_blank" class="text-cyber-cyan text-xs hover:underline mt-2 block">
-                    Перейти к боту ->
-                </a>
-            </div>
-        {/if}
-    </div>
-    </div>
-
-    <hr class="separator"/>
-    <div class="space-y-4">
-         <h3 class="form-label font-display text-lg text-red-500">{$t('edit_profile.danger_title')}</h3>
-         <div class="danger-zone-box">
-            <p class="text-gray-300">{$t('edit_profile.danger_text')}</p>
-            <button class="delete-account-btn" on:click={handleDeleteAccount}>
-                {$t('edit_profile.delete_btn')}
-            </button>
-         </div>
     </div>
 </div>
 

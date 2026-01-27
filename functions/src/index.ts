@@ -67,6 +67,37 @@ async function sendToCasinoChat(message: string) {
     }
 }
 
+export const migrateExternalAvatar = onCall(async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+    const uid = request.auth.uid;
+    const { url } = request.data;
+
+    // Проверяем, что это ссылка Google
+    if (!url || !url.includes('googleusercontent.com')) return { status: 'skipped' };
+
+    try {
+        // Очищаем URL от параметров размера Google (=s96-c)
+        const cleanUrl = url.split('=')[0];
+
+        // Загружаем в Cloudinary
+        const result = await cloudinary.uploader.upload(cleanUrl, {
+            folder: "protomap_avatars",
+            public_id: uid,
+            overwrite: true,
+            format: "webp"
+        });
+
+        // Обновляем профиль в Firestore
+        await db.collection('users').doc(uid).update({ avatar_url: result.secure_url });
+        await clearMapCache();
+
+        return { status: 'success', newUrl: result.secure_url };
+    } catch (e) {
+        console.error("Migration failed:", e);
+        return { status: 'error' };
+    }
+});
+
 async function clearMapCache() {
     const cacheRef = db.collection('system').doc('map_cache');
 
@@ -111,21 +142,6 @@ function assertEmailVerified(auth: any) {
     if (!auth.token.email_verified) {
         throw new HttpsError('permission-denied', 'Требуется подтверждение почты (Email Verification).');
     }
-}
-
-function logSuspiciousActivity(request: any, reason: string) {
-    const ip = request.rawRequest.headers['x-forwarded-for'] || request.rawRequest.socket.remoteAddress;
-    const userAgent = request.rawRequest.headers['user-agent'] || 'Unknown Device';
-    console.warn(`🚨 SECURITY ALERT: ${reason}`, {
-        structuredData: true,
-        uid: request.auth?.uid || "ANONYMOUS",
-        email: request.auth?.token?.email || "NO_EMAIL",
-        name: request.auth?.token?.name || "NO_NAME",
-        ip: ip,
-        userAgent: userAgent,
-        inputData: request.data,
-        appCheck: !!request.app
-    });
 }
 
 export const sendMessage = onCall(async (request) => {
@@ -229,41 +245,82 @@ export const deleteComment = onCall(async (request) => {
 });
 
 export const addComment = onCall(async (request) => {
-    if (request.app == undefined) {
-        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
-    }
-    if (!request.auth) throw new HttpsError('unauthenticated', 'Необходима авторизация.');
+    if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(request);
+    await assertNotBanned(uid);
     assertEmailVerified(request.auth);
 
-    const { profileUid, text } = request.data;
+    // Добавили parentId (ID комментария, на который отвечаем)
+    const { profileUid, text, parentId } = request.data;
 
     if (!profileUid || !text || typeof text !== 'string' || !text.trim()) {
-        throw new HttpsError('invalid-argument', 'Некорректные данные.');
+        throw new HttpsError('invalid-argument', 'Пустое сообщение.');
     }
-    if (text.length > 1000) throw new HttpsError('invalid-argument', 'Комментарий слишком длинный.');
+    if (text.length > 1000) throw new HttpsError('invalid-argument', 'Слишком длинно.');
+
+    const authorRef = db.collection('users').doc(uid);
+    const profileRef = db.collection('users').doc(profileUid);
 
     try {
-        const authorDoc = await db.collection('users').doc(uid).get();
-        if (!authorDoc.exists) throw new HttpsError('not-found', 'Ваш профиль не найден.');
-
+        const authorDoc = await authorRef.get();
+        if (!authorDoc.exists) throw new HttpsError('not-found', 'User not found.');
         const authorData = authorDoc.data()!;
 
-        await db.collection('users').doc(profileUid).collection('comments').add({
+        const commentData: any = {
             text: text.trim(),
             author_uid: uid,
             author_username: authorData.username,
             author_avatar_url: authorData.avatar_url || '',
-            author_equipped_frame: authorData.equipped_frame || null, // Добавим рамку и сюда
-            createdAt: FieldValue.serverTimestamp()
-        });
+            author_equipped_frame: authorData.equipped_frame || null,
+            createdAt: FieldValue.serverTimestamp(),
+            likes: [] // Массив UID тех, кто лайкнул
+        };
 
-        return { status: 'success', message: 'Комментарий добавлен!' };
+        // Если это ответ, добавляем ID родителя
+        if (parentId) {
+            commentData.parentId = parentId;
+        }
+
+        await profileRef.collection('comments').add(commentData);
+
+        return { status: 'success', message: 'Сигнал отправлен!' };
     } catch (error: any) {
         if (error instanceof HttpsError) throw error;
-        throw new HttpsError('internal', 'Ошибка сервера.');
+        throw new HttpsError('internal', error.message);
+    }
+});
+
+export const toggleCommentLike = onCall(async (request) => {
+    if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(uid);
+
+    const { profileUid, commentId } = request.data;
+    const commentRef = db.collection('users').doc(profileUid).collection('comments').doc(commentId);
+
+    try {
+        await db.runTransaction(async (t) => {
+            const doc = await t.get(commentRef);
+            if (!doc.exists) throw new HttpsError('not-found', 'Comment not found');
+
+            const data = doc.data()!;
+            const likes = data.likes || [];
+
+            if (likes.includes(uid)) {
+                // Убираем лайк
+                t.update(commentRef, { likes: FieldValue.arrayRemove(uid) });
+            } else {
+                // Ставим лайк
+                t.update(commentRef, { likes: FieldValue.arrayUnion(uid) });
+            }
+        });
+        return { status: 'success' };
+    } catch (e: any) {
+        throw new HttpsError('internal', 'Like error');
     }
 });
 
@@ -476,77 +533,82 @@ export const getDailyBonus = onCall(async (request) => {
 });
 
 export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) => {
-    // 1. App Check (Защита от скриптов вне браузера)
-    if (request.app == undefined) {
-        throw new HttpsError('failed-precondition', 'App Check required.');
-    }
-
-    // 2. Auth (Защита от анонимов)
+    // 1. CHECKS
+    if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
     const uid = request.auth.uid;
-
-    // 3. Ban Check (Защита от известных нарушителей)
-    // Это быстрый отлуп, чтобы не грузить транзакцию
-    await assertNotBanned(request);
-
-    // 4. Email Verification (Защита от мультиаккаунтов/ботов)
-    // <--- ДОБАВИЛИ ЭТО. Теперь он не сможет просто создать новый акк и спамить.
+    await assertNotBanned(uid);
     assertEmailVerified(request.auth);
 
-    const { bet } = request.data;
+    let { bet } = request.data;
+    bet = Math.floor(Number(bet));
     const MAX_BET = 1000;
 
-    // Валидация входных данных
-    if (typeof bet !== 'number' || bet <= 0) {
-        logSuspiciousActivity(request, `Invalid bet value: ${bet}`);
-        throw new HttpsError('invalid-argument', 'Invalid bet.');
-    }
-
-    if (bet > MAX_BET) {
-        logSuspiciousActivity(request, `Bet limit exceeded: ${bet} PC`);
-        throw new HttpsError('invalid-argument', `Max bet is ${MAX_BET}.`);
-    }
+    if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
+    if (bet > MAX_BET) throw new HttpsError('invalid-argument', `Max bet is ${MAX_BET}.`);
 
     const userRef = db.collection('users').doc(uid);
+    const bankRef = db.collection('system').doc('casino_stats');
     const gameId = db.collection('crash_games').doc().id;
 
+    // RTDB для графика
     const rtdb = admin.app().database("https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app");
     const gameRtdbRef = rtdb.ref(`crash_games/${gameId}`);
 
     try {
-        // Генерация краша (твоя логика)
+        // ГЕНЕРАЦИЯ КРАША
         let crashPoint = 1.00;
+
+        // Шанс мгновенного краша (House Edge) - 6%
         const riskRoll = crypto.randomInt(0, 100);
         if (riskRoll < 6) {
             crashPoint = 1.00;
         } else {
+            // Стандартная формула Crash (1 / random)
             const buffer = crypto.randomBytes(4);
             const randomInt = buffer.readUInt32BE(0);
             const randomFloat = randomInt / 0xFFFFFFFF;
             crashPoint = Math.floor((0.94 / (1 - randomFloat)) * 100) / 100;
-            if (crashPoint > 50) crashPoint = 50;
-            if (crashPoint < 1.01) crashPoint = 1.01;
         }
 
         await db.runTransaction(async (t) => {
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
+            const bankDoc = await t.get(bankRef);
 
+            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
             const userData = userDoc.data()!;
 
-            // 5. Rate Limiting (Защита от спама кнопкой)
-            // Проверяем, когда он играл в последний раз
-            const lastPlayed = userData.last_crash_game ? userData.last_crash_game.toDate().getTime() : 0;
-            const now = Date.now();
+            // === 🛡️ BANK PROTECTION ===
+            let bankBalance = bankDoc.exists ? (bankDoc.data()?.bank_balance || 0) : 0;
+            const safeBankLimit = bankBalance * 0.9; // 90% банка доступно для выплаты
 
-            // Кулдаун 5 секунд (или 3, как решишь)
-            if (now - lastPlayed < 5000) {
-                 throw new HttpsError('resource-exhausted', 'Слишком часто. Ждите завершения игры.');
+            // Считаем максимально возможный множитель, который может оплатить банк
+            // MaxWin = Bet * Multiplier
+            // Multiplier = MaxWin / Bet
+            let maxAffordableMult = 1.0;
+            if (bet > 0) {
+                maxAffordableMult = safeBankLimit / bet;
             }
 
-            // Проверка баланса
-            const currentCredits = userData.casino_credits || 0;
-            if (currentCredits < bet) {
+            // Если сгенерированный краш выше, чем банк может позволить — ОБРЕЗАЕМ
+            if (crashPoint > maxAffordableMult) {
+                console.log(`[CRASH] Capping multiplier for ${uid}. Org: ${crashPoint}, Capped: ${maxAffordableMult}`);
+                crashPoint = Math.floor(maxAffordableMult * 100) / 100;
+
+                // Если банк совсем пуст и max < 1, делаем мгновенный краш
+                if (crashPoint < 1.01) crashPoint = 1.00;
+            }
+
+            // Хардкап (чтобы не улетал в космос)
+            if (crashPoint > 50) crashPoint = 50;
+
+            // ... Проверка кулдауна и баланса ...
+            const lastPlayed = userData.last_crash_game ? userData.last_crash_game.toDate().getTime() : 0;
+            if (Date.now() - lastPlayed < 5000) {
+                 throw new HttpsError('resource-exhausted', 'Cooldown.');
+            }
+            if ((userData.casino_credits || 0) < bet) {
                 throw new Error("No money");
             }
 
@@ -555,6 +617,8 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
                 casino_credits: FieldValue.increment(-bet),
                 last_crash_game: FieldValue.serverTimestamp() // <--- ЗАПИСЫВАЕМ ВРЕМЯ ДЛЯ КУЛДАУНА
             });
+
+            t.set(bankRef, { bank_balance: bankBalance + bet }, { merge: true });
 
             // Создаем игру
             t.set(db.collection('crash_games').doc(gameId), {
@@ -623,22 +687,21 @@ async function runGameLoopRTDB(gameId: string, crashPoint: number) {
 }
 
 export const cashOutCrashGame = onCall(async (request) => {
-    if (request.app == undefined) {
-        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
-    }
-    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth');
+    if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check.');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth.');
     const uid = request.auth.uid;
     const { gameId, multiplier } = request.data;
 
     const gameRef = db.collection('crash_games').doc(gameId);
     const userRef = db.collection('users').doc(uid);
-    const rtdbRef = admin.app()
-    .database("https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app")
-    .ref(`crash_games/${gameId}`);
+    const bankRef = db.collection('system').doc('casino_stats'); // 🏦
+    const rtdbRef = admin.app().database("https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app").ref(`crash_games/${gameId}`);
 
     try {
         const result = await db.runTransaction(async (t) => {
             const gameDoc = await t.get(gameRef);
+            const bankDoc = await t.get(bankRef); // Читаем банк
+
             if (!gameDoc.exists) throw new Error('Game expired');
             const data = gameDoc.data()!;
 
@@ -647,8 +710,16 @@ export const cashOutCrashGame = onCall(async (request) => {
 
             const winAmount = Math.floor(data.bet * multiplier);
 
+            // Обновляем юзера
             t.update(userRef, { casino_credits: FieldValue.increment(winAmount) });
+
+            // Обновляем игру
             t.update(gameRef, { status: 'cashed_out', winAmount, cashOutAt: multiplier });
+
+            // 🏦 Снимаем выигрыш с банка
+            // (Ставку мы туда уже положили при старте, так что просто вычитаем полную сумму выплаты)
+            const currentBank = bankDoc.exists ? (bankDoc.data()?.bank_balance || 0) : 0;
+            t.set(bankRef, { bank_balance: currentBank - winAmount }, { merge: true });
 
             return { winAmount };
         });
@@ -769,92 +840,136 @@ export const synthesizeArtifact = onCall(async (request) => {
     }
 });
 
+// === ТИПЫ ДАННЫХ (Вставь это перед функциями) ===
 interface UserData {
     username?: string;
     casino_credits?: number;
     glitch_shards?: number;
     isBanned?: boolean;
+    last_game_played?: admin.firestore.Timestamp;
 }
 
+interface CasinoStats {
+    bank_balance: number;
+}
+
+// === ФУНКЦИЯ СЛОТОВ ===
 export const playSlotMachine = onCall(
     { secrets: ["TELEGRAM_BOT_TOKEN"] },
     async (request) => {
-        // 1. SECURITY & VALIDATION
+        // 1. SECURITY
         if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
         if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
         const uid = request.auth.uid;
         await assertNotBanned(uid);
 
-        const { bet } = request.data;
+        let { bet } = request.data;
+        bet = Math.floor(Number(bet));
         const MAX_BET = 1000;
+        const MIN_BET = 10;
 
         if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
+        if (bet < MIN_BET) {
+            throw new HttpsError('invalid-argument', `⛔ ERROR_CODE: MORO_DETECTED.\nСистема не принимает микро-ставки.\nМинимум: ${MIN_BET} PC.`);
+        }
+
         if (bet > MAX_BET) throw new HttpsError('invalid-argument', `Max bet is ${MAX_BET}.`);
 
         const userRef = db.collection('users').doc(uid);
+        const bankRef = db.collection('system').doc('casino_stats');
 
         try {
             const result = await db.runTransaction(async (t) => {
                 const userDoc = await t.get(userRef);
+                const bankDoc = await t.get(bankRef);
+
                 if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
 
+                // 🔥 ИСПРАВЛЕНО: Используем интерфейс UserData вместо any
                 const data = userDoc.data() as UserData;
                 const username = data.username || "Unknown";
                 const credits = data.casino_credits ?? 100;
                 let currentShards = data.glitch_shards || 0;
                 const MAX_SHARDS = 10;
 
+                // 🔥 ЗАЩИТА ОТ МУЛЬТИ-ОКОН (COOLDOWN)
+                const lastPlayed = data.last_game_played ? data.last_game_played.toDate().getTime() : 0;
+                const now = Date.now();
+                if (now - lastPlayed < 3000) { // 2 секунды КД
+                    throw new HttpsError('resource-exhausted', 'Слишком быстро.');
+                }
+
+                // 🔥 ИСПРАВЛЕНО: Используем интерфейс CasinoStats
+                let bankBalance = bankDoc.exists ? (bankDoc.data() as CasinoStats)?.bank_balance || 0 : 0;
+
                 if (credits < bet) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
 
-                // 2. RNG CORE (0 - 99999)
+                // === RNG ===
                 const roll = crypto.randomInt(0, 100000);
+                let resultType = 'LOSS';
 
+                if (roll < 100) resultType = 'JACKPOT';       // x100
+                else if (roll < 1100) resultType = 'GLITCH';  // Shards
+                else if (roll < 2600) resultType = 'HEART';   // x10
+                else if (roll < 8100) resultType = 'RAM';     // x5
+                else if (roll < 27600) resultType = 'PAW';    // x2
+                else resultType = 'LOSS';
+
+                // === BANKROLL CHECK ===
                 let winMultiplier = 0;
+
+                if (resultType === 'JACKPOT') winMultiplier = 100;
+                else if (resultType === 'HEART') winMultiplier = 10;
+                else if (resultType === 'RAM') winMultiplier = 5;
+                else if (resultType === 'PAW') winMultiplier = 2;
+
+                let potentialWin = Math.floor(bet * winMultiplier);
+                const safeBankLimit = bankBalance * 0.9; // Оставляем 10% резерва
+
+                if (potentialWin > 0 && potentialWin > safeBankLimit) {
+                    console.log(`[BANK] Downgrade ${uid}: ${potentialWin} > ${safeBankLimit}`);
+
+                    if (resultType === 'JACKPOT') {
+                         resultType = 'HEART'; winMultiplier = 10; potentialWin = Math.floor(bet * 10);
+                    }
+                    if (potentialWin > safeBankLimit && winMultiplier > 5) {
+                        resultType = 'RAM'; winMultiplier = 5; potentialWin = Math.floor(bet * 5);
+                    }
+                    if (potentialWin > safeBankLimit && winMultiplier > 2) {
+                        resultType = 'PAW'; winMultiplier = 2; potentialWin = Math.floor(bet * 2);
+                    }
+                    if (potentialWin > safeBankLimit) {
+                        resultType = 'LOSS'; winMultiplier = 0; potentialWin = 0;
+                    }
+                }
+
+                // === VISUALS ===
                 let finalReels: string[] = [];
                 let shardsToAdd = 0;
-                let resultType: 'JACKPOT' | 'GLITCH' | 'HEART' | 'RAM' | 'PAW' | 'LOSS';
                 let txNotification: string | null = null;
 
-                // === ⚖️ BALANCED ODDS (RTP ~91.5%) ===
-                if (roll < 100) resultType = 'JACKPOT';       // 0.1%
-                else if (roll < 1100) resultType = 'GLITCH';  // 1.0%
-                else if (roll < 2600) resultType = 'HEART';   // 1.5%
-                else if (roll < 8100) resultType = 'RAM';     // 5.5%
-                else if (roll < 27600) resultType = 'PAW';    // 19.5%
-                else resultType = 'LOSS';                     // 72.4%
-
+                // 🔥 ИСПРАВЛЕНО: Удалили неиспользуемый массив symbols
                 const safeSymbols = ['paw', 'ram', 'heart', 'protomap_logo'];
 
-                // 3. OUTCOME GENERATION
                 switch (resultType) {
                     case 'JACKPOT':
                         finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo'];
-                        winMultiplier = 100;
-                        txNotification = `🚨 *JACKPOT ALERT!* 🚨\n\nИгрок *${username}* сорвал куш!\nВыигрыш: *${Math.floor(bet * 100)} PC* 💎`;
+                        txNotification = `🚨 *JACKPOT ALERT!* 🚨\n\nИгрок *${username}* сорвал куш!\nВыигрыш: *${potentialWin} PC* 💎`;
                         break;
-
                     case 'GLITCH':
                         finalReels = ['glitch-6', 'glitch-6', 'glitch-6'];
-                        winMultiplier = 0;
                         shardsToAdd = 10;
                         break;
-
                     case 'HEART':
                         finalReels = ['heart', 'heart', 'heart'];
-                        winMultiplier = 10;
                         break;
-
                     case 'RAM':
                         finalReels = ['ram', 'ram', 'ram'];
-                        winMultiplier = 5;
                         break;
-
                     case 'PAW':
                         finalReels = ['paw', 'paw', 'paw'];
-                        winMultiplier = 2;
                         break;
-
                     case 'LOSS':
                         const shardRoll = crypto.randomInt(0, 100);
                         if (shardRoll < 12) {
@@ -891,87 +1006,118 @@ export const playSlotMachine = onCall(
                         break;
                 }
 
-                // 4. CALCULATION
-                const win = Math.floor(bet * winMultiplier);
-                const finalCalc = credits - bet + win;
-                const finalBalance = finalCalc < 0 ? 0 : finalCalc;
+                // === UPDATE ===
+                const finalCalc = credits - bet + potentialWin;
+                let newBankBalance = bankBalance + bet - potentialWin;
+                if (newBankBalance < 0) newBankBalance = 0;
 
                 let newShards = currentShards + shardsToAdd;
                 if (newShards > MAX_SHARDS) newShards = MAX_SHARDS;
 
-                // 5. DATABASE UPDATE
                 t.update(userRef, {
-                    casino_credits: finalBalance,
+                    casino_credits: finalCalc,
                     last_game_played: admin.firestore.FieldValue.serverTimestamp(),
                     glitch_shards: newShards
                 });
 
-                // 📡 ДОБАВЛЕНО: СИСТЕМНОЕ ЛОГИРОВАНИЕ
-                console.log(`[SLOTS] User: ${username} (${uid}) | Bet: ${bet} | Roll: ${roll} | Type: ${resultType} | Win: ${win} | Shards: ${newShards}`);
+                t.set(bankRef, { bank_balance: newBankBalance }, { merge: true });
+
+                console.log(`[SLOTS] ${uid} | Bet:${bet} | Win:${potentialWin} | Bank:${newBankBalance}`);
 
                 return {
                     reels: finalReels,
-                    winAmount: win,
-                    newBalance: finalBalance,
+                    winAmount: potentialWin,
+                    newBalance: finalCalc,
                     shards: newShards,
                     shardsAdded: shardsToAdd,
                     notification: txNotification
                 };
             });
 
-            // 6. NOTIFICATIONS
-            if (result.notification) {
-                sendToCasinoChat(result.notification).catch(console.error);
+            if ((result as any).notification) {
+                sendToCasinoChat((result as any).notification).catch(console.error);
             }
+            delete (result as any).notification;
 
-            const clientResponse = { ...result };
-            delete (clientResponse as any).notification;
-
-            return { data: clientResponse };
+            return { data: result };
 
         } catch (error: any) {
-            console.error("[SLOTS CRITICAL]:", error);
+            console.error("[SLOTS ERROR]:", error);
             if (error.code) throw error;
-            throw new HttpsError('internal', 'Game server error.');
+            throw new HttpsError('internal', 'Game error.');
         }
     }
 );
 
 export const playCoinFlip = onCall(async (request) => {
-    if (request.app == undefined) {
-        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
-    }
+    // 1. CHECKS
+    if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(request);
+    await assertNotBanned(uid);
     assertEmailVerified(request.auth);
 
-    const { bet, choice } = request.data;
+    let { bet, choice } = request.data;
+    bet = Math.floor(Number(bet));
+
     if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
 
     const userRef = db.collection('users').doc(uid);
+    const bankRef = db.collection('system').doc('casino_stats');
 
     try {
         const result = await db.runTransaction(async (t) => {
             const userDoc = await t.get(userRef);
+            const bankDoc = await t.get(bankRef);
+
             if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
 
             const data = userDoc.data() as any;
             const credits = data.casino_credits ?? 100;
+            let bankBalance = bankDoc.exists ? (bankDoc.data()?.bank_balance || 0) : 0;
 
             if (credits < bet) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
 
-            const winMultiplier = 1.95;
-            const outcome = Math.random() < 0.5 ? 'heads' : 'tails';
+            // === GAME LOGIC ===
+            const WIN_MULTIPLIER = 1.95; // 1.95x (House edge 5%)
+            const potentialWin = Math.floor(bet * WIN_MULTIPLIER);
+            const profit = potentialWin - bet; // Чистая прибыль игрока
+
+            // 🛡️ BANK PROTECTION
+            // Если в банке не хватит денег на выплату выигрыша — форсируем проигрыш
+            let forcedLoss = false;
+            if (profit > (bankBalance * 0.9)) {
+                console.log(`[COIN] Bank low (${bankBalance}). Forcing loss for bet ${bet}.`);
+                forcedLoss = true;
+            }
+
+            let outcome = Math.random() < 0.5 ? 'heads' : 'tails';
+
+            // Если включен режим защиты банка — меняем исход на противоположный выбору игрока
+            if (forcedLoss) {
+                outcome = (choice === 'heads') ? 'tails' : 'heads';
+            }
+
             const hasWon = choice === outcome;
+            let finalBalance = credits - bet;
+            let newBankBalance = bankBalance + bet; // Сначала забираем ставку
 
-            let final = credits - bet;
-            if (hasWon) final += Math.floor(bet * winMultiplier);
+            if (hasWon) {
+                finalBalance += potentialWin;
+                newBankBalance -= potentialWin; // Отдаем выигрыш
+            }
 
-            t.update(userRef, { casino_credits: final });
+            // Обновляем
+            t.update(userRef, { casino_credits: finalBalance });
+            t.set(bankRef, { bank_balance: newBankBalance }, { merge: true });
 
-            return { outcome, hasWon, newBalance: final, creditsChange: final - credits };
+            return {
+                outcome,
+                hasWon,
+                newBalance: finalBalance,
+                creditsChange: hasWon ? (potentialWin - bet) : -bet
+            };
         });
         return { data: result };
     } catch (error: any) {
@@ -981,26 +1127,40 @@ export const playCoinFlip = onCall(async (request) => {
 });
 
 export const getLeaderboard = onCall(async (request) => {
+    // 1. Проверка авторизации (оставляем как было)
     if (request.app == undefined) {
         throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
     }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
+    // Список скрытых UID (Тестовые аккаунты, админы и т.д.)
+    const HIDDEN_UIDS = [
+        'MPe5KwdlsJU4pPxCEBydmMGgGTw1', // IposDevTest2
+        'XT2NDfkr9wUFl3d1Eh6imTEdlxt2' // Orion_Z43
+    ];
+
     try {
+        // 2. Запрашиваем с запасом (15 вместо 10), на случай если в топе есть скрытые
         const snapshot = await db.collection('users')
             .orderBy('casino_credits', 'desc')
-            .limit(10)
+            .limit(15)
             .get();
 
-        const leaderboard = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                username: data.username || 'Неизвестный',
-                avatar_url: data.avatar_url || '',
-                casino_credits: data.casino_credits || 0,
-                equipped_frame: data.equipped_frame || null
-            };
-        });
+        const leaderboard = snapshot.docs
+            .map(doc => {
+                const data = doc.data();
+                return {
+                    uid: doc.id, // Добавляем ID для фильтрации
+                    username: data.username || 'Неизвестный',
+                    avatar_url: data.avatar_url || '',
+                    casino_credits: data.casino_credits || 0,
+                    equipped_frame: data.equipped_frame || null
+                };
+            })
+            // 3. ФИЛЬТРАЦИЯ
+            .filter(user => !HIDDEN_UIDS.includes(user.uid))
+            // 4. Обрезаем до ТОП-10
+            .slice(0, 10);
 
         return { data: leaderboard };
 
@@ -1297,6 +1457,10 @@ export const updateProfileData = onCall(async (request) => {
 
     if (typeof data.status === 'string') fields.status = data.status.trim().substring(0, 100);
     if (typeof data.about_me === 'string') fields.about_me = data.about_me.trim();
+
+    if (typeof data.about_me === 'string') {
+        fields.about_me = data.about_me.trim().substring(0, 500);
+    }
 
     if (data.socials) {
         for (const [k, v] of Object.entries(data.socials)) {

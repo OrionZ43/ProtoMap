@@ -6,13 +6,18 @@
     import { goto } from '$app/navigation';
     import NeonButton from '$lib/components/NeonButton.svelte';
     import { fade, scale } from 'svelte/transition';
-    import { t } from 'svelte-i18n';
+    import { t, locale } from 'svelte-i18n'; // Импортируем locale
 
     let status: 'loading' | 'success' | 'error' = 'loading';
-    // Храним КЛЮЧ, а не текст, чтобы перевод работал реактивно
     let messageKey = 'verify.init';
 
     onMount(async () => {
+        // 1. Принудительная установка языка из URL (если i18n не подхватил)
+        const urlLang = $page.url.searchParams.get('lang');
+        if (urlLang === 'ru' || urlLang === 'en') {
+            locale.set(urlLang);
+        }
+
         const code = $page.url.searchParams.get('oobCode');
 
         if (!code) {
@@ -22,20 +27,28 @@
         }
 
         try {
-            // Применяем код подтверждения
+            // 2. Применяем код (это работает даже без логина)
             await applyActionCode(auth, code);
 
-            // Если пользователь залогинен, обновляем его данные сразу
+            // 3. Если юзер залогинен в этом браузере — обновляем его статус
             if (auth.currentUser) {
                 await auth.currentUser.reload();
+                // Также обновляем токен, чтобы claims обновились
+                await auth.currentUser.getIdToken(true);
             }
 
             status = 'success';
             messageKey = 'verify.success';
 
-            // Автопереход через 3 секунды
+            // 4. Умный редирект
             setTimeout(() => {
-                goto('/');
+                if (auth.currentUser) {
+                    // Если залогинен — домой
+                    goto('/');
+                } else {
+                    // Если не залогинен (открыл в другом браузере) — на вход
+                    goto('/login');
+                }
             }, 4000);
 
         } catch (error: any) {
@@ -84,7 +97,7 @@
 
         {#if status !== 'loading'}
             <div class="action-area" in:scale>
-                <NeonButton href="/" color={status === 'error' ? 'red' : 'cyan'}>
+                <NeonButton href="/">
                     {$t('verify.btn_return')}
                 </NeonButton>
             </div>
@@ -95,10 +108,7 @@
 <style>
     .page-container {
         min-height: calc(100vh - 64px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
+        display: flex; align-items: center; justify-content: center; padding: 1rem;
     }
 
     .verification-terminal {
@@ -110,50 +120,32 @@
     }
 
     .title {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #fff;
-        margin-bottom: 1.5rem;
-        text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        font-size: 1.5rem; font-weight: bold; color: #fff;
+        margin-bottom: 1.5rem; text-shadow: 0 0 10px rgba(255,255,255,0.3);
     }
 
     .status-message {
-        color: #94a3b8;
-        margin-bottom: 2rem;
-        min-height: 3rem;
+        color: #94a3b8; margin-bottom: 2rem; min-height: 3rem;
     }
     .status-message.text-red-500 { color: #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
     .status-message.text-green-400 { color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.4); }
 
-    /* SCANNER ANIMATION */
     .scanner-container {
-        width: 100%;
-        height: 4px;
-        background: rgba(255,255,255,0.1);
-        margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
+        width: 100%; height: 4px; background: rgba(255,255,255,0.1);
+        margin-bottom: 2rem; position: relative; overflow: hidden;
     }
     .scanner-line {
-        width: 30%;
-        height: 100%;
-        background: var(--cyber-yellow, #00f0ff);
+        width: 30%; height: 100%; background: var(--cyber-yellow, #00f0ff);
         box-shadow: 0 0 10px var(--cyber-yellow, #00f0ff);
-        position: absolute;
-        animation: scan 2s infinite linear;
+        position: absolute; animation: scan 2s infinite linear;
     }
     .scanner-line.success { background: #4ade80; box-shadow: 0 0 10px #4ade80; width: 100%; animation: none; }
     .scanner-line.error { background: #ef4444; box-shadow: 0 0 10px #ef4444; width: 100%; animation: none; }
 
-    @keyframes scan {
-        0% { left: -30%; }
-        100% { left: 100%; }
-    }
-
+    @keyframes scan { 0% { left: -30%; } 100% { left: 100%; } }
     .blink { animation: blink 1s infinite; }
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-    /* CORNERS */
     .corner { position: absolute; width: 15px; height: 15px; border-color: var(--cyber-yellow); transition: all 0.3s; }
     .top-left { top: 0; left: 0; border-top: 2px solid; border-left: 2px solid; }
     .top-right { top: 0; right: 0; border-top: 2px solid; border-right: 2px solid; }

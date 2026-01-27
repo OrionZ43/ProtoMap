@@ -72,13 +72,9 @@ const TEASERS: Teaser[] = [
     { text: 'by Orion_Z43' },
     { text: 'by Orion_Z43' },
 
-    // Тизеры
-    { text: 'Something is coming...' },
-    { text: '31.12' },
-
     // Прото-мемы
-    { text: 'I ate all your RAM 💾' },
-    { text: 'Beep Boop! 🤖' },
+    { text: 'I ate all your RAM!' },
+    { text: 'Beep Boop!' },
     { text: 'Powered by Toasters' },
     { text: 'Visor: Clean. Systems: Online.' },
     { text: 'UwU module loaded' },

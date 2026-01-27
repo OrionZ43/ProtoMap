@@ -11,6 +11,7 @@
     import { scale, fade } from 'svelte/transition';
     import GlitchOverlay from '$lib/components/casino/GlitchOverlay.svelte';
     import ArtifactSynthesis from '$lib/components/casino/ArtifactSynthesis.svelte';
+    import { renderMarkdown } from '$lib/utils/markdown';
 
     const translate = (key: string) => get(t)(key);
     const MAX_BET = 1000;
@@ -45,6 +46,26 @@
 
     let audioContext: AudioContext;
     let sounds: { [key: string]: Howl } = {};
+    let isOddsTooltipOpen = false;
+    let isChaosInfoOpen = false;
+
+    function toggleOddsTooltip() {
+        isOddsTooltipOpen = !isOddsTooltipOpen;
+        if (isOddsTooltipOpen) isChaosInfoOpen = false; // Закрываем соседа
+    }
+
+    // <--- НОВАЯ ФУНКЦИЯ
+    function toggleChaosInfo() {
+        isChaosInfoOpen = !isChaosInfoOpen;
+        if (isChaosInfoOpen) isOddsTooltipOpen = false; // Закрываем соседа
+    }
+
+    // Закрываем всё при клике в пустоту
+    function closeTooltips() {
+        isOddsTooltipOpen = false;
+        isChaosInfoOpen = false;
+    }
+
 
     function createSynthSound(type: 'reel_spin' | 'reel_stop') {
         if (!audioContext) return;
@@ -77,7 +98,7 @@
         try {
             audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
             sounds.ambient = new Howl({ src: ['/sounds/ambient_casino.mp3'], loop: true, volume: 0.3, autoplay: true });
-            sounds.suspense = new Howl({ src: ['/sounds/suspense_music.mp3'], loop: true, volume: 0.7 });
+            sounds.suspense = new Howl({ src: ['/sounds/suspense_music.mp3'], loop: true, volume: 0.3 });
             sounds.win1 = new Howl({ src: ['/sounds/win1.mp3'], volume: 0.6 });
             sounds.win2 = new Howl({ src: ['/sounds/win2.mp3'], volume: 0.7 });
             sounds.win3 = new Howl({ src: ['/sounds/win3.mp3'], volume: 0.8 });
@@ -110,7 +131,8 @@
     async function spinReels() {
         if (isGlobalSpinning || !$userStore.user) return;
 
-        const currentBet = Number(betAmount);
+        betAmount = Math.floor(betAmount);
+        const currentBet = betAmount;
         if (isNaN(currentBet) || currentBet <= 0 || currentBet > $userStore.user.casino_credits) {
             modal.error(translate('slots.modal_invalid_title'), translate('slots.modal_invalid_text'));
             return;
@@ -238,6 +260,8 @@
     <title>{$t('slots.title')} | The Glitch Pit</title>
 </svelte:head>
 
+<svelte:window on:click={closeTooltips} />
+
 <div class="page-container"
     class:win-tier-1={winTier === 1}
     class:win-tier-2={winTier === 2}
@@ -299,15 +323,18 @@
                         <div class="reel-viewport">
                             {#if reelStates[0] === 'spinning'}
                                 <div class="reel-strip spinning">
-                                    <img src="/casino/paw.svg" alt="" class="blur-icon">
-                                    <img src="/casino/ram.svg" alt="" class="blur-icon">
-                                    <img src="/casino/heart.svg" alt="" class="blur-icon">
-                                    <img src="/casino/protomap_logo.svg" alt="" class="blur-icon">
-                                    <img src="/casino/glitch-6.svg" alt="" class="blur-icon">
+                                    <!-- ДОБАВИЛИ КЛАССЫ ЦВЕТОВ -->
+                                    <img src="/casino/paw.svg" alt="" class="blur-icon symbol-paw">
+                                    <img src="/casino/ram.svg" alt="" class="blur-icon symbol-ram">
+                                    <img src="/casino/heart.svg" alt="" class="blur-icon symbol-heart">
+                                    <img src="/casino/protomap_logo.svg" alt="" class="blur-icon symbol-protomap_logo">
+                                    <img src="/casino/glitch-6.svg" alt="" class="blur-icon symbol-glitch-6">
+                                    <!-- Повтор для зацикливания -->
+                                    <img src="/casino/paw.svg" alt="" class="blur-icon symbol-paw">
                                 </div>
                             {:else}
                                 <div class="static-symbol bounce">
-                                    <img src="/casino/{reels[0]}.svg" alt={reels[0]} class="symbol" style="--glow-color: var(--color-{reels[0]})" />
+                                    <img src="/casino/{reels[0]}.svg" alt={reels[0]} class="symbol symbol-{reels[0]}" style="--glow-color: var(--color-{reels[0]})" />
                                 </div>
                             {/if}
                         </div>
@@ -318,15 +345,16 @@
                         <div class="reel-viewport">
                             {#if reelStates[1] === 'spinning'}
                                 <div class="reel-strip spinning delay-1">
-                                    <img src="/casino/ram.svg" alt="" class="blur-icon">
-                                    <img src="/casino/heart.svg" alt="" class="blur-icon">
-                                    <img src="/casino/protomap_logo.svg" alt="" class="blur-icon">
-                                    <img src="/casino/glitch-6.svg" alt="" class="blur-icon">
-                                    <img src="/casino/paw.svg" alt="" class="blur-icon">
+                                    <img src="/casino/ram.svg" alt="" class="blur-icon symbol-ram">
+                                    <img src="/casino/heart.svg" alt="" class="blur-icon symbol-heart">
+                                    <img src="/casino/protomap_logo.svg" alt="" class="blur-icon symbol-protomap_logo">
+                                    <img src="/casino/glitch-6.svg" alt="" class="blur-icon symbol-glitch-6">
+                                    <img src="/casino/paw.svg" alt="" class="blur-icon symbol-paw">
+                                    <img src="/casino/ram.svg" alt="" class="blur-icon symbol-ram">
                                 </div>
                             {:else}
                                 <div class="static-symbol bounce">
-                                    <img src="/casino/{reels[1]}.svg" alt={reels[1]} class="symbol" style="--glow-color: var(--color-{reels[1]})" />
+                                    <img src="/casino/{reels[1]}.svg" alt={reels[1]} class="symbol symbol-{reels[1]}" style="--glow-color: var(--color-{reels[1]})" />
                                 </div>
                             {/if}
                         </div>
@@ -337,27 +365,44 @@
                         <div class="reel-viewport">
                             {#if reelStates[2] === 'spinning'}
                                 <div class="reel-strip spinning delay-2">
-                                    <img src="/casino/heart.svg" alt="" class="blur-icon">
-                                    <img src="/casino/protomap_logo.svg" alt="" class="blur-icon">
-                                    <img src="/casino/glitch-6.svg" alt="" class="blur-icon">
-                                    <img src="/casino/paw.svg" alt="" class="blur-icon">
-                                    <img src="/casino/ram.svg" alt="" class="blur-icon">
+                                    <img src="/casino/heart.svg" alt="" class="blur-icon symbol-heart">
+                                    <img src="/casino/protomap_logo.svg" alt="" class="blur-icon symbol-protomap_logo">
+                                    <img src="/casino/glitch-6.svg" alt="" class="blur-icon symbol-glitch-6">
+                                    <img src="/casino/paw.svg" alt="" class="blur-icon symbol-paw">
+                                    <img src="/casino/ram.svg" alt="" class="blur-icon symbol-ram">
+                                    <img src="/casino/heart.svg" alt="" class="blur-icon symbol-heart">
                                 </div>
                             {:else}
                                 <div class="static-symbol bounce">
-                                    <img src="/casino/{reels[2]}.svg" alt={reels[2]} class="symbol" style="--glow-color: var(--color-{reels[2]})" />
+                                    <img src="/casino/{reels[2]}.svg" alt={reels[2]} class="symbol symbol-{reels[2]}" style="--glow-color: var(--color-{reels[2]})" />
                                 </div>
                             {/if}
                         </div>
                     </div>
-
                 </div>
             </div>
 
-            <!-- 2. ШКАЛА ХАОСА (НОВОЕ) -->
+            <!-- 2. ШКАЛА ХАОСА -->
             <div class="chaos-meter-container">
                 <div class="meter-label">
-                    <span>CHAOS CHARGE</span>
+                    <!-- Заменили div на button и добавили клик -->
+                    <button
+                        class="info-tooltip-wrapper"
+                        on:click|stopPropagation={toggleChaosInfo}
+                    >
+                        <span class="label-text">CHAOS CHARGE</span>
+
+                        <div class="info-icon">i</div>
+
+                        <!-- Добавили class:mobile-visible -->
+                        <div class="custom-tooltip" class:mobile-visible={isChaosInfoOpen}>
+                            <h5 class="tooltip-title">{$t('slots.info_title')}</h5>
+                            <div class="tooltip-body">
+                                {@html renderMarkdown($t('slots.info_text'))}
+                            </div>
+                        </div>
+                    </button>
+
                     <span class="count" class:ready={glitchShards >= 10}>{glitchShards} / 10</span>
                 </div>
 
@@ -392,7 +437,16 @@
                         <label for="bet-amount">{$t('slots.bet_label')}</label>
                         <div class="bet-input-wrapper">
                             <button class="bet-adjust" on:click={() => betAmount = Math.max(10, betAmount - 10)} disabled={isGlobalSpinning}>-</button>
-                            <input id="bet-amount" type="number" bind:value={betAmount} min="1" max={MAX_BET} disabled={isGlobalSpinning} />
+                            <input
+                                id="bet-amount"
+                                type="number"
+                                bind:value={betAmount}
+                                min="1"
+                                max={MAX_BET}
+                                step="1"
+                                on:input={() => betAmount = Math.floor(betAmount)}
+                                disabled={isGlobalSpinning}
+                            />
                             <button class="bet-adjust" on:click={() => betAmount = Math.min(MAX_BET, betAmount + 10)} disabled={isGlobalSpinning}>+</button>
                         </div>
                     </div>
@@ -407,27 +461,111 @@
 
     <!-- ТАБЛИЦА ВЫПЛАТ (ОБНОВЛЕННАЯ) -->
     <div class="paytable-container">
-        <h4 class="paytable-title font-display">{$t('slots.combinations')}</h4>
+    <div class="paytable-header">
+                <h4 class="paytable-title font-display">{$t('slots.combinations')}</h4>
+                <button
+                    class="info-tooltip-wrapper"
+                    on:click|stopPropagation={toggleOddsTooltip}
+                    on:keydown={(e) => e.key === 'Enter' && toggleOddsTooltip()}
+                >
+                    <div class="info-icon">?</div>
+
+                    <!-- 3. Добавляем класс mobile-visible по условию -->
+                    <div class="custom-tooltip odds-tooltip" class:mobile-visible={isOddsTooltipOpen}>
+                        <h5 class="tooltip-title">{$t('slots.odds_title')}</h5>
+
+                        <table class="odds-table">
+                            <thead>
+                                <tr>
+                                    <th>{$t('slots.col_outcome')}</th>
+                                    <th>{$t('slots.col_chance')}</th>
+                                    <th>{$t('slots.col_reward')}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="row-jackpot">
+                                    <td><span class="t-glow">JACKPOT</span></td>
+                                    <td>0.1%</td>
+                                    <td>x100</td>
+                                </tr>
+                                <tr class="row-glitch">
+                                    <td>GLITCH</td>
+                                    <td>1.0%</td>
+                                    <td>10 Shards</td>
+                                </tr>
+                                <tr class="row-heart">
+                                    <td>HEART</td>
+                                    <td>1.5%</td>
+                                    <td>x10</td>
+                                </tr>
+                                <tr class="row-ram">
+                                    <td>RAM</td>
+                                    <td>5.5%</td>
+                                    <td>x5</td>
+                                </tr>
+                                <tr class="row-paw">
+                                    <td>PAW</td>
+                                    <td>19.5%</td>
+                                    <td>x2</td>
+                                </tr>
+                                <tr class="row-loss">
+                                    <td class="text-gray-500">EMPTY</td>
+                                    <td class="text-gray-500">72.4%</td>
+                                    <td class="text-gray-500">—</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="odds-footer">
+                             {@html renderMarkdown($t('slots.odds_note'))}
+                        </div>
+                    </div>
+                </button>
+            </div>
         <div class="paytable-grid">
             <div class="combo">
-                <div class="icons"><img src="/casino/paw.svg" alt="paw"><img src="/casino/paw.svg" alt="paw"><img src="/casino/paw.svg" alt="paw"></div>
+                <!-- Лапки (PAW) - Голубые -->
+                <div class="icons">
+                    <img src="/casino/paw.svg" alt="paw" class="symbol-paw">
+                    <img src="/casino/paw.svg" alt="paw" class="symbol-paw">
+                    <img src="/casino/paw.svg" alt="paw" class="symbol-paw">
+                </div>
                 <div class="multiplier">x2</div>
             </div>
             <div class="combo">
-                <div class="icons"><img src="/casino/ram.svg" alt="ram"><img src="/casino/ram.svg" alt="ram"><img src="/casino/ram.svg" alt="ram"></div>
+                <!-- ОЗУ (RAM) - Оставляем как есть (она зеленая) -->
+                <div class="icons">
+                    <img src="/casino/ram.svg" alt="ram" class="symbol-ram">
+                    <img src="/casino/ram.svg" alt="ram" class="symbol-ram">
+                    <img src="/casino/ram.svg" alt="ram" class="symbol-ram">
+                </div>
                 <div class="multiplier">x5</div>
             </div>
             <div class="combo">
-                <div class="icons"><img src="/casino/heart.svg" alt="heart"><img src="/casino/heart.svg" alt="heart"><img src="/casino/heart.svg" alt="heart"></div>
+                <!-- Сердца (HEART) - Красные -->
+                <div class="icons">
+                    <img src="/casino/heart.svg" alt="heart" class="symbol-heart">
+                    <img src="/casino/heart.svg" alt="heart" class="symbol-heart">
+                    <img src="/casino/heart.svg" alt="heart" class="symbol-heart">
+                </div>
                 <div class="multiplier">x10</div>
             </div>
             <div class="combo jackpot">
-                <div class="icons"><img src="/casino/protomap_logo.svg" alt="logo"><img src="/casino/protomap_logo.svg" alt="logo"><img src="/casino/protomap_logo.svg" alt="logo"></div>
+                <!-- Лого (LOGO) - Золотое -->
+                <div class="icons">
+                    <img src="/casino/protomap_logo.svg" alt="logo" class="symbol-protomap_logo">
+                    <img src="/casino/protomap_logo.svg" alt="logo" class="symbol-protomap_logo">
+                    <img src="/casino/protomap_logo.svg" alt="logo" class="symbol-protomap_logo">
+                </div>
                 <div class="multiplier">x100</div>
             </div>
-            <!-- Обновил описание для Глитча -->
             <div class="combo">
-                <div class="icons"><img src="/casino/glitch-6.svg" alt="glitch"><img src="/casino/glitch-6.svg" alt="glitch"><img src="/casino/glitch-6.svg" alt="glitch"></div>
+                <!-- Глитч (GLITCH) - Красный/Фиолетовый -->
+                <div class="icons">
+                    <img src="/casino/glitch-6.svg" alt="glitch" class="symbol-glitch-6">
+                    <img src="/casino/glitch-6.svg" alt="glitch" class="symbol-glitch-6">
+                    <img src="/casino/glitch-6.svg" alt="glitch" class="symbol-glitch-6">
+                </div>
                 <div class="multiplier text-xs" style="color: #bd00ff; text-shadow: 0 0 10px #bd00ff; font-weight: 900;">
                     FULL CHARGE
                 </div>
@@ -503,7 +641,7 @@
     .reel-viewport { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
 
     .reel-strip { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; filter: blur(0px); }
-    .reel-strip.spinning { animation: spin-loop 0.2s linear infinite; filter: blur(3px); }
+    .reel-strip.spinning { animation: spin-loop 0.3s linear infinite; filter: blur(3px); opacity: 0.6; }
     .blur-icon { width: 100%; height: 250px; object-fit: contain; padding: 20px; opacity: 0.8; }
 
     .static-symbol { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
@@ -595,5 +733,233 @@
         .icons img { width: 20px; height: 20px; }
         .reel-strip.spinning { animation: spin-loop 0.15s linear infinite; }
         .blur-icon { height: 150px; }
+    }
+    /* === ЗАГОЛОВОК С КНОПКОЙ ВОПРОСА === */
+    .paytable-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+    }
+    .paytable-title {
+        margin-bottom: 0;
+        line-height: 1;
+    }
+
+    /* === ОБЩИЙ КОНТЕЙНЕР ТУЛТИПА (КНОПКА) === */
+    .info-tooltip-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: help;
+        z-index: 20;
+
+        /* Сброс стилей кнопки */
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        font: inherit;
+    }
+
+    /* ИКОНКА (i или ?) */
+    .info-icon {
+        width: 16px; height: 16px;
+        border-radius: 50%;
+        border: 1px solid #555;
+        color: #777;
+        background: rgba(255, 255, 255, 0.05);
+        font-family: monospace;
+        font-size: 11px;
+        font-weight: bold;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s;
+    }
+
+    /* Ховер эффект для иконки */
+    .info-tooltip-wrapper:hover .info-icon {
+        border-color: var(--cyber-cyan);
+        background: var(--cyber-cyan);
+        color: #000;
+        box-shadow: 0 0 10px var(--cyber-cyan);
+    }
+
+    /* === ВСПЛЫВАЮЩЕЕ ОКНО (TOOLTIP) === */
+    .custom-tooltip {
+        position: absolute;
+        bottom: 140%; /* Над иконкой */
+        left: 50%;    /* По центру иконки */
+
+        /* Дефолтная ширина для инфо (узкая) */
+        width: 280px;
+        padding: 1rem;
+
+        background: rgba(10, 10, 15, 0.95);
+        border: 1px solid var(--cyber-cyan);
+        border-radius: 8px;
+        box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+        backdrop-filter: blur(10px);
+
+        /* Скрыто */
+        opacity: 0;
+        visibility: hidden;
+
+        /* Дефолтная позиция на ПК: Центр */
+        transform: translateX(-50%) translateY(10px);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+    }
+
+    /* Спец-класс для широкой таблицы */
+    .odds-tooltip {
+        width: 320px;
+    }
+
+    /* СТРЕЛОЧКА ВНИЗ */
+    .custom-tooltip::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -6px; /* Центрируем стрелку */
+        border-width: 6px;
+        border-style: solid;
+        border-color: var(--cyber-cyan) transparent transparent transparent;
+    }
+
+    /* === ЛОГИКА ПОЯВЛЕНИЯ === */
+    /* 1. Наведение (Hover) ИЛИ 2. Класс (JS Click) */
+    .info-tooltip-wrapper:hover .custom-tooltip,
+    .info-tooltip-wrapper:focus-within .custom-tooltip,
+    .custom-tooltip.mobile-visible {
+        opacity: 1;
+        visibility: visible;
+        /* На ПК просто поднимаем вверх, сохраняя центровку по X */
+        transform: translateX(-50%) translateY(0);
+        pointer-events: auto;
+    }
+
+    /* === КОНТЕНТ ВНУТРИ === */
+    .tooltip-title {
+        color: var(--cyber-yellow);
+        font-family: 'Chakra Petch', monospace;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        border-bottom: 1px dashed rgba(255,255,255,0.2);
+        padding-bottom: 4px;
+    }
+    .tooltip-body {
+        color: #ccc; font-size: 0.8rem; line-height: 1.5; text-align: left;
+    }
+    .tooltip-body :global(p) { margin-bottom: 0.5rem; }
+    .tooltip-body :global(p:last-child) { margin-bottom: 0; }
+    .tooltip-body :global(strong) { color: var(--cyber-yellow); font-weight: 800; }
+
+    /* === ТАБЛИЦА ШАНСОВ === */
+    .odds-table {
+        width: 100%; border-collapse: collapse; margin-bottom: 1rem;
+        font-size: 0.8rem; font-family: 'Inter', sans-serif;
+    }
+    .odds-table th {
+        text-align: left; padding: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.2);
+        color: var(--cyber-yellow); text-transform: uppercase; font-size: 0.7rem;
+    }
+    .odds-table td {
+        padding: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #ddd;
+    }
+    .odds-table tr:last-child td { border-bottom: none; }
+    .row-jackpot { color: #fff; font-weight: bold; background: rgba(255, 215, 0, 0.1); }
+    .t-glow { text-shadow: 0 0 10px #ffd700; }
+    .row-glitch, .row-heart { color: #bd00ff; }
+    .row-ram { color: #39ff14; }
+    .row-paw { color: #00f3ff; }
+
+    .odds-footer {
+        font-size: 0.75rem; color: #888; background: rgba(255,255,255,0.05);
+        padding: 0.6rem; border-radius: 6px; border-left: 2px solid var(--cyber-cyan);
+        line-height: 1.4;
+    }
+    .odds-footer :global(strong) { color: #fff; font-weight: bold; }
+
+    /* === МОБИЛЬНАЯ АДАПТАЦИЯ (ЕДИНЫЙ БЛОК) === */
+    /* Мобильная адаптация */
+    @media (max-width: 640px) {
+        /* ОБЩИЕ СТИЛИ ДЛЯ МОБИЛОК */
+        .custom-tooltip {
+            width: 280px; /* Фикс ширина */
+            transform: translateY(10px); /* Исходное смещение */
+        }
+
+        .info-tooltip-wrapper:hover .custom-tooltip,
+        .custom-tooltip.mobile-visible {
+            transform: translateY(0) !important; /* Убираем X-смещение */
+        }
+
+        /* === 1. ТУЛТИП ХАОСА (ЛЕВЫЙ КРАЙ) === */
+        /* Он должен расти ВПРАВО, чтобы не улетать за экран */
+        .meter-label .custom-tooltip {
+            left: -5px !important;   /* Прижимаем к левому краю иконки */
+            right: auto !important;  /* Отменяем привязку к правому */
+        }
+
+        /* Стрелочка для Хаоса (Слева) */
+        .meter-label .custom-tooltip::after {
+            left: 12px !important;
+            right: auto !important;
+            margin-left: 0 !important;
+        }
+
+        /* === 2. ТУЛТИП ТАБЛИЦЫ (ЦЕНТР) === */
+        /* Он должен расти ВЛЕВО (как было), иначе улетит вправо */
+        .odds-tooltip {
+            left: auto !important;
+            right: -20px !important; /* Прижимаем к правому краю родителя */
+            width: 300px;            /* Таблица пошире */
+        }
+
+        /* Стрелочка для Таблицы (Справа) */
+        .odds-tooltip::after {
+            left: auto !important;
+            right: 25px !important;
+            margin-left: 0 !important;
+        }
+    }
+/* === РАСКРАСКА ИКОНОК === */
+
+    /* 🐾 ЛАПКИ (PAW) -> Приятный Голубой */
+    .symbol-paw {
+        filter: invert(70%) sepia(59%) saturate(4526%) hue-rotate(190deg) brightness(102%) contrast(103%) drop-shadow(0 0 5px #00bfff);
+    }
+
+    /* ❤️ СЕРДЦА (HEART) -> Насыщенный Красный */
+    .symbol-heart {
+        filter: invert(24%) sepia(61%) saturate(7476%) hue-rotate(354deg) brightness(98%) contrast(124%) drop-shadow(0 0 5px #ff3333);
+    }
+
+    /* 🏆 ЛОГОТИП (LOGO) -> Золотой */
+    .symbol-protomap_logo {
+        filter: invert(85%) sepia(35%) saturate(3054%) hue-rotate(358deg) brightness(101%) contrast(105%) drop-shadow(0 0 5px #ffd700);
+    }
+
+    /* 👹 ГЛИТЧ (666) -> Зловещий Красный/Малиновый */
+    .symbol-glitch-6 {
+        filter: invert(15%) sepia(95%) saturate(6932%) hue-rotate(338deg) brightness(95%) contrast(112%) drop-shadow(0 0 5px #ff003c);
+    }
+
+    /* 💾 ОЗУ (RAM) -> Оставляем оригинальный цвет или делаем поярче, если нужно */
+    /* Если она у тебя уже зеленая - этот класс можно не добавлять, или добавить для свечения */
+    .symbol-ram {
+        filter: drop-shadow(0 0 5px #39ff14);
+    }
+
+    /* Общий стиль для иконок в таблице, чтобы они не были гигантскими */
+    .paytable-grid .icons img {
+        width: 28px;
+        height: 28px;
     }
 </style>

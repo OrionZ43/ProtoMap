@@ -99,12 +99,12 @@
                 <div class="logo-container">
                     <img src="/logo.svg" alt="Logo" class="logo-icon" />
                 </div>
-                <span class="nav-brand text-2xl font-bold tracking-widest hidden lg:block" data-text="PROTOMAP">
+                <span class="nav-brand text-xl font-bold tracking-widest hidden xl:block" data-text="PROTOMAP">
                     PROTOMAP
                 </span>
             </a>
 
-            <div class="seasonal-phrase-container">
+             <div class="seasonal-phrase-container hidden xl:block">
                  <a href={seasonal.link} target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition-colors">
                     {seasonal.phrase}
                  </a>
@@ -112,7 +112,7 @@
         </div>
 
         <!-- 2. ЦЕНТРАЛЬНОЕ МЕНЮ (DESKTOP) -->
-        <div class="hidden lg:flex items-center justify-center space-x-1 absolute left-1/2 transform -translate-x-1/2 h-full z-10">
+        <div class="hidden xl:flex items-center justify-center space-x-1 absolute left-1/2 transform -translate-x-1/2 h-full z-10">
             <a href="/" class="nav-tab" class:active={isActive('/')}>
                 {$t('nav.map')}
                 <div class="tab-line"></div>
@@ -142,7 +142,7 @@
         </div>
 
         <!-- 3. ПРАВАЯ ЧАСТЬ (DESKTOP) -->
-        <div class="hidden lg:flex items-center gap-3 z-20">
+        <div class="hidden 2xl:flex items-center gap-3 z-20">
             {#if $userStore.user}
                 <div class="balance-pill" title={$t('ui.balance')}>
                     <span class="text-xs text-cyber-yellow font-bold tracking-wider">PC</span>
@@ -217,6 +217,13 @@
                                 {$t('menu.inventory')}
                             </a>
                             <div class="dropdown-divider"></div>
+                            <a href="/settings/security" class="dropdown-item">
+                                <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                {$t('menu.security')}
+                            </a>
+                            <div class="dropdown-divider"></div>
                             <button on:click={handleLogout} class="dropdown-item text-red">
                                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                                 {$t('menu.logout')}
@@ -231,7 +238,7 @@
         </div>
 
         <!-- 4. МОБИЛЬНОЕ МЕНЮ -->
-        <div class="lg:hidden flex items-center gap-3">
+        <div class="2xl:hidden flex items-center gap-3">
             {#if $userStore.user}
                 <div class="balance-pill mobile">
                     <span class="text-[10px] text-cyber-yellow font-bold">PC</span>
@@ -253,7 +260,7 @@
     </div>
 
     {#if isMobileMenuOpen}
-        <div class="lg:hidden bg-[#050a10]/95 backdrop-blur-xl border-b border-gray-800 absolute w-full left-0 z-40 shadow-2xl" transition:slide>
+        <div class="2xl:hidden bg-[#050a10]/95 backdrop-blur-xl border-b border-gray-800 absolute w-full left-0 z-40 shadow-2xl" transition:slide>
             <div class="py-2 space-y-1">
                 <a href="/" class="mobile-link" class:active={isActive('/')}>{$t('nav.map')}</a>
                 <a href="/news" class="mobile-link relative" class:active={isActive('/news')} on:click={markNewsAsRead}>
@@ -281,6 +288,7 @@
                     </div>
                     <a href="/profile/{getEncodedUsername($userStore.user.username)}" class="mobile-sub-link">{$t('menu.profile')}</a>
                     <a href="/casino/inventory" class="mobile-sub-link">{$t('menu.inventory')}</a>
+                    <a href="/settings/security" class="mobile-sub-link">{$t('menu.security')}</a>
                     <button on:click={handleLogout} class="mobile-sub-link text-red-400">{$t('menu.logout')}</button>
                 {:else}
                     <a href="/login" class="mobile-link">{$t('nav.login')}</a>

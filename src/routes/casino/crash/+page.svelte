@@ -89,6 +89,7 @@
     }
 
     async function startGame() {
+    betAmount = Math.floor(betAmount);
         if (betAmount > ($userStore.user?.casino_credits || 0)) {
             modal.error("ОШИБКА", "НЕДОСТАТОЧНО СРЕДСТВ");
             return;
@@ -424,7 +425,14 @@
                 <div class="input-label">PACKET SIZE (BET)</div>
                 <div class="bet-input-group">
                     <button class="adj" on:click={() => betAmount = Math.max(10, betAmount - 50)} disabled={isPlaying}>-</button>
-                    <input type="number" bind:value={betAmount} disabled={isPlaying} class="cyber-input">
+                    <input
+                        type="number"
+                        bind:value={betAmount}
+                        disabled={isPlaying}
+                        class="cyber-input"
+                        step="1"
+                        on:input={() => betAmount = Math.floor(betAmount)}
+                    >
                     <button class="adj" on:click={() => betAmount = Math.min(1000, betAmount + 50)} disabled={isPlaying}>+</button>
                 </div>
                 <div class="quick-bets">

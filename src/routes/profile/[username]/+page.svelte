@@ -6,7 +6,7 @@
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
-    import { fade } from 'svelte/transition';
+    import { fade, slide } from 'svelte/transition';
     import { getFunctions, httpsCallable } from "firebase/functions";
     import { settingsStore } from '$lib/stores/settingsStore';
     import CinematicLoader from '$lib/components/CinematicLoader.svelte';
@@ -16,6 +16,8 @@
     import { invalidateAll } from '$app/navigation';
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
+    import { renderMarkdown } from '$lib/utils/markdown';
+    import { AudioManager } from '$lib/client/audioManager';
 
     export let data: PageData;
     export let form: ActionData;
@@ -29,6 +31,23 @@
 
     const translate = (key: string, vars = {}) => get(t)(key, vars);
 
+    function getOptimizedAvatar(url: string | null | undefined, size: number = 100): string {
+        if (!url) return '';
+
+        if (url.includes('cloudinary.com')) {
+            const parts = url.split('/upload/');
+            return `${parts[0]}/upload/f_auto,q_auto,w_${size * 2},h_${size * 2},c_fill/${parts[1]}`;
+        }
+
+        // ФИКС ДЛЯ GOOGLE AVATARS
+        if (url.includes('googleusercontent.com')) {
+            // Заменяем параметр размера на наш (например, s200)
+            return url.split('=')[0] + `=s${size * 2}-c`;
+        }
+
+        return url;
+    }
+
     function getReportReasons() {
         return [
             { id: 'spam', label: translate('profile.reasons.spam'), text: 'Spam' },
@@ -39,8 +58,9 @@
         ];
     }
 
-    onMount(() => {
+    onMount(async () => {
         if (browser) {
+            // --- ЛОГИКА СИНЕМАТИК-ЛОАДЕРА ---
             const cinematicEnabled = $settingsStore.cinematicLoadsEnabled;
             const sessionKey = `viewed_profile_${data.profile.username}`;
             const alreadyViewed = sessionStorage.getItem(sessionKey);
@@ -52,6 +72,39 @@
                 showCinematicIntro = false;
                 isProfileVisible = true;
                 containerOpacity.set(1);
+            }
+
+            // --- ЛОГИКА МИГРАЦИИ АВАТАРКИ (UPLINK) ---
+            // Проверяем: мой ли это профиль и не Google ли там в ссылке?
+            // Используем $userStore напрямую для надежности
+            const currentUser = $userStore.user;
+            if (currentUser && currentUser.uid === data.profile.uid) {
+                const avatarUrl = data.profile.avatar_url;
+
+                if (avatarUrl && avatarUrl.includes('googleusercontent.com')) {
+                    console.log("[System] External proxy avatar detected. Initializing migration protocol...");
+
+                    try {
+                        // Подгружаем функции только если они нужны
+                        const { getFunctions, httpsCallable } = await import('firebase/functions');
+                        const functions = getFunctions();
+                        const migrateFunc = httpsCallable(functions, 'migrateExternalAvatar');
+
+                        // Запускаем в фоне, не ждем ответа для отрисовки профиля
+                        migrateFunc({ url: avatarUrl }).then((res: any) => {
+                            if (res.data.status === 'success') {
+                                console.log("[System] Avatar successfully migrated to Cloudinary storage.");
+                                // Обновляем локальный стор, чтобы аватарка поменялась сразу
+                                userStore.update(s => {
+                                    if (s.user) s.user.avatar_url = res.data.newUrl;
+                                    return s;
+                                });
+                            }
+                        });
+                    } catch (e) {
+                        console.error("[System] Migration circuit failure:", e);
+                    }
+                }
             }
         }
     });
@@ -68,29 +121,29 @@
     $: socials = data.profile.socials || {};
     $: hasSocials = Object.values(socials).some(link => !!link);
 
-    async function sendVerification() {
-        if (!auth.currentUser) return;
+    // Добавляем состояние для ответов
+    let replyingToId: string | null = null;
+    let replyingToName: string = '';
 
-        try {
-            await sendEmailVerification(auth.currentUser);
-            verificationSent = true;
-            modal.success(translate('ui.success'), translate('auth.check_email', { email: auth.currentUser.email })); // (надо добавить этот ключ в auth, или просто захардкодить временно "Email sent")
-        } catch (e: any) {
-            if (e.code === 'auth/too-many-requests') {
-                modal.warning(translate('ui.error'), "Too many requests.");
-            } else {
-                modal.error(translate('ui.error'), e.message);
-            }
+    // Функция начала ответа
+    function startReply(commentId: string, username: string) {
+        replyingToId = commentId;
+        replyingToName = username;
+        // Скролл к форме ввода или фокус на инпуте (если форма плавающая)
+        // В нашем случае форма одна, сделаем её "умной"
+        const input = document.querySelector('textarea[name="commentText"]') as HTMLElement;
+        if (input) {
+            input.focus();
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     }
 
-    async function checkVerificationStatus() {
-        if (!auth.currentUser) return;
-        await auth.currentUser.reload();
-        await auth.currentUser.getIdToken(true);
-        window.location.reload();
+    function cancelReply() {
+        replyingToId = null;
+        replyingToName = '';
     }
 
+    // Обновляем отправку
     async function handleAddComment() {
         if (!commentText.trim() || isSubmitting) return;
 
@@ -101,16 +154,70 @@
 
             await addCommentFunc({
                 profileUid: data.profile.uid,
-                text: commentText
+                text: commentText,
+                parentId: replyingToId // Отправляем ID родителя, если есть
             });
 
             commentText = '';
+            cancelReply(); // Сброс режима ответа
             await invalidateAll();
 
         } catch (error: any) {
-            modal.error(translate('ui.error'), error.message || "Failed to add comment.");
+            modal.error(translate('ui.error'), error.message);
         } finally {
             isSubmitting = false;
+        }
+    }
+
+    // Функция Лайка (Оптимистичная)
+    async function handleLike(commentId: string) {
+        if (!$userStore.user) return modal.warning(translate('ui.error'), translate('profile.login_req'));
+
+        const uid = $userStore.user.uid;
+
+        // 1. АНИМАЦИЯ И ЗВУК СРАЗУ
+        AudioManager.play('click_alt');
+
+        // 2. ОПТИМИСТИЧНОЕ ОБНОВЛЕНИЕ ЛОКАЛЬНЫХ ДАННЫХ
+        // Нам нужно найти коммент (он может быть родительским или ответом) и обновить его
+        data.comments = data.comments.map(c => {
+            // Если это родитель
+            if (c.id === commentId) {
+                const hasLiked = c.likes.includes(uid);
+                return {
+                    ...c,
+                    likes: hasLiked ? c.likes.filter(id => id !== uid) : [...c.likes, uid]
+                };
+            }
+
+            // Если это ответ внутри родителя
+            if (c.replies) {
+                const updatedReplies = c.replies.map(r => {
+                    if (r.id === commentId) {
+                        const hasLiked = r.likes.includes(uid);
+                        return {
+                            ...r,
+                            likes: hasLiked ? r.likes.filter(id => id !== uid) : [...r.likes, uid]
+                        };
+                    }
+                    return r;
+                });
+                return { ...c, replies: updatedReplies };
+            }
+
+            return c;
+        });
+
+        // 3. ОТПРАВКА НА СЕРВЕР (В ФОНЕ)
+        try {
+            const functions = getFunctions();
+            const likeFunc = httpsCallable(functions, 'toggleCommentLike');
+            // Мы не ждем await invalidateAll(), интерфейс уже обновлен
+            await likeFunc({ profileUid: data.profile.uid, commentId });
+        } catch(e) {
+            console.error("Like sync error:", e);
+            // В идеале тут надо откатить лайк назад, но для пет-проекта можно забить,
+            // при следующей перезагрузке данные синхронизируются.
         }
     }
 
@@ -229,10 +336,30 @@
         }
         return translate('profile.time.just_now');
     }
+
 </script>
 
 <svelte:head>
+    <!-- Базовый заголовок вкладки -->
     <title>{$t('profile.page_title')} {data.profile.username} | ProtoMap</title>
+    <meta name="description" content={data.profile.about_me ? data.profile.about_me.substring(0, 150) : 'Профиль пользователя на карте ProtoMap.'} />
+
+    <!-- Open Graph (для Telegram, Discord, VK) -->
+    <meta property="og:type" content="profile" />
+    <meta property="og:title" content="Профиль: {data.profile.username} | ProtoMap" />
+    <meta property="og:description" content={data.profile.about_me ? data.profile.about_me.substring(0, 150) : 'Нажмите, чтобы открыть профиль и местоположение пользователя.'} />
+    <meta property="og:image" content={data.profile.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/png?seed=${data.profile.username}`} />
+    <meta property="og:url" content="https://proto-map.vercel.app/profile/{data.profile.username}" />
+    <meta property="og:site_name" content="ProtoMap" />
+
+    <!-- Twitter Card (для X/Twitter и некоторых других) -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="{data.profile.username} | ProtoMap" />
+    <meta name="twitter:description" content={data.profile.about_me ? data.profile.about_me.substring(0, 150) : 'Профиль киборга в Сети.'} />
+    <meta name="twitter:image" content={data.profile.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/png?seed=${data.profile.username}`} />
+firebase deploy --only functions
+    <!-- Цвет обводки в дискорде/телеграме -->
+    <meta name="theme-color" content="#fcee0a" />
 </svelte:head>
 
 {#if showCinematicIntro}
@@ -279,39 +406,6 @@
             </div>
 
             <div class="profile-content">
-                {#if isOwner && $userStore.user}
-                    <div class="profile-section private-section">
-                        <h4 class="font-display flex items-center gap-2 text-gray-400">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                        </h4>
-
-                        <div class="email-control">
-                            <div class="email-text">
-                                <span class="text-gray-500 text-xs font-bold tracking-wider">{$t('profile.email')}:</span>
-                                <span class="text-white font-mono ml-2">{$userStore.user.email}</span>
-                            </div>
-
-                            {#if $userStore.user.emailVerified}
-                                <div class="verified-badge">
-                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                    {$t('profile.verified')}
-
-                                    <div class="verified-tooltip">
-                                        <p class="font-bold text-green-400 mb-1">// {$t('profile.verified_tooltip_title')}</p>
-                                        {$t('profile.verified_tooltip_text')}
-                                    </div>
-                                </div>
-                            {:else}
-                                <button class="unverified-btn" on:click={sendVerification} disabled={verificationSent}>
-                                    {verificationSent ? $t('profile.sent_btn') : $t('profile.unverified_btn')}
-                                </button>
-                                <button class="text-xs text-gray-500 underline ml-2" on:click={checkVerificationStatus}>
-                                    {$t('profile.check_btn')}
-                                </button>
-                            {/if}
-                        </div>
-                    </div>
-                {/if}
 
                 {#if hasSocials}
                     <div class="profile-section">
@@ -371,58 +465,136 @@
             </div>
         </div>
 
-        <div class="comments-container max-w-4xl mx-auto mt-12">
-            <h4 class="font-display text-2xl text-cyber-yellow mb-6 text-center">// {$t('profile.comments_title')} ({data.comments.length})</h4>
+        <div class="comments-container max-w-4xl mx-auto mt-12 pb-32">
+    <h4 class="font-display text-2xl text-cyber-yellow mb-6 text-center tracking-widest">// КОММЕНТАРИИ</h4>
 
-            {#if $userStore.user}
-                <form on:submit|preventDefault={handleAddComment} class="add-comment-form">
-                    <img src={$userStore.user.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user.username}`} alt="Ваш аватар" class="comment-avatar" />
-                    <div class="flex-grow">
-                        <textarea name="commentText" bind:value={commentText} placeholder={$t('profile.comment_placeholder')} class="input-field" rows="3"></textarea>
-                        {#if form?.addCommentError}<p class="error-message-small">{form.addCommentError}</p>{/if}
-                    </div>
-                    <NeonButton type="submit" extraClass="self-start" disabled={isSubmitting}>
-                    {isSubmitting ? $t('profile.sending') : $t('profile.send_btn')}
-                    </NeonButton>
-                </form>
-            {:else}
-                <p class="text-center text-gray-400 py-4"><a href="/login" class="text-cyber-yellow hover:underline">{$t('nav.login')}</a> {$t('profile.login_req_suffix')}</p>
+    {#if $userStore.user}
+        <form on:submit|preventDefault={handleAddComment} class="comment-input-box cyber-panel p-4 mb-8">
+            {#if replyingToId}
+                <div class="reply-badge" transition:slide>
+                    <span>Ответ для: <strong class="text-white">{replyingToName}</strong></span>
+                    <button type="button" on:click={cancelReply} class="text-red-400 hover:text-white ml-2">✕</button>
+                </div>
             {/if}
 
-            <div class="comments-list">
-                {#if data.comments.length > 0}
-                    {#each data.comments as comment (comment.id)}
-                        <div class="comment-card" transition:fade>
-                <a href={`/profile/${comment.author_username}`} class="comment-avatar-wrapper {comment.author_equipped_frame || ''}">
-                    <img src={comment.author_avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${comment.author_username}`} alt="Аватар {comment.author_username}" class="comment-avatar" />
-                </a>
-                            <div class="flex-grow">
-                                <div class="comment-header">
-                                    <a href={`/profile/${comment.author_username}`} class="comment-author">{comment.author_username}</a>
-                                    <span class="comment-time">{formatTimeAgo(comment.createdAt)}</span>
-                                </div>
-                                <p class="comment-text">{comment.text}</p>
-                                <div class="comment-actions">
-                                    {#if $userStore.user}
-                                        {#if comment.author_uid === $userStore.user.uid}
-                                            <button on:click={() => handleDeleteComment(comment.id)} type="button" class="action-btn">
-                                {$t('profile.delete_btn')}
-                            </button>
-                        {:else}
-                            <button on:click={() => handleReportComment(comment.id, comment.author_username)} class="action-btn">
-                                {$t('profile.report_btn')}
-                            </button>
-                                        {/if}
-                                    {/if}
+            <div class="flex gap-4">
+                <div class="comment-avatar-wrapper {$userStore.user.equipped_frame || ''} hidden sm:block">
+                     <img src={getOptimizedAvatar($userStore.user.avatar_url)} alt="Me" class="comment-avatar"/>
+                </div>
+                <div class="flex-grow">
+                    <textarea
+                        name="commentText"
+                        bind:value={commentText}
+                        placeholder={replyingToId ? `Ответ для @${replyingToName}...` : $t('profile.comment_placeholder')}
+                        class="input-field w-full"
+                        rows="2"
+                    ></textarea>
+                </div>
+                <NeonButton type="submit" disabled={isSubmitting} extraClass="self-end h-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
+                </NeonButton>
+            </div>
+        </form>
+    {:else}
+        <!-- Заглушка для гостей -->
+    {/if}
+
+    <div class="comments-tree space-y-4">
+        {#each data.comments as comment (comment.id)}
+            <!-- РОДИТЕЛЬСКИЙ КОММЕНТАРИЙ -->
+            <div class="comment-node" transition:fade>
+                <div class="comment-card">
+                    <!-- Цветной индикатор слева -->
+                    <div class="accent-line"></div>
+
+                    <div class="card-content">
+                        <!-- ШАПКА: Аватар + Имя + Дата -->
+                        <div class="card-header">
+                            <div class="author-info">
+                                <a href={`/profile/${comment.author_username}`} class="comment-avatar-wrapper {comment.author_equipped_frame || ''}">
+                                    <img src={getOptimizedAvatar(comment.author_avatar_url)} alt="" class="comment-avatar" />
+                                </a>
+                                <div class="name-date">
+                                    <a href={`/profile/${comment.author_username}`} class="author-name">{comment.author_username}</a>
+                                    <span class="time">{formatTimeAgo(comment.createdAt)}</span>
                                 </div>
                             </div>
+
+                            <!-- Кнопки управления -->
+                            {#if $userStore.user}
+                                <div class="controls">
+                                    {#if comment.author_uid === $userStore.user.uid || isOwner}
+                                         <button on:click={() => handleDeleteComment(comment.id)} class="icon-btn del">
+                                            <i class="fas fa-trash"></i>
+                                         </button>
+                                    {/if}
+                                    <button on:click={() => handleReportComment(comment.id, comment.author_username)} class="icon-btn warn">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                    </button>
+                                </div>
+                            {/if}
                         </div>
-                    {/each}
-                {:else}
-                    <p class="text-center text-gray-500 py-8">{$t('profile.empty_comments')}</p>
+
+                        <!-- ТЕКСТ -->
+                        <div class="card-body">
+                             {@html renderMarkdown(comment.text)}
+                        </div>
+
+                        <!-- ПОДВАЛ -->
+                        <div class="card-footer">
+                            <button class="action-pill like" class:liked={comment.likes.includes($userStore.user?.uid || '')} on:click={() => handleLike(comment.id)}>
+                                <i class="fas fa-heart"></i>
+                                <span>{comment.likes.length || 0}</span>
+                            </button>
+
+                            <button class="action-pill reply" on:click={() => startReply(comment.id, comment.author_username)}>
+                                <i class="fas fa-reply"></i>
+                                <span>{$t('profile.reply')}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ВЕТКА ОТВЕТОВ -->
+                {#if comment.replies && comment.replies.length > 0}
+                    <div class="replies-wrapper">
+                        {#each comment.replies as reply (reply.id)}
+                            <div class="comment-card reply">
+                                <div class="accent-line reply-line"></div>
+                                <div class="card-content">
+                                    <div class="card-header">
+                                        <div class="author-info">
+                                            <a href={`/profile/${reply.author_username}`} class="comment-avatar-wrapper small {reply.author_equipped_frame || ''}">
+                                                <img src={getOptimizedAvatar(reply.author_avatar_url)} alt="" class="comment-avatar" />
+                                            </a>
+                                            <div class="name-date">
+                                                <a href={`/profile/${reply.author_username}`} class="author-name text-sm">{reply.author_username}</a>
+                                                <span class="time">{formatTimeAgo(reply.createdAt)}</span>
+                                            </div>
+                                        </div>
+                                        {#if $userStore.user && (reply.author_uid === $userStore.user.uid || isOwner)}
+                                            <button on:click={() => handleDeleteComment(reply.id)} class="icon-btn del small">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        {/if}
+                                    </div>
+                                    <div class="card-body text-sm">
+                                        {@html renderMarkdown(reply.text)}
+                                    </div>
+                                    <div class="card-footer">
+                                         <button class="action-pill like small" class:liked={reply.likes.includes($userStore.user?.uid || '')} on:click={() => handleLike(reply.id)}>
+                                            <i class="fas fa-heart"></i> {reply.likes.length || 0}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
                 {/if}
             </div>
-        </div>
+        {/each}
+    </div>
+</div>
 {/if}
 
 
@@ -449,6 +621,7 @@
 
     .profile-container {
         @apply max-w-2xl mx-auto my-10 p-1 sm:p-2 rounded-none shadow-2xl relative;
+        padding-bottom: 2rem !important;
         background: #0a0a0a;
         border: 1px solid rgba(252, 238, 10, 0.3);
         clip-path: polygon(0 20px, 20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
@@ -520,7 +693,7 @@
     .action-btn { @apply text-xs text-gray-500 hover:text-red-400 transition-colors; }
 
     .report-icon-btn {
-        @apply absolute top-2 right-2 z-20 p-2 rounded-full;
+        @apply absolute top-1 right-2 z-20 p-2 rounded-full;
         color: var(--cyber-red, #ff003c);
         animation: report-pulse 2.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
         transition: all 0.2s ease-in-out;
@@ -680,4 +853,406 @@
     z-index: -1;
     pointer-events: none;
 }
+.cyber-glass {
+        background: rgba(20, 25, 30, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(5px);
+        border-radius: 8px;
+        transition: border-color 0.2s;
+    }
+    .cyber-glass:hover { border-color: rgba(255, 255, 255, 0.15); }
+
+    .comment-card { padding: 1rem; position: relative; }
+    .comment-card.reply {
+        margin-top: 0.5rem;
+        background: rgba(255, 255, 255, 0.03);
+        border-left: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 0 8px 8px 0;
+    }
+
+    .replies-branch {
+        margin-left: 2rem; /* Отступ ветки */
+        border-left: 1px dashed rgba(255, 255, 255, 0.1); /* Линия ветки */
+        padding-left: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+    .author-name { font-weight: bold; color: #fff; font-family: 'Chakra Petch', sans-serif; }
+    .group:hover .author-name { color: var(--cyber-yellow); }
+    .time { color: #555; font-size: 0.75rem; margin-left: 0.5rem; }
+
+    .card-body { color: #d1d5db; line-height: 1.5; word-wrap: break-word; }
+
+    .card-footer {
+        margin-top: 0.8rem; display: flex; gap: 1rem; align-items: center;
+        border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.5rem;
+    }
+
+    /* Анимация удара сердца */
+    @keyframes heart-pop {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.3); }
+        100% { transform: scale(1); }
+    }
+
+    /* === КНОПКА ЛАЙКА (CYBER HEARTBURST) === */
+    .like-btn {
+        position: relative; /* Для позиционирования волны */
+        display: flex; align-items: center; gap: 6px;
+        color: #64748b; font-size: 0.85rem; font-weight: bold;
+        background: none; border: none; cursor: pointer;
+        padding: 4px 8px; border-radius: 4px;
+        transition: color 0.3s;
+        overflow: visible; /* Чтобы волна выходила за пределы */
+    }
+
+    .like-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+    .like-btn svg {
+        transition: fill 0.3s ease;
+        transform-origin: center;
+    }
+
+    /* АКТИВНОЕ СОСТОЯНИЕ */
+    .like-btn.liked {
+        color: #ff003c;
+        text-shadow: 0 0 12px rgba(255, 0, 60, 0.6);
+    }
+
+    .like-btn.liked svg {
+        fill: currentColor;
+        /* Запускаем анимацию сердца */
+        animation: cyber-heart-bounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    /* ЭФФЕКТ УДАРНОЙ ВОЛНЫ (SHOCKWAVE) */
+    .like-btn.liked::before {
+        content: '';
+        position: absolute;
+        top: 50%; left: 16px; /* Центрируем относительно иконки */
+        width: 10px; height: 10px;
+        border-radius: 50%;
+        border: 2px solid #ff003c;
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0);
+        /* Запускаем анимацию волны */
+        animation: ripple-blast 0.6s ease-out;
+        pointer-events: none;
+    }
+
+    /* АНИМАЦИЯ 1: ПУЛЬСАЦИЯ СЕРДЦА */
+    @keyframes cyber-heart-bounce {
+        0% { transform: scale(1); }
+        30% { transform: scale(0.6); } /* Сжатие */
+        50% { transform: scale(1.4); filter: brightness(1.5) drop-shadow(0 0 5px #ff003c); } /* Взрыв */
+        100% { transform: scale(1); }
+    }
+
+    /* АНИМАЦИЯ 2: РАСХОЖДЕНИЕ КОЛЬЦА */
+    @keyframes ripple-blast {
+        0% { transform: translate(-50%, -50%) scale(0); opacity: 1; border-width: 4px; }
+        100% { transform: translate(-50%, -50%) scale(4); opacity: 0; border-width: 0px; }
+    }
+
+    .icon-btn { color: #444; padding: 0 4px; font-weight: bold; transition: color 0.2s; }
+    .icon-btn:hover { color: #fff; }
+    .icon-btn.del:hover { color: #ff003c; }
+
+    .reply-badge {
+        background: rgba(0, 243, 255, 0.1); border: 1px solid var(--cyber-cyan);
+        color: var(--cyber-cyan); padding: 0.3rem 0.8rem; border-radius: 4px;
+        font-size: 0.8rem; margin-bottom: 0.5rem; display: inline-flex; align-items: center;
+    }
+
+    /* === ОСНОВНОЙ КОНТЕЙНЕР === */
+    .comments-container {
+        @apply mt-12 max-w-4xl mx-auto pb-32;
+    }
+
+    /* === КАРТОЧКА === */
+    .comment-node { margin-bottom: 1.5rem; }
+
+    .comment-card {
+        position: relative;
+        background: linear-gradient(180deg, rgba(30, 35, 45, 0.7) 0%, rgba(20, 25, 30, 0.9) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+        display: flex;
+    }
+
+    .comment-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Цветная линия слева (Акцент) */
+    .accent-line {
+        width: 4px;
+        background: var(--cyber-yellow);
+        box-shadow: 2px 0 10px var(--cyber-yellow);
+        flex-shrink: 0;
+    }
+
+    .reply-line {
+        background: var(--cyber-cyan); /* Другой цвет для ответов */
+        box-shadow: 2px 0 10px var(--cyber-cyan);
+    }
+
+    .card-content {
+        padding: 1rem 1.5rem;
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    /* === ШАПКА === */
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.8rem;
+    }
+
+    .author-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .name-date {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+    }
+
+    .author-name {
+        font-family: 'Chakra Petch', sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        color: #fff;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .author-name:hover { color: var(--cyber-yellow); }
+
+    .time {
+        font-size: 0.75rem;
+        color: #64748b;
+        font-family: monospace;
+    }
+
+    /* АВАТАР */
+    .comment-avatar-wrapper {
+        position: relative;
+        width: 42px; height: 42px;
+        flex-shrink: 0;
+        border-radius: 50%;
+    }
+    .comment-avatar-wrapper.small {
+        width: 32px; height: 32px;
+    }
+
+    .comment-avatar {
+        width: 100%; height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #111;
+        position: relative;
+        z-index: 2;
+    }
+
+    /* === ТЕКСТ === */
+    .card-body {
+        color: #e2e8f0;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+    .card-body :global(a) { color: var(--cyber-cyan); text-decoration: underline; }
+
+    /* === ФУТЕР И КНОПКИ === */
+    .card-footer {
+        display: flex;
+        gap: 0.8rem;
+    }
+
+    /* Стильные "таблетки" кнопок */
+    .action-pill {
+        display: flex; align-items: center; gap: 6px;
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        color: #94a3b8;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .action-pill:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+
+    .action-pill.like:hover, .action-pill.like.liked {
+        color: #ff003c;
+        border-color: rgba(255, 0, 60, 0.3);
+        background: rgba(255, 0, 60, 0.1);
+    }
+
+    .action-pill.reply:hover {
+        color: var(--cyber-cyan);
+        border-color: rgba(0, 243, 255, 0.3);
+        background: rgba(0, 243, 255, 0.1);
+    }
+
+    .action-pill.small { padding: 4px 8px; font-size: 0.75rem; }
+
+    /* Управление (удалить/репорт) */
+    .icon-btn {
+        color: #444; background: none; border: none; cursor: pointer; transition: color 0.2s;
+    }
+    .icon-btn:hover { color: #fff; }
+    .icon-btn.del:hover { color: #ff003c; }
+
+    /* ОТВЕТЫ */
+    .replies-wrapper {
+        margin-left: 3rem; /* Сдвигаем ветку */
+        margin-top: 0.5rem;
+        display: flex; flex-direction: column; gap: 0.5rem;
+        border-left: 2px solid rgba(255,255,255,0.05); /* Линия соединения */
+        padding-left: 1rem;
+    }
+
+    .comment-card.reply {
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 8px;
+        padding: 0;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .comment-card.reply .card-content { padding: 0.8rem 1rem; }
+
+    @media (max-width: 640px) {
+        .replies-wrapper { margin-left: 1rem; padding-left: 0.5rem; }
+        .card-content { padding: 1rem; }
+        .action-pill span { display: none; } /* Скрываем текст кнопок на мобиле, оставляем иконки */
+        .action-pill i { margin-right: 0; }
+        .action-pill.like span { display: inline; } /* Но счетчик лайков оставляем */
+    }
+    /* === ФОРМА ВВОДА (TECH CONSOLE) === */
+    .comment-input-box {
+        position: sticky;
+        bottom: 2rem;
+        z-index: 50; /* Поверх остальных элементов при скролле */
+
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+
+        /* Темный технологичный фон */
+        background: rgba(13, 15, 20, 0.95);
+        backdrop-filter: blur(12px);
+
+        /* Тонкая рамка */
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid rgba(255, 255, 255, 0.15); /* Блик сверху */
+
+        border-radius: 16px;
+        padding: 1.25rem;
+
+        /* Глубокая тень, чтобы отделить от контента снизу */
+        box-shadow:
+            0 20px 40px rgba(0, 0, 0, 0.8),
+            0 0 0 1px rgba(0, 0, 0, 0.5);
+
+        transition: transform 0.3s, border-color 0.3s;
+    }
+
+    /* Подсветка всей коробки при фокусе */
+    .comment-input-box:focus-within {
+        border-color: rgba(0, 243, 255, 0.3);
+        box-shadow:
+            0 20px 50px rgba(0, 0, 0, 0.9),
+            0 0 20px rgba(0, 243, 255, 0.05);
+    }
+
+    /* Поле ввода */
+    .input-field {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        color: #fff;
+        padding: 1rem;
+        border-radius: 8px;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        resize: none; /* Убираем уголок растягивания (или vertical) */
+        transition: all 0.2s ease-in-out;
+    }
+
+    .input-field::placeholder {
+        color: #555;
+        font-family: 'Chakra Petch', monospace;
+        letter-spacing: 0.05em;
+    }
+
+    .input-field:focus {
+        outline: none;
+        background: rgba(0, 0, 0, 0.6);
+        border-color: var(--cyber-cyan);
+        /* Внутреннее свечение */
+        box-shadow: inset 0 0 15px rgba(0, 243, 255, 0.05);
+    }
+
+    /* Плашка ответа (всплывает сверху) */
+    .reply-badge {
+        background: linear-gradient(90deg, rgba(0, 243, 255, 0.1), transparent);
+        border-left: 3px solid var(--cyber-cyan);
+        padding: 0.6rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--cyber-cyan);
+        border-radius: 4px;
+        font-family: 'Chakra Petch', monospace;
+        animation: slide-in 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    }
+
+    @keyframes slide-in {
+        0% { opacity: 0; transform: translateY(10px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Адаптация кнопки внутри формы */
+    .comment-input-box :global(.neon-btn) {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 1.5rem !important; /* Больше воздуха по бокам */
+        border-radius: 8px;
+    }
+
+    /* Мобилка */
+    @media (max-width: 640px) {
+        .comment-input-box {
+            padding: 1rem;
+            bottom: 1rem; /* Чуть выше дна экрана */
+            border-radius: 12px;
+        }
+        /* Скрываем аватарку слева на мобиле, чтобы сэкономить место */
+        .comment-input-box .comment-avatar-wrapper {
+            display: none;
+        }
+        .input-field {
+            font-size: 16px; /* Фикс зума на айфоне */
+        }
+    }
 </style>
