@@ -11,115 +11,131 @@ export type Comment = {
     author_avatar_url: string;
     author_equipped_frame: string | null;
     createdAt: Date;
-    likes: string[]; // Массив UID лайкнувших
-    parentId: string | null; // ID родителя
-    replies?: Comment[]; // Вложенные ответы (для рендера)
+    likes: string[];
+    parentId: string | null;
+    replies?: Comment[];
 };
 
 export const load: PageServerLoad = async ({ params, setHeaders }) => {
     const username = params.username;
-    const usersRef = firestoreAdmin.collection('users');
-    const userSnapshot = await usersRef.where('username', '==', username).limit(1).get();
 
-    if (userSnapshot.empty) {
-        throw error(404, 'Профиль не найден');
-    }
+    try {
+        const usersRef = firestoreAdmin.collection('users');
+        const userSnapshot = await usersRef.where('username', '==', username).limit(1).get();
 
-    const userProfileDoc = userSnapshot.docs[0];
-    const userProfileData = userProfileDoc.data();
+        if (userSnapshot.empty) {
+            throw error(404, 'Профиль не найден');
+        }
 
-    // Загружаем комментарии
-    const commentsRef = userProfileDoc.ref.collection('comments').orderBy('createdAt', 'desc').limit(50);
-    const commentsSnapshot = await commentsRef.get();
+        const userProfileDoc = userSnapshot.docs[0];
+        const userProfileData = userProfileDoc.data();
 
-    // 1. Собираем сырые данные
-    const rawComments: Comment[] = commentsSnapshot.docs.map(doc => {
-        const data = doc.data();
+        // Загружаем комментарии
+        const commentsRef = userProfileDoc.ref.collection('comments').orderBy('createdAt', 'desc').limit(50);
+        const commentsSnapshot = await commentsRef.get();
+
+        // 1. Собираем сырые данные (С ЗАЩИТОЙ)
+        const rawComments: Comment[] = [];
+
+        commentsSnapshot.docs.forEach(doc => {
+            try {
+                const data = doc.data();
+                // Защита от битых дат
+                let createdDate = new Date();
+                if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+                    createdDate = data.createdAt.toDate();
+                }
+
+                rawComments.push({
+                    id: doc.id,
+                    text: data.text || '',
+                    author_uid: data.author_uid || '',
+                    author_username: data.author_username || 'Аноним',
+                    author_avatar_url: data.author_avatar_url || '',
+                    author_equipped_frame: data.author_equipped_frame || null,
+                    createdAt: createdDate,
+                    likes: Array.isArray(data.likes) ? data.likes : [],
+                    parentId: data.parentId || null,
+                    replies: []
+                });
+            } catch (err) {
+                console.warn(`Skipping broken comment ${doc.id}:`, err);
+            }
+        });
+
+        // 2. Актуализируем данные авторов
+        const authorUids = [...new Set(rawComments.map(c => c.author_uid).filter(Boolean))];
+        const authorsData = new Map<string, any>();
+
+        if (authorUids.length > 0) {
+            // Разбиваем на пачки по 10 (FireStore in-query limit)
+            const chunkSize = 10;
+            for (let i = 0; i < authorUids.length; i += chunkSize) {
+                const chunk = authorUids.slice(i, i + chunkSize);
+                try {
+                    const snaps = await firestoreAdmin.collection('users')
+                        .where(FieldPath.documentId(), 'in', chunk)
+                        .get();
+                    snaps.forEach(d => authorsData.set(d.id, d.data()));
+                } catch (e) {
+                    console.error("Error fetching authors chunk:", e);
+                }
+            }
+        }
+
+        // 3. Строим дерево
+        const commentMap = new Map<string, Comment>();
+        const rootComments: Comment[] = [];
+
+        rawComments.forEach(c => {
+            const freshAuthor = authorsData.get(c.author_uid);
+            if (freshAuthor) {
+                c.author_username = freshAuthor.username || c.author_username;
+                c.author_avatar_url = freshAuthor.avatar_url || c.author_avatar_url;
+                c.author_equipped_frame = freshAuthor.equipped_frame || c.author_equipped_frame;
+            }
+            commentMap.set(c.id, c);
+        });
+
+        rawComments.forEach(c => {
+            if (c.parentId && commentMap.has(c.parentId)) {
+                const parent = commentMap.get(c.parentId)!;
+                if (!parent.replies) parent.replies = [];
+                parent.replies.push(c);
+            } else {
+                rootComments.push(c);
+            }
+        });
+
+        // Сортировка ответов
+        rootComments.forEach(root => {
+            if (root.replies && root.replies.length > 0) {
+                root.replies.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+            }
+        });
+
+        setHeaders({ 'Cache-Control': 'public, max-age=60' });
+
         return {
-            id: doc.id,
-            text: data.text || '',
-            author_uid: data.author_uid || '',
-            author_username: data.author_username || 'Аноним',
-            author_avatar_url: data.author_avatar_url || '',
-            author_equipped_frame: data.author_equipped_frame || null,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            likes: data.likes || [],
-            parentId: data.parentId || null,
-            replies: []
+            profile: {
+                uid: userProfileDoc.id,
+                username: userProfileData.username,
+                avatar_url: userProfileData.avatar_url,
+                about_me: userProfileData.about_me || '',
+                status: userProfileData.status || null,
+                socials: userProfileData.socials || {},
+                equipped_frame: userProfileData.equipped_frame || null,
+                equipped_bg: userProfileData.equipped_bg || null
+            },
+            comments: rootComments
         };
-    });
 
-    // 2. Актуализируем данные авторов (аватарки/рамки могли обновиться)
-    const authorUids = [...new Set(rawComments.map(c => c.author_uid).filter(Boolean))];
-    const authorsData = new Map<string, any>();
-
-    if (authorUids.length > 0) {
-        // Батчинг по 30 ID (ограничение Firestore 'in')
-        for (let i = 0; i < authorUids.length; i += 30) {
-            const chunk = authorUids.slice(i, i + 30);
-            const snaps = await firestoreAdmin.collection('users')
-                .where(FieldPath.documentId(), 'in', chunk)
-                .get();
-            snaps.forEach(d => authorsData.set(d.id, d.data()));
+    } catch (e: any) {
+        console.error(`Profile Load Error [${username}]:`, e);
+        // Если профиль не найден - 404, иначе 500
+        if (e.status === 404 || e.message === 'Профиль не найден') {
+            throw error(404, 'Профиль не найден');
         }
+        throw error(500, 'Ошибка загрузки профиля');
     }
-
-    // 3. Обновляем данные и СТРОИМ ДЕРЕВО
-    const commentMap = new Map<string, Comment>();
-    const rootComments: Comment[] = [];
-
-    // Сначала обновляем и кладем в Map
-    rawComments.forEach(c => {
-        const freshAuthor = authorsData.get(c.author_uid);
-        if (freshAuthor) {
-            c.author_username = freshAuthor.username;
-            c.author_avatar_url = freshAuthor.avatar_url;
-            c.author_equipped_frame = freshAuthor.equipped_frame;
-        }
-        commentMap.set(c.id, c);
-    });
-
-    // Теперь распределяем: кто родитель, кто ребенок
-    // Идем с конца (так как сортировка по дате desc), чтобы ответы падали в родителей
-    // Но для простоты: просто пробежимся и раскидаем.
-
-    // ВАЖНО: Если мы грузим limit(50), может быть ситуация, когда есть "ответ", но нет "родителя" в списке.
-    // Тогда такой ответ станет "сиротой" и будет показан как обычный коммент.
-
-    rawComments.forEach(c => {
-        if (c.parentId && commentMap.has(c.parentId)) {
-            // Это ответ, и родитель загружен
-            const parent = commentMap.get(c.parentId)!;
-            // Добавляем в начало массива ответов (чтобы старые были сверху, или новые сверху - как решишь)
-            // Сейчас у нас desc сортировка, значит более новые идут раньше.
-            // Для ответов обычно логичнее asc (хронология). Но пусть пока будет как есть.
-            parent.replies?.push(c);
-        } else {
-            // Это корневой коммент (или сирота)
-            rootComments.push(c);
-        }
-    });
-
-    // Сортируем ответы в хронологическом порядке (старые вверху)
-    rootComments.forEach(root => {
-        if (root.replies && root.replies.length > 0) {
-            root.replies.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-        }
-    });
-
-    setHeaders({ 'Cache-Control': 'public, max-age=60' });
-
-    return {
-        profile: {
-            uid: userProfileDoc.id,
-            username: userProfileData.username,
-            avatar_url: userProfileData.avatar_url,
-            about_me: userProfileData.about_me,
-            status: userProfileData.status || null,
-            socials: userProfileData.socials || {},
-            equipped_frame: userProfileData.equipped_frame || null,
-            equipped_bg: userProfileData.equipped_bg || null
-        },
-        comments: rootComments // Отдаем только корни, дети внутри
-    };
 };
