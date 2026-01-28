@@ -363,24 +363,28 @@
 </script>
 
 <svelte:head>
-    <title>{metaTitle}</title>
+    <!-- 1. Базовые мета-теги (для SEO и вкладки браузера) -->
+    <title>{data.meta.title}</title>
+    <meta name="description" content={data.meta.description} />
 
-    <!-- Primary Meta Tags -->
-    <meta name="title" content={metaTitle}>
-    <meta name="description" content={metaDesc}>
-
+    <!-- 2. Open Graph (Стандарт для Telegram, Discord, Facebook, VK) -->
+    <meta property="og:type" content="profile" />
+    <meta property="og:title" content={data.meta.title} />
     <meta property="og:description" content={data.meta.description} />
     <meta property="og:image" content={data.meta.image} />
-    <!-- Используем data.meta.url -->
     <meta property="og:url" content={data.meta.url} />
     <meta property="og:site_name" content="ProtoMap" />
+    <meta property="og:locale" content={$locale === 'ru' ? 'ru_RU' : 'en_US'} />
 
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary"> <!-- summary = маленькая картинка, summary_large_image = большая -->
-    <meta property="twitter:url" content={pageUrl}>
-    <meta property="twitter:title" content={metaTitle}>
-    <meta property="twitter:description" content={metaDesc}>
-    <meta property="twitter:image" content={metaImage}>
+    <!-- 3. Twitter Card (для Twitter/X) -->
+    <!-- `summary_large_image` показывает большую картинку, а не маленький квадрат -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={data.meta.title} />
+    <meta name="twitter:description" content={data.meta.description} />
+    <meta name="twitter:image" content={data.meta.image} />
+
+    <!-- 4. Цвет для оформления (вкладки браузера на мобилках, эмбеды в Discord) -->
+    <meta name="theme-color" content="#fcee0a" />
 </svelte:head>
 
 {#if showCinematicIntro}
