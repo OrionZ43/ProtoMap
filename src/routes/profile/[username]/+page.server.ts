@@ -28,28 +28,32 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
         }
 
         const userProfileDoc = userSnapshot.docs[0];
-        const userProfileData = userProfileDoc.data();
+        const userProfileData = userProfileDoc.data() || {}; // Защита от пустого data
 
-        // Загружаем комментарии
-        const commentsRef = userProfileDoc.ref.collection('comments').orderBy('createdAt', 'desc').limit(50);
-        const commentsSnapshot = await commentsRef.get();
-
-        // 1. Собираем сырые данные (С ЗАЩИТОЙ)
+        // --- ЗАГРУЗКА КОММЕНТАРИЕВ ---
         const rawComments: Comment[] = [];
 
-        commentsSnapshot.docs.forEach(doc => {
-            try {
+        try {
+            const commentsRef = userProfileDoc.ref.collection('comments').orderBy('createdAt', 'desc').limit(50);
+            const commentsSnapshot = await commentsRef.get();
+
+            commentsSnapshot.docs.forEach(doc => {
                 const data = doc.data();
-                // Защита от битых дат
+
+                // БЕЗОПАСНАЯ ОБРАБОТКА ДАТЫ
                 let createdDate = new Date();
-                if (data.createdAt && typeof data.createdAt.toDate === 'function') {
-                    createdDate = data.createdAt.toDate();
-                }
+                try {
+                    if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+                        createdDate = data.createdAt.toDate();
+                    } else if (data.createdAt && data.createdAt.seconds) {
+                        createdDate = new Date(data.createdAt.seconds * 1000);
+                    }
+                } catch(e) { /* Игнорируем битую дату, оставляем текущую */ }
 
                 rawComments.push({
                     id: doc.id,
-                    text: data.text || '',
-                    author_uid: data.author_uid || '',
+                    text: data.text || '...',
+                    author_uid: data.author_uid || 'unknown',
                     author_username: data.author_username || 'Аноним',
                     author_avatar_url: data.author_avatar_url || '',
                     author_equipped_frame: data.author_equipped_frame || null,
@@ -58,17 +62,17 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
                     parentId: data.parentId || null,
                     replies: []
                 });
-            } catch (err) {
-                console.warn(`Skipping broken comment ${doc.id}:`, err);
-            }
-        });
+            });
+        } catch (e) {
+            console.error("Comments Load Error:", e);
+            // Если комменты упали, профиль всё равно должен грузиться!
+        }
 
-        // 2. Актуализируем данные авторов
-        const authorUids = [...new Set(rawComments.map(c => c.author_uid).filter(Boolean))];
+        // --- ЗАГРУЗКА АВТОРОВ (ОПТИМИЗАЦИЯ) ---
+        const authorUids = [...new Set(rawComments.map(c => c.author_uid).filter(uid => uid && uid !== 'unknown'))];
         const authorsData = new Map<string, any>();
 
         if (authorUids.length > 0) {
-            // Разбиваем на пачки по 10 (FireStore in-query limit)
             const chunkSize = 10;
             for (let i = 0; i < authorUids.length; i += chunkSize) {
                 const chunk = authorUids.slice(i, i + chunkSize);
@@ -78,12 +82,12 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
                         .get();
                     snaps.forEach(d => authorsData.set(d.id, d.data()));
                 } catch (e) {
-                    console.error("Error fetching authors chunk:", e);
+                    console.error("Authors Fetch Error:", e);
                 }
             }
         }
 
-        // 3. Строим дерево
+        // --- СБОРКА ДЕРЕВА ---
         const commentMap = new Map<string, Comment>();
         const rootComments: Comment[] = [];
 
@@ -107,20 +111,19 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
             }
         });
 
-        // Сортировка ответов
         rootComments.forEach(root => {
             if (root.replies && root.replies.length > 0) {
                 root.replies.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
             }
         });
 
-        setHeaders({ 'Cache-Control': 'public, max-age=60' });
+        setHeaders({ 'Cache-Control': 'public, max-age=30' });
 
         return {
             profile: {
                 uid: userProfileDoc.id,
-                username: userProfileData.username,
-                avatar_url: userProfileData.avatar_url,
+                username: userProfileData.username || 'Unknown',
+                avatar_url: userProfileData.avatar_url || '',
                 about_me: userProfileData.about_me || '',
                 status: userProfileData.status || null,
                 socials: userProfileData.socials || {},
@@ -131,11 +134,12 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
         };
 
     } catch (e: any) {
-        console.error(`Profile Load Error [${username}]:`, e);
-        // Если профиль не найден - 404, иначе 500
+        console.error(`CRITICAL PROFILE LOAD ERROR [${username}]:`, e);
+        // Если это наша ошибка 404 - прокидываем
         if (e.status === 404 || e.message === 'Профиль не найден') {
             throw error(404, 'Профиль не найден');
         }
-        throw error(500, 'Ошибка загрузки профиля');
+        // Иначе 500, но с логом на сервере Vercel
+        throw error(500, 'Ошибка сервера при загрузке профиля.');
     }
 };
