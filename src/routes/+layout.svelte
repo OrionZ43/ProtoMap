@@ -108,6 +108,9 @@
 </script>
 
 <svelte:head>
+<meta property="og:site_name" content="ProtoMap" />
+<meta property="og:type" content="website" />
+<meta name="theme-color" content="#00f0ff">
 </svelte:head>
 
 <svelte:body class:seasonal-on={seasonActiveInSession} />

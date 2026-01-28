@@ -337,33 +337,53 @@
         }
         return translate('profile.time.just_now');
     }
+ export let data: PageData;
 
+    // === OG GENERATOR ===
+    const profile = data.profile;
+
+    // 1. Заголовок
+    const metaTitle = `${profile.username} | ProtoMap Dossier`;
+
+    // 2. Описание (Статус или Обо мне, очищенное от лишнего)
+    // Берем статус, если нет - обрезаем about_me до 150 символов
+    const metaDesc = profile.status
+        ? `STATUS: ${profile.status}`
+        : (profile.about_me ? profile.about_me.substring(0, 150) + '...' : 'User Profile on ProtoMap Network');
+
+    // 3. Картинка (Самое важное!)
+    // Если аватарки нет или это Dicebear SVG -> меняем на PNG для превью
+    let metaImage = profile.avatar_url;
+
+    if (!metaImage || metaImage.includes('dicebear')) {
+        // Форсируем PNG для ботов, иначе картинки не будет
+        metaImage = `https://api.dicebear.com/9.x/bottts-neutral/png?seed=${profile.username}`;
+    }
+
+    const pageUrl = `https://proto-map.vercel.app/profile/${profile.username}`;
 </script>
 
 <svelte:head>
-    <!-- Базовые теги -->
-    <title>{data.meta.title}</title>
-    <meta name="description" content={data.meta.description} />
+    <title>{metaTitle}</title>
 
-    <!-- Open Graph (Telegram, Discord, VK) -->
-    <meta property="og:type" content="profile" />
-    <meta property="og:site_name" content="ProtoMap" />
-    <meta property="og:url" content={$page.url.href} />
-    <meta property="og:title" content={data.meta.title} />
-    <meta property="og:description" content={data.meta.description} />
-    <meta property="og:image" content={data.meta.image} />
-    <!-- Указываем размеры, чтобы ТГ не тупил -->
-    <meta property="og:image:width" content="600" />
-    <meta property="og:image:height" content="600" />
+    <!-- Primary Meta Tags -->
+    <meta name="title" content={metaTitle}>
+    <meta name="description" content={metaDesc}>
 
-    <!-- Twitter Card (Large Image для красоты) -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={data.meta.title} />
-    <meta name="twitter:description" content={data.meta.description} />
-    <meta name="twitter:image" content={data.meta.image} />
+    <!-- Open Graph / Facebook / Discord / Telegram -->
+    <meta property="og:type" content="profile">
+    <meta property="og:url" content={pageUrl}>
+    <meta property="og:title" content={metaTitle}>
+    <meta property="og:description" content={metaDesc}>
+    <meta property="og:image" content={metaImage}>
+    <meta property="og:site_name" content="ProtoMap">
 
-    <!-- Цвет полоски (Желтый) -->
-    <meta name="theme-color" content="#fcee0a" />
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary"> <!-- summary = маленькая картинка, summary_large_image = большая -->
+    <meta property="twitter:url" content={pageUrl}>
+    <meta property="twitter:title" content={metaTitle}>
+    <meta property="twitter:description" content={metaDesc}>
+    <meta property="twitter:image" content={metaImage}>
 </svelte:head>
 
 {#if showCinematicIntro}
