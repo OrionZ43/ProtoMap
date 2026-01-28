@@ -369,13 +369,11 @@
     <meta name="title" content={metaTitle}>
     <meta name="description" content={metaDesc}>
 
-    <!-- Open Graph / Facebook / Discord / Telegram -->
-    <meta property="og:type" content="profile">
-    <meta property="og:url" content={pageUrl}>
-    <meta property="og:title" content={metaTitle}>
-    <meta property="og:description" content={metaDesc}>
-    <meta property="og:image" content={metaImage}>
-    <meta property="og:site_name" content="ProtoMap">
+    <meta property="og:description" content={data.meta.description} />
+    <meta property="og:image" content={data.meta.image} />
+    <!-- Используем data.meta.url -->
+    <meta property="og:url" content={data.meta.url} />
+    <meta property="og:site_name" content="ProtoMap" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary"> <!-- summary = маленькая картинка, summary_large_image = большая -->
@@ -1278,4 +1276,13 @@
             font-size: 16px; /* Фикс зума на айфоне */
         }
     }
+     /* АНИМАЦИЯ ЛАЙКА */
+    .like-btn i, .like-btn svg, .action-pill.like i { transition: transform 0.2s; }
+    .liked i, .liked svg { animation: heart-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes heart-pop { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
+
+    .icon-btn { color: #444; background: none; border: none; cursor: pointer; transition: color 0.2s; }
+    .icon-btn:hover { color: #fff; }
+    .icon-btn.del:hover { color: #ff003c; }
+
 </style>
