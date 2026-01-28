@@ -340,26 +340,7 @@
 </script>
 
 <svelte:head>
-    <!-- Базовый заголовок вкладки -->
     <title>{$t('profile.page_title')} {data.profile.username} | ProtoMap</title>
-    <meta name="description" content={data.profile.about_me ? data.profile.about_me.substring(0, 150) : 'Профиль пользователя на карте ProtoMap.'} />
-
-    <!-- Open Graph (для Telegram, Discord, VK) -->
-    <meta property="og:type" content="profile" />
-    <meta property="og:title" content="Профиль: {data.profile.username} | ProtoMap" />
-    <meta property="og:description" content={data.profile.about_me ? data.profile.about_me.substring(0, 150) : 'Нажмите, чтобы открыть профиль и местоположение пользователя.'} />
-    <meta property="og:image" content={data.profile.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/png?seed=${data.profile.username}`} />
-    <meta property="og:url" content="https://proto-map.vercel.app/profile/{data.profile.username}" />
-    <meta property="og:site_name" content="ProtoMap" />
-
-    <!-- Twitter Card (для X/Twitter и некоторых других) -->
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="{data.profile.username} | ProtoMap" />
-    <meta name="twitter:description" content={data.profile.about_me ? data.profile.about_me.substring(0, 150) : 'Профиль киборга в Сети.'} />
-    <meta name="twitter:image" content={data.profile.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/png?seed=${data.profile.username}`} />
-firebase deploy --only functions
-    <!-- Цвет обводки в дискорде/телеграме -->
-    <meta name="theme-color" content="#fcee0a" />
 </svelte:head>
 
 {#if showCinematicIntro}
