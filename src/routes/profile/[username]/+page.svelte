@@ -18,7 +18,6 @@
     import { get } from 'svelte/store';
     import { renderMarkdown } from '$lib/utils/markdown';
     import { AudioManager } from '$lib/client/audioManager';
-    import { page } from '$app/stores';
 
     export let data: PageData;
     export let form: ActionData;
@@ -338,53 +337,10 @@
         return translate('profile.time.just_now');
     }
 
-    // === OG GENERATOR ===
-    const profile = data.profile;
-
-    // 1. Заголовок
-    const metaTitle = `${profile.username} | ProtoMap Dossier`;
-
-    // 2. Описание (Статус или Обо мне, очищенное от лишнего)
-    // Берем статус, если нет - обрезаем about_me до 150 символов
-    const metaDesc = profile.status
-        ? `STATUS: ${profile.status}`
-        : (profile.about_me ? profile.about_me.substring(0, 150) + '...' : 'User Profile on ProtoMap Network');
-
-    // 3. Картинка (Самое важное!)
-    // Если аватарки нет или это Dicebear SVG -> меняем на PNG для превью
-    let metaImage = profile.avatar_url;
-
-    if (!metaImage || metaImage.includes('dicebear')) {
-        // Форсируем PNG для ботов, иначе картинки не будет
-        metaImage = `https://api.dicebear.com/9.x/bottts-neutral/png?seed=${profile.username}`;
-    }
-
-    const pageUrl = `https://proto-map.vercel.app/profile/${profile.username}`;
 </script>
 
 <svelte:head>
-    <!-- 1. Базовые мета-теги (для SEO и вкладки браузера) -->
-    <title>{data.meta.title}</title>
-    <meta name="description" content={data.meta.description} />
-
-    <!-- 2. Open Graph (Стандарт для Telegram, Discord, Facebook, VK) -->
-    <meta property="og:type" content="profile" />
-    <meta property="og:title" content={data.meta.title} />
-    <meta property="og:description" content={data.meta.description} />
-    <meta property="og:image" content={data.meta.image} />
-    <meta property="og:url" content={data.meta.url} />
-    <meta property="og:site_name" content="ProtoMap" />
-    <meta property="og:locale" content={$locale === 'ru' ? 'ru_RU' : 'en_US'} />
-
-    <!-- 3. Twitter Card (для Twitter/X) -->
-    <!-- `summary_large_image` показывает большую картинку, а не маленький квадрат -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={data.meta.title} />
-    <meta name="twitter:description" content={data.meta.description} />
-    <meta name="twitter:image" content={data.meta.image} />
-
-    <!-- 4. Цвет для оформления (вкладки браузера на мобилках, эмбеды в Discord) -->
-    <meta name="theme-color" content="#fcee0a" />
+    <title>{$t('profile.page_title')} {data.profile.username} | ProtoMap</title>
 </svelte:head>
 
 {#if showCinematicIntro}
@@ -1280,13 +1236,4 @@
             font-size: 16px; /* Фикс зума на айфоне */
         }
     }
-     /* АНИМАЦИЯ ЛАЙКА */
-    .like-btn i, .like-btn svg, .action-pill.like i { transition: transform 0.2s; }
-    .liked i, .liked svg { animation: heart-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    @keyframes heart-pop { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
-
-    .icon-btn { color: #444; background: none; border: none; cursor: pointer; transition: color 0.2s; }
-    .icon-btn:hover { color: #fff; }
-    .icon-btn.del:hover { color: #ff003c; }
-
 </style>
