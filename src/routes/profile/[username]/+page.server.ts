@@ -16,7 +16,7 @@ export type Comment = {
     replies?: Comment[];
 };
 
-export const load: PageServerLoad = async ({ params, setHeaders }) => {
+export const load: PageServerLoad = async ({ params, setHeaders, url }) => {
     const username = params.username;
 
     try {
@@ -28,7 +28,7 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
         }
 
         const userProfileDoc = userSnapshot.docs[0];
-        const userProfileData = userProfileDoc.data() || {}; // Защита от пустого data
+        const userProfileData = userProfileDoc.data() || {};
 
         // --- ЗАГРУЗКА КОММЕНТАРИЕВ ---
         const rawComments: Comment[] = [];
@@ -65,7 +65,6 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
             });
         } catch (e) {
             console.error("Comments Load Error:", e);
-            // Если комменты упали, профиль всё равно должен грузиться!
         }
 
         // --- ЗАГРУЗКА АВТОРОВ (ОПТИМИЗАЦИЯ) ---
@@ -119,6 +118,28 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 
         setHeaders({ 'Cache-Control': 'public, max-age=30' });
 
+        // === ГЕНЕРАЦИЯ МЕТА-ДАННЫХ ДЛЯ БОТОВ (Open Graph) ===
+        const metaTitle = `${userProfileData.username || 'User'} | ProtoMap`;
+
+        // Описание: берем "обо мне" или дефолт, убираем переносы строк
+        const rawDesc = userProfileData.about_me || 'Профиль пользователя в сети ProtoMap.';
+        const metaDesc = rawDesc.replace(/[\r\n]+/g, ' ').substring(0, 150) + (rawDesc.length > 150 ? '...' : '');
+
+        // Фикс аватарки для превью (Телеграм любит JPG/PNG, SVG может не показать)
+        let metaImage = userProfileData.avatar_url;
+
+        if (!metaImage) {
+            // Если аватарки нет - генерируем PNG через Dicebear
+            metaImage = `https://api.dicebear.com/7.x/bottts-neutral/png?seed=${userProfileData.username}`;
+        } else if (metaImage.includes('cloudinary.com')) {
+            // Если Cloudinary - форсируем JPG и нормальный размер (600x600)
+            const parts = metaImage.split('/upload/');
+            if (parts.length === 2) {
+                // f_jpg = формат jpg, w_600 = ширина, c_fill = обрезка
+                metaImage = `${parts[0]}/upload/w_600,h_600,c_fill,f_jpg/${parts[1]}`;
+            }
+        }
+
         return {
             profile: {
                 uid: userProfileDoc.id,
@@ -130,16 +151,20 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
                 equipped_frame: userProfileData.equipped_frame || null,
                 equipped_bg: userProfileData.equipped_bg || null
             },
-            comments: rootComments
+            comments: rootComments,
+            // Данные для <svelte:head>
+            meta: {
+                title: metaTitle,
+                description: metaDesc,
+                image: metaImage
+            }
         };
 
     } catch (e: any) {
         console.error(`CRITICAL PROFILE LOAD ERROR [${username}]:`, e);
-        // Если это наша ошибка 404 - прокидываем
         if (e.status === 404 || e.message === 'Профиль не найден') {
             throw error(404, 'Профиль не найден');
         }
-        // Иначе 500, но с логом на сервере Vercel
         throw error(500, 'Ошибка сервера при загрузке профиля.');
     }
 };
