@@ -337,7 +337,6 @@
         }
         return translate('profile.time.just_now');
     }
- export let data: PageData;
 
     // === OG GENERATOR ===
     const profile = data.profile;
