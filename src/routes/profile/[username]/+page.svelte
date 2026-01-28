@@ -18,6 +18,7 @@
     import { get } from 'svelte/store';
     import { renderMarkdown } from '$lib/utils/markdown';
     import { AudioManager } from '$lib/client/audioManager';
+    import { page } from '$app/stores';
 
     export let data: PageData;
     export let form: ActionData;
