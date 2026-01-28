@@ -49,6 +49,18 @@
             username: 'Nexus',
             color: '#ff5500',
             avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1750888278/protomap_avatars/D6e7GrJFSZWYfcAyYV9TFXpXnUi1.webp'
+        },
+        {
+            id: 'moro',
+            username: 'Moro (morovec)',
+            color: '#ff0055',
+            avatar: 'https://lh3.googleusercontent.com/a/ACg8ocIBtlTn-bfg49sWyB_YyhD9P9y4V_UKbM27efFJjb-C-LEw3AlD=s256-c' // Попросил у Google версию побольше
+        },
+        {
+            id: 'eridan',
+            username: 'Eridan_Pallas',
+            color: '#00e5ff',
+            avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1762644128/protomap_avatars/I8DIGaxnO8MCveHTq8xloFNmJst1.webp'
         }
     ];
 

@@ -167,7 +167,7 @@
     "community_text": "This project is free and lives thanks to the community. Hop into our chat — we don't bite (usually).",
     "join_btn": "TELEGRAM CHAT",
     "disclaimer": "Privacy is key. We do not store your exact GPS coordinates.",
-    "testers_title": "// HALL OF FAME (BETA TESTERS)",
+    "testers_title": "// HALL OF FAME",
     "testers": {
       "kess": { "role": "BUG HUNTER", "desc": "Found more bugs than lines of code. Developer's nightmare." },
       "kuraga": { "role": "SECURITY HAZARD", "desc": "Single-handedly flooded our Google Cloud logs and forced a rewrite." },
@@ -175,7 +175,9 @@
       "sarevus": { "role": "DRAGON UNIT", "desc": "Not a toaster, but valid. Just a cute dragon." },
       "jokl": { "role": "CUTE.EXE", "desc": "Running cuteness protocols 24/7." },
       "mikhail": { "role": "INFINIX WARRIOR", "desc": "If it runs on his Infinix without lag, the optimization is god-tier." },
-      "bogdan": { "role": "REDMI SURVIVOR", "desc": "Field testing on the edge of hardware limits." }
+      "bogdan": { "role": "REDMI SURVIVOR", "desc": "Field testing on the edge of hardware limits." },
+      "moro": { "role": "RNG DEMON", "desc": "The one who taught a casino how to cry." },
+      "eridan": { "role": "CHIEF IDEOLOGIST", "desc": "Inspects every pixel. If there's a flaw, he'll find it. If there is no flaw, he'll invent one."}
     }
   },
   "beta": {
