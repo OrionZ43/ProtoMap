@@ -54,13 +54,13 @@
             id: 'moro',
             username: 'Moro (morovec)',
             color: '#ff0055',
-            avatar: 'https://lh3.googleusercontent.com/a/ACg8ocIBtlTn-bfg49sWyB_YyhD9P9y4V_UKbM27efFJjb-C-LEw3AlD=s256-c' // Попросил у Google версию побольше
+            avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1769692656/protomap_avatars/XXRqoTdjFZZYeouRKTFisxjEcZv1.webp'
         },
         {
             id: 'eridan',
             username: 'Eridan_Pallas',
             color: '#00e5ff',
-            avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1762644128/protomap_avatars/I8DIGaxnO8MCveHTq8xloFNmJst1.webp'
+            avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1769693430/protomap_avatars/I8DIGaxnO8MCveHTq8xloFNmJst1.webp'
         }
     ];
 

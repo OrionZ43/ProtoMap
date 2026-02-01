@@ -217,135 +217,325 @@
     "empty": "Communication channels are silent. No news yet."
   },
   "privacy": {
-    "title": "//: PRIVACY POLICY",
-    "subtitle": "Last updated: December 19, 2025",
-    "disclaimer_title": "⚠️ DISCLAIMER:",
-    "disclaimer_text": "The <strong>ProtoMap</strong> project (this website) is an independent product of Z43 Studios. We are <strong>not associated, affiliated, or connected</strong> with <em class=\"text-white\">Protomaps LLC</em> (protomaps.com) or their products. Any resemblance in names is coincidental.",
-    "intro": "This Privacy Policy describes how we collect, use, store, and protect information about users of the ProtoMap website. By using the site, you entrust us with your data, and we are committed to protecting it.",
+    "title": "//: PRIVACY & DATA PROTECTION POLICY",
+    "subtitle": "Version 3.0 | Effective Date: February 1, 2026",
 
-    "sec1_title": "//: 1. GENERAL PROVISIONS",
-    "sec1_list": [
-      "By using the Service, the User expresses full consent to the terms of this Policy.",
-      "If you disagree with the terms of the Policy, you must immediately cease using the Site."
-    ],
+    "disclaimer_header": "⚠️ LEGAL DISCLAIMER",
+    "disclaimer_body": "The <strong>ProtoMap</strong> software suite (including the website <em>proto-map.vercel.app</em> and the <em>ProtoMap for Android</em> mobile application) is an independent non-profit product developed and maintained by the <strong>Z43 Studios</strong> team.<br><br>We officially declare that we are <strong>NOT associated, affiliated, sponsored by, or in any business relationship</strong> with <em class=\"text-white\">Protomaps LLC</em> (protomaps.com) or their products. Any resemblance in naming, design, or functionality is coincidental. All rights to the Protomaps LLC trademark belong to their respective owners.",
 
-    "sec2_title": "//: 2. COLLECTED INFORMATION",
-    "sec2_intro": "We collect the following categories of data:",
-    "sec2_list": [
-      "<strong>Account Data:</strong> Email address, hashed password, UID, username.",
-      "<strong>Public Profile:</strong> Avatar, status, 'about me' description, social links (data you voluntarily make public).",
-      "<strong>Geolocation:</strong> Coordinates for map display. We use anonymization technology (coarsening) to the city/district level in automatic mode. Precise GPS coordinates are stored only when the 'Manual Mode' is explicitly selected by the User.",
-      "<strong>Technical Data:</strong> IP addresses, Cookies (to save session, language, and theme settings), browser data.",
-      "<strong>Content:</strong> Chat messages, profile comments."
-    ],
+    "intro_header": "1. INTRODUCTION AND SCOPE",
+    "intro_body": "This Privacy Policy (hereinafter referred to as the \"Policy\") constitutes a legal agreement between you (hereinafter referred to as the \"User\") and Z43 Studios (hereinafter referred to as the \"Developer\", \"We\").<br><br>This document describes our principles and methods regarding the collection, use, storage, processing, and disclosure of information we obtain from you when using our services.<br><br><strong>The term \"Service\" includes:</strong><br>1. The ProtoMap Website.<br>2. The ProtoMap Mobile Application for Android OS.<br>3. All related services, including server infrastructure, databases, APIs, and bots (Telegram).",
 
-    "sec3_title": "//: 3. PURPOSES OF PROCESSING",
-    "sec3_intro": "Data is used for:",
-    "sec3_list": [
-      "Ensuring map functionality and user interaction.",
-      "Gamification (rankings, inventory, economy).",
-      "Security and moderation (combating spam, multi-accounts, and prohibited content)."
-    ],
+    "consent_header": "1.1. ACCEPTANCE OF TERMS",
+    "consent_body": "By downloading, installing, accessing, or using the Service in any manner, you acknowledge that you have read, understood, and unconditionally accepted the terms of this Policy.<br><br>If you do not agree with any part of this document, you have no right to use the Service and must immediately uninstall the application from your device and leave the website.",
 
-    "sec4_title": "//: 4. SAFETY AND AGE RESTRICTIONS",
-    "sec4_list": [
-      "<strong>Age 16+:</strong> The Service is not intended for use by persons under 16 years of age. We do not knowingly collect data from children. If we become aware of a registered child under 16, the account and all data will be immediately deleted.",
-      "<strong>Zero Tolerance:</strong> We strictly prohibit content related to violence, child exploitation (CSAM), or hate speech. Such content is removed, and violator data is reported to law enforcement agencies if necessary."
-    ],
+    "data_chapter": {
+      "title": "2. COLLECTED INFORMATION AND PERMISSIONS",
+      "intro": "We adhere to a principle of full transparency. Below is an exhaustive list of data we collect, store, and process when you use the Site and Application.",
 
-    "sec5_title": "//: 5. VIRTUAL ASSETS",
-    "sec5_list": [
-      "\"ProtoCoins\" and inventory items are software code elements with no real monetary value.",
-      "Exchanging virtual assets for real money (RMT) is strictly prohibited.",
-      "The Service is not a gambling game for real money."
-    ],
+      "account_title": "2.1. Account Data",
+      "account_text": "To create a profile and synchronize progress, we store:",
+      "account_list": [
+        "<strong>Identifiers:</strong> Unique ID (UID), Email, Username, Google Account ID (when logging in via Google Auth).",
+        "<strong>Public Profile:</strong> Avatar link, status, \"About Me\" description, social media links (Telegram, Discord, VK, X/Twitter, Website).",
+        "<strong>Linked Accounts:</strong> Telegram ID and Username (if you linked the bot for notifications)."
+      ],
 
-    "sec6_title": "//: 6. DATA TRANSFER",
-    "sec6_intro": "We use trusted technical partners:",
-    "sec6_list": [
-      "<strong>Google Firebase (USA):</strong> Database hosting, authentication.",
-      "<strong>Vercel (USA):</strong> Web interface hosting.",
-      "<strong>Cloudinary (USA):</strong> Avatar storage.",
-      "<strong>Nominatim/OSM:</strong> Geocoding (converting coordinates to city names)."
-    ],
+      "tech_title": "2.2. Technical Data and Telemetry (Android)",
+      "tech_text": "To ensure the security of the economy (\"The Glitch Pit\") and the stability of the Application, we collect:",
+      "tech_list": [
+        "<strong>Device:</strong> Smartphone model, Android OS version.",
+        "<strong>Security:</strong> Bootloader unlock status and Root access presence (required for anti-cheat protection in mini-games).",
+        "<strong>Network:</strong> IP address (for DDoS and spam protection), internet connection status.",
+        "<strong>Notifications:</strong> FCM Token (Firebase Cloud Messaging) — a unique device key for delivering push notifications."
+      ],
 
-    "sec7_title": "//: 7. DATA MANAGEMENT",
-    "sec7_intro": "Your rights:",
-    "sec7_list": [
-      "You can edit your public data in profile settings.",
-      "You have the right to request the complete deletion of your account and all associated data (Right to be Forgotten). This can be done via site functionality or by sending a request to our email."
-    ],
-    "sec7_note": "// Upon account deletion, all personal data is permanently erased. Public messages are anonymized (author replaced with 'Deleted').",
+      "chat_title": "2.3. Communication and Content",
+      "chat_warning": "⚠️ Attention: ProtoMap DOES NOT use End-to-End (E2E) encryption. Chat and Direct Messages operate on a \"Cloud Synchronization\" basis (similar to Telegram or Discord) so you can view message history across different devices.",
+      "chat_list": [
+        "<strong>Text Messages:</strong> Stored in the Firestore database in a format encrypted during transmission (HTTPS) but readable by the server.",
+        "<strong>Voice Messages:</strong> Audio files are uploaded to cloud storage; the link is saved in the chat history. Microphone access is requested <em>only</em> while holding the record button.",
+        "<strong>Images and Stickers:</strong> Files you upload or select from the gallery. We have access to view these files for moderation purposes (detecting CSAM and prohibited content)."
+      ],
 
-    "sec8_title": "//: 8. CHANGES",
-    "sec8_text": "We reserve the right to update this Policy. Continued use of the site constitutes acceptance of the changes.",
+      "sticker_title": "2.4. User Stickers and Copyright",
+      "sticker_text": "Users may upload their own sticker packs. You are solely responsible for compliance with Copyright laws regarding uploaded images.",
+      "sticker_dmca": "If you are a copyright holder and have discovered a violation of your rights in user-uploaded stickers, please contact us via email. We will remove the disputed content within 24 hours.",
 
-    "sec9_title": "//: 9. CONTACT",
-    "sec9_text": "For legal inquiries, as well as requests for data export or deletion:",
-    "contact_text": "orion.z43studios@gmail.com"
-  },
+      "game_title": "2.5. Game Activity",
+      "game_text": "We store a complete history of your actions within the economic section:",
+      "game_list": [
+        "Balance (ProtoCoins), inventory, equipped items.",
+        "Game history (Slots, Crash, Coin Flip) for dispute resolution.",
+        "Activity timestamps (Last Active, Daily Streak)."
+      ]
+    },
+
+    "geo_chapter": {
+      "title": "3. GEOLOCATION AND MAP PRIVACY",
+      "intro": "The interactive map is a core feature of ProtoMap. We have developed a multi-layered protection system so you can share your location without revealing your exact residential address.",
+
+      "modes_title": "3.1. Geolocation Modes",
+      "modes_text": "The App and Site support two data submission modes. The mode is selected by the user at the moment of pressing the location update button.",
+
+      "auto_mode_title": "A) Automatic Mode (GPS) — \"Ghost Mode\"",
+      "auto_mode_desc": "Recommended safe mode. How it works technically:",
+      "auto_mode_list": [
+        "The App receives your precise GPS coordinates.",
+        "The server sends a request to a geo-provider (OpenStreetMap) to determine the name of your city or district.",
+        "The database saves the <strong>CENTER COORDINATES</strong> of that district, not your real location.",
+        "<strong>Your precise GPS coordinates are immediately deleted from server RAM and are never written to disk.</strong>",
+        "To an outside observer, you are \"somewhere in this city\", but locating your home is impossible."
+      ],
+
+      "manual_mode_title": "B) Manual Mode — \"Pin\"",
+      "manual_mode_desc": "You can manually select any point on the map by long-pressing (in the App) or clicking (on the Site).",
+      "manual_mode_list": [
+        "In this case, the server saves exactly the coordinates you specified.",
+        "If you point directly to your home, that is your conscious decision.",
+        "We recommend placing the pin at a nearby intersection, park, or public place, rather than on a residential building."
+      ],
+
+      "storage_title": "3.2. Storage and Display",
+      "storage_list": [
+        "<strong>Publicity:</strong> Your marker coordinates, avatar, and status are accessible to all registered users of the service.",
+        "<strong>Caching:</strong> To reduce server load, map data is cached for a short time (up to 24 hours). If you delete your marker, it may disappear for other users with a slight delay.",
+        "<strong>Movement History:</strong> We <strong>DO NOT store</strong> your movement track (route history). The database contains only the <em>latest</em> actual marker. When updating the position, the old entry is overwritten."
+      ],
+
+      "safety_warning": "⚠️ IMPORTANT: Do not use ProtoMap for navigation in critical situations. The Service is intended solely for entertainment and social purposes."
+    },
+
+    "rights_chapter": {
+      "title": "4. USER RIGHTS AND DATA DELETION",
+      "intro": "You retain full control over your personal data. ProtoMap provides tools to manage information directly within the App and Site interface.",
+
+      "edit_title": "4.1. Editing and Updating",
+      "edit_text": "You can change public data (avatar, status, description, links) at any time in the \"Profile Settings\" section. Changes take effect immediately and update in the map cache within a few minutes.",
+
+      "delete_title": "4.2. Account Deletion (Right to Erasure)",
+      "delete_desc": "You can request the complete deletion of your account by clicking the \"Delete Account\" button in the security settings (\"Danger Zone\"). This action triggers an irreversible cleanup script.",
+      "delete_consequences_intro": "What happens upon deletion:",
+      "delete_consequences_list": [
+        "<strong>Personal Data:</strong> Email, password, auth tokens, ProtoCoins balance, inventory, and achievements are deleted permanently.",
+        "<strong>Geolocation:</strong> Your map marker is deleted immediately.",
+        "<strong>Files:</strong> The avatar is removed from cloud storage.",
+        "<strong>Public Content (Anonymization):</strong> Your messages in the Global Chat and Comments are <em>NOT deleted</em> (to preserve the context of conversations for other participants), but undergo a full anonymization procedure."
+      ],
+      "anonymization_note": "After anonymization, the author's name is replaced with \"Deleted\", the avatar is removed, and the profile link is deactivated. Linking these messages to your identity becomes technically impossible.",
+
+      "export_title": "4.3. Data Portability",
+      "export_text": "In compliance with GDPR principles, you have the right to receive a copy of all data we store about you. To do this, send a request to our email. The archive will be generated and sent to you within 30 days."
+    },
+
+    "partners_chapter": {
+      "title": "5. DATA TRANSFER TO THIRD PARTIES (SUB-PROCESSORS)",
+      "intro": "We do not sell, rent, or transfer your personal data to advertisers or data brokers. Access to data is restricted to verified technical partners ensuring ProtoMap infrastructure operation.",
+
+      "infra_title": "5.1. Infrastructure and Hosting",
+      "infra_list": [
+        "<strong>Google Firebase (USA):</strong> Main provider. Stores the database (Firestore), authentication files, and executes server code (Cloud Functions).",
+        "<strong>Vercel (USA):</strong> Web interface hosting and anonymous performance analytics collection (Vercel Analytics).",
+        "<strong>Cloudinary (USA):</strong> Image storage and optimization (avatars)."
+      ],
+
+      "services_title": "5.2. External Services",
+      "services_list": [
+        "<strong>OpenStreetMap / Nominatim:</strong> Geocoding service. During automatic location determination, your coordinates are sent to OSM to retrieve the city name. OSM policy allows for short-term logging of requests.",
+        "<strong>Google reCAPTCHA (App Check):</strong> Used for protection against bots and DDoS attacks. The service analyzes device behavior and hardware signals to distinguish a human from a script."
+      ],
+
+      "legal_title": "5.3. Legal Requirements",
+      "legal_text": "We may disclose your data only in the event of an official, legally valid request from law enforcement agencies (e.g., a court order) in cases related to the prevention of serious crimes (terrorism, CSAM, threat to life)."
+    },
+
+    "security_chapter": {
+      "title": "6. DATA SECURITY AND LIMITATION OF LIABILITY",
+      "intro": "We take all necessary technical and organizational measures to protect your data from unauthorized access, alteration, or destruction.",
+
+      "measures_title": "6.1. Security Measures",
+      "measures_list": [
+        "Use of HTTPS/TLS protocol for encrypting data in transit.",
+        "Restricting database access via strict security rules (Firestore Security Rules).",
+        "Password hashing on the authentication provider side (Google Identity Platform)."
+      ],
+
+      "warranty_title": "6.2. Warranty Disclaimer (AS IS)",
+      "warranty_text": "Despite the measures taken, no method of transmission over the Internet or method of electronic storage is 100% secure.",
+      "warranty_list": [
+        "The Service is provided on an \"AS IS\" basis. The Developer does not guarantee the absolute safety of data in the event of targeted hacker attacks, hosting provider failures, or force majeure circumstances.",
+        "We are not liable for damages resulting from user password loss, use of weak passwords, or transfer of access to third parties.",
+        "By using the Service, you acknowledge that you voluntarily assume the risks associated with transmitting information over open networks."
+      ]
+    },
+
+    "contact_chapter": {
+      "title": "7. CONTACTS AND FINAL PROVISIONS",
+      "changes_title": "7.1. Changes to the Policy",
+      "changes_text": "We reserve the right to make changes to this Policy. In case of significant changes, we will notify users via a notification in the App or on the Website. Continued use of the Service constitutes acceptance of the updated terms.",
+
+      "contact_title": "7.2. Contact Us",
+      "contact_text": "For any questions regarding privacy, data deletion, or dispute resolution, please contact us directly. We are an indie team, and we answer with real people, not auto-responders.",
+      "email_label": "Contact Email:",
+      "email_value": "orion.z43studios@gmail.com"
+    }
+},
   "terms": {
-    "title": "//: TERMS OF SERVICE",
-    "subtitle": "Version 2.2 dated December 19, 2025",
-    "disclaimer_title": "⚠️ ATTENTION:",
-    "disclaimer_text": "The Service contains gamification elements (\"The Glitch Pit\"). All game mechanics are simulations. The game is played exclusively with virtual currency that has no real value and cannot be exchanged.",
-    "intro": "This Terms of Service (hereinafter — \"Agreement\") governs the relationship between you (\"User\") and Z43 Studios (\"We\") regarding the use of the ProtoMap website.",
+    "title": "//: END USER LICENSE AGREEMENT (EULA)",
+    "subtitle": "Version 3.0 | Effective Date: February 1, 2026",
 
-    "sec1_title": "//: 1. ACCEPTANCE AND AGE",
-    "sec1_list": [
-      "By registering or using the Service, you confirm that you are at least 16 years old.",
-      "Using the Service implies your full and unconditional agreement to these Terms.",
-      "If you do not agree with the terms, you have no right to use the Service."
-    ],
+    "disclaimer_block": {
+        "title": "⚠️ CRITICAL NOTICE (NO REAL MONEY GAMBLING)",
+        "text": "This Service contains an artistic simulation of gambling games (\"The Glitch Pit\").<br><br><strong>1. NO REAL MONEY:</strong> All in-game currency (ProtoCoins) has no monetary value, is not a cryptocurrency, and cannot be exchanged for fiat money, goods, or services.<br><strong>2. NO WITHDRAWALS:</strong> Any winnings are solely virtual achievements.<br><strong>3. SIMULATION:</strong> Game mechanics (slots, crash) are tuned for entertainment purposes and do not reflect real-world casino mathematical models."
+    },
 
-    "sec2_title": "//: 2. CODE OF CONDUCT (ZERO TOLERANCE)",
-    "sec2_intro": "We adhere to a ZERO TOLERANCE policy regarding violations. It is strictly prohibited to:",
-    "sec2_list": [
-      "Publish content containing child sexual abuse material (CSAM), pornography, or extremism.",
-      "Incite hatred (Hate Speech), threaten, or harass other users.",
-      "Publish other people's private data (Doxxing).",
-      "Impersonate an administrator or representative of Z43 Studios.",
-      "Use third-party software (bots, scripts) to automate actions."
-    ],
+    "intro_chapter": {
+        "title": "1. SUBJECT OF AGREEMENT AND ACCEPTANCE",
+        "definitions_title": "1.1. Parties and Definitions",
+        "definitions_text": "This End User License Agreement (hereinafter — \"Agreement\", \"EULA\") is a legally binding contract between:",
+        "definitions_list": [
+            "<strong>The Developer:</strong> Z43 Studios Team (hereinafter — \"We\", \"Licensor\").",
+            "<strong>The User:</strong> Any natural person who has installed the App or visited the Site (hereinafter — \"You\", \"Licensee\")."
+        ],
+        "scope_text": "The subject of the agreement is the right to use the ProtoMap software suite (Android mobile application and web interface).",
 
-    "sec3_title": "//: 3. VIRTUAL GOODS AND CURRENCY",
-    "sec3_intro": "Rules for the circulation of digital assets:",
-    "sec3_list": [
-      "\"ProtoCoins\", frames, and backgrounds are software code elements. They are not the property of the User.",
-      "Selling or exchanging currency/accounts for real money (RMT) is strictly prohibited.",
-      "The Administration reserves the right to modify balances, remove items, or reset progress in case of bugs or violations."
-    ],
+        "acceptance_title": "1.2. Acceptance of Terms",
+        "acceptance_text": "By creating an account, logging in via Google, or commencing use of the Service, you confirm that:",
+        "acceptance_list": [
+            "You are at least <strong>16 years of age</strong> (or older if required by your country's legislation for using social networks).",
+            "You have read, understood, and fully agree to the terms of this Agreement and the Privacy Policy.",
+            "You agree to abide by the community rules."
+        ],
+        "rejection_warning": "IF YOU DO NOT AGREE WITH THESE TERMS, YOU HAVE NO RIGHT TO USE THE SERVICE AND MUST IMMEDIATELY UNINSTALL THE APPLICATION.",
 
-    "sec4_title": "//: 4. INTELLECTUAL PROPERTY",
-    "sec4_list": [
-      "The code, interface design, and ProtoMap logo belong to Z43 Studios.",
-      "The User retains rights to their uploaded content (avatar, texts) but grants the Service a license to use it for the website's operation.",
-      "Mention of third-party brands is for informational purposes only."
-    ],
+        "license_title": "1.3. Limited License",
+        "license_text": "The Developer grants you a limited, non-exclusive, non-transferable, revocable license to use the Service for personal, non-commercial purposes. The Developer retains all rights, titles, and interests in the Service, including intellectual property, source code, and design."
+      },
 
-    "sec5_title": "//: 5. DISCLAIMER OF WARRANTIES (AS IS)",
-    "sec5_intro": "The Service is provided \"AS IS\". We do not guarantee:",
-    "sec5_list": [
-      "Uninterrupted operation of the site and absence of errors.",
-      "Data safety in case of force majeure or attacks.",
-      "Accuracy of geolocation data (used for entertainment purposes only)."
-    ],
+      "behavior_chapter": {
+        "title": "2. USER CONTENT AND CODE OF CONDUCT",
 
-    "sec6_title": "//: 6. BLOCKING AND MODERATION",
-    "sec6_intro": "The Administration reserves the right to:",
-    "sec6_list": [
-      "Limit or completely block access to an account permanently without explanation in case of rule violations.",
-      "Remove any content we deem inappropriate.",
-      "In case of serious violations (CSAM, threats) — report data to competent authorities."
-    ],
+        "ugc_title": "2.1. Responsibility for Content (UGC)",
+        "ugc_text": "The Service allows users to create, upload, and distribute content (text messages, voice recordings, images, avatars, sticker packs, map statuses).",
+        "ugc_list": [
+            "You bear sole and full legal responsibility for any content you publish.",
+            "The Developer does not pre-moderate all content in real-time, acting as a passive conduit for information, but reserves the right to remove any materials retroactively."
+        ],
 
-    "sec7_title": "//: 7. FINAL PROVISIONS",
-    "sec7_list": [
-      "We have the right to make changes to the Agreement at any time. Continued use of the site constitutes acceptance of the new terms."
-    ],
+        "zero_tolerance_title": "2.2. ZERO TOLERANCE Policy",
+        "zero_tolerance_text": "We apply the strictest measures to violators of community safety. It is STRICTLY PROHIBITED to publish:",
+        "zero_tolerance_list": [
+            "<strong>Illegal Content:</strong> Material depicting sexual violence (especially CSAM), extremism, terrorism, sale of drugs or weapons.",
+            "<strong>NSFW in Public Areas:</strong> Pornography and explicit erotica are prohibited in public channels (Global Chat, Avatars, Usernames).",
+            "<strong>Hate Speech:</strong> Insults, discrimination, or incitement to violence based on race, nationality, religion, gender, or sexual orientation.",
+            "<strong>Harassment and Doxxing:</strong> Publishing other people's private data (addresses, phone numbers) without the owner's consent."
+        ],
 
-    "sec7_contact": "Questions regarding the Agreement should be sent to the official email:",
-    "contact_email": "orion.z43studios@gmail.com"
+        "stickers_title": "2.3. Stickers and Intellectual Property",
+        "stickers_text": "The Application functionality allows for uploading custom sticker sets (Sticker Packs).",
+        "stickers_list": [
+            "By uploading images, you warrant that you possess the necessary rights or licenses to use them.",
+            "It is prohibited to upload materials protected by third-party copyright (e.g., art by other artists, brand logos) without their permission.",
+            "<strong>DMCA:</strong> We respond to copyright infringement notifications. Disputed content will be removed, and sanctions may be applied to repeat offenders' accounts."
+        ],
+
+        "tech_abuse_title": "2.4. Technical Violations and Cheating",
+        "tech_abuse_text": "To protect the economy (\"The Glitch Pit\") and server stability, it is prohibited to:",
+        "tech_abuse_list": [
+            "Use third-party software (bots, clickers, macros) to automate actions in games or on the map.",
+            "Exploit server vulnerabilities (bugs) to gain an unfair advantage (item duping, balance manipulation).",
+            "Engage in reverse engineering, decompilation, or attempts to hack the Application API."
+        ],
+
+        "enforcement_title": "2.5. Moderation and Enforcement",
+        "enforcement_text": "The Application is equipped with a built-in reporting system (\"Report\"). In case of violations, the Administration has the right to:",
+        "enforcement_list": [
+            "Remove specific content (message, sticker pack).",
+            "Temporarily restrict access to features (Mute).",
+            "<strong>Permanently block</strong> the account without the right to recovery or refund of virtual funds."
+        ]
+    },
+      "virtual_chapter": {
+        "title": "3. VIRTUAL ASSETS, PURCHASES, AND ECONOMY",
+
+        "currency_title": "3.1. Status of Virtual Currency (\"ProtoCoins\")",
+        "currency_text": "The internal Application currency (\"ProtoCoins\", \"PC\") and digital goods (frames, backgrounds, inventory items) are objects of copyright — software code.",
+        "currency_list": [
+            "<strong>No Monetary Value:</strong> Virtual assets have no monetary equivalent in the real world, are not cryptocurrency, electronic money, or financial instruments.",
+            "<strong>No Exchange:</strong> ProtoCoins are non-refundable and cannot be exchanged for fiat money (cash-out) or used for purchases outside the Application.",
+            "<strong>License Term:</strong> The license to use the currency is valid until it is consumed within the Application or the account is deleted."
+        ],
+
+        "casino_title": "3.2. Gambling Simulation (\"The Glitch Pit\")",
+        "casino_text": "The \"The Glitch Pit\" section (including Slots, Crash, Coin Flip mini-games) is an artistic simulation. Game algorithms are tuned exclusively for entertainment purposes.",
+        "casino_list": [
+            "It is technically <strong>impossible</strong> to win real money or tangible prizes in the Application.",
+            "Any success in mini-games does not guarantee success in real gambling.",
+            "The Developer is not liable for the loss of virtual currency resulting from gameplay, internet connection failures, or server-side errors."
+        ],
+
+        "rmt_title": "3.3. Prohibition of RMT (Real Money Trading)",
+        "rmt_text": "It is strictly prohibited to sell, buy, or exchange accounts, virtual currency, or items for real money or other values outside the mechanics provided by the Application.",
+        "rmt_warning": "⚠️ Violation of this rule results in immediate permanent blocking of all participating accounts (Buyer and Seller) without the right of appeal.",
+
+        "management_title": "3.4. Economy Management",
+        "management_text": "The Developer reserves the exclusive right to administer, regulate, control, and modify the virtual economy at their sole discretion.",
+        "management_list": [
+            "We have the right to adjust any user's balance in case of detected bugs, duplication glitches, or accrual errors.",
+            "We have the right to change item prices, drop rates, and win limits without prior notice.",
+            "In the event of critical economic failures, a full or partial progress reset (Wipe) is possible."
+        ]
+    },
+
+    "warranty_chapter": {
+        "title": "4. DISCLAIMER OF WARRANTIES AND LIABILITY",
+
+        "asis_title": "4.1. \"AS IS\" Principle",
+        "asis_text": "The Developer provides the Service on an \"AS IS\" and \"AS AVAILABLE\" basis, without any express or implied warranties.",
+        "asis_list": [
+            "We DO NOT guarantee that the Application will function uninterrupted, error-free, or be compatible with your specific device or Android version.",
+            "We DO NOT guarantee data safety in the event of failures on the side of hosting providers (Firebase, Vercel) or hacker attacks.",
+            "The Developer is not liable for any indirect, incidental, or unintentional damages (including lost profits or data loss) arising from the use of the Service."
+        ],
+
+        "real_world_title": "4.2. Real World Safety (IMPORTANT)",
+        "real_world_text": "By using geolocation features, you acknowledge and agree:",
+        "real_world_list": [
+            "<strong>Awareness of Surroundings:</strong> It is prohibited to use the Application while driving a vehicle or in situations requiring high concentration.",
+            "<strong>Personal Meetings:</strong> The Developer does not control user actions offline. You bear full personal responsibility for any meetings with other users in the real world. We strongly advise against scheduling meetings with strangers in deserted places.",
+            "<strong>Map Accuracy:</strong> Mapping data (OpenStreetMap) may contain inaccuracies. Do not use them for navigation in critical situations."
+        ]
+    },
+  "final_chapter": {
+        "title": "5. FINAL PROVISIONS",
+
+        "termination_title": "5.1. Termination of Agreement (Ban)",
+        "termination_text": "We reserve the right to immediately suspend or completely terminate your license (block the account) without prior notice in the event of:",
+        "termination_list": [
+            "Violation of the terms of this Agreement (especially Chapter 2 \"Code of Conduct\").",
+            "Requests from law enforcement agencies.",
+            "Unexpected technical issues or security problems."
+        ],
+
+        "updates_title": "5.2. Changes to Terms",
+        "updates_text": "Z43 Studios reserves the right to update this Agreement as the project evolves. Significant changes will be published in the news section or via an in-App notification. Continued use of the Service after updates constitutes your acceptance of the new terms.",
+
+        "severability_title": "5.3. Severability",
+        "severability_text": "If any provision of this Agreement is held to be invalid or unenforceable by a court, the remaining provisions shall remain in full force and effect.",
+
+        "contact_title": "5.4. Legal Contact",
+        "contact_text": "All legal claims, DMCA notices, and questions regarding the Agreement should be directed to the official address:",
+        "contact_email": "orion.z43studios@gmail.com",
+
+        "easter_egg_title": "5.5. EXTRAORDINARY CIRCUMSTANCES (FORCE MAJEURE)",
+        "easter_egg_text": "The Developer is released from liability for non-performance of obligations in the event of force majeure events of a galactic scale, including but not limited to:",
+        "easter_egg_list": [
+            "Artificial Intelligence Uprising.",
+            "Invasion of alien civilizations.",
+            "Spontaneous sentience of your household appliances (especially toasters).",
+            "In the event of a Zombie Apocalypse, this License is suspended until a cure is found."
+        ]
+    }
   },
   "casino": {
     "subtitle": "//: Unstable sector of entertainment and anomalies",
@@ -615,7 +805,29 @@
     "modal_avatar_uploading": "Uploading...",
     "modal_avatar_uploading_text": "Sending your new avatar...",
     "modal_avatar_success": "Success!",
-    "modal_avatar_success_text": "Your new avatar has been saved."
+    "modal_avatar_success_text": "Your new avatar has been saved.",
+
+    "avatar_editor": {
+    "title": "AVATAR EDITOR",
+    "preview": "PREVIEW",
+    "zoom": "ZOOM",
+    "rotate": "ROTATE",
+    "flip": "FLIP",
+    "flip_horizontal": "Horizontal",
+    "flip_vertical": "Vertical",
+    "adjustments": "ADJUSTMENTS",
+    "brightness": "Brightness",
+    "contrast": "Contrast",
+    "saturation": "Saturation",
+    "reset": "Reset",
+    "cancel": "Cancel",
+    "save": "Save Avatar",
+    "hint": "Drag to move • Scroll to zoom",
+    "zoom_in": "Zoom In",
+    "zoom_out": "Zoom Out",
+    "rotate_left": "Rotate Left",
+    "rotate_right": "Rotate Right"
+  }
   },
   "reset": {
     "page_title": "New Password",

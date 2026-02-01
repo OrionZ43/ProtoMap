@@ -1,5 +1,6 @@
 <script lang="ts">
     import NeonButton from '$lib/components/NeonButton.svelte';
+    import AvatarEditor from '$lib/components/AvatarEditor.svelte';
     import { getFunctions, httpsCallable } from 'firebase/functions';
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
@@ -22,6 +23,10 @@
     let isLoadingAvatar = false;
     let isSavingProfile = false;
 
+    // НОВОЕ: Состояние для редактора
+    let isEditorOpen = false;
+    let selectedFile: File | null = null;
+
     const opacity = tweened(0, { duration: 400, easing: quintOut });
     const translate = (key: string) => get(t)(key);
 
@@ -29,6 +34,7 @@
         opacity.set(1);
     });
 
+    // ИЗМЕНЕНО: Теперь просто открываем редактор вместо прямой загрузки
     async function handleAvatarChange(event: Event) {
         const input = event.target as HTMLInputElement;
         const file = input.files?.[0];
@@ -45,44 +51,50 @@
             return;
         }
 
+        // Открываем редактор вместо прямой загрузки
+        selectedFile = file;
+        isEditorOpen = true;
+        input.value = ''; // Очищаем input для повторного использования
+    }
+
+    // НОВОЕ: Обработчик сохранения из редактора
+    async function handleEditorSave(event: CustomEvent<{ imageBase64: string }>) {
         isLoadingAvatar = true;
 
-        const previewReader = new FileReader();
-        previewReader.readAsDataURL(file);
-        previewReader.onload = (e) => { imagePreviewUrl = e.target?.result as string; };
+        try {
+            const { imageBase64 } = event.detail;
+            const functions = getFunctions();
+            const uploadAvatarFunc = httpsCallable(functions, 'uploadAvatar');
 
-        const uploadReader = new FileReader();
-        uploadReader.readAsDataURL(file);
-        uploadReader.onloadend = async () => {
-            try {
-                const imageBase64 = uploadReader.result as string;
-                const functions = getFunctions();
-                const uploadAvatarFunc = httpsCallable(functions, 'uploadAvatar');
-                modal.info(translate('ui.loading'), 'Uploading...');
-                const result = await uploadAvatarFunc({ imageBase64 });
-                localStorage.removeItem('protomap_markers_cache');
-                localStorage.removeItem('protomap_markers_time');
-                const newAvatarUrl = (result.data as { avatarUrl: string }).avatarUrl;
-                imagePreviewUrl = newAvatarUrl;
-                modal.success(translate('edit_profile.modal_avatar_success'), translate('edit_profile.modal_avatar_success_text'));
-                userStore.update(store => {
-                    if (store.user) {
-                        return { ...store, user: { ...store.user, avatar_url: newAvatarUrl } };
-                    }
-                    return store;
-                });
-            } catch (error: any) {
-                modal.error(translate('ui.error'), error.message || 'Upload failed.');
-                imagePreviewUrl = data.profile.avatar_url;
-            } finally {
-                isLoadingAvatar = false;
-                input.value = '';
-            }
-        };
-        uploadReader.onerror = () => {
-             modal.error(translate('edit_profile.modal_file_error'), "Read error.");
-             isLoadingAvatar = false;
+            modal.info(translate('ui.loading'), 'Uploading...');
+
+            const result = await uploadAvatarFunc({ imageBase64 });
+
+            localStorage.removeItem('protomap_markers_cache');
+            localStorage.removeItem('protomap_markers_time');
+
+            const newAvatarUrl = (result.data as { avatarUrl: string }).avatarUrl;
+            imagePreviewUrl = newAvatarUrl;
+
+            modal.success(translate('edit_profile.modal_avatar_success'), translate('edit_profile.modal_avatar_success_text'));
+
+            userStore.update(store => {
+                if (store.user) {
+                    return { ...store, user: { ...store.user, avatar_url: newAvatarUrl } };
+                }
+                return store;
+            });
+        } catch (error: any) {
+            modal.error(translate('ui.error'), error.message || 'Upload failed.');
+        } finally {
+            isLoadingAvatar = false;
         }
+    }
+
+    // НОВОЕ: Обработчик закрытия редактора
+    function handleEditorClose() {
+        isEditorOpen = false;
+        selectedFile = null;
     }
 
     async function saveProfileData() {
@@ -100,7 +112,7 @@
             localStorage.removeItem('protomap_markers_time');
             const message = (result.data as { message: string }).message;
 
-            modal.success(translate('inventory.success_title'), message || "Saved."); // Используем ключ из инвентаря для "Saved"
+            modal.success(translate('inventory.success_title'), message || "Saved.");
 
             userStore.update(store => {
                 if (store.user) {
@@ -176,7 +188,7 @@
             <input bind:value={socials.twitter} type="text" id="social_twitter" class="input-field" placeholder={$t('edit_profile.social_x_placeholder')} disabled={isLoadingAvatar || isSavingProfile} />
         </div>
         <div class="form-group">
-            <label for="social_website" class="form-label font-display">{$t('edit_profile.social_website_label') || 'WEB'}</label> <!-- Добавь ключ если надо, или оставь WEB -->
+            <label for="social_website" class="form-label font-display">{$t('edit_profile.social_website_label') || 'WEB'}</label>
             <input bind:value={socials.website} type="url" id="social_website" class="input-field" placeholder={$t('edit_profile.social_web_placeholder')} disabled={isLoadingAvatar || isSavingProfile} />
         </div>
         <div class="flex flex-col sm:flex-row gap-4 pt-4">
@@ -187,6 +199,14 @@
         </div>
     </div>
 </div>
+
+<!-- НОВОЕ: Компонент редактора аватарок -->
+<AvatarEditor
+    bind:isOpen={isEditorOpen}
+    imageFile={selectedFile}
+    on:save={handleEditorSave}
+    on:close={handleEditorClose}
+/>
 
 <style>
     .form-container { @apply max-w-2xl mx-auto my-10 p-8 rounded-none shadow-2xl relative; background: rgba(10, 10, 10, 0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid rgba(252, 238, 10, 0.2); clip-path: polygon(0 15px, 15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%); }

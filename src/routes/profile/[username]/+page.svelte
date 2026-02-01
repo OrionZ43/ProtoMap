@@ -18,6 +18,7 @@
     import { get } from 'svelte/store';
     import { renderMarkdown } from '$lib/utils/markdown';
     import { AudioManager } from '$lib/client/audioManager';
+    import { page } from '$app/stores';
 
     export let data: PageData;
     export let form: ActionData;
@@ -336,11 +337,40 @@
         }
         return translate('profile.time.just_now');
     }
-
 </script>
 
 <svelte:head>
-    <title>{$t('profile.page_title')} {data.profile.username} | ProtoMap</title>
+    <!-- Basic Meta Tags -->
+    <title>{data.seoData.title}</title>
+    <meta name="description" content={data.seoData.description} />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="profile" />
+    <meta property="og:url" content={data.seoData.url} />
+    <meta property="og:title" content={data.seoData.title} />
+    <meta property="og:description" content={data.seoData.description} />
+    <meta property="og:image" content={data.seoData.image} />
+    <meta property="og:image:secure_url" content={data.seoData.image} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="1200" />
+    <meta property="og:image:alt" content={`Аватар ${data.profile.username}`} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:site_name" content="ProtoMap" />
+    <meta property="og:locale" content="ru_RU" />
+
+    <!-- Profile specific -->
+    <meta property="profile:username" content={data.profile.username} />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={data.seoData.url} />
+    <meta name="twitter:title" content={data.seoData.title} />
+    <meta name="twitter:description" content={data.seoData.description} />
+    <meta name="twitter:image" content={data.seoData.image} />
+    <meta name="twitter:image:alt" content={`Аватар ${data.profile.username}`} />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href={data.seoData.url} />
 </svelte:head>
 
 {#if showCinematicIntro}
