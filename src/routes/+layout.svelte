@@ -97,6 +97,10 @@
 
     $: isMapPage = $page.route.id === '/';
 
+    // === [ НОВОЕ: ОПРЕДЕЛЯЕМ, ПОКАЗЫВАТЬ ЛИ ДЕФОЛТНЫЕ МЕТА-ТЕГИ ] ===
+    // Если это страница профиля - она сама определит свои теги
+    $: isProfilePage = $page.url.pathname.startsWith('/profile/');
+
     function toggleChat() {
         if ($chat.isOpen) {
             AudioManager.play('popup_close');
@@ -108,9 +112,29 @@
 </script>
 
 <svelte:head>
-<meta property="og:site_name" content="ProtoMap" />
-<meta property="og:type" content="website" />
-<meta name="theme-color" content="#00f0ff">
+    <!-- Общие теги для всех страниц -->
+    <meta property="og:site_name" content="ProtoMap" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta name="theme-color" content="#00f0ff" />
+
+    <!-- === ДЕФОЛТНЫЕ ТЕГИ ТОЛЬКО ДЛЯ НЕ-ПРОФИЛЬНЫХ СТРАНИЦ === -->
+    {#if !isProfilePage}
+        <title>ProtoMap - Карта протогенов</title>
+        <meta name="description" content="Интерактивная карта протогенов с казино, чатом и профилями" />
+
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="ProtoMap - Карта протогенов" />
+        <meta property="og:description" content="Интерактивная карта протогенов с казино, чатом и профилями" />
+        <meta property="og:image" content="https://proto-map.vercel.app/preview.png" />
+        <meta property="og:url" content="https://proto-map.vercel.app" />
+
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="ProtoMap - Карта протогенов" />
+        <meta name="twitter:description" content="Интерактивная карта протогенов с казино, чатом и профилями" />
+        <meta name="twitter:image" content="https://proto-map.vercel.app/preview.png" />
+    {/if}
 </svelte:head>
 
 <svelte:body class:seasonal-on={seasonActiveInSession} />
