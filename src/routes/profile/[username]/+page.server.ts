@@ -128,7 +128,9 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
     // === НОВОЕ: Формируем SEO данные для Open Graph ===
     const seoData = {
         title: `${userProfileData.username} | ProtoMap`,
-        description: userProfileData.status || userProfileData.about_me?.substring(0, 150) || `Профиль ${userProfileData.username} на ProtoMap - интерактивной карте протогенов`,
+        description: userProfileData.status
+            ? `${userProfileData.status}`
+            : (userProfileData.about_me?.substring(0, 150) || `Профиль пользователя ${userProfileData.username} на карте протогенов ProtoMap`),
         image: getAbsoluteImageUrl(userProfileData.avatar_url, userProfileData.username),
         url: `https://proto-map.vercel.app/profile/${userProfileData.username}`,
         type: 'profile'
