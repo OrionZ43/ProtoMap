@@ -20,7 +20,7 @@
     import SplashModal from '$lib/components/SplashModal.svelte';
     import { settingsStore } from '$lib/stores/settingsStore';
     import Snowfall from '$lib/components/Snowfall.svelte';
-    import { goto, beforeNavigate } from '$app/navigation'; // Импортируем защиту навигации
+    import { goto, beforeNavigate } from '$app/navigation';
 
     import '$lib/i18n';
     import { waitLocale } from 'svelte-i18n';
@@ -31,24 +31,19 @@
     let isReady = false;
     let seasonActiveInSession = false;
 
-    // === [ BANHAMMER LOGIC ] ===
-    // Определяем статус бана реактивно от данных страницы (которые приходят из hooks.server.ts)
     $: user = $page.data.user;
     $: isBanned = user?.isBanned === true;
     $: isBannedPage = $page.url.pathname.startsWith('/banned');
 
-    // ЗАЩИТА 1: Мгновенный редирект, если статус изменился на клиенте
     $: if (isBanned && !isBannedPage && browser) {
         goto('/banned');
     }
 
-    // ЗАЩИТА 2: Перехват любых попыток уйти со страницы бана
     beforeNavigate(({ to, cancel }) => {
-        // Если юзер забанен и пытается перейти куда-то, кроме /banned
         if (isBanned && to?.url.pathname !== '/banned') {
-            cancel(); // Отменяем переход
+            cancel();
             if (!isBannedPage) {
-                goto('/banned'); // Если он еще не там, шлем туда
+                goto('/banned');
             }
         }
     });
@@ -97,9 +92,9 @@
 
     $: isMapPage = $page.route.id === '/';
 
-    // === [ НОВОЕ: ОПРЕДЕЛЯЕМ, ПОКАЗЫВАТЬ ЛИ ДЕФОЛТНЫЕ МЕТА-ТЕГИ ] ===
-    // Если это страница профиля - она сама определит свои теги
-    $: isProfilePage = $page.url.pathname.startsWith('/profile/');
+    // Проверяем, есть ли у текущей страницы seoData (для профилей)
+    $: seoData = $page.data.seoData;
+    $: hasCustomSeo = !!seoData;
 
     function toggleChat() {
         if ($chat.isOpen) {
@@ -112,29 +107,33 @@
 </script>
 
 <svelte:head>
-    <!-- Общие теги для всех страниц -->
+    <!-- Общие теги -->
     <meta property="og:site_name" content="ProtoMap" />
     <meta property="og:locale" content="ru_RU" />
     <meta name="theme-color" content="#00f0ff" />
 
-    <!-- === ДЕФОЛТНЫЕ ТЕГИ ТОЛЬКО ДЛЯ НЕ-ПРОФИЛЬНЫХ СТРАНИЦ === -->
-    {#if !isProfilePage}
-        <title>ProtoMap - Карта протогенов</title>
-        <meta name="description" content="Интерактивная карта протогенов с казино, чатом и профилями" />
+    <!-- ВАЖНО: Теперь используем данные из seoData если есть, иначе дефолтные -->
+    <title>{hasCustomSeo ? seoData.title : 'ProtoMap - Карта протогенов'}</title>
+    <meta name="description" content={hasCustomSeo ? seoData.description : 'Интерактивная карта протогенов с казино, чатом и профилями'} />
 
-        <!-- Open Graph / Facebook -->
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content="ProtoMap - Карта протогенов" />
-        <meta property="og:description" content="Интерактивная карта протогенов с казино, чатом и профилями" />
-        <meta property="og:image" content="https://proto-map.vercel.app/preview.png" />
-        <meta property="og:url" content="https://proto-map.vercel.app" />
+    <!-- Open Graph -->
+    <meta property="og:type" content={hasCustomSeo ? 'profile' : 'website'} />
+    <meta property="og:title" content={hasCustomSeo ? seoData.title : 'ProtoMap - Карта протогенов'} />
+    <meta property="og:description" content={hasCustomSeo ? seoData.description : 'Интерактивная карта протогенов с казино, чатом и профилями'} />
+    <meta property="og:image" content={hasCustomSeo ? seoData.image : 'https://proto-map.vercel.app/preview.png'} />
+    <meta property="og:url" content={hasCustomSeo ? seoData.url : 'https://proto-map.vercel.app'} />
 
-        <!-- Twitter Card -->
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="ProtoMap - Карта протогенов" />
-        <meta name="twitter:description" content="Интерактивная карта протогенов с казино, чатом и профилями" />
-        <meta name="twitter:image" content="https://proto-map.vercel.app/preview.png" />
+    {#if hasCustomSeo}
+        <meta property="og:image:secure_url" content={seoData.image} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="1200" />
     {/if}
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={hasCustomSeo ? seoData.title : 'ProtoMap - Карта протогенов'} />
+    <meta name="twitter:description" content={hasCustomSeo ? seoData.description : 'Интерактивная карта протогенов с казино, чатом и профилями'} />
+    <meta name="twitter:image" content={hasCustomSeo ? seoData.image : 'https://proto-map.vercel.app/preview.png'} />
 </svelte:head>
 
 <svelte:body class:seasonal-on={seasonActiveInSession} />
@@ -148,7 +147,6 @@
             <Snowfall />
         {/if}
 
-        <!-- СКРЫВАЕМ БОКОВЫЕ ПАНЕЛИ ДЛЯ ЗАБАНЕННЫХ -->
         {#if !isBanned}
             <div class="side-panel left z-10">
                 <div class="v-text">{sideTextLeft}</div>
@@ -159,7 +157,6 @@
         {/if}
 
         <div class="relative z-20 flex flex-col flex-grow">
-            <!-- СКРЫВАЕМ НАВБАР ДЛЯ ЗАБАНЕННЫХ -->
             {#if !isBanned}
                 <Navbar />
             {/if}
@@ -170,16 +167,13 @@
         </div>
 
         <div class="hidden lg:block">
-            <!-- СКРЫВАЕМ ФУТЕР ДЛЯ ЗАБАНЕННЫХ -->
             {#if !isMapPage && !isBanned}
                 <Footer />
             {/if}
         </div>
 
-        <!-- МОДАЛКИ ОСТАВЛЯЕМ (для вывода ошибок и апелляций) -->
         <Modal />
 
-        <!-- ВСЕ ОСТАЛЬНЫЕ ВИДЖЕТЫ СКРЫВАЕМ -->
         {#if !isBanned}
             <ChatWidget />
             <CookieBanner />
