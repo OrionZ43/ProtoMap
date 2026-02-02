@@ -102,29 +102,88 @@
     }
 
     async function handleGoogleLogin() {
-        googleLoading = true;
-        const provider = new GoogleAuthProvider();
-        try {
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
-            const userDocRef = doc(db, "users", user.uid);
-            const userDocSnap = await getDoc(userDocRef);
-            if (!userDocSnap.exists()) {
-                await setDoc(userDocRef, {
-                    username: user.displayName || `user_${user.uid.substring(0, 6)}`,
-                    email: user.email, avatar_url: user.photoURL || "", social_link: "",
-                    about_me: "Вошел с помощью Google", createdAt: serverTimestamp(),
-                    casino_credits: 100,
-                    last_daily_bonus: null,
-                });
+    googleLoading = true;
+    const provider = new GoogleAuthProvider();
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (!userDocSnap.exists()) {
+            // ФИКС: Генерируем username который ТОЧНО пройдет валидацию
+            let generatedUsername = user.displayName || '';
+
+            // Убираем пробелы и спецсимволы
+            generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
+
+            // Если слишком короткий или пустой - используем fallback
+            if (generatedUsername.length < 3) {
+                generatedUsername = `user_${user.uid.substring(0, 8)}`;
             }
-            goto('/');
-        } catch (e: any) {
-            console.error("Ошибка входа через Google:", e);
-            modal.error("Системная ошибка", "Не удалось войти с помощью Google.");
-        } finally {
-            googleLoading = false;
+
+            // Обрезаем если слишком длинный (макс 20 символов)
+            if (generatedUsername.length > 20) {
+                generatedUsername = generatedUsername.substring(0, 20);
+            }
+
+            // Проверяем уникальность через Cloud Function
+            const isAvailable = await isUsernameAvailable(generatedUsername);
+
+            // Если занято - добавляем цифры
+            if (!isAvailable) {
+                const randomSuffix = Math.floor(Math.random() * 9999);
+                generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
+            }
+
+            console.log('Creating user with username:', generatedUsername);
+
+            // СОЗДАЕМ ПРОФИЛЬ С ПРАВИЛЬНЫМИ ПОЛЯМИ
+            await setDoc(userDocRef, {
+                username: generatedUsername,        // ← 3-20 символов ✅
+                email: user.email,                  // ← ОБЯЗАТЕЛЬНО! ✅
+                avatar_url: user.photoURL || "",
+                about_me: "",                       // ← Пустая строка вместо текста
+                social_link: "",
+                createdAt: serverTimestamp(),
+                casino_credits: 100,                // ← РОВНО 100 ✅
+                last_daily_bonus: null,
+                owned_items: [],                    // ← Пустой массив ✅
+                emailVerified: user.emailVerified
+                // НЕ добавляем: role, isBanned, daily_streak ✅
+            });
+
+            console.log('✅ User created successfully');
         }
+
+        // Устанавливаем сессию
+        const token = await user.getIdToken();
+        await fetch('/api/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken: token }),
+        });
+
+        goto('/');
+    } catch (e: any) {
+        console.error("Ошибка входа через Google:", e);
+
+        // Более детальная обработка ошибок
+        if (e.code === 'permission-denied' || e.message.includes('insufficient permissions')) {
+            modal.error(
+                "Ошибка создания профиля",
+                "Не удалось создать профиль. Проверьте правила безопасности базы данных."
+            );
+        } else if (e.code === 'auth/popup-blocked') {
+            modal.error(
+                "Всплывающее окно заблокировано",
+                "Разрешите всплывающие окна для этого сайта и попробуйте снова."
+            );
+        } else {
+            modal.error("Системная ошибка", `Не удалось войти с помощью Google: ${e.message}`);
+        }
+    } finally {
+        googleLoading = false;
     }
 </script>
 
