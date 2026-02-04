@@ -231,18 +231,15 @@
 {/if}
 
 <style>
-    :global(body) {
-        overflow: hidden; /* Чтобы не появлялись скроллы от летающих частиц */
-    }
-
     .global-container {
         position: fixed;
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        pointer-events: none;
+        pointer-events: none; /* Пропускает клики сквозь фон на элементы под ним */
         z-index: 50;
+        overflow: hidden; /* Теперь частицы обрезаются здесь, а не на всей странице */
     }
 
     .flash-overlay {
