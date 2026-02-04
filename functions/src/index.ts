@@ -9,14 +9,99 @@ import { telegramWebhook } from './telegramBot';
 
 exports.telegramWebhook = telegramWebhook;
 
+// ===================================================================
+// 🔒 SECURITY FIX #1: Безопасная проверка Google URL
+// ===================================================================
+function isValidGoogleURL(url: string): boolean {
+    try {
+        const parsed = new URL(url);
+        const hostname = parsed.hostname.toLowerCase();
+
+        // Проверяем ТОЧНЫЙ домен (не просто substring!)
+        const validDomains = [
+            'googleusercontent.com',
+            'lh3.googleusercontent.com',
+            'lh4.googleusercontent.com',
+            'lh5.googleusercontent.com',
+            'lh6.googleusercontent.com'
+        ];
+
+        // Домен должен ТОЧНО совпадать или быть поддоменом *.googleusercontent.com
+        return validDomains.includes(hostname) ||
+               hostname.endsWith('.googleusercontent.com');
+
+    } catch (e) {
+        // Невалидный URL
+        return false;
+    }
+}
+
+// ===================================================================
+// 🔒 SECURITY FIX #2: Функция для безопасного jitter (геокодинг)
+// ===================================================================
+function secureJitter(value: number, range: number): number {
+    const buffer = crypto.randomBytes(4);
+    const randomInt = buffer.readUInt32BE(0);
+    const randomFloat = (randomInt / 0xFFFFFFFF) - 0.5; // От -0.5 до +0.5
+    return value + (randomFloat * range);
+}
+
+// ===================================================================
+// 🔒 SECURITY FIX #3: Глобальный Rate Limiter
+// ===================================================================
+async function checkGlobalRateLimit(
+    uid: string,
+    action: string,
+    limit: number,
+    windowMs: number
+): Promise<void> {
+    const now = Date.now();
+    const limitsRef = admin.firestore().collection('rate_limits').doc(uid);
+
+    await admin.firestore().runTransaction(async (t) => {
+        const doc = await t.get(limitsRef);
+        const data = doc.data() || {};
+        const actions = data[action] || [];
+
+        // Удаляем записи старше окна
+        const recentActions = actions.filter((timestamp: number) =>
+            now - timestamp < windowMs
+        );
+
+        if (recentActions.length >= limit) {
+            const waitTime = Math.ceil((recentActions[0] + windowMs - now) / 60000);
+            throw new HttpsError(
+                'resource-exhausted',
+                `Слишком много попыток. Попробуйте через ${waitTime} мин.`
+            );
+        }
+
+        // Добавляем новую запись
+        recentActions.push(now);
+
+        // Обновляем
+        t.set(limitsRef, {
+            [action]: recentActions,
+            lastUpdate: FieldValue.serverTimestamp()
+        }, { merge: true });
+    });
+}
+
+// ===================================================================
+// 🔒 SECURITY FIX #4: Исправленный getTelegramAuthCode
+// ===================================================================
 export const getTelegramAuthCode = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
     const uid = request.auth.uid;
-    const code = "PM-" + crypto.randomBytes(3).toString('hex').toUpperCase();
+
+    // ✅ ИСПРАВЛЕНО: 128 бит энтропии вместо 24
+    const code = "PM-" + crypto.randomBytes(16).toString('hex').toUpperCase();
+
     await db.collection('system').doc('telegram_codes').collection('active_codes').doc(code).set({
         uid: uid,
         createdAt: FieldValue.serverTimestamp(),
-        expiresAt: Date.now() + 5 * 60 * 1000
+        expiresAt: Date.now() + 5 * 60 * 1000,
+        used: false // 🔒 Флаг одноразового использования
     });
 
     return { code };
@@ -67,13 +152,18 @@ async function sendToCasinoChat(message: string) {
     }
 }
 
+// ===================================================================
+// 🔒 SECURITY FIX #5: Исправленный migrateExternalAvatar
+// ===================================================================
 export const migrateExternalAvatar = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
     const uid = request.auth.uid;
     const { url } = request.data;
 
-    // Проверяем, что это ссылка Google
-    if (!url || !url.includes('googleusercontent.com')) return { status: 'skipped' };
+    // ✅ ИСПРАВЛЕНО: Безопасная проверка URL
+    if (!url || !isValidGoogleURL(url)) {
+        throw new HttpsError('invalid-argument', 'Invalid or untrusted URL');
+    }
 
     try {
         // Очищаем URL от параметров размера Google (=s96-c)
@@ -84,7 +174,10 @@ export const migrateExternalAvatar = onCall(async (request) => {
             folder: "protomap_avatars",
             public_id: uid,
             overwrite: true,
-            format: "webp"
+            format: "webp",
+            // 🔒 ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА:
+            resource_type: 'image', // Только изображения!
+            allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp']
         });
 
         // Обновляем профиль в Firestore
@@ -98,26 +191,39 @@ export const migrateExternalAvatar = onCall(async (request) => {
     }
 });
 
+// ===================================================================
+// 🔒 SECURITY FIX #6: Исправленный clearMapCache с транзакцией
+// ===================================================================
 async function clearMapCache() {
     const cacheRef = db.collection('system').doc('map_cache');
 
     try {
-        const doc = await cacheRef.get();
-        if (doc.exists) {
-            const data = doc.data();
-            const lastUpdated = data?.updatedAt?.toMillis() || 0;
-            // ЗАЩИТА: Если кэш обновлялся менее 60 секунд назад — не трогаем его.
-            // Пусть новые юзеры видят карту с задержкой в минуту, зато мы не разоримся.
-            if (Date.now() - lastUpdated < 60000) {
-                console.log("Cache clear throttled.");
-                return;
+        // ✅ ИСПРАВЛЕНО: Атомарная транзакция вместо race condition
+        await db.runTransaction(async (t) => {
+            const doc = await t.get(cacheRef);
+
+            if (doc.exists) {
+                const data = doc.data();
+                const lastUpdated = data?.updatedAt?.toMillis() || 0;
+
+                // ЗАЩИТА: Проверка внутри транзакции
+                if (Date.now() - lastUpdated < 60000) {
+                    throw new Error('THROTTLED'); // Откатится автоматически
+                }
             }
-        }
-        // Вместо удаления просто помечаем как устаревший или удаляем (как было)
-        await cacheRef.delete();
+
+            // Удаление в рамках той же транзакции
+            t.delete(cacheRef);
+        });
+
         console.log("Map cache cleared.");
-    } catch (e) {
-        console.error("Failed to clear cache:", e);
+
+    } catch (e: any) {
+        if (e.message === 'THROTTLED') {
+            console.log("Cache clear throttled (safe).");
+        } else {
+            console.error("Failed to clear cache:", e);
+        }
     }
 }
 
@@ -252,7 +358,6 @@ export const addComment = onCall(async (request) => {
     await assertNotBanned(uid);
     assertEmailVerified(request.auth);
 
-    // Добавили parentId (ID комментария, на который отвечаем)
     const { profileUid, text, parentId } = request.data;
 
     if (!profileUid || !text || typeof text !== 'string' || !text.trim()) {
@@ -275,10 +380,9 @@ export const addComment = onCall(async (request) => {
             author_avatar_url: authorData.avatar_url || '',
             author_equipped_frame: authorData.equipped_frame || null,
             createdAt: FieldValue.serverTimestamp(),
-            likes: [] // Массив UID тех, кто лайкнул
+            likes: []
         };
 
-        // Если это ответ, добавляем ID родителя
         if (parentId) {
             commentData.parentId = parentId;
         }
@@ -311,10 +415,8 @@ export const toggleCommentLike = onCall(async (request) => {
             const likes = data.likes || [];
 
             if (likes.includes(uid)) {
-                // Убираем лайк
                 t.update(commentRef, { likes: FieldValue.arrayRemove(uid) });
             } else {
-                // Ставим лайк
                 t.update(commentRef, { likes: FieldValue.arrayUnion(uid) });
             }
         });
@@ -440,8 +542,8 @@ export const purchaseShopItem = onCall({ cors: ALLOWED_ORIGINS }, async (request
 
 function getRewardValue(day: number): number {
     if (day === 30) return 1000;
-    if (day % 5 === 0) return 250; // День 5, 10, 15, 20, 25
-    return 50 + (Math.floor((day - 1) / 5) * 10); // Постепенный рост: 50, 60, 70...
+    if (day % 5 === 0) return 250;
+    return 50 + (Math.floor((day - 1) / 5) * 10);
 }
 
 export const getDailyBonus = onCall(async (request) => {
@@ -463,12 +565,10 @@ export const getDailyBonus = onCall(async (request) => {
 
             const data = userDoc.data() as any;
             const lastBonus = data.last_daily_bonus ? data.last_daily_bonus.toDate() : null;
-            // Текущий сохраненный стрик (то, что забрали ВЧЕРА)
             let currentStreak = data.daily_streak || 0;
 
             const now = new Date();
 
-            // Если бонусов не было или цикл завершен (был 30), сбрасываем на 0
             if (currentStreak >= 30) {
                 currentStreak = 0;
             }
@@ -476,25 +576,21 @@ export const getDailyBonus = onCall(async (request) => {
             if (lastBonus) {
                 const diff = now.getTime() - lastBonus.getTime();
 
-                // Защита от абуза (20 часов)
                 if (diff < 20 * 60 * 60 * 1000) {
                     const hoursLeft = Math.ceil((20 * 60 * 60 * 1000 - diff) / 3600000);
                     throw new HttpsError('resource-exhausted', `Бонус доступен через ${hoursLeft} ч.`);
                 }
 
-                // Если пропустил более 48 часов - сброс
                 if (diff > 48 * 60 * 60 * 1000) {
-                    currentStreak = 0; // Сброс на начало
+                    currentStreak = 0;
                 }
             }
 
-            // Начисляем за СЛЕДУЮЩИЙ день
             const dayToClaim = currentStreak + 1;
             const bonusAmount = getRewardValue(dayToClaim);
             let rewardMessage = `День ${dayToClaim}: получено ${bonusAmount} PC.`;
             let specialReward = null;
 
-            // Логика 30-го дня
             if (dayToClaim === 30) {
                 if (!data.owned_items?.includes('frame_ludoman')) {
                     specialReward = 'frame_ludoman';
@@ -512,14 +608,14 @@ export const getDailyBonus = onCall(async (request) => {
             t.update(userRef, {
                 casino_credits: newBalance,
                 last_daily_bonus: FieldValue.serverTimestamp(),
-                daily_streak: dayToClaim // Сохраняем новый день
+                daily_streak: dayToClaim
             });
 
             return {
                 status: 'success',
                 message: rewardMessage,
                 new_balance: newBalance,
-                streak: dayToClaim, // Возвращаем актуальный день (1-30)
+                streak: dayToClaim,
                 special_reward: specialReward
             };
         });
@@ -533,13 +629,15 @@ export const getDailyBonus = onCall(async (request) => {
 });
 
 export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) => {
-    // 1. CHECKS
     if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
     await assertNotBanned(uid);
     assertEmailVerified(request.auth);
+
+    // ✅ НОВОЕ: Глобальный лимит (50 игр в час)
+    await checkGlobalRateLimit(uid, 'crash', 50, 60 * 60 * 1000);
 
     let { bet } = request.data;
     bet = Math.floor(Number(bet));
@@ -552,20 +650,16 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
     const bankRef = db.collection('system').doc('casino_stats');
     const gameId = db.collection('crash_games').doc().id;
 
-    // RTDB для графика
     const rtdb = admin.app().database("https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app");
     const gameRtdbRef = rtdb.ref(`crash_games/${gameId}`);
 
     try {
-        // ГЕНЕРАЦИЯ КРАША
         let crashPoint = 1.00;
 
-        // Шанс мгновенного краша (House Edge) - 6%
         const riskRoll = crypto.randomInt(0, 100);
         if (riskRoll < 6) {
             crashPoint = 1.00;
         } else {
-            // Стандартная формула Crash (1 / random)
             const buffer = crypto.randomBytes(4);
             const randomInt = buffer.readUInt32BE(0);
             const randomFloat = randomInt / 0xFFFFFFFF;
@@ -579,31 +673,23 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
             if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
             const userData = userDoc.data()!;
 
-            // === 🛡️ BANK PROTECTION ===
             let bankBalance = bankDoc.exists ? (bankDoc.data()?.bank_balance || 0) : 0;
-            const safeBankLimit = bankBalance * 0.9; // 90% банка доступно для выплаты
+            const safeBankLimit = bankBalance * 0.9;
 
-            // Считаем максимально возможный множитель, который может оплатить банк
-            // MaxWin = Bet * Multiplier
-            // Multiplier = MaxWin / Bet
             let maxAffordableMult = 1.0;
             if (bet > 0) {
                 maxAffordableMult = safeBankLimit / bet;
             }
 
-            // Если сгенерированный краш выше, чем банк может позволить — ОБРЕЗАЕМ
             if (crashPoint > maxAffordableMult) {
                 console.log(`[CRASH] Capping multiplier for ${uid}. Org: ${crashPoint}, Capped: ${maxAffordableMult}`);
                 crashPoint = Math.floor(maxAffordableMult * 100) / 100;
 
-                // Если банк совсем пуст и max < 1, делаем мгновенный краш
                 if (crashPoint < 1.01) crashPoint = 1.00;
             }
 
-            // Хардкап (чтобы не улетал в космос)
             if (crashPoint > 50) crashPoint = 50;
 
-            // ... Проверка кулдауна и баланса ...
             const lastPlayed = userData.last_crash_game ? userData.last_crash_game.toDate().getTime() : 0;
             if (Date.now() - lastPlayed < 5000) {
                  throw new HttpsError('resource-exhausted', 'Cooldown.');
@@ -612,15 +698,13 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
                 throw new Error("No money");
             }
 
-            // Списываем ставку и обновляем время последней игры
             t.update(userRef, {
                 casino_credits: FieldValue.increment(-bet),
-                last_crash_game: FieldValue.serverTimestamp() // <--- ЗАПИСЫВАЕМ ВРЕМЯ ДЛЯ КУЛДАУНА
+                last_crash_game: FieldValue.serverTimestamp()
             });
 
             t.set(bankRef, { bank_balance: bankBalance + bet }, { merge: true });
 
-            // Создаем игру
             t.set(db.collection('crash_games').doc(gameId), {
                 uid, bet, crashPoint,
                 status: 'active',
@@ -629,7 +713,6 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
             });
         });
 
-        // RTDB логика
         await gameRtdbRef.set({
             m: 1.00,
             s: 'run',
@@ -651,7 +734,6 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
         if (e.message === "No money") {
              throw new HttpsError('failed-precondition', 'Недостаточно средств.');
         }
-        // Если это наша ошибка кулдауна - прокидываем её
         if (e.code === 'resource-exhausted') {
             throw e;
         }
@@ -694,13 +776,13 @@ export const cashOutCrashGame = onCall(async (request) => {
 
     const gameRef = db.collection('crash_games').doc(gameId);
     const userRef = db.collection('users').doc(uid);
-    const bankRef = db.collection('system').doc('casino_stats'); // 🏦
+    const bankRef = db.collection('system').doc('casino_stats');
     const rtdbRef = admin.app().database("https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app").ref(`crash_games/${gameId}`);
 
     try {
         const result = await db.runTransaction(async (t) => {
             const gameDoc = await t.get(gameRef);
-            const bankDoc = await t.get(bankRef); // Читаем банк
+            const bankDoc = await t.get(bankRef);
 
             if (!gameDoc.exists) throw new Error('Game expired');
             const data = gameDoc.data()!;
@@ -710,14 +792,10 @@ export const cashOutCrashGame = onCall(async (request) => {
 
             const winAmount = Math.floor(data.bet * multiplier);
 
-            // Обновляем юзера
             t.update(userRef, { casino_credits: FieldValue.increment(winAmount) });
 
-            // Обновляем игру
             t.update(gameRef, { status: 'cashed_out', winAmount, cashOutAt: multiplier });
 
-            // 🏦 Снимаем выигрыш с банка
-            // (Ставку мы туда уже положили при старте, так что просто вычитаем полную сумму выплаты)
             const currentBank = bankDoc.exists ? (bankDoc.data()?.bank_balance || 0) : 0;
             t.set(bankRef, { bank_balance: currentBank - winAmount }, { merge: true });
 
@@ -732,16 +810,15 @@ export const cashOutCrashGame = onCall(async (request) => {
 });
 
 export const synthesizeArtifact = onCall(async (request) => {
-    // 1. Проверки безопасности
     if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);      // Проверка бана
-    assertEmailVerified(request.auth); // Проверка почты
+    await assertNotBanned(uid);
+    assertEmailVerified(request.auth);
 
     const userRef = db.collection('users').doc(uid);
-    const BASE_VALUE = 100; // Базовая ценность (100 PC)
+    const BASE_VALUE = 100;
 
     try {
         const result = await db.runTransaction(async (t) => {
@@ -753,43 +830,36 @@ export const synthesizeArtifact = onCall(async (request) => {
 
             const currentShards = userData.glitch_shards || 0;
 
-            // 2. Проверка: Есть ли 10 осколков?
             if (currentShards < 10) {
                 throw new HttpsError('failed-precondition', 'Нужно 10 осколков для синтеза.');
             }
 
-            // 3. Таблица лута (ID должны совпадать с твоей локализацией)
             const runePool = [
-                // === ОБЫЧНЫЕ (Common) ===
                 { id: 'toast',        weight: 25, type: 'flat', val: 150 },
-                { id: 'rubber_duck',  weight: 25, type: 'flat', val: 200 }, // NEW
+                { id: 'rubber_duck',  weight: 25, type: 'flat', val: 200 },
                 { id: 'ram_stick',    weight: 20, type: 'flat', val: 300 },
-
-                // === НЕОБЫЧНЫЕ (Uncommon) ===
                 { id: 'energy_drink', weight: 15, type: 'mult', val: 2 },
                 { id: 'gpu_fan',      weight: 10, type: 'mult', val: 3 },
-
-                // === РЕДКИЕ (Rare) ===
-                { id: 'rtx_card',     weight: 5,  type: 'mult', val: 4 }, // NEW
+                { id: 'rtx_card',     weight: 5,  type: 'mult', val: 4 },
                 { id: 'source_code',  weight: 3,  type: 'mult', val: 5 },
                 { id: 'banhammer',    weight: 3,  type: 'flat', val: 666 },
-
-                // === ПРОКЛЯТЫЕ (Cursed) ===
                 { id: 'bug',          weight: 8,  type: 'flat', val: -100 },
-                { id: '404_error',    weight: 6,  type: 'flat', val: -200 }, // NEW
-                { id: 'spaghetti',    weight: 5,  type: 'bad',  val: 0.5 }, // /2
-                { id: 'blue_screen',  weight: 4,  type: 'bad',  val: 0.5 }, // /2
-                { id: 'ransomware',   weight: 2,  type: 'bad',  val: 0.3 }, // NEW (Делит на 3!)
-
-                // === ЛЕГЕНДАРНЫЕ (Legendary) ===
+                { id: '404_error',    weight: 6,  type: 'flat', val: -200 },
+                { id: 'spaghetti',    weight: 5,  type: 'bad',  val: 0.5 },
+                { id: 'blue_screen',  weight: 4,  type: 'bad',  val: 0.5 },
+                { id: 'ransomware',   weight: 2,  type: 'bad',  val: 0.3 },
                 { id: 'orion_tear',   weight: 0.5, type: 'super', val: 10 },
-                { id: 'admin_key',    weight: 0.1, type: 'super', val: 20 } // NEW (x20!)
+                { id: 'admin_key',    weight: 0.1, type: 'super', val: 20 }
             ];
 
-            // Хелпер для рандома
+            // ✅ ИСПРАВЛЕНО: Криптографически безопасный выбор
             const getRandomRune = () => {
                 const totalWeight = runePool.reduce((sum, item) => sum + item.weight, 0);
-                let random = Math.random() * totalWeight;
+
+                const buffer = crypto.randomBytes(4);
+                const randomInt = buffer.readUInt32BE(0);
+                let random = (randomInt / 0xFFFFFFFF) * totalWeight;
+
                 for (const rune of runePool) {
                     if (random < rune.weight) return rune;
                     random -= rune.weight;
@@ -797,35 +867,27 @@ export const synthesizeArtifact = onCall(async (request) => {
                 return runePool[0];
             };
 
-            // Генерируем 3 предмета
             const runes = [getRandomRune(), getRandomRune(), getRandomRune()];
 
-            // 4. Расчет выигрыша
             let totalWin = BASE_VALUE;
 
-            // Сначала применяем множители базы
             runes.forEach(r => { if (r.type === 'mult') totalWin += (BASE_VALUE * (r.val - 1)); });
-            // Потом добавляем фиксированные суммы
             runes.forEach(r => { if (r.type === 'flat') totalWin += r.val; });
-            // Потом глобальные модификаторы (деление или супер-множитель)
             runes.forEach(r => {
                 if (r.type === 'bad') totalWin = Math.floor(totalWin * r.val);
                 if (r.type === 'super') totalWin = Math.floor(totalWin * r.val);
             });
 
-            // Минимум 50 монет, чтобы не было обидно
             if (totalWin < 50) totalWin = 50;
 
-            // 5. Сохраняем в базу
             const newBalance = (userData.casino_credits || 0) + totalWin;
 
             t.update(userRef, {
-                glitch_shards: 0, // Сбрасываем осколки
+                glitch_shards: 0,
                 casino_credits: newBalance,
                 last_bonus_game: FieldValue.serverTimestamp()
             });
 
-            // Возвращаем данные клиенту для анимации
             return {
                 runes: runes.map(r => r.id),
                 totalWin: totalWin,
@@ -840,7 +902,6 @@ export const synthesizeArtifact = onCall(async (request) => {
     }
 });
 
-// === ТИПЫ ДАННЫХ (Вставь это перед функциями) ===
 interface UserData {
     username?: string;
     casino_credits?: number;
@@ -853,16 +914,20 @@ interface CasinoStats {
     bank_balance: number;
 }
 
-// === ФУНКЦИЯ СЛОТОВ ===
+// ===================================================================
+// 🔒 SECURITY FIX #7: Исправленный playSlotMachine
+// ===================================================================
 export const playSlotMachine = onCall(
     { secrets: ["TELEGRAM_BOT_TOKEN"] },
     async (request) => {
-        // 1. SECURITY
         if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
         if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
         const uid = request.auth.uid;
         await assertNotBanned(uid);
+
+        // ✅ НОВОЕ: Глобальный лимит (100 игр в час)
+        await checkGlobalRateLimit(uid, 'slots', 100, 60 * 60 * 1000);
 
         let { bet } = request.data;
         bet = Math.floor(Number(bet));
@@ -886,37 +951,32 @@ export const playSlotMachine = onCall(
 
                 if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
 
-                // 🔥 ИСПРАВЛЕНО: Используем интерфейс UserData вместо any
                 const data = userDoc.data() as UserData;
                 const username = data.username || "Unknown";
                 const credits = data.casino_credits ?? 100;
                 let currentShards = data.glitch_shards || 0;
                 const MAX_SHARDS = 10;
 
-                // 🔥 ЗАЩИТА ОТ МУЛЬТИ-ОКОН (COOLDOWN)
                 const lastPlayed = data.last_game_played ? data.last_game_played.toDate().getTime() : 0;
                 const now = Date.now();
-                if (now - lastPlayed < 3000) { // 2 секунды КД
+                if (now - lastPlayed < 3000) {
                     throw new HttpsError('resource-exhausted', 'Слишком быстро.');
                 }
 
-                // 🔥 ИСПРАВЛЕНО: Используем интерфейс CasinoStats
                 let bankBalance = bankDoc.exists ? (bankDoc.data() as CasinoStats)?.bank_balance || 0 : 0;
 
                 if (credits < bet) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
 
-                // === RNG ===
                 const roll = crypto.randomInt(0, 100000);
                 let resultType = 'LOSS';
 
-                if (roll < 100) resultType = 'JACKPOT';       // x100
-                else if (roll < 1100) resultType = 'GLITCH';  // Shards
-                else if (roll < 2600) resultType = 'HEART';   // x10
-                else if (roll < 8100) resultType = 'RAM';     // x5
-                else if (roll < 27600) resultType = 'PAW';    // x2
+                if (roll < 100) resultType = 'JACKPOT';
+                else if (roll < 1100) resultType = 'GLITCH';
+                else if (roll < 2600) resultType = 'HEART';
+                else if (roll < 8100) resultType = 'RAM';
+                else if (roll < 27600) resultType = 'PAW';
                 else resultType = 'LOSS';
 
-                // === BANKROLL CHECK ===
                 let winMultiplier = 0;
 
                 if (resultType === 'JACKPOT') winMultiplier = 100;
@@ -925,7 +985,7 @@ export const playSlotMachine = onCall(
                 else if (resultType === 'PAW') winMultiplier = 2;
 
                 let potentialWin = Math.floor(bet * winMultiplier);
-                const safeBankLimit = bankBalance * 0.9; // Оставляем 10% резерва
+                const safeBankLimit = bankBalance * 0.9;
 
                 if (potentialWin > 0 && potentialWin > safeBankLimit) {
                     console.log(`[BANK] Downgrade ${uid}: ${potentialWin} > ${safeBankLimit}`);
@@ -944,12 +1004,10 @@ export const playSlotMachine = onCall(
                     }
                 }
 
-                // === VISUALS ===
                 let finalReels: string[] = [];
                 let shardsToAdd = 0;
                 let txNotification: string | null = null;
 
-                // 🔥 ИСПРАВЛЕНО: Удалили неиспользуемый массив symbols
                 const safeSymbols = ['paw', 'ram', 'heart', 'protomap_logo'];
 
                 switch (resultType) {
@@ -989,8 +1047,9 @@ export const playSlotMachine = onCall(
                             if (nearMissRoll < 30) {
                                 const teaseSym = safeSymbols[crypto.randomInt(0, 4)];
                                 const trashSym = safeSymbols.filter(s => s !== teaseSym)[crypto.randomInt(0, 3)];
+                                // ✅ ИСПРАВЛЕНО: crypto вместо Math.random()
                                 finalReels = [teaseSym, teaseSym, trashSym]
-                                    .map(v => ({ v, s: Math.random() }))
+                                    .map(v => ({ v, s: crypto.randomInt(0, 1000000) }))
                                     .sort((a, b) => a.s - b.s)
                                     .map(({ v }) => v);
                             } else {
@@ -1006,7 +1065,6 @@ export const playSlotMachine = onCall(
                         break;
                 }
 
-                // === UPDATE ===
                 const finalCalc = credits - bet + potentialWin;
                 let newBankBalance = bankBalance + bet - potentialWin;
                 if (newBankBalance < 0) newBankBalance = 0;
@@ -1049,14 +1107,19 @@ export const playSlotMachine = onCall(
     }
 );
 
+// ===================================================================
+// 🔒 SECURITY FIX #8: Исправленный playCoinFlip
+// ===================================================================
 export const playCoinFlip = onCall(async (request) => {
-    // 1. CHECKS
     if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
     await assertNotBanned(uid);
     assertEmailVerified(request.auth);
+
+    // ✅ НОВОЕ: Глобальный лимит (200 флипов в час)
+    await checkGlobalRateLimit(uid, 'coinflip', 200, 60 * 60 * 1000);
 
     let { bet, choice } = request.data;
     bet = Math.floor(Number(bet));
@@ -1079,36 +1142,32 @@ export const playCoinFlip = onCall(async (request) => {
 
             if (credits < bet) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
 
-            // === GAME LOGIC ===
-            const WIN_MULTIPLIER = 1.95; // 1.95x (House edge 5%)
+            const WIN_MULTIPLIER = 1.95;
             const potentialWin = Math.floor(bet * WIN_MULTIPLIER);
-            const profit = potentialWin - bet; // Чистая прибыль игрока
+            const profit = potentialWin - bet;
 
-            // 🛡️ BANK PROTECTION
-            // Если в банке не хватит денег на выплату выигрыша — форсируем проигрыш
             let forcedLoss = false;
             if (profit > (bankBalance * 0.9)) {
                 console.log(`[COIN] Bank low (${bankBalance}). Forcing loss for bet ${bet}.`);
                 forcedLoss = true;
             }
 
-            let outcome = Math.random() < 0.5 ? 'heads' : 'tails';
+            // ✅ ИСПРАВЛЕНО: crypto.randomInt вместо Math.random()
+            let outcome = crypto.randomInt(0, 2) === 0 ? 'heads' : 'tails';
 
-            // Если включен режим защиты банка — меняем исход на противоположный выбору игрока
             if (forcedLoss) {
                 outcome = (choice === 'heads') ? 'tails' : 'heads';
             }
 
             const hasWon = choice === outcome;
             let finalBalance = credits - bet;
-            let newBankBalance = bankBalance + bet; // Сначала забираем ставку
+            let newBankBalance = bankBalance + bet;
 
             if (hasWon) {
                 finalBalance += potentialWin;
-                newBankBalance -= potentialWin; // Отдаем выигрыш
+                newBankBalance -= potentialWin;
             }
 
-            // Обновляем
             t.update(userRef, { casino_credits: finalBalance });
             t.set(bankRef, { bank_balance: newBankBalance }, { merge: true });
 
@@ -1127,20 +1186,17 @@ export const playCoinFlip = onCall(async (request) => {
 });
 
 export const getLeaderboard = onCall(async (request) => {
-    // 1. Проверка авторизации (оставляем как было)
     if (request.app == undefined) {
         throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
     }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
-    // Список скрытых UID (Тестовые аккаунты, админы и т.д.)
     const HIDDEN_UIDS = [
-        'MPe5KwdlsJU4pPxCEBydmMGgGTw1', // IposDevTest2
-        'XT2NDfkr9wUFl3d1Eh6imTEdlxt2' // Orion_Z43
+        'MPe5KwdlsJU4pPxCEBydmMGgGTw1',
+        'XT2NDfkr9wUFl3d1Eh6imTEdlxt2'
     ];
 
     try {
-        // 2. Запрашиваем с запасом (15 вместо 10), на случай если в топе есть скрытые
         const snapshot = await db.collection('users')
             .orderBy('casino_credits', 'desc')
             .limit(15)
@@ -1150,16 +1206,14 @@ export const getLeaderboard = onCall(async (request) => {
             .map(doc => {
                 const data = doc.data();
                 return {
-                    uid: doc.id, // Добавляем ID для фильтрации
+                    uid: doc.id,
                     username: data.username || 'Неизвестный',
                     avatar_url: data.avatar_url || '',
                     casino_credits: data.casino_credits || 0,
                     equipped_frame: data.equipped_frame || null
                 };
             })
-            // 3. ФИЛЬТРАЦИЯ
             .filter(user => !HIDDEN_UIDS.includes(user.uid))
-            // 4. Обрезаем до ТОП-10
             .slice(0, 10);
 
         return { data: leaderboard };
@@ -1170,12 +1224,12 @@ export const getLeaderboard = onCall(async (request) => {
     }
 });
 
-// --- GEOCODING HELPERS ---
+// ===================================================================
+// 🔒 SECURITY FIX #9: Исправленный getDistrictCenterCoords
+// ===================================================================
 async function getDistrictCenterCoords(lat: number, lng: number): Promise<[string, number, number] | null> {
     const userAgent = process.env.NOMINATIM_USER_AGENT || 'ProtoMap/1.0';
     try {
-        // 1. Reverse Geocoding (Узнаем адрес по координатам)
-        // zoom=18 дает подробный адрес, zoom=10 - только город/штат
         const revUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru&zoom=18`;
         const revRes = await fetch(revUrl, { headers: { 'User-Agent': userAgent } });
         if (!revRes.ok) return null;
@@ -1185,9 +1239,8 @@ async function getDistrictCenterCoords(lat: number, lng: number): Promise<[strin
 
         const addr = revData.address;
 
-        // Определяем основные компоненты адреса (С учетом специфики США и мелких поселков)
         const cityName = addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || addr.county;
-        const stateName = addr.state || addr.region || addr.province; // <--- ВАЖНО: Штат/Регион
+        const stateName = addr.state || addr.region || addr.province;
         const countryName = addr.country;
 
         const locationHierarchy = {
@@ -1198,7 +1251,6 @@ async function getDistrictCenterCoords(lat: number, lng: number): Promise<[strin
             country: countryName
         };
 
-        // Уровни поиска от точного к общему
         const attempts = [
             { level: 'Micro', q: locationHierarchy.microdistrict },
             { level: 'District', q: locationHierarchy.district },
@@ -1208,11 +1260,8 @@ async function getDistrictCenterCoords(lat: number, lng: number): Promise<[strin
         for (const attempt of attempts) {
             if (!attempt.q) continue;
 
-            // СБОРКА ЗАПРОСА: [Район, Город, Штат, Страна]
-            // Добавление Штата критично для США, где куча городов с одинаковыми именами
             const queryParts = [
                 attempt.q,
-                // Если мы ищем район, добавляем город для уточнения
                 (attempt.level !== 'City' && attempt.q !== locationHierarchy.city) ? locationHierarchy.city : null,
                 locationHierarchy.state,
                 locationHierarchy.country
@@ -1220,7 +1269,6 @@ async function getDistrictCenterCoords(lat: number, lng: number): Promise<[strin
 
             const q = queryParts.join(', ');
 
-            // Delay to be nice to Nominatim
             await new Promise(r => setTimeout(r, 1000));
 
             const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=ru&q=${encodeURIComponent(q)}`;
@@ -1230,18 +1278,15 @@ async function getDistrictCenterCoords(lat: number, lng: number): Promise<[strin
 
             const searchData = await searchRes.json() as any[];
             if (searchData && searchData.length > 0) {
-                // Мы нашли координаты центра!
                 return [attempt.q, parseFloat(searchData[0].lat), parseFloat(searchData[0].lon)];
             }
         }
 
-        // ФОЛЛБЭК (Если центр не найден):
-        // Если город определился, но его центр найти не удалось (часто в деревнях),
-        // используем исходные координаты с небольшим смещением (Jitter), чтобы сохранить анонимность.
         if (cityName) {
-             const jitterLat = lat + (Math.random() - 0.5) * 0.01; // +/- ~500м
-             const jitterLng = lng + (Math.random() - 0.5) * 0.01;
-             return [cityName, jitterLat, jitterLng];
+            // ✅ ИСПРАВЛЕНО: secureJitter вместо Math.random()
+            const jitterLat = secureJitter(lat, 0.01);
+            const jitterLng = secureJitter(lng, 0.01);
+            return [cityName, jitterLat, jitterLng];
         }
 
         return null;
@@ -1348,7 +1393,6 @@ export const addOrUpdateLocation = onCall(async (request) => {
 export const getLocations = onRequest({ cors: false }, async (request, response) => {
     if (handleCors(request, response)) return;
 
-    // CDN кэширование (тоже помогает)
     response.set('Cache-Control', 'public, max-age=300, s-maxage=600');
 
     const CACHE_DOC_REF = db.collection('system').doc('map_cache');
@@ -1357,19 +1401,14 @@ export const getLocations = onRequest({ cors: false }, async (request, response)
     try {
         const now = Date.now();
 
-        // 1. Попытка прочитать КЭШ (Всего 1 чтение!)
         const cacheSnap = await CACHE_DOC_REF.get();
         let cacheData = cacheSnap.exists ? cacheSnap.data() : null;
 
-        // Проверяем, свежий ли кэш
         if (cacheData && cacheData.updatedAt && (now - cacheData.updatedAt.toMillis() < CACHE_DURATION_MS)) {
-            // КЭШ СВЕЖИЙ! Отдаем его и экономим деньги.
-            // payload храним как JSON-строку, чтобы не превышать лимиты полей
             response.status(200).json({ data: JSON.parse(cacheData.payload) });
             return;
         }
 
-        // 2. Если кэш протух или его нет — делаем "ДОРОГУЮ" сборку (N чтений)
         console.log("Cache expired or missing. Rebuilding map data...");
 
         const locSnap = await db.collection("locations").get();
@@ -1381,14 +1420,12 @@ export const getLocations = onRequest({ cors: false }, async (request, response)
         const userIds = [...new Set(locSnap.docs.map(d => d.data().user_id).filter(Boolean))];
         const usersMap = new Map();
 
-        // Batch fetching users (как и было)
         for (let i = 0; i < userIds.length; i += 30) {
             const chunk = userIds.slice(i, i + 30);
             const uSnap = await db.collection("users").where(admin.firestore.FieldPath.documentId(), "in", chunk).get();
             uSnap.forEach(doc => usersMap.set(doc.id, doc.data()));
         }
 
-        // Собираем чистый массив данных (минимальный вес)
         const results = locSnap.docs.map(doc => {
             const loc = doc.data();
             const user = usersMap.get(loc.user_id);
@@ -1406,10 +1443,8 @@ export const getLocations = onRequest({ cors: false }, async (request, response)
             };
         }).filter(Boolean);
 
-        // 3. Сохраняем новый слепок в базу (1 запись)
-        // Чтобы следующие юзеры читали уже его
         await CACHE_DOC_REF.set({
-            payload: JSON.stringify(results), // Сжимаем в строку
+            payload: JSON.stringify(results),
             updatedAt: FieldValue.serverTimestamp()
         });
 
@@ -1463,11 +1498,22 @@ export const updateProfileData = onCall(async (request) => {
     }
 
     if (data.socials) {
+        const ALLOWED_SOCIALS = ['telegram', 'discord', 'vk', 'twitter', 'website'];
+
         for (const [k, v] of Object.entries(data.socials)) {
-            if (['telegram', 'discord', 'vk', 'twitter', 'website'].includes(k) && typeof v === 'string') {
-                const val = v.trim();
-                if (val) fields[`socials.${k}`] = val;
-                else fields[`socials.${k}`] = FieldValue.delete();
+            if (!ALLOWED_SOCIALS.includes(k)) {
+                throw new HttpsError('invalid-argument', `Unknown social: ${k}`);
+            }
+
+            if (typeof v !== 'string') {
+                throw new HttpsError('invalid-argument', `${k} must be string`);
+            }
+
+            const val = (v as string).trim();
+            if (val) {
+                fields[`socials.${k}`] = val.substring(0, 200);
+            } else {
+                fields[`socials.${k}`] = FieldValue.delete();
             }
         }
     }
@@ -1477,7 +1523,7 @@ export const updateProfileData = onCall(async (request) => {
     try {
         await db.collection('users').doc(uid).update(fields);
         if (fields.status) {
-        await clearMapCache();
+            await clearMapCache();
         }
         return { message: "Профиль обновлен!" };
     } catch (e) {
@@ -1497,10 +1543,26 @@ export const uploadAvatar = onCall({ secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDIN
     const { imageBase64 } = request.data;
     if (!imageBase64?.startsWith('data:image/')) throw new HttpsError("invalid-argument", "Bad image.");
 
+    // ✅ ИСПРАВЛЕНО: Безопасное логирование секретов
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+        console.error("Cloudinary credentials missing");
+        throw new HttpsError('internal', 'Service configuration error');
+    }
+
+    console.log("Cloudinary configured:", {
+        cloudName: !!cloudName,
+        apiKey: !!apiKey
+        // ❌ НЕ ЛОГИРУЕМ apiSecret!
+    });
+
     cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET,
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
         secure: true,
     });
 
@@ -1519,7 +1581,6 @@ export const uploadAvatar = onCall({ secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDIN
 
 function escapeMarkdownV2(text: string): string {
     const sourceText = String(text || '');
-    // Экранируем символы, которые Telegram считает разметкой
     const charsToEscape = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
     let escapedText = sourceText;
     for (const char of charsToEscape) {
@@ -1528,7 +1589,6 @@ function escapeMarkdownV2(text: string): string {
     return escapedText;
 }
 
-// --- ФУНКЦИЯ ЖАЛОБ ---
 interface ReportData {
     type: 'comment' | 'profile';
     reportedContentId: string;
@@ -1568,7 +1628,6 @@ export const reportContent = onCall(
         }
 
         try {
-            // 2. ЕСЛИ ЭТО КОММЕНТАРИЙ - ПОЛУЧАЕМ ЕГО ТЕКСТ
             let reportedContentText = '';
 
             if (type === 'comment') {
@@ -1583,7 +1642,6 @@ export const reportContent = onCall(
                 }
             }
 
-            // 3. СОХРАНЯЕМ В БАЗУ (Для истории)
             await db.collection('reports').add({
                 type,
                 reportedContentId,
@@ -1593,19 +1651,17 @@ export const reportContent = onCall(
                 reportedUsername: reportedUsername || null,
                 reporterUsername: reporterUsername || null,
                 profileOwnerUsername: profileOwnerUsername || null,
-                reportedContentText: reportedContentText || null, // Сохраняем текст нарушения
+                reportedContentText: reportedContentText || null,
                 status: 'new',
                 createdAt: FieldValue.serverTimestamp()
             });
 
-            // 4. ОТПРАВЛЯЕМ КРАСИВОЕ УВЕДОМЛЕНИЕ В TELEGRAM
             const botToken = process.env.TELEGRAM_BOT_TOKEN;
             const chatId = process.env.TELEGRAM_CHAT_ID;
 
             if (botToken && chatId) {
                 const baseUrl = "https://proto-map.vercel.app/profile/";
 
-                // Формируем ссылки [Text](URL)
                 const reporterLink = reporterUsername
                     ? `[${escapeMarkdownV2(reporterUsername)}](${baseUrl}${escapeMarkdownV2(reporterUsername)})`
                     : `\`${reporterUid}\``;
@@ -1618,7 +1674,6 @@ export const reportContent = onCall(
                     ? `[${escapeMarkdownV2(profileOwnerUsername)}](${baseUrl}${escapeMarkdownV2(profileOwnerUsername)})`
                     : `\`${profileOwnerUid}\``;
 
-                // Собираем сообщение
                 let message = `🚨 *НОВЫЙ РЕПОРТ* 🚨\n\n`;
                 message += `*От кого:* ${reporterLink}\n`;
                 message += `*Причина:* ${escapeMarkdownV2(reason)}\n\n`;
@@ -1636,15 +1691,14 @@ export const reportContent = onCall(
                     }
                 }
 
-                // Отправляем
                 await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         chat_id: chatId,
                         text: message,
-                        parse_mode: 'MarkdownV2', // Важно для жирного текста и ссылок
-                        disable_web_page_preview: true // Чтобы не засорять чат превьюшками профилей
+                        parse_mode: 'MarkdownV2',
+                        disable_web_page_preview: true
                     })
                 });
             }
@@ -1668,11 +1722,9 @@ export const deleteAccount = onCall(async (request) => {
     try {
         const batch = db.batch();
 
-        // Анонимизация комментариев
         const comments = await db.collectionGroup('comments').where('author_uid', '==', uid).get();
         comments.forEach(d => batch.update(d.ref, { author_username: 'Deleted', author_avatar_url: null, author_uid: null }));
 
-        // Анонимизация чата
         const msgs = await db.collection('global_chat').where('author_uid', '==', uid).get();
         msgs.forEach(d => batch.update(d.ref, { author_username: 'Deleted', author_avatar_url: null, author_uid: null }));
 

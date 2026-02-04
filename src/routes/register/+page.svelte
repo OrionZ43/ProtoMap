@@ -109,55 +109,91 @@
     async function handleGoogleLogin() {
         googleLoading = true;
         const provider = new GoogleAuthProvider();
+
         try {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
+
+            console.log("✅ Google Auth успешен:", user.uid);
+
+            // ⏳ КРИТИЧНО: Ждём обновления токена
+            await user.getIdToken(true);
+
             const userDocRef = doc(db, "users", user.uid);
-            const userDocSnap = await getDoc(userDocRef);
+
+            // Проверяем существование профиля
+            let userDocSnap = await getDoc(userDocRef);
 
             if (!userDocSnap.exists()) {
-                // ФИКС: Генерируем username который ТОЧНО пройдет валидацию
-                let generatedUsername = user.displayName || '';
+                console.log("📝 Новый пользователь Google, создаем профиль...");
 
-                // Убираем пробелы и спецсимволы
+                // Генерируем валидный username
+                let generatedUsername = user.displayName || '';
                 generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
 
-                // Если слишком короткий или пустой - используем fallback
                 if (generatedUsername.length < 3) {
                     generatedUsername = `user_${user.uid.substring(0, 8)}`;
                 }
 
-                // Обрезаем если слишком длинный (макс 20 символов)
                 if (generatedUsername.length > 20) {
                     generatedUsername = generatedUsername.substring(0, 20);
                 }
 
-                // Проверяем уникальность через Cloud Function
+                // Проверяем уникальность
                 const isAvailable = await isUsernameAvailable(generatedUsername);
-
-                // Если занято - добавляем цифры
                 if (!isAvailable) {
                     const randomSuffix = Math.floor(Math.random() * 9999);
                     generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
                 }
 
-                console.log('Creating user with username:', generatedUsername);
+                console.log('🔧 Генерируем username:', generatedUsername);
 
-                // СОЗДАЕМ ПРОФИЛЬ С ПРАВИЛЬНЫМИ ПОЛЯМИ
-                await setDoc(userDocRef, {
-                    username: generatedUsername,
-                    email: user.email,
-                    avatar_url: user.photoURL || "",
-                    about_me: "",
-                    social_link: "",
-                    createdAt: serverTimestamp(),
-                    casino_credits: 100,
-                    last_daily_bonus: null,
-                    owned_items: [],
-                    emailVerified: user.emailVerified
-                });
+                // 🔒 RETRY ЛОГИКА (защита от race condition)
+                let retries = 3;
+                let profileCreated = false;
 
-                console.log('✅ User created successfully');
+                while (retries > 0 && !profileCreated) {
+                    try {
+                        // ✅ СОЗДАЕМ ПРОФИЛЬ С ПРАВИЛЬНОЙ СТРУКТУРОЙ
+                        await setDoc(userDocRef, {
+                            username: generatedUsername,
+                            email: user.email || "",
+                            avatar_url: user.photoURL || "",
+                            about_me: "",
+                            social_link: "",
+                            createdAt: serverTimestamp(),
+                            casino_credits: 100,
+                            glitch_shards: 0,
+                            last_daily_bonus: null,
+                            owned_items: [],
+                            daily_streak: 0,
+                            isBanned: false,
+                            emailVerified: user.emailVerified
+                        });
+
+                        console.log('✅ Профиль успешно создан!');
+                        profileCreated = true;
+
+                        // Ждём немного, чтобы данные точно записались
+                        await new Promise(resolve => setTimeout(resolve, 500));
+
+                        // Перечитываем для уверенности
+                        userDocSnap = await getDoc(userDocRef);
+
+                    } catch (error: any) {
+                        retries--;
+                        console.warn(`⚠️ Попытка создания не удалась (осталось: ${retries})`, error);
+
+                        if (retries === 0) {
+                            throw new Error(`Не удалось создать профиль: ${error.message}`);
+                        }
+
+                        // Ждём перед следующей попыткой
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            } else {
+                console.log('✅ Профиль уже существует');
             }
 
             // Устанавливаем сессию
@@ -168,23 +204,28 @@
                 body: JSON.stringify({ idToken: token }),
             });
 
+            console.log('✅ Вход выполнен успешно!');
             goto('/');
-        } catch (e: any) {
-            console.error("Ошибка входа через Google:", e);
 
-            // Более детальная обработка ошибок
+        } catch (e: any) {
+            console.error("❌ Ошибка входа через Google:", e);
+
+            // Детальная обработка ошибок
             if (e.code === 'permission-denied' || e.message.includes('insufficient permissions')) {
                 modal.error(
                     "Ошибка создания профиля",
-                    "Не удалось создать профиль. Проверьте правила безопасности базы данных."
+                    "Не удалось создать профиль. Попробуйте войти снова через несколько секунд."
                 );
             } else if (e.code === 'auth/popup-blocked') {
                 modal.error(
                     "Всплывающее окно заблокировано",
                     "Разрешите всплывающие окна для этого сайта и попробуйте снова."
                 );
+            } else if (e.code === 'auth/cancelled-popup-request') {
+                // Пользователь просто закрыл окно - не показываем ошибку
+                console.log("Пользователь отменил вход");
             } else {
-                modal.error("Системная ошибка", `Не удалось войти с помощью Google: ${e.message}`);
+                modal.error("Системная ошибка", `Не удалось войти: ${e.message}`);
             }
         } finally {
             googleLoading = false;

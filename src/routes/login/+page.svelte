@@ -15,6 +15,7 @@
     import { db } from '$lib/firebase';
     import { modal } from '$lib/stores/modalStore';
     import { slide } from 'svelte/transition';
+    import { getFunctions, httpsCallable } from "firebase/functions";
 
     // ИМПОРТ ЛОКАЛИЗАЦИИ
     import { t } from 'svelte-i18n';
@@ -31,6 +32,20 @@
     onMount(() => {
         opacity.set(1);
     });
+
+    async function isUsernameAvailable(name: string): Promise<boolean> {
+        const trimmedName = name.trim();
+        if (trimmedName.length < 4) return false;
+        try {
+            const functions = getFunctions();
+            const checkUsernameFunc = httpsCallable(functions, 'checkUsername');
+            const result = await checkUsernameFunc({ username: trimmedName });
+            return (result.data as { isAvailable: boolean }).isAvailable;
+        } catch (e) {
+            console.error("Ошибка проверки username:", e);
+            return false;
+        }
+    }
 
     async function handleLogin() {
         if (!email || !password) {
@@ -56,7 +71,6 @@
         }
     }
 
-    // --- ЛОГИКА СБРОСА ПАРОЛЯ ---
     async function handleResetPassword() {
         if (!email) {
             modal.error("Ошибка ввода", "Введите Email, на который зарегистрирован аккаунт.");
@@ -66,7 +80,7 @@
         try {
             await sendPasswordResetEmail(auth, email);
             modal.success("Письмо отправлено", `Ссылка для сброса пароля отправлена на <strong>${email}</strong>. Проверьте почту (и папку Спам).`);
-            isResetMode = false; // Возвращаемся к логину
+            isResetMode = false;
         } catch (e: any) {
             console.error("Ошибка сброса:", e.code);
             if (e.code === 'auth/user-not-found') {
@@ -81,34 +95,128 @@
         }
     }
 
+    // ✅ ИДЕНТИЧНАЯ ЛОГИКА КАК В REGISTER
     async function handleGoogleLogin() {
         googleLoading = true;
         const provider = new GoogleAuthProvider();
+
         try {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
-            const userDocRef = doc(db, "users", user.uid);
-            const userDocSnap = await getDoc(userDocRef);
 
-            // Если пользователя нет в базе - создаем (С БОНУСОМ!)
+            console.log("✅ Google Auth успешен:", user.uid);
+
+            // ⏳ КРИТИЧНО: Ждём обновления токена
+            await user.getIdToken(true);
+
+            const userDocRef = doc(db, "users", user.uid);
+
+            // Проверяем существование профиля
+            let userDocSnap = await getDoc(userDocRef);
+
             if (!userDocSnap.exists()) {
-                console.log("Новый пользователь Google, создаем запись...");
-                await setDoc(userDocRef, {
-                    username: user.displayName || `user_${user.uid.substring(0, 6)}`,
-                    email: user.email,
-                    avatar_url: user.photoURL || "",
-                    social_link: "",
-                    about_me: "Вошел с помощью Google",
-                    createdAt: serverTimestamp(),
-                    // ВАЖНО: Добавляем стартовый капитал
-                    casino_credits: 100,
-                    last_daily_bonus: null
-                });
+                console.log("📝 Новый пользователь Google, создаем профиль...");
+
+                // Генерируем валидный username
+                let generatedUsername = user.displayName || '';
+                generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
+
+                if (generatedUsername.length < 3) {
+                    generatedUsername = `user_${user.uid.substring(0, 8)}`;
+                }
+
+                if (generatedUsername.length > 20) {
+                    generatedUsername = generatedUsername.substring(0, 20);
+                }
+
+                // Проверяем уникальность
+                const isAvailable = await isUsernameAvailable(generatedUsername);
+                if (!isAvailable) {
+                    const randomSuffix = Math.floor(Math.random() * 9999);
+                    generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
+                }
+
+                console.log('🔧 Генерируем username:', generatedUsername);
+
+                // 🔒 RETRY ЛОГИКА (защита от race condition)
+                let retries = 3;
+                let profileCreated = false;
+
+                while (retries > 0 && !profileCreated) {
+                    try {
+                        // ✅ СОЗДАЕМ ПРОФИЛЬ С ПРАВИЛЬНОЙ СТРУКТУРОЙ
+                        await setDoc(userDocRef, {
+                            username: generatedUsername,
+                            email: user.email || "",
+                            avatar_url: user.photoURL || "",
+                            about_me: "",
+                            social_link: "",
+                            createdAt: serverTimestamp(),
+                            casino_credits: 100,
+                            glitch_shards: 0,
+                            last_daily_bonus: null,
+                            owned_items: [],
+                            daily_streak: 0,
+                            isBanned: false,
+                            emailVerified: user.emailVerified
+                        });
+
+                        console.log('✅ Профиль успешно создан!');
+                        profileCreated = true;
+
+                        // Ждём немного, чтобы данные точно записались
+                        await new Promise(resolve => setTimeout(resolve, 500));
+
+                        // Перечитываем для уверенности
+                        userDocSnap = await getDoc(userDocRef);
+
+                    } catch (error: any) {
+                        retries--;
+                        console.warn(`⚠️ Попытка создания не удалась (осталось: ${retries})`, error);
+
+                        if (retries === 0) {
+                            throw new Error(`Не удалось создать профиль: ${error.message}`);
+                        }
+
+                        // Ждём перед следующей попыткой
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            } else {
+                console.log('✅ Профиль уже существует');
             }
+
+            // Устанавливаем сессию
+            const token = await user.getIdToken();
+            await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: token }),
+            });
+
+            console.log('✅ Вход выполнен успешно!');
             goto('/');
+
         } catch (e: any) {
-            console.error("Ошибка входа через Google:", e);
-            modal.error("Системная ошибка", "Не удалось войти с помощью Google.");
+            console.error("❌ Ошибка входа через Google:", e);
+
+            // Детальная обработка ошибок
+            if (e.code === 'permission-denied' || e.message.includes('insufficient permissions')) {
+                modal.error(
+                    "Ошибка создания профиля",
+                    "Не удалось создать профиль. Попробуйте войти снова через несколько секунд."
+                );
+            } else if (e.code === 'auth/popup-blocked') {
+                modal.error(
+                    "Всплывающее окно заблокировано",
+                    "Разрешите всплывающие окна для этого сайта и попробуйте снова."
+                );
+            } else if (e.code === 'auth/cancelled-popup-request') {
+                // Пользователь просто закрыл окно - не показываем ошибку
+                console.log("Пользователь отменил вход");
+            } else {
+                modal.error("Системная ошибка", `Не удалось войти: ${e.message}`);
+            }
         } finally {
             googleLoading = false;
         }
