@@ -19,6 +19,7 @@
     import { renderMarkdown } from '$lib/utils/markdown';
     import { AudioManager } from '$lib/client/audioManager';
     import { page } from '$app/stores';
+    import WatermelonInteractive from '$lib/components/WatermelonInteractive.svelte';
 
     export let data: PageData;
     export let form: ActionData;
@@ -337,6 +338,7 @@
         }
         return translate('profile.time.just_now');
     }
+    $: isWatermelonMode = data.profile.uid === 'zIgs2z54ThV9ee102lVlZKg6lTh2';
 </script>
 
 <svelte:head>
@@ -378,6 +380,10 @@
         username={data.profile.username}
         on:finished={handleIntroFinished}
     />
+{/if}
+
+{#if isWatermelonMode}
+    <WatermelonInteractive />
 {/if}
 
 {#if isProfileVisible}
