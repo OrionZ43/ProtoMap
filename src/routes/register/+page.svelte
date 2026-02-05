@@ -5,13 +5,12 @@
     import { getFunctions, httpsCallable } from "firebase/functions";
     import { goto } from "$app/navigation";
     import NeonButton from '$lib/components/NeonButton.svelte';
+    import CyberTurnstile from '$lib/components/CyberTurnstile.svelte';
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
     import { userStore } from '$lib/stores';
-
-    // ИМПОРТ ЛОКАЛИЗАЦИИ
     import { t } from 'svelte-i18n';
 
     let email = "";
@@ -21,10 +20,26 @@
     let googleLoading = false;
     let termsAccepted = false;
 
+    let turnstileToken = '';
+    let turnstileVerified = false;
+
+    const TURNSTILE_SITE_KEY = "0x4AAAAAACYHm8usBkEdoF37";
+
     const opacity = tweened(0, { duration: 400, easing: quintOut });
     onMount(() => {
         opacity.set(1);
     });
+
+    function handleTurnstileVerified(event: CustomEvent) {
+        turnstileToken = event.detail.token;
+        turnstileVerified = true;
+        console.log('✅ Капча пройдена, токен:', turnstileToken.substring(0, 20) + '...');
+    }
+
+    function handleTurnstileError() {
+        turnstileVerified = false;
+        modal.error("Ошибка капчи", "Не удалось загрузить проверку. Попробуйте обновить страницу.");
+    }
 
     async function isUsernameAvailable(name: string): Promise<boolean> {
         const trimmedName = name.trim();
@@ -42,6 +57,11 @@
     }
 
     async function handleRegister() {
+        if (!turnstileVerified) {
+            modal.error("Требуется проверка", "Пожалуйста, подтвердите, что вы не робот.");
+            return;
+        }
+
         if (!termsAccepted) {
             modal.error("Требуется согласие", "Необходимо принять условия Пользовательского Соглашения и Политику Конфиденциальности.");
             return;
@@ -72,6 +92,7 @@
             const userCredential = await createUserWithEmailAndPassword(auth, finalEmail, password);
             const user = userCredential.user;
             await updateProfile(user, { displayName: finalUsername });
+
             const userDocRef = doc(db, "users", user.uid);
             await setDoc(userDocRef, {
                 username: finalUsername,
@@ -82,15 +103,19 @@
                 createdAt: serverTimestamp(),
                 casino_credits: 100,
                 last_daily_bonus: null,
-                owned_items: []
+                owned_items: [],
+                turnstileVerified: true
             });
-            console.log("Пользователь зарегистрирован:", user.uid);
+
+            console.log("✅ Пользователь зарегистрирован:", user.uid);
+
             const token = await user.getIdToken();
             await fetch('/api/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ idToken: token }),
             });
+
             goto('/');
         } catch (e: any) {
             console.error("Ошибка регистрации:", e.code);
@@ -107,6 +132,11 @@
     }
 
     async function handleGoogleLogin() {
+        if (!turnstileVerified) {
+            modal.error("Требуется проверка", "Пожалуйста, подтвердите, что вы не робот.");
+            return;
+        }
+
         googleLoading = true;
         const provider = new GoogleAuthProvider();
 
@@ -115,19 +145,14 @@
             const user = result.user;
 
             console.log("✅ Google Auth успешен:", user.uid);
-
-            // ⏳ КРИТИЧНО: Ждём обновления токена
             await user.getIdToken(true);
 
             const userDocRef = doc(db, "users", user.uid);
-
-            // Проверяем существование профиля
             let userDocSnap = await getDoc(userDocRef);
 
             if (!userDocSnap.exists()) {
                 console.log("📝 Новый пользователь Google, создаем профиль...");
 
-                // Генерируем валидный username
                 let generatedUsername = user.displayName || '';
                 generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
 
@@ -139,7 +164,6 @@
                     generatedUsername = generatedUsername.substring(0, 20);
                 }
 
-                // Проверяем уникальность
                 const isAvailable = await isUsernameAvailable(generatedUsername);
                 if (!isAvailable) {
                     const randomSuffix = Math.floor(Math.random() * 9999);
@@ -148,13 +172,11 @@
 
                 console.log('🔧 Генерируем username:', generatedUsername);
 
-                // 🔒 RETRY ЛОГИКА (защита от race condition)
                 let retries = 3;
                 let profileCreated = false;
 
                 while (retries > 0 && !profileCreated) {
                     try {
-                        // ✅ СОЗДАЕМ ПРОФИЛЬ С ПРАВИЛЬНОЙ СТРУКТУРОЙ
                         await setDoc(userDocRef, {
                             username: generatedUsername,
                             email: user.email || "",
@@ -168,16 +190,13 @@
                             owned_items: [],
                             daily_streak: 0,
                             isBanned: false,
-                            emailVerified: user.emailVerified
+                            emailVerified: user.emailVerified,
+                            turnstileVerified: true
                         });
 
                         console.log('✅ Профиль успешно создан!');
                         profileCreated = true;
-
-                        // Ждём немного, чтобы данные точно записались
                         await new Promise(resolve => setTimeout(resolve, 500));
-
-                        // Перечитываем для уверенности
                         userDocSnap = await getDoc(userDocRef);
 
                     } catch (error: any) {
@@ -188,7 +207,6 @@
                             throw new Error(`Не удалось создать профиль: ${error.message}`);
                         }
 
-                        // Ждём перед следующей попыткой
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     }
                 }
@@ -196,7 +214,6 @@
                 console.log('✅ Профиль уже существует');
             }
 
-            // Устанавливаем сессию
             const token = await user.getIdToken();
             await fetch('/api/auth', {
                 method: 'POST',
@@ -210,7 +227,6 @@
         } catch (e: any) {
             console.error("❌ Ошибка входа через Google:", e);
 
-            // Детальная обработка ошибок
             if (e.code === 'permission-denied' || e.message.includes('insufficient permissions')) {
                 modal.error(
                     "Ошибка создания профиля",
@@ -222,7 +238,6 @@
                     "Разрешите всплывающие окна для этого сайта и попробуйте снова."
                 );
             } else if (e.code === 'auth/cancelled-popup-request') {
-                // Пользователь просто закрыл окно - не показываем ошибку
                 console.log("Пользователь отменил вход");
             } else {
                 modal.error("Системная ошибка", `Не удалось войти: ${e.message}`);
@@ -255,6 +270,14 @@
             <input bind:value={password} type="password" id="password" name="password" class="input-field">
         </div>
 
+        <div class="form-group flex justify-center">
+            <CyberTurnstile
+                siteKey={TURNSTILE_SITE_KEY}
+                on:verified={handleTurnstileVerified}
+                on:error={handleTurnstileError}
+            />
+        </div>
+
         <div class="form-group pt-2">
             <label class="terms-label">
                 <input type="checkbox" bind:checked={termsAccepted} class="terms-checkbox">
@@ -269,7 +292,11 @@
         </div>
 
         <div class="pt-2">
-            <NeonButton type="submit" disabled={loading || googleLoading || !termsAccepted} extraClass="w-full">
+            <NeonButton
+                type="submit"
+                disabled={loading || googleLoading || !termsAccepted || !turnstileVerified}
+                extraClass="w-full"
+            >
                 {#if loading}
                     {$t('ui.loading')}
                 {:else}
@@ -285,7 +312,13 @@
     </div>
 
     <div class="text-center">
-        <button on:click={handleGoogleLogin} disabled={googleLoading || loading} type="button" title="Войти/Зарегистрироваться с Google" class="google-btn">
+        <button
+            on:click={handleGoogleLogin}
+            disabled={googleLoading || loading || !turnstileVerified}
+            type="button"
+            title="Войти/Зарегистрироваться с Google"
+            class="google-btn"
+        >
             <svg class="w-6 h-6" viewBox="0 0 48 48">
                 <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
                 <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
