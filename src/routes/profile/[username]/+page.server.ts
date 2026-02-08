@@ -16,6 +16,15 @@ export type Comment = {
     replies?: Comment[];
 };
 
+function isDomainInUrl(url: string, domain: string): boolean {
+    try {
+        const urlObj = new URL(url);
+        return urlObj.hostname.endsWith(domain) || urlObj.hostname === domain;
+    } catch {
+        return false;
+    }
+}
+
 function isSafeUrl(url: string): boolean {
     if (!url) return false;
 
@@ -44,15 +53,18 @@ function getAbsoluteImageUrl(avatarUrl: string | null | undefined, username: str
         return `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(username)}`;
     }
 
-    if (avatarUrl.includes('://') && avatarUrl.split('://')[1]?.includes('cloudinary.com/')) {
+    if (isDomainInUrl(avatarUrl, 'cloudinary.com')) {
         const parts = avatarUrl.split('/upload/');
         if (parts.length === 2 && parts[0] && parts[1]) {
             return `${parts[0]}/upload/f_auto,q_auto,w_1200,h_1200,c_fill,g_face/${parts[1]}`;
         }
     }
 
-    if (avatarUrl.includes('://') && avatarUrl.split('://')[1]?.includes('googleusercontent.com/')) {
-        return avatarUrl.split('=')[0] + '=s1200-c';
+    if (isDomainInUrl(avatarUrl, 'googleusercontent.com')) {
+        const parts = avatarUrl.split('=');
+        if (parts.length > 0) {
+            return parts[0] + '=s1200-c';
+        }
     }
 
     return avatarUrl;
@@ -69,9 +81,9 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 
     const userProfileDoc = userSnapshot.docs[0];
     const userProfileData = userProfileDoc.data();
-
     const commentsRef = userProfileDoc.ref.collection('comments').orderBy('createdAt', 'desc').limit(50);
     const commentsSnapshot = await commentsRef.get();
+
     const rawComments: Comment[] = commentsSnapshot.docs.map(doc => {
         const data = doc.data();
         return {
