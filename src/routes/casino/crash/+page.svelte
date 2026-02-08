@@ -7,6 +7,9 @@
     import { Howl } from 'howler';
     import { tweened } from 'svelte/motion';
     import { fade, scale } from 'svelte/transition';
+    import { t } from 'svelte-i18n';
+    import { get } from 'svelte/store';
+    import { renderMarkdown } from '$lib/utils/markdown';
 
     let canvas: HTMLCanvasElement;
     let ctx: CanvasRenderingContext2D;
@@ -26,6 +29,11 @@
     let sounds: { [key: string]: Howl } = {};
     let unsubscribeRTDB: (() => void) | null = null;
 
+    // ⬅️ НОВОЕ: Состояние тултипа
+    let isMechanicsOpen = false;
+    let tooltipElement: HTMLElement;
+    let buttonElement: HTMLElement;
+
     const displayedCredits = tweened($userStore.user?.casino_credits || 0, { duration: 500 });
     $: if ($userStore.user) displayedCredits.set($userStore.user.casino_credits);
 
@@ -34,6 +42,44 @@
     let themeColor = '#00f3ff';
 
     const SPEED_CONST = 0.08;
+
+    // ⬅️ НОВОЕ: Функции для тултипа
+    function toggleMechanics() {
+        isMechanicsOpen = !isMechanicsOpen;
+        if (isMechanicsOpen && buttonElement && tooltipElement) {
+            setTimeout(() => {
+                const buttonRect = buttonElement.getBoundingClientRect();
+                const tooltipRect = tooltipElement.getBoundingClientRect();
+
+                // Позиция относительно кнопки
+                let top = buttonRect.top - tooltipRect.height - 10;
+                let left = buttonRect.left + (buttonRect.width / 2) - (tooltipRect.width / 2);
+
+                // Проверяем выход за левую границу
+                if (left < 10) left = 10;
+
+                // Проверяем выход за правую границу
+                if (left + tooltipRect.width > window.innerWidth - 10) {
+                    left = window.innerWidth - tooltipRect.width - 10;
+                }
+
+                // Проверяем выход за верхнюю границу
+                if (top < 10) {
+                    top = buttonRect.bottom + 10;
+                    tooltipElement.classList.add('below');
+                } else {
+                    tooltipElement.classList.remove('below');
+                }
+
+                tooltipElement.style.top = `${top}px`;
+                tooltipElement.style.left = `${left}px`;
+            }, 0);
+        }
+    }
+
+    function closeMechanics() {
+        isMechanicsOpen = false;
+    }
 
     onMount(() => {
         ctx = canvas.getContext('2d')!;
@@ -377,10 +423,36 @@
     }
 </script>
 
+<svelte:head>
+    <title>{$t('crash.title')} | The Glitch Pit</title>
+</svelte:head>
+
+<!-- ⬅️ НОВОЕ: Закрываем тултип по клику на фон -->
+<svelte:window on:click={closeMechanics} />
+
 <div class="page-container">
     <div class="bg-blur-1" style="background: {themeColor}; opacity: 0.2;"></div>
 
     <div class="terminal-frame" style="border-color: {themeColor}; box-shadow: 0 0 30px rgba(0,0,0,0.8), 0 0 20px {themeColor}33;">
+
+        <!-- ⬅️ НОВОЕ: Заголовок с инфо-кнопкой -->
+        <div class="game-header">
+            <h1 class="game-title">{$t('crash.title')}</h1>
+            <button
+                bind:this={buttonElement}
+                class="info-tooltip-wrapper"
+                on:click|stopPropagation={toggleMechanics}
+            >
+                <div class="info-icon">?</div>
+
+                <div bind:this={tooltipElement} class="custom-tooltip" class:mobile-visible={isMechanicsOpen}>
+                    <h5 class="tooltip-title">{$t('crash.mechanics_title')}</h5>
+                    <div class="tooltip-body">
+                        {@html renderMarkdown($t('crash.mechanics_text'))}
+                    </div>
+                </div>
+            </button>
+        </div>
 
         <div class="history-bar">
             <span class="label">LOGS:</span>
@@ -492,6 +564,139 @@
         position: relative; z-index: 10;
         display: flex; flex-direction: column;
         transition: border-color 0.5s, box-shadow 0.5s;
+    }
+
+    /* ⬅️ НОВОЕ: Заголовок с кнопкой */
+    .game-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 1rem 1rem 0.5rem;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .game-title {
+        font-family: 'Chakra Petch', monospace;
+        font-size: 1.8rem;
+        color: var(--cyber-cyan);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin: 0;
+    }
+
+    /* ⬅️ ИСПРАВЛЕННЫЕ СТИЛИ ТУЛТИПА */
+    .info-tooltip-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        cursor: help;
+        z-index: 20;
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .info-icon {
+        width: 18px; height: 18px;
+        border-radius: 50%;
+        border: 1px solid #555;
+        color: #777;
+        background: rgba(255, 255, 255, 0.05);
+        font-family: monospace;
+        font-size: 12px;
+        font-weight: bold;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .info-tooltip-wrapper:hover .info-icon {
+        border-color: var(--cyber-cyan);
+        background: var(--cyber-cyan);
+        color: #000;
+        box-shadow: 0 0 10px var(--cyber-cyan);
+    }
+
+    .custom-tooltip {
+        position: fixed;
+        width: 340px;
+        max-width: calc(100vw - 2rem);
+        padding: 1rem;
+        background: rgba(10, 10, 15, 0.95);
+        border: 1px solid var(--cyber-cyan);
+        border-radius: 8px;
+        box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+        backdrop-filter: blur(10px);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
+        pointer-events: none;
+        z-index: 1000;
+    }
+
+    .custom-tooltip::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        left: 50%;
+        margin-left: -6px;
+        border-width: 6px;
+        border-style: solid;
+        border-color: var(--cyber-cyan) transparent transparent transparent;
+    }
+
+    .custom-tooltip.below::after {
+        bottom: auto;
+        top: -6px;
+        border-color: transparent transparent var(--cyber-cyan) transparent;
+    }
+
+    .info-tooltip-wrapper:hover .custom-tooltip,
+    .custom-tooltip.mobile-visible {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    .tooltip-title {
+        color: var(--cyber-yellow);
+        font-family: 'Chakra Petch', monospace;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        border-bottom: 1px dashed rgba(255,255,255,0.2);
+        padding-bottom: 4px;
+    }
+    .tooltip-body {
+        color: #ccc; font-size: 0.75rem; line-height: 1.5; text-align: left;
+    }
+    .tooltip-body :global(p) { margin-bottom: 0.5rem; }
+    .tooltip-body :global(p:last-child) { margin-bottom: 0; }
+    .tooltip-body :global(strong) { color: var(--cyber-yellow); font-weight: 800; }
+
+    @media (max-width: 640px) {
+        .custom-tooltip {
+            width: 280px;
+            left: 50%;
+            right: auto;
+            transform: translateX(-50%) translateY(10px);
+        }
+
+        .custom-tooltip::after {
+            left: 50%;
+            right: auto;
+            margin-left: -6px;
+        }
+
+        .info-tooltip-wrapper:hover .custom-tooltip,
+        .custom-tooltip.mobile-visible {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .game-title {
+            font-size: 1.3rem;
+        }
     }
 
     .history-bar {

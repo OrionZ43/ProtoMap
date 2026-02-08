@@ -552,10 +552,9 @@
                             {/if}
                         </div>
 
-                        <!-- ТЕКСТ -->
-                        <div class="card-body">
-                             {@html renderMarkdown(comment.text)}
-                        </div>
+                        <div class="card-body" style="white-space: pre-wrap;">
+    {comment.text}
+</div>
 
                         <!-- ПОДВАЛ -->
                         <div class="card-footer">

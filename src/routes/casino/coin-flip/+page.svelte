@@ -10,6 +10,7 @@
     // Локализация
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
+    import { renderMarkdown } from '$lib/utils/markdown';
 
     // Хелпер для перевода в JS
     const translate = (key: string) => get(t)(key);
@@ -27,8 +28,11 @@
     let result: 'heads' | 'tails' | null = null;
     let lastWin = false;
 
-    // Инициализируем сообщение (нужно подождать маунта для корректного языка,
-    // но пока поставим дефолт, а в onMount обновим)
+    // ⬅️ НОВОЕ: Состояние тултипа
+    let isMechanicsOpen = false;
+    let tooltipElement: HTMLElement;
+    let buttonElement: HTMLElement;
+
     let dealerMessage = "> ...";
 
     const displayedCredits = tweened($userStore.user?.casino_credits || 0, { duration: 500, easing: quintOut });
@@ -44,7 +48,6 @@
         sounds.coin_win = new Howl({ src: ['/sounds/coin_win.mp3'], volume: 0.8 });
         sounds.coin_lose = new Howl({ src: ['/sounds/coin_lose.mp3'], volume: 0.7 });
 
-        // Приветствие при загрузке
         dealerMessage = getRandomQuote('greeting');
 
         return () => {
@@ -54,6 +57,44 @@
 
     function setDealerMessage(state: 'greeting' | 'idle' | 'thinking' | 'win' | 'lose' | 'no_credits') {
         dealerMessage = getRandomQuote(state);
+    }
+
+    // ⬅️ НОВОЕ: Переключение тултипа с позиционированием
+    function toggleMechanics() {
+        isMechanicsOpen = !isMechanicsOpen;
+        if (isMechanicsOpen && buttonElement && tooltipElement) {
+            setTimeout(() => {
+                const buttonRect = buttonElement.getBoundingClientRect();
+                const tooltipRect = tooltipElement.getBoundingClientRect();
+
+                // Позиция относительно кнопки
+                let top = buttonRect.top - tooltipRect.height - 10;
+                let left = buttonRect.left + (buttonRect.width / 2) - (tooltipRect.width / 2);
+
+                // Проверяем выход за левую границу
+                if (left < 10) left = 10;
+
+                // Проверяем выход за правую границу
+                if (left + tooltipRect.width > window.innerWidth - 10) {
+                    left = window.innerWidth - tooltipRect.width - 10;
+                }
+
+                // Проверяем выход за верхнюю границу
+                if (top < 10) {
+                    top = buttonRect.bottom + 10;
+                    tooltipElement.classList.add('below');
+                } else {
+                    tooltipElement.classList.remove('below');
+                }
+
+                tooltipElement.style.top = `${top}px`;
+                tooltipElement.style.left = `${left}px`;
+            }, 0);
+        }
+    }
+
+    function closeMechanics() {
+        isMechanicsOpen = false;
     }
 
     async function playGame(playerChoice: 'heads' | 'tails') {
@@ -120,9 +161,31 @@
     <title>{$t('coin.title')} | The Glitch Pit</title>
 </svelte:head>
 
+<!-- ⬅️ НОВОЕ: Закрываем тултип по клику на фон -->
+<svelte:window on:click={closeMechanics} />
+
 <div class="page-container">
     <div class="bg-blur-1"></div>
     <div class="bg-blur-2"></div>
+
+    <!-- ⬅️ НОВОЕ: Инфо-кнопка -->
+    <div class="game-header">
+        <h1 class="game-title">{$t('coin.title')}</h1>
+        <button
+            bind:this={buttonElement}
+            class="info-tooltip-wrapper"
+            on:click|stopPropagation={toggleMechanics}
+        >
+            <div class="info-icon">?</div>
+
+            <div bind:this={tooltipElement} class="custom-tooltip" class:mobile-visible={isMechanicsOpen}>
+                <h5 class="tooltip-title">{$t('coin.mechanics_title')}</h5>
+                <div class="tooltip-body">
+                    {@html renderMarkdown($t('coin.mechanics_text'))}
+                </div>
+            </div>
+        </button>
+    </div>
 
     <div class="dealer-container">
         <img src="/casino/orioncasino.png" alt="Dealer Orion" class="dealer-art" />
@@ -198,7 +261,7 @@
     .page-container {
         min-height: calc(100vh - 64px);
         display: grid;
-        grid-template-rows: auto 1fr auto;
+        grid-template-rows: auto auto 1fr auto;
         max-width: 1000px;
         margin: 0 auto;
         padding: 1rem;
@@ -211,6 +274,140 @@
     }
     .bg-blur-1 { background: var(--cyber-cyan); top: 10%; left: 10%; animation: float-blur-1 20s infinite ease-in-out; }
     .bg-blur-2 { background: var(--cyber-yellow); bottom: 10%; right: 10%; animation: float-blur-2 25s infinite ease-in-out; }
+
+    /* ⬅️ НОВОЕ: Заголовок с кнопкой */
+    .game-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 20;
+    }
+    .game-title {
+        font-family: 'Chakra Petch', monospace;
+        font-size: 2rem;
+        color: var(--cyber-yellow);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin: 0;
+    }
+
+    /* ⬅️ ИСПРАВЛЕННЫЕ СТИЛИ ТУЛТИПА */
+    .info-tooltip-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        cursor: help;
+        z-index: 20;
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .info-icon {
+        width: 20px; height: 20px;
+        border-radius: 50%;
+        border: 1px solid #555;
+        color: #777;
+        background: rgba(255, 255, 255, 0.05);
+        font-family: monospace;
+        font-size: 13px;
+        font-weight: bold;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .info-tooltip-wrapper:hover .info-icon {
+        border-color: var(--cyber-cyan);
+        background: var(--cyber-cyan);
+        color: #000;
+        box-shadow: 0 0 10px var(--cyber-cyan);
+    }
+
+    .custom-tooltip {
+        position: fixed;
+        width: 320px;
+        max-width: calc(100vw - 2rem);
+        padding: 1rem;
+        background: rgba(10, 10, 15, 0.95);
+        border: 1px solid var(--cyber-cyan);
+        border-radius: 8px;
+        box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+        backdrop-filter: blur(10px);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
+        pointer-events: none;
+        z-index: 1000;
+    }
+
+    .custom-tooltip::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        left: 50%;
+        margin-left: -6px;
+        border-width: 6px;
+        border-style: solid;
+        border-color: var(--cyber-cyan) transparent transparent transparent;
+    }
+
+    .custom-tooltip.below::after {
+        bottom: auto;
+        top: -6px;
+        border-color: transparent transparent var(--cyber-cyan) transparent;
+    }
+
+    .info-tooltip-wrapper:hover .custom-tooltip,
+    .custom-tooltip.mobile-visible {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    .tooltip-title {
+        color: var(--cyber-yellow);
+        font-family: 'Chakra Petch', monospace;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        border-bottom: 1px dashed rgba(255,255,255,0.2);
+        padding-bottom: 4px;
+    }
+    .tooltip-body {
+        color: #ccc; font-size: 0.8rem; line-height: 1.5; text-align: left;
+    }
+    .tooltip-body :global(p) { margin-bottom: 0.5rem; }
+    .tooltip-body :global(p:last-child) { margin-bottom: 0; }
+    .tooltip-body :global(strong) { color: var(--cyber-yellow); font-weight: 800; }
+
+    @media (max-width: 640px) {
+        .custom-tooltip {
+            width: 280px;
+            left: 50%;
+            right: auto;
+            transform: translateX(-50%) translateY(10px);
+        }
+
+        .custom-tooltip::after {
+            left: 50%;
+            right: auto;
+            margin-left: -6px;
+        }
+
+        .info-tooltip-wrapper:hover .custom-tooltip,
+        .custom-tooltip.mobile-visible {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .game-title {
+            font-size: 1.5rem;
+        }
+    }
 
     .dealer-container { position: relative; text-align: center; z-index: 10; }
     .dealer-art { max-width: 350px; max-height: 220px; margin: 0 auto; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); }
@@ -291,7 +488,7 @@
     @media (max-width: 768px) {
         .page-container {
             padding: 0.5rem;
-            grid-template-rows: auto 1fr auto;
+            grid-template-rows: auto auto 1fr auto;
         }
         .dealer-art {
             max-height: 150px;

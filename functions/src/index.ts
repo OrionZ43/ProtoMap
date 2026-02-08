@@ -915,7 +915,7 @@ interface CasinoStats {
 }
 
 // ===================================================================
-// 🔒 SECURITY FIX #7: Исправленный playSlotMachine
+// 🎰 УЛУЧШЕННАЯ СИСТЕМА АРТЕФАКТОВ
 // ===================================================================
 export const playSlotMachine = onCall(
     { secrets: ["TELEGRAM_BOT_TOKEN"] },
@@ -926,7 +926,7 @@ export const playSlotMachine = onCall(
         const uid = request.auth.uid;
         await assertNotBanned(uid);
 
-        // ✅ НОВОЕ: Глобальный лимит (100 игр в час)
+        // Глобальный лимит (100 игр в час)
         await checkGlobalRateLimit(uid, 'slots', 100, 60 * 60 * 1000);
 
         let { bet } = request.data;
@@ -967,15 +967,18 @@ export const playSlotMachine = onCall(
 
                 if (credits < bet) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
 
+                // ===================================================================
+                // 🎲 ГЕНЕРАЦИЯ РЕЗУЛЬТАТА
+                // ===================================================================
                 const roll = crypto.randomInt(0, 100000);
                 let resultType = 'LOSS';
 
-                if (roll < 100) resultType = 'JACKPOT';
-                else if (roll < 1100) resultType = 'GLITCH';
-                else if (roll < 2600) resultType = 'HEART';
-                else if (roll < 8100) resultType = 'RAM';
-                else if (roll < 27600) resultType = 'PAW';
-                else resultType = 'LOSS';
+                if (roll < 100) resultType = 'JACKPOT';           // 0.1%
+                else if (roll < 1100) resultType = 'GLITCH';      // 1%
+                else if (roll < 2600) resultType = 'HEART';       // 1.5%
+                else if (roll < 8100) resultType = 'RAM';         // 5.5%
+                else if (roll < 27600) resultType = 'PAW';        // 19.5%
+                else resultType = 'LOSS';                         // 72.4%
 
                 let winMultiplier = 0;
 
@@ -987,6 +990,9 @@ export const playSlotMachine = onCall(
                 let potentialWin = Math.floor(bet * winMultiplier);
                 const safeBankLimit = bankBalance * 0.9;
 
+                // ===================================================================
+                // 🏦 ЗАЩИТА БАНКА (downgrade wins если банк низкий)
+                // ===================================================================
                 if (potentialWin > 0 && potentialWin > safeBankLimit) {
                     console.log(`[BANK] Downgrade ${uid}: ${potentialWin} > ${safeBankLimit}`);
 
@@ -1010,49 +1016,91 @@ export const playSlotMachine = onCall(
 
                 const safeSymbols = ['paw', 'ram', 'heart', 'protomap_logo'];
 
+                // ===================================================================
+                // 🎨 ФОРМИРОВАНИЕ БАРАБАНОВ
+                // ===================================================================
                 switch (resultType) {
                     case 'JACKPOT':
                         finalReels = ['protomap_logo', 'protomap_logo', 'protomap_logo'];
                         txNotification = `🚨 *JACKPOT ALERT!* 🚨\n\nИгрок *${username}* сорвал куш!\nВыигрыш: *${potentialWin} PC* 💎`;
                         break;
+
                     case 'GLITCH':
                         finalReels = ['glitch-6', 'glitch-6', 'glitch-6'];
-                        shardsToAdd = 10;
+                        shardsToAdd = 10; // Полный набор сразу!
                         break;
+
                     case 'HEART':
                         finalReels = ['heart', 'heart', 'heart'];
                         break;
+
                     case 'RAM':
                         finalReels = ['ram', 'ram', 'ram'];
                         break;
+
                     case 'PAW':
                         finalReels = ['paw', 'paw', 'paw'];
                         break;
+
                     case 'LOSS':
-                        const shardRoll = crypto.randomInt(0, 100);
-                        if (shardRoll < 12) {
-                            const count = (shardRoll < 3) ? 2 : 1;
-                            shardsToAdd = count;
+                        // ===================================================================
+                        // 🔮 НОВАЯ СИСТЕМА ВЫПАДЕНИЯ ОСКОЛКОВ
+                        // ===================================================================
+
+                        // 🏦 РАСЧЁТ МОДИФИКАТОРА БАНКА
+                        // Чем меньше денег в банке, тем меньше шанс на осколки
+                        const BANK_THRESHOLD_HIGH = 50000;  // Полный шанс
+                        const BANK_THRESHOLD_LOW = 10000;   // Минимальный шанс
+
+                        let bankModifier = 1.0;
+                        if (bankBalance < BANK_THRESHOLD_LOW) {
+                            bankModifier = 0.3; // -70% шанса
+                        } else if (bankBalance < BANK_THRESHOLD_HIGH) {
+                            // Линейная интерполяция между 0.3 и 1.0
+                            bankModifier = 0.3 + (0.7 * (bankBalance - BANK_THRESHOLD_LOW) / (BANK_THRESHOLD_HIGH - BANK_THRESHOLD_LOW));
+                        }
+
+                        // 📉 БАЗОВЫЙ ШАНС: 5% (вместо 12%)
+                        const BASE_SHARD_CHANCE = 5.0;
+                        const finalShardChance = BASE_SHARD_CHANCE * bankModifier;
+
+                        const shardRoll = crypto.randomInt(0, 10000); // 0-9999
+                        const shardThreshold = Math.floor(finalShardChance * 100); // 5% = 500
+
+                        console.log(`[SHARDS] Bank: ${bankBalance}, Modifier: ${bankModifier.toFixed(2)}, Chance: ${finalShardChance.toFixed(2)}%`);
+
+                        if (shardRoll < shardThreshold) {
+                            // 🎁 ВЫПАЛ ОСКОЛОК!
+                            shardsToAdd = 1; // Всегда только 1 осколок (не 2!)
+
+                            // Создаём барабаны с 1 осколком
                             finalReels = [
                                 safeSymbols[crypto.randomInt(0, 4)],
                                 safeSymbols[crypto.randomInt(0, 4)],
                                 safeSymbols[crypto.randomInt(0, 4)]
                             ];
-                            let positions = [0, 1, 2].sort(() => 0.5 - Math.random());
-                            for(let i = 0; i < count; i++) {
-                                finalReels[positions[i]] = 'glitch-6';
-                            }
+
+                            // Ставим осколок на случайную позицию
+                            const glitchPosition = crypto.randomInt(0, 3);
+                            finalReels[glitchPosition] = 'glitch-6';
+
+                            console.log(`[SHARDS] ✨ Shard dropped for ${uid}! (1/10)`);
+
                         } else {
+                            // ❌ НЕ ВЫПАЛ - обычный проигрыш
+
+                            // 30% шанс на "near miss" (почти выигрыш)
                             const nearMissRoll = crypto.randomInt(0, 100);
                             if (nearMissRoll < 30) {
                                 const teaseSym = safeSymbols[crypto.randomInt(0, 4)];
                                 const trashSym = safeSymbols.filter(s => s !== teaseSym)[crypto.randomInt(0, 3)];
-                                // ✅ ИСПРАВЛЕНО: crypto вместо Math.random()
+
                                 finalReels = [teaseSym, teaseSym, trashSym]
                                     .map(v => ({ v, s: crypto.randomInt(0, 1000000) }))
                                     .sort((a, b) => a.s - b.s)
                                     .map(({ v }) => v);
                             } else {
+                                // Полностью случайные символы
                                 do {
                                     finalReels = [
                                         safeSymbols[crypto.randomInt(0, 4)],
@@ -1065,6 +1113,9 @@ export const playSlotMachine = onCall(
                         break;
                 }
 
+                // ===================================================================
+                // 💰 ОБНОВЛЕНИЕ БАЛАНСОВ
+                // ===================================================================
                 const finalCalc = credits - bet + potentialWin;
                 let newBankBalance = bankBalance + bet - potentialWin;
                 if (newBankBalance < 0) newBankBalance = 0;
@@ -1080,7 +1131,7 @@ export const playSlotMachine = onCall(
 
                 t.set(bankRef, { bank_balance: newBankBalance }, { merge: true });
 
-                console.log(`[SLOTS] ${uid} | Bet:${bet} | Win:${potentialWin} | Bank:${newBankBalance}`);
+                console.log(`[SLOTS] ${uid} | Bet:${bet} | Win:${potentialWin} | Shards:+${shardsToAdd} (${newShards}/10) | Bank:${newBankBalance}`);
 
                 return {
                     reels: finalReels,
