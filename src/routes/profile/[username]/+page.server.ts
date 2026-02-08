@@ -11,36 +11,51 @@ export type Comment = {
     author_avatar_url: string;
     author_equipped_frame: string | null;
     createdAt: Date;
-    likes: string[]; // Массив UID лайкнувших
-    parentId: string | null; // ID родителя
-    replies?: Comment[]; // Вложенные ответы (для рендера)
+    likes: string[];
+    parentId: string | null;
+    replies?: Comment[];
 };
 
-// Функция для создания абсолютного URL изображения для OG
+function isSafeUrl(url: string): boolean {
+    if (!url) return false;
+
+    const lower = url.toLowerCase().trim();
+
+    if (!lower.match(/^https?:\/\//)) {
+        return false;
+    }
+
+    if (lower.includes('javascript:') ||
+        lower.includes('data:') ||
+        lower.includes('vbscript:') ||
+        lower.includes('file:')) {
+        return false;
+    }
+
+    return true;
+}
+
 function getAbsoluteImageUrl(avatarUrl: string | null | undefined, username: string): string {
     if (!avatarUrl) {
-        // Fallback на DiceBear
         return `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(username)}`;
     }
 
-    // Если уже абсолютный URL
-    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
-        // Оптимизация для Cloudinary (1200x1200 для превью)
-        if (avatarUrl.includes('cloudinary.com')) {
-            const parts = avatarUrl.split('/upload/');
-            return `${parts[0]}/upload/f_auto,q_auto,w_1200,h_1200,c_fill,g_face/${parts[1]}`;
-        }
-
-        // Оптимизация для Google аватаров
-        if (avatarUrl.includes('googleusercontent.com')) {
-            return avatarUrl.split('=')[0] + '=s1200-c';
-        }
-
-        return avatarUrl;
+    if (!isSafeUrl(avatarUrl)) {
+        return `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(username)}`;
     }
 
-    // Если относительный путь - делаем абсолютным
-    return `https://proto-map.vercel.app${avatarUrl}`;
+    if (avatarUrl.includes('://') && avatarUrl.split('://')[1]?.includes('cloudinary.com/')) {
+        const parts = avatarUrl.split('/upload/');
+        if (parts.length === 2 && parts[0] && parts[1]) {
+            return `${parts[0]}/upload/f_auto,q_auto,w_1200,h_1200,c_fill,g_face/${parts[1]}`;
+        }
+    }
+
+    if (avatarUrl.includes('://') && avatarUrl.split('://')[1]?.includes('googleusercontent.com/')) {
+        return avatarUrl.split('=')[0] + '=s1200-c';
+    }
+
+    return avatarUrl;
 }
 
 export const load: PageServerLoad = async ({ params, setHeaders }) => {
@@ -55,11 +70,8 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
     const userProfileDoc = userSnapshot.docs[0];
     const userProfileData = userProfileDoc.data();
 
-    // Загружаем комментарии
     const commentsRef = userProfileDoc.ref.collection('comments').orderBy('createdAt', 'desc').limit(50);
     const commentsSnapshot = await commentsRef.get();
-
-    // 1. Собираем сырые данные
     const rawComments: Comment[] = commentsSnapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -76,12 +88,10 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
         };
     });
 
-    // 2. Актуализируем данные авторов (аватарки/рамки могли обновиться)
     const authorUids = [...new Set(rawComments.map(c => c.author_uid).filter(Boolean))];
     const authorsData = new Map<string, any>();
 
     if (authorUids.length > 0) {
-        // Батчинг по 30 ID (ограничение Firestore 'in')
         for (let i = 0; i < authorUids.length; i += 30) {
             const chunk = authorUids.slice(i, i + 30);
             const snaps = await firestoreAdmin.collection('users')
@@ -91,11 +101,9 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
         }
     }
 
-    // 3. Обновляем данные и СТРОИМ ДЕРЕВО
     const commentMap = new Map<string, Comment>();
     const rootComments: Comment[] = [];
 
-    // Сначала обновляем и кладем в Map
     rawComments.forEach(c => {
         const freshAuthor = authorsData.get(c.author_uid);
         if (freshAuthor) {
@@ -106,26 +114,21 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
         commentMap.set(c.id, c);
     });
 
-    // Теперь распределяем: кто родитель, кто ребенок
     rawComments.forEach(c => {
         if (c.parentId && commentMap.has(c.parentId)) {
-            // Это ответ, и родитель загружен
             const parent = commentMap.get(c.parentId)!;
             parent.replies?.push(c);
         } else {
-            // Это корневой коммент (или сирота)
             rootComments.push(c);
         }
     });
 
-    // Сортируем ответы в хронологическом порядке (старые вверху)
     rootComments.forEach(root => {
         if (root.replies && root.replies.length > 0) {
             root.replies.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
         }
     });
 
-    // === НОВОЕ: Формируем SEO данные для Open Graph ===
     const seoData = {
         title: `${userProfileData.username} | ProtoMap`,
         description: userProfileData.status
@@ -149,7 +152,7 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
             equipped_frame: userProfileData.equipped_frame || null,
             equipped_bg: userProfileData.equipped_bg || null
         },
-        comments: rootComments, // Отдаем только корни, дети внутри
-        seoData // НОВОЕ: Добавляем SEO данные
+        comments: rootComments,
+        seoData
     };
 };
