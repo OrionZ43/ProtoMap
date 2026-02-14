@@ -17,7 +17,7 @@ const TELEGRAM_SERVICE_IDS = [777000, 1087968824];
 
 const ALLOWED_CHATS = [
     -1002885386686, // ProtoMap (с ветками)
-    -5086225665  // Личный/Админский
+    -1002413943981  // Личный/Админский
 ];
 
 // ==================================================================
@@ -34,19 +34,19 @@ const TRIGGER_RESPONSES: { [key: string]: string[] } = {
 
     // Приколы
     'орион': [
-        'Меня вызывали?',
+        '🦾 Меня вызывали?',
         '> Обработка запроса...',
         '⚡ *ЗЗЗ-Ж-Ж-Ж* Системы в норме.',
         '🔧 Занят. Пишу код. Не отвлекай.'
     ],
     'бот': [
-        'Кто-то сказал «бот»? Я здесь.',
+        '🤖 Кто-то сказал «бот»? Я здесь.',
         '> _ Слежу за вами._',
-        'ОШИБКА: Функция \"быть милым\" не найдена.'
+        'ОШИБКА: Функция "быть милым" не найдена.'
     ],
     'казино': [
         '🎰 Помните: казино всегда в плюсе. А вы?',
-        '💸 Glith Pit выигрывает. Всегда.',
+        '💸 Дом выигрывает. Всегда.',
         '🎲 Удачи! (Спойлер: не будет)'
     ],
     'баг': [
@@ -175,7 +175,7 @@ async function handleAutoMute(ctx: any, trigger: string) {
 }
 
 // ==================================================================
-// 🛡️ SECURITY GATEKEEPER (БЕЛЫЙ СПИСОК)
+// 🛡️ SECURITY GATEKEEPER (БЕЛЫЙ СПИСОК) - ВСЕГДА ПЕРВЫМ!
 // ==================================================================
 
 bot.use(async (ctx, next) => {
@@ -196,125 +196,8 @@ bot.use(async (ctx, next) => {
 });
 
 // ==================================================================
-// 🎭 MIDDLEWARE: ПРОВЕРКА ТРИГГЕРОВ
+// 🔧 ХЕЛПЕРЫ (используются командами)
 // ==================================================================
-
-bot.on('text', async (ctx, next) => {
-    const text = ctx.message.text;
-
-    // Игнорируем команды
-    if (text.startsWith('/')) {
-        return next();
-    }
-
-    // Проверяем триггеры
-    const triggered = await checkTriggers(ctx, text);
-
-    // Если триггер не сработал, продолжаем
-    if (!triggered) {
-        return next();
-    }
-});
-
-// ==================================================================
-// 🎲 EASTER EGGS И КОМАНДЫ
-// ==================================================================
-
-bot.command('stats', async (ctx) => {
-    try {
-        const chatMembersCount = await ctx.getChatMembersCount();
-        const warnedUsers = await db.collection('telegram_moderation').get();
-        const totalWarns = warnedUsers.docs.reduce((sum, doc) => sum + (doc.data().warns || 0), 0);
-
-        await ctx.reply(
-            `📊 **СТАТИСТИКА СЕТИ**\n\n` +
-            `👥 Участников: ${chatMembersCount}\n` +
-            `⚠️ Активных предупреждений: ${warnedUsers.size}\n` +
-            `📈 Всего выдано варнов: ${totalWarns}\n` +
-            `🤖 Статус: Онлайн\n` +
-            `⚡ Режим: Бдительный`,
-            { parse_mode: 'Markdown' }
-        );
-    } catch (e) {
-        await ctx.reply('Ошибка при получении статистики.');
-    }
-});
-
-bot.command('help', async (ctx) => {
-    const helpText = `
-🤖 **КОМАНДЫ БОТА**
-
-**Для всех:**
-/link [код] — Привязать Telegram к аккаунту на сайте
-/duel [ставка] — Вызвать кого-то на дуэль
-/stats — Статистика чата
-
-**Для администраторов:**
-/warn — Предупреждение (ответ на сообщение)
-/unwarn — Снять предупреждение
-/mute [время] — Заглушить (10m, 2h, 1d)
-/unmute — Снять мут
-/ban — Изгнать из чата
-/unban [ID] — Разбанить
-/lockdown [on/off] — Режим карантина
-`;
-
-    await ctx.reply(helpText, { parse_mode: 'Markdown' });
-});
-
-bot.command('version', async (ctx) => {
-    await ctx.reply(
-        `⚙️ **ВЕРСИЯ СИСТЕМЫ**\n\n` +
-        `🤖 ProtoMap Guardian Bot\n` +
-        `📦 v2.0.0 (Enhanced Edition)\n` +
-        `🏗️ Build: ${new Date().toISOString().split('T')[0]}\n` +
-        `🔧 Framework: Telegraf + Firebase\n` +
-        `💾 DB: Firestore\n` +
-        `⚡ Status: Operational\n\n` +
-        `> Coded with <3 by Orion`,
-        { parse_mode: 'Markdown' }
-    );
-});
-
-bot.command('ping', async (ctx) => {
-    const start = Date.now();
-    const msg = await ctx.reply('🏓 Pong!');
-    const latency = Date.now() - start;
-
-    await ctx.telegram.editMessageText(
-        ctx.chat.id,
-        msg.message_id,
-        undefined,
-        `🏓 Pong!\n⏱️ Задержка: ${latency}ms`
-    );
-});
-
-// ==================================================================
-// 🎯 СЛУЧАЙНЫЕ ОТВЕТЫ НА СТИКЕРЫ
-// ==================================================================
-
-bot.on('sticker', async (ctx, next) => {
-    const random = Math.random();
-
-    // 5% шанс ответить на стикер
-    if (random < 0.05) {
-        const responses = [
-            '🗿',
-            '> Интересный стикер.',
-            '👀',
-            '🤔',
-            '> *[АНАЛИЗИРУЮ]*',
-            'Based.'
-        ];
-
-        const response = responses[Math.floor(Math.random() * responses.length)];
-        await ctx.reply(response, { parse_mode: 'Markdown' });
-    }
-
-    return next();
-});
-
-// --- ХЕЛПЕРЫ ---
 
 function parseTime(input: string): number {
     const match = input.match(/^(\d+)([mhds])$/);
@@ -347,6 +230,84 @@ async function getUserByTgId(tgId: number): Promise<FirebaseFirestore.DocumentSn
     if (snapshot.empty) return null;
     return snapshot.docs[0];
 }
+
+
+bot.command('stats', async (ctx) => {
+    try {
+        const chatMembersCount = await ctx.getChatMembersCount();
+        const warnedUsers = await db.collection('telegram_moderation').get();
+        const totalWarns = warnedUsers.docs.reduce((sum, doc) => sum + (doc.data().warns || 0), 0);
+
+        await ctx.reply(
+            `📊 **СТАТИСТИКА СЕТИ**\n\n` +
+            `👥 Участников: ${chatMembersCount}\n` +
+            `⚠️ Активных предупреждений: ${warnedUsers.size}\n` +
+            `📈 Всего выдано варнов: ${totalWarns}\n` +
+            `🤖 Статус: Онлайн\n` +
+            `⚡ Режим: Бдительный`,
+            { parse_mode: 'Markdown' }
+        );
+    } catch (e) {
+        console.error('Stats error:', e);
+        await ctx.reply('Ошибка при получении статистики.');
+    }
+});
+
+bot.command('help', async (ctx) => {
+    const helpText = `
+🤖 **КОМАНДЫ БОТА**
+
+**Для всех:**
+/link [код] — Привязать Telegram к аккаунту
+/duel [ставка] — Вызвать на дуэль
+/stats — Статистика чата
+/help — Эта справка
+/ping — Проверка задержки
+/version — Версия бота
+
+**Для администраторов:**
+/warn — Предупреждение (reply)
+/unwarn — Снять предупреждение
+/mute [время] — Заглушить (10m, 2h, 1d)
+/unmute — Снять мут
+/ban — Изгнать из чата
+/unban [ID] — Разбанить
+/lockdown [on/off] — Режим карантина
+`;
+
+    await ctx.reply(helpText, { parse_mode: 'Markdown' });
+});
+
+bot.command('version', async (ctx) => {
+    await ctx.reply(
+        `⚙️ **ВЕРСИЯ СИСТЕМЫ**\n\n` +
+        `🤖 ProtoMap Guardian Bot\n` +
+        `📦 v2.0.0 (Enhanced Edition)\n` +
+        `🏗️ Build: ${new Date().toISOString().split('T')[0]}\n` +
+        `🔧 Framework: Telegraf + Firebase\n` +
+        `💾 DB: Firestore\n` +
+        `⚡ Status: Operational\n\n` +
+        `> Coded with <3 by Orion`,
+        { parse_mode: 'Markdown' }
+    );
+});
+
+bot.command('ping', async (ctx) => {
+    const start = Date.now();
+    const msg = await ctx.reply('🏓 Pong!');
+    const latency = Date.now() - start;
+
+    try {
+        await ctx.telegram.editMessageText(
+            ctx.chat.id,
+            msg.message_id,
+            undefined,
+            `🏓 Pong!\n⏱️ Задержка: ${latency}ms`
+        );
+    } catch (e) {
+        console.log('Failed to edit ping message:', e);
+    }
+});
 
 // ==================================================================
 // 🔗 СИСТЕМА ПРИВЯЗКИ (/link)
@@ -545,95 +506,7 @@ bot.action(/join_duel_(\d+)_(\d+)/, async (ctx) => {
 });
 
 // ==================================================================
-// 🛡️ LOCKDOWN & ANTI-RAID
-// ==================================================================
-
-bot.on("new_chat_members", async (ctx, next) => {
-    try {
-        const settingsSnap = await SETTINGS_DOC_REF.get();
-        const isLockdown = settingsSnap.exists ? settingsSnap.data()?.lockdown : false;
-
-        if (isLockdown) {
-            for (const member of ctx.message.new_chat_members) {
-                try {
-                    await ctx.banChatMember(member.id);
-                    await ctx.deleteMessage();
-                } catch (e) {
-                    console.error(`Failed to autoban ${member.id}`, e);
-                }
-            }
-            return;
-        }
-    } catch (e) {
-        console.error("Lockdown check error:", e);
-    }
-    return next();
-});
-
-bot.on("new_chat_members", async (ctx) => {
-    try {
-        for (const member of ctx.message.new_chat_members) {
-            if (member.is_bot) continue;
-
-            await ctx.restrictChatMember(member.id, {
-                permissions: {
-                    can_send_messages: false,
-                    can_send_audios: false,
-                    can_send_documents: false,
-                    can_send_photos: false,
-                    can_send_videos: false,
-                    can_send_other_messages: false,
-                    can_add_web_page_previews: false
-                }
-            });
-
-            await ctx.reply(
-                `🤖 ЗАЩИТА ПЕРИМЕТРА\n\nПривет, [${member.first_name}](tg://user?id=${member.id})!\nНажми кнопку, чтобы подтвердить статус.`,
-                {
-                    parse_mode: "Markdown",
-                    ...Markup.inlineKeyboard([
-                        Markup.button.callback("✅ Я НЕ БОТ", `verify_${member.id}`)
-                    ])
-                }
-            );
-        }
-    } catch (e) {
-        console.error("Captcha Error:", e);
-    }
-});
-
-bot.action(/verify_(\d+)/, async (ctx) => {
-    const userId = parseInt(ctx.match[1]);
-
-    if (ctx.from.id !== userId) {
-        await ctx.answerCbQuery("Это не твоя кнопка! 🚫");
-        return;
-    }
-
-    try {
-        await ctx.restrictChatMember(userId, {
-            permissions: {
-                can_send_messages: true,
-                can_send_audios: true,
-                can_send_documents: true,
-                can_send_photos: true,
-                can_send_videos: true,
-                can_send_other_messages: true,
-                can_add_web_page_previews: true,
-                can_invite_users: true
-            }
-        });
-
-        await ctx.answerCbQuery("Доступ разрешен! 🔓");
-        try { await ctx.deleteMessage(); } catch (e) {}
-        await ctx.reply(`Добро пожаловать в Сеть, ${ctx.from.first_name}!`);
-    } catch (e) {
-        console.error("Verification Error:", e);
-    }
-});
-
-// ==================================================================
-// 🔨 АДМИНИСТРИРОВАНИЕ (BAN/WARN/MUTE)
+// 🔨 АДМИНИСТРИРОВАНИЕ
 // ==================================================================
 
 bot.command("warn", async (ctx) => {
@@ -893,6 +766,136 @@ bot.command("lockdown", async (ctx) => {
         const currentSnap = await SETTINGS_DOC_REF.get();
         const status = currentSnap.data()?.lockdown ? "🔴 ВКЛЮЧЕН" : "🟢 ВЫКЛЮЧЕН";
         await ctx.reply(`Текущий статус LockDown: ${status}\nИспользуйте: /lockdown on или /lockdown off`);
+    }
+});
+
+// ==================================================================
+// 🛡️ LOCKDOWN & ANTI-RAID
+// ==================================================================
+
+bot.on("new_chat_members", async (ctx, next) => {
+    try {
+        const settingsSnap = await SETTINGS_DOC_REF.get();
+        const isLockdown = settingsSnap.exists ? settingsSnap.data()?.lockdown : false;
+
+        if (isLockdown) {
+            for (const member of ctx.message.new_chat_members) {
+                try {
+                    await ctx.banChatMember(member.id);
+                    await ctx.deleteMessage();
+                } catch (e) {
+                    console.error(`Failed to autoban ${member.id}`, e);
+                }
+            }
+            return;
+        }
+    } catch (e) {
+        console.error("Lockdown check error:", e);
+    }
+    return next();
+});
+
+bot.on("new_chat_members", async (ctx) => {
+    try {
+        for (const member of ctx.message.new_chat_members) {
+            if (member.is_bot) continue;
+
+            await ctx.restrictChatMember(member.id, {
+                permissions: {
+                    can_send_messages: false,
+                    can_send_audios: false,
+                    can_send_documents: false,
+                    can_send_photos: false,
+                    can_send_videos: false,
+                    can_send_other_messages: false,
+                    can_add_web_page_previews: false
+                }
+            });
+
+            await ctx.reply(
+                `🤖 ЗАЩИТА ПЕРИМЕТРА\n\nПривет, [${member.first_name}](tg://user?id=${member.id})!\nНажми кнопку, чтобы подтвердить статус.`,
+                {
+                    parse_mode: "Markdown",
+                    ...Markup.inlineKeyboard([
+                        Markup.button.callback("✅ Я НЕ БОТ", `verify_${member.id}`)
+                    ])
+                }
+            );
+        }
+    } catch (e) {
+        console.error("Captcha Error:", e);
+    }
+});
+
+bot.action(/verify_(\d+)/, async (ctx) => {
+    const userId = parseInt(ctx.match[1]);
+
+    if (ctx.from.id !== userId) {
+        await ctx.answerCbQuery("Это не твоя кнопка! 🚫");
+        return;
+    }
+
+    try {
+        await ctx.restrictChatMember(userId, {
+            permissions: {
+                can_send_messages: true,
+                can_send_audios: true,
+                can_send_documents: true,
+                can_send_photos: true,
+                can_send_videos: true,
+                can_send_other_messages: true,
+                can_add_web_page_previews: true,
+                can_invite_users: true
+            }
+        });
+
+        await ctx.answerCbQuery("Доступ разрешен! 🔓");
+        try { await ctx.deleteMessage(); } catch (e) {}
+        await ctx.reply(`Добро пожаловать в Сеть, ${ctx.from.first_name}!`);
+    } catch (e) {
+        console.error("Verification Error:", e);
+    }
+});
+
+// ==================================================================
+// 🎭 MIDDLEWARE: ПРОВЕРКА ТРИГГЕРОВ (ПОСЛЕ КОМАНД!)
+// ==================================================================
+
+bot.on('text', async (ctx, next) => {
+    const text = ctx.message.text;
+
+    // Игнорируем команды (они уже обработаны выше)
+    if (text.startsWith('/')) {
+        return next();
+    }
+
+    // Проверяем триггеры
+    await checkTriggers(ctx, text);
+
+    // Продолжаем обработку
+    return next();
+});
+
+// ==================================================================
+// 🎯 СЛУЧАЙНЫЕ ОТВЕТЫ НА СТИКЕРЫ
+// ==================================================================
+
+bot.on('sticker', async (ctx) => {
+    const random = Math.random();
+
+    // 5% шанс ответить на стикер
+    if (random < 0.05) {
+        const responses = [
+            '🗿',
+            '> Интересный стикер.',
+            '👀',
+            '🤔',
+            '> *[АНАЛИЗИРУЮ]*',
+            'Based.'
+        ];
+
+        const response = responses[Math.floor(Math.random() * responses.length)];
+        await ctx.reply(response, { parse_mode: 'Markdown' });
     }
 });
 
