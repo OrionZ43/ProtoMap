@@ -21,33 +21,301 @@ const ALLOWED_CHATS = [
 ];
 
 // ==================================================================
+// 🎭 СИСТЕМА ТРИГГЕРОВ И ПАСХАЛОК
+// ==================================================================
+
+const TRIGGER_RESPONSES: { [key: string]: string[] } = {
+    // Автомодерация
+    'подкрутка': ['AUTOMUTE_5H'],
+    'накрутка': ['AUTOMUTE_5H'],
+    'подкручиваешь': ['AUTOMUTE_5H'],
+    'подкручивает': ['AUTOMUTE_5H'],
+    'накручиваешь': ['AUTOMUTE_5H'],
+
+    // Приколы
+    'орион': [
+        'Меня вызывали?',
+        '> Обработка запроса...',
+        '⚡ *ЗЗЗ-Ж-Ж-Ж* Системы в норме.',
+        '🔧 Занят. Пишу код. Не отвлекай.'
+    ],
+    'бот': [
+        'Кто-то сказал «бот»? Я здесь.',
+        '> _ Слежу за вами._',
+        'ОШИБКА: Функция \"быть милым\" не найдена.'
+    ],
+    'казино': [
+        '🎰 Помните: казино всегда в плюсе. А вы?',
+        '💸 Glith Pit выигрывает. Всегда.',
+        '🎲 Удачи! (Спойлер: не будет)'
+    ],
+    'баг': [
+        '🐛 Это не баг. Это фича!',
+        '> Записал в backlog. Спасибо!',
+        '🔧 Баги — это особенность архитектуры.'
+    ],
+    'курага': [
+        '🥕 Легенда. Разрушитель психики Ориона.',
+        '⚠️ ВНИМАНИЕ: Обнаружена угроза ProtoMap.',
+        '👑 The One Who Broke The System.'
+    ],
+    'слоты': [
+        '🎰 *[СПИН-СПИН-СПИН]*',
+        '🎯 Три шестёрки подряд? Маловероятно.',
+        '> Calculating odds... 72.4% на проигрыш.'
+    ],
+    'мороженое': [
+        '🍦 Ваниль или шоколад?',
+        '❄️ Мороженое — это состояние души.',
+        '🍨 *ОМ-НОМ-НОМ*'
+    ],
+    'база': [
+        '📊 База обновлена.',
+        '💾 *[СИНХРОНИЗАЦИЯ ЗАВЕРШЕНА]*',
+        '⚡ Firestore в огне. Буквально.'
+    ]
+};
+
+// Проверка на триггеры
+async function checkTriggers(ctx: any, text: string) {
+    const lowerText = text.toLowerCase();
+
+    for (const [trigger, responses] of Object.entries(TRIGGER_RESPONSES)) {
+        if (lowerText.includes(trigger)) {
+            // Специальная обработка автомута
+            if (responses[0] === 'AUTOMUTE_5H') {
+                await handleAutoMute(ctx, trigger);
+                return true;
+            }
+
+            // Случайный ответ из списка
+            const response = responses[Math.floor(Math.random() * responses.length)];
+            await ctx.reply(response, { parse_mode: 'Markdown' });
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// ==================================================================
+// 🚨 АВТОМАТИЧЕСКИЙ МУТ ЗА "ПОДКРУТКУ"
+// ==================================================================
+
+async function handleAutoMute(ctx: any, trigger: string) {
+    const targetUser = ctx.from;
+
+    // Защита админов
+    if (await isAdmin(ctx)) {
+        await ctx.reply('⚠️ Админы не могут быть замучены автоматически.');
+        return;
+    }
+
+    if (await isTargetImmune(ctx, targetUser.id)) {
+        return;
+    }
+
+    const MUTE_DURATION = 5 * 60 * 60; // 5 часов
+    const untilDate = Math.floor(Date.now() / 1000) + MUTE_DURATION;
+
+    try {
+        // Удаляем сообщение с нытьём
+        try {
+            await ctx.deleteMessage();
+        } catch (e) {
+            console.log('Failed to delete message:', e);
+        }
+
+        // Мутим
+        await ctx.restrictChatMember(targetUser.id, {
+            until_date: untilDate,
+            permissions: {
+                can_send_messages: false,
+                can_send_audios: false,
+                can_send_documents: false,
+                can_send_photos: false,
+                can_send_videos: false,
+                can_send_other_messages: false,
+                can_add_web_page_previews: false
+            }
+        });
+
+        // Выдаём варн
+        const warnRef = db.collection('telegram_moderation').doc(String(targetUser.id));
+        await db.runTransaction(async (t) => {
+            const doc = await t.get(warnRef);
+            let warns = (doc.exists ? doc.data()?.warns : 0) + 1;
+
+            t.set(warnRef, {
+                warns: warns,
+                lastWarnDate: admin.firestore.FieldValue.serverTimestamp(),
+                username: targetUser.username || targetUser.first_name,
+                reason: `Автомут за слово "${trigger}"`
+            }, { merge: true });
+        });
+
+        const userName = targetUser.first_name;
+        const userId = targetUser.id;
+
+        await ctx.reply(
+            `🛑 **СИСТЕМА ОБНАРУЖИЛА НЫТЬЁ.**\n\n` +
+            `Пользователь: [${userName}](tg://user?id=${userId})\n` +
+            `Причина: Упоминание «${trigger}».\n` +
+            `Наказание: **Мут на 5 часов** + предупреждение.\n\n` +
+            `⏳ Изучайте теорию вероятностей в тишине.`,
+            { parse_mode: 'Markdown' }
+        );
+
+        console.log(`[AUTOMUTE] ${userName} (${userId}) muted for 5h (trigger: ${trigger})`);
+
+    } catch (e) {
+        console.error('Auto-mute error:', e);
+        await ctx.reply('⚠️ Ошибка автомута. Возможно, недостаточно прав.');
+    }
+}
+
+// ==================================================================
 // 🛡️ SECURITY GATEKEEPER (БЕЛЫЙ СПИСОК)
 // ==================================================================
-// Это middleware стоит ПЕРВЫМ. Оно отсекает левые чаты.
+
 bot.use(async (ctx, next) => {
-    // 1. Личные сообщения с ботом всегда разрешены (для команд настройки/линка)
     if (ctx.chat?.type === 'private') {
         return next();
     }
 
-    // 2. Если чат в белом списке — пропускаем
     if (ctx.chat && ALLOWED_CHATS.includes(ctx.chat.id)) {
         return next();
     }
 
-    // 3. Если чат левый — выходим молча и экономим ресурсы
     console.warn(`[SECURITY] Unauthorized access from chat ${ctx.chat?.id} (${ctx.chat?.title}). Leaving.`);
     try {
         await ctx.leaveChat();
     } catch (e) {
         console.error("Failed to leave chat:", e);
     }
-    // next() НЕ вызываем, дальнейшая обработка прекращается
+});
+
+// ==================================================================
+// 🎭 MIDDLEWARE: ПРОВЕРКА ТРИГГЕРОВ
+// ==================================================================
+
+bot.on('text', async (ctx, next) => {
+    const text = ctx.message.text;
+
+    // Игнорируем команды
+    if (text.startsWith('/')) {
+        return next();
+    }
+
+    // Проверяем триггеры
+    const triggered = await checkTriggers(ctx, text);
+
+    // Если триггер не сработал, продолжаем
+    if (!triggered) {
+        return next();
+    }
+});
+
+// ==================================================================
+// 🎲 EASTER EGGS И КОМАНДЫ
+// ==================================================================
+
+bot.command('stats', async (ctx) => {
+    try {
+        const chatMembersCount = await ctx.getChatMembersCount();
+        const warnedUsers = await db.collection('telegram_moderation').get();
+        const totalWarns = warnedUsers.docs.reduce((sum, doc) => sum + (doc.data().warns || 0), 0);
+
+        await ctx.reply(
+            `📊 **СТАТИСТИКА СЕТИ**\n\n` +
+            `👥 Участников: ${chatMembersCount}\n` +
+            `⚠️ Активных предупреждений: ${warnedUsers.size}\n` +
+            `📈 Всего выдано варнов: ${totalWarns}\n` +
+            `🤖 Статус: Онлайн\n` +
+            `⚡ Режим: Бдительный`,
+            { parse_mode: 'Markdown' }
+        );
+    } catch (e) {
+        await ctx.reply('Ошибка при получении статистики.');
+    }
+});
+
+bot.command('help', async (ctx) => {
+    const helpText = `
+🤖 **КОМАНДЫ БОТА**
+
+**Для всех:**
+/link [код] — Привязать Telegram к аккаунту на сайте
+/duel [ставка] — Вызвать кого-то на дуэль
+/stats — Статистика чата
+
+**Для администраторов:**
+/warn — Предупреждение (ответ на сообщение)
+/unwarn — Снять предупреждение
+/mute [время] — Заглушить (10m, 2h, 1d)
+/unmute — Снять мут
+/ban — Изгнать из чата
+/unban [ID] — Разбанить
+/lockdown [on/off] — Режим карантина
+`;
+
+    await ctx.reply(helpText, { parse_mode: 'Markdown' });
+});
+
+bot.command('version', async (ctx) => {
+    await ctx.reply(
+        `⚙️ **ВЕРСИЯ СИСТЕМЫ**\n\n` +
+        `🤖 ProtoMap Guardian Bot\n` +
+        `📦 v2.0.0 (Enhanced Edition)\n` +
+        `🏗️ Build: ${new Date().toISOString().split('T')[0]}\n` +
+        `🔧 Framework: Telegraf + Firebase\n` +
+        `💾 DB: Firestore\n` +
+        `⚡ Status: Operational\n\n` +
+        `> Coded with <3 by Orion`,
+        { parse_mode: 'Markdown' }
+    );
+});
+
+bot.command('ping', async (ctx) => {
+    const start = Date.now();
+    const msg = await ctx.reply('🏓 Pong!');
+    const latency = Date.now() - start;
+
+    await ctx.telegram.editMessageText(
+        ctx.chat.id,
+        msg.message_id,
+        undefined,
+        `🏓 Pong!\n⏱️ Задержка: ${latency}ms`
+    );
+});
+
+// ==================================================================
+// 🎯 СЛУЧАЙНЫЕ ОТВЕТЫ НА СТИКЕРЫ
+// ==================================================================
+
+bot.on('sticker', async (ctx, next) => {
+    const random = Math.random();
+
+    // 5% шанс ответить на стикер
+    if (random < 0.05) {
+        const responses = [
+            '🗿',
+            '> Интересный стикер.',
+            '👀',
+            '🤔',
+            '> *[АНАЛИЗИРУЮ]*',
+            'Based.'
+        ];
+
+        const response = responses[Math.floor(Math.random() * responses.length)];
+        await ctx.reply(response, { parse_mode: 'Markdown' });
+    }
+
+    return next();
 });
 
 // --- ХЕЛПЕРЫ ---
 
-// 🔥 ДОБАВЛЕНО: Парсер времени для мута
 function parseTime(input: string): number {
     const match = input.match(/^(\d+)([mhds])$/);
     if (!match) return 0;
@@ -85,13 +353,12 @@ async function getUserByTgId(tgId: number): Promise<FirebaseFirestore.DocumentSn
 // ==================================================================
 
 bot.command("link", async (ctx) => {
-    // 1. Попытка удалить сообщение (безопасность)
     try { await ctx.deleteMessage(); } catch (e) { console.log("Del msg fail:", e); }
 
     try {
-        const message = ctx.message as any; // Приведение типов для TS
+        const message = ctx.message as any;
         const args = message.text.split(' ');
-        const code = args[1]?.trim(); // Убираем пробелы
+        const code = args[1]?.trim();
 
         console.log(`[LINK DEBUG] User ${ctx.from.id} sent code: ${code}`);
 
@@ -100,7 +367,6 @@ bot.command("link", async (ctx) => {
             return;
         }
 
-        // 2. Ищем код в базе
         const codeRef = db.collection('system').doc('telegram_codes').collection('active_codes').doc(code);
         const codeDoc = await codeRef.get();
 
@@ -112,10 +378,9 @@ bot.command("link", async (ctx) => {
 
         const data = codeDoc.data();
 
-        // Проверка срока жизни
         if (data?.expiresAt && Date.now() > data.expiresAt) {
             console.log(`[LINK DEBUG] Code ${code} expired`);
-            await codeRef.delete(); // Удаляем протухший
+            await codeRef.delete();
             await ctx.reply("❌ Срок действия кода истек. Сгенерируйте новый.");
             return;
         }
@@ -129,24 +394,20 @@ bot.command("link", async (ctx) => {
         const tgId = ctx.from.id;
         const username = ctx.from.username || ctx.from.first_name || "Unknown";
 
-        // 3. Проверка на дубликаты
         const existing = await db.collection('users').where('telegram_id', '==', tgId).get();
         if (!existing.empty) {
-            // Если найден юзер и это НЕ тот же самый аккаунт
             if (existing.docs[0].id !== uid) {
                 await ctx.reply("❌ Этот Telegram аккаунт уже привязан к другому профилю на сайте.");
                 return;
             }
         }
 
-        // 4. Запись в профиль юзера
         console.log(`[LINK DEBUG] Linking TG ${tgId} to UID ${uid}`);
         await db.collection('users').doc(uid).update({
             telegram_id: tgId,
             telegram_username: username
         });
 
-        // 5. Удаляем использованный код
         await codeRef.delete();
 
         await ctx.reply("✅ Аккаунт успешно привязан! Теперь вы можете участвовать в дуэлях.");
@@ -199,7 +460,6 @@ bot.command("duel", async (ctx) => {
     );
 });
 
-// Обработка кнопки "ПРИНЯТЬ"
 bot.action(/join_duel_(\d+)_(\d+)/, async (ctx) => {
     const initiatorTgId = parseInt(ctx.match[1]);
     const bet = parseInt(ctx.match[2]);
@@ -458,7 +718,7 @@ bot.command("unwarn", async (ctx) => {
             const newWarns = doc.data()!.warns - 1;
 
             if (newWarns <= 0) {
-                t.delete(warnRef); // Удаляем, если варнов 0
+                t.delete(warnRef);
             } else {
                 t.update(warnRef, { warns: newWarns });
             }
@@ -513,14 +773,13 @@ bot.command("mute", async (ctx) => {
     }
 
     const args = (ctx.message as any).text.split(' ');
-    const timeStr = args[1]; // 10m, 1h
+    const timeStr = args[1];
 
     if (!timeStr) {
         await ctx.reply("⚠️ Укажите время: 10m (минуты), 2h (часы), 1d (дни).");
         return;
     }
 
-    // Здесь теперь используется parseTime
     const seconds = parseTime(timeStr);
     if (seconds === 0) {
         await ctx.reply("❌ Неверный формат времени.");
