@@ -31,10 +31,16 @@
 	let contrast = 100;
 	let saturation = 100;
 
-	// Drag state
+	// Drag state (mouse)
 	let isDragging = false;
 	let dragStartX = 0;
 	let dragStartY = 0;
+
+	// Touch state
+	let isTouching = false;
+	let lastTouchX = 0;
+	let lastTouchY = 0;
+	let lastTouchDistance = 0;
 
 	// Constants
 	const CANVAS_SIZE = 400;
@@ -42,12 +48,10 @@
 	const MIN_ZOOM = 0.5;
 	const MAX_ZOOM = 3;
 
-	// Реактивно следим за открытием модалки и файлом
 	$: if (isOpen && imageFile) {
 		loadImage();
 	}
 
-	// Очистка при закрытии
 	$: if (!isOpen) {
 		cleanup();
 	}
@@ -65,13 +69,9 @@
 	async function loadImage() {
 		if (!imageFile) return;
 
-		// Очищаем предыдущее изображение
 		cleanup();
-
-		// Ждем монтирования canvas
 		await new Promise(resolve => setTimeout(resolve, 100));
 
-		// Инициализируем контексты
 		if (canvas && !ctx) {
 			ctx = canvas.getContext('2d', { willReadFrequently: true });
 		}
@@ -83,9 +83,7 @@
 		image = new Image();
 		image.crossOrigin = 'anonymous';
 		image.onload = () => {
-			console.log('Image loaded:', image!.width, image!.height);
 			resetTransform();
-			// Рендерим с задержкой, чтобы canvas точно был готов
 			setTimeout(() => {
 				if (ctx && image && image.complete) {
 					render();
@@ -117,10 +115,7 @@
 	}
 
 	function render() {
-		if (!ctx || !image || !image.complete) {
-			console.warn('Cannot render: context or image not ready');
-			return;
-		}
+		if (!ctx || !image || !image.complete) return;
 
 		ctx.fillStyle = '#0a0a0f';
 		ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -139,14 +134,12 @@
 		const scaledWidth = imgWidth * scale;
 		const scaledHeight = imgHeight * scale;
 
-		// Apply filters
 		ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
 		ctx.drawImage(image, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
 		ctx.filter = 'none';
 
 		ctx.restore();
 
-		// Circular crop
 		ctx.save();
 		ctx.globalCompositeOperation = 'destination-in';
 		ctx.beginPath();
@@ -154,7 +147,6 @@
 		ctx.fill();
 		ctx.restore();
 
-		// Border
 		ctx.strokeStyle = 'var(--cyber-yellow, #fcee0a)';
 		ctx.lineWidth = 2;
 		ctx.beginPath();
@@ -170,6 +162,7 @@
 		previewCtx.drawImage(canvas, 0, 0, PREVIEW_SIZE, PREVIEW_SIZE);
 	}
 
+	// === MOUSE EVENTS ===
 	function handleMouseDown(e: MouseEvent) {
 		isDragging = true;
 		dragStartX = e.clientX - offsetX;
@@ -192,6 +185,72 @@
 		const delta = e.deltaY > 0 ? -0.1 : 0.1;
 		zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + delta));
 		render();
+	}
+
+	// === TOUCH EVENTS ===
+	function getTouchDistance(touches: TouchList): number {
+		if (touches.length < 2) return 0;
+		const dx = touches[0].clientX - touches[1].clientX;
+		const dy = touches[0].clientY - touches[1].clientY;
+		return Math.sqrt(dx * dx + dy * dy);
+	}
+
+	function handleTouchStart(e: TouchEvent) {
+		e.preventDefault(); // 🔥 Останавливаем прокрутку страницы
+
+		if (e.touches.length === 1) {
+			// Single touch - drag
+			isTouching = true;
+			lastTouchX = e.touches[0].clientX;
+			lastTouchY = e.touches[0].clientY;
+		} else if (e.touches.length === 2) {
+			// Two fingers - pinch zoom
+			lastTouchDistance = getTouchDistance(e.touches);
+		}
+	}
+
+	function handleTouchMove(e: TouchEvent) {
+		e.preventDefault(); // 🔥 Останавливаем прокрутку страницы
+
+		if (e.touches.length === 1 && isTouching) {
+			// Single touch - drag
+			const touch = e.touches[0];
+			const deltaX = touch.clientX - lastTouchX;
+			const deltaY = touch.clientY - lastTouchY;
+
+			offsetX += deltaX;
+			offsetY += deltaY;
+
+			lastTouchX = touch.clientX;
+			lastTouchY = touch.clientY;
+
+			render();
+		} else if (e.touches.length === 2) {
+			// Two fingers - pinch zoom
+			const currentDistance = getTouchDistance(e.touches);
+
+			if (lastTouchDistance > 0) {
+				const delta = (currentDistance - lastTouchDistance) * 0.01;
+				zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + delta));
+				render();
+			}
+
+			lastTouchDistance = currentDistance;
+		}
+	}
+
+	function handleTouchEnd(e: TouchEvent) {
+		e.preventDefault(); // 🔥 Останавливаем прокрутку страницы
+
+		if (e.touches.length === 0) {
+			isTouching = false;
+			lastTouchDistance = 0;
+		} else if (e.touches.length === 1) {
+			// Остался 1 палец - сбрасываем zoom, продолжаем drag
+			lastTouchDistance = 0;
+			lastTouchX = e.touches[0].clientX;
+			lastTouchY = e.touches[0].clientY;
+		}
 	}
 
 	function rotateLeft() {
@@ -292,6 +351,9 @@
 						class="main-canvas"
 						on:mousedown={handleMouseDown}
 						on:wheel={handleWheel}
+						on:touchstart={handleTouchStart}
+						on:touchmove={handleTouchMove}
+						on:touchend={handleTouchEnd}
 					/>
 					<p class="canvas-hint">{$t('edit_profile.avatar_editor.hint')}</p>
 				</div>
@@ -455,6 +517,7 @@
 		justify-content: center;
 		z-index: 9999;
 		padding: 1rem;
+		overflow-y: auto; /* 🔥 Разрешаем скролл самой модалки */
 	}
 
 	.editor-container {
@@ -531,6 +594,10 @@
 		box-shadow: 0 0 20px rgba(252, 238, 10, 0.2);
 		max-width: 100%;
 		height: auto;
+		touch-action: none; /* 🔥 Отключаем дефолтные тач-жесты браузера */
+		user-select: none; /* 🔥 Отключаем выделение */
+		-webkit-user-select: none;
+		-webkit-touch-callout: none; /* 🔥 Отключаем контекстное меню на iOS */
 	}
 
 	.canvas-hint {
@@ -781,6 +848,10 @@
 
 		.controls-section {
 			max-height: none;
+		}
+
+		.canvas-hint {
+			font-size: 0.75rem;
 		}
 	}
 </style>

@@ -20,6 +20,8 @@
     import { AudioManager } from '$lib/client/audioManager';
     import { page } from '$app/stores';
     import WatermelonInteractive from '$lib/components/WatermelonInteractive.svelte';
+    // [ЭТАП 6] Кэш никнеймов
+    import { usernameCache, getUsername, getAvatarUrl } from '$lib/stores/usernameCache';
 
     export let data: PageData;
     export let form: ActionData;
@@ -529,10 +531,10 @@
                         <div class="card-header">
                             <div class="author-info">
                                 <a href={comment.author_uid ? `/u/${comment.author_uid}` : `/profile/${comment.author_username}`} class="comment-avatar-wrapper {comment.author_equipped_frame || ''}">
-                                    <img src={getOptimizedAvatar(comment.author_avatar_url)} alt="" class="comment-avatar" />
+                                    <img src={comment.author_uid ? getAvatarUrl($usernameCache, comment.author_uid, comment.author_avatar_url) : getOptimizedAvatar(comment.author_avatar_url)} alt="" class="comment-avatar" />
                                 </a>
                                 <div class="name-date">
-                                    <a href={comment.author_uid ? `/u/${comment.author_uid}` : `/profile/${comment.author_username}`} class="author-name">{comment.author_username}</a>
+                                    <a href={comment.author_uid ? `/u/${comment.author_uid}` : `/profile/${comment.author_username}`} class="author-name">{comment.author_uid ? getUsername($usernameCache, comment.author_uid, comment.author_username) : comment.author_username}</a>
                                     <span class="time">{formatTimeAgo(comment.createdAt)}</span>
                                 </div>
                             </div>
@@ -581,10 +583,10 @@
                                     <div class="card-header">
                                         <div class="author-info">
                                             <a href={reply.author_uid ? `/u/${reply.author_uid}` : `/profile/${reply.author_username}`} class="comment-avatar-wrapper small {reply.author_equipped_frame || ''}">
-                                                <img src={getOptimizedAvatar(reply.author_avatar_url)} alt="" class="comment-avatar" />
+                                                <img src={reply.author_uid ? getAvatarUrl($usernameCache, reply.author_uid, reply.author_avatar_url) : getOptimizedAvatar(reply.author_avatar_url)} alt="" class="comment-avatar" />
                                             </a>
                                             <div class="name-date">
-                                                <a href={reply.author_uid ? `/u/${reply.author_uid}` : `/profile/${reply.author_username}`} class="author-name text-sm">{reply.author_username}</a>
+                                                <a href={reply.author_uid ? `/u/${reply.author_uid}` : `/profile/${reply.author_username}`} class="author-name text-sm">{reply.author_uid ? getUsername($usernameCache, reply.author_uid, reply.author_username) : reply.author_username}</a>
                                                 <span class="time">{formatTimeAgo(reply.createdAt)}</span>
                                             </div>
                                         </div>
@@ -971,6 +973,7 @@
         100% { transform: translate(-50%, -50%) scale(4); opacity: 0; border-width: 0px; }
     }
 
+    .controls { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
     .icon-btn { color: #444; padding: 0 4px; font-weight: bold; transition: color 0.2s; }
     .icon-btn:hover { color: #fff; }
     .icon-btn.del:hover { color: #ff003c; }

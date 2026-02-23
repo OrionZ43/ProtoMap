@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { auth } from "$lib/firebase";
+    import { auth, db } from "$lib/firebase";
     import {
         signInWithEmailAndPassword,
         signInWithPopup,
@@ -13,10 +13,10 @@
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
-    import { db } from '$lib/firebase';
     import { modal } from '$lib/stores/modalStore';
     import { slide } from 'svelte/transition';
     import { getFunctions, httpsCallable } from "firebase/functions";
+    import { userStore } from '$lib/stores';
     import { t } from 'svelte-i18n';
 
     let email = "";
@@ -38,7 +38,7 @@
     function handleTurnstileVerified(event: CustomEvent) {
         turnstileToken = event.detail.token;
         turnstileVerified = true;
-        console.log('✅ Капча пройдена, токен:', turnstileToken.substring(0, 20) + '...');
+        console.log('✅ Капча пройдена');
     }
 
     function handleTurnstileError() {
@@ -70,13 +70,60 @@
             modal.error("Ошибка ввода", "Пожалуйста, заполните все поля.");
             return;
         }
+
         loading = true;
+
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            console.log("Пользователь вошел:", userCredential.user);
+            const user = userCredential.user;
+
+            console.log("✅ Вход выполнен:", user.uid);
+
+            // Загружаем профиль из Firestore
+            const userDocRef = doc(db, "users", user.uid);
+            const userDocSnap = await getDoc(userDocRef);
+
+            if (userDocSnap.exists()) {
+                const data = userDocSnap.data();
+
+                // 🔥 FIX: Принудительно обновляем userStore
+                const profileData = {
+                    uid: user.uid,
+                    username: data.username,
+                    email: user.email,
+                    emailVerified: user.emailVerified,
+                    avatar_url: data.avatar_url || "",
+                    social_link: data.social_link || "",
+                    about_me: data.about_me || "",
+                    status: data.status || "",
+                    casino_credits: data.casino_credits ?? 100,
+                    last_daily_bonus: data.last_daily_bonus ? data.last_daily_bonus.toDate() : null,
+                    daily_streak: data.daily_streak || 0,
+                    owned_items: data.owned_items || [],
+                    equipped_frame: data.equipped_frame || null,
+                    equipped_badge: data.equipped_badge || null,
+                    equipped_bg: data.equipped_bg || null,
+                    blocked_uids: data.blocked_uids || []
+                };
+
+                userStore.set({ user: profileData, loading: false });
+            }
+
+            // Обновляем cookie
+            const token = await user.getIdToken();
+            await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: token }),
+            });
+
+            // Небольшая задержка для синхронизации UI
+            await new Promise(resolve => setTimeout(resolve, 300));
+
             goto('/');
+
         } catch (e: any) {
-            console.error("Ошибка входа:", e.code);
+            console.error("❌ Ошибка входа:", e.code);
             if (e.code === 'auth/invalid-credential' || e.code === 'auth/invalid-email' || e.code === 'auth/wrong-password') {
                 modal.error("Ошибка входа", "Неверный email или пароль.");
             } else if (e.code === 'auth/user-not-found') {
@@ -99,7 +146,9 @@
             modal.error("Ошибка ввода", "Введите Email, на который зарегистрирован аккаунт.");
             return;
         }
+
         loading = true;
+
         try {
             await sendPasswordResetEmail(auth, email);
             modal.success("Письмо отправлено", `Ссылка для сброса пароля отправлена на <strong>${email}</strong>. Проверьте почту (и папку Спам).`);
@@ -131,14 +180,14 @@
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
 
-            console.log("✅ Google Auth успешен:", user.uid);
+            console.log("✅ Google Auth:", user.uid);
             await user.getIdToken(true);
 
             const userDocRef = doc(db, "users", user.uid);
             let userDocSnap = await getDoc(userDocRef);
 
             if (!userDocSnap.exists()) {
-                console.log("📝 Новый пользователь Google, создаем профиль...");
+                console.log("📝 Новый Google юзер, создаём профиль...");
 
                 let generatedUsername = user.displayName || '';
                 generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
@@ -157,48 +206,76 @@
                     generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
                 }
 
-                console.log('🔧 Генерируем username:', generatedUsername);
+                console.log('🔧 Username:', generatedUsername);
 
-                let retries = 3;
-                let profileCreated = false;
+                await setDoc(userDocRef, {
+                    username: generatedUsername,
+                    email: user.email || "",
+                    avatar_url: user.photoURL || "",
+                    about_me: "",
+                    social_link: "",
+                    createdAt: serverTimestamp(),
+                    casino_credits: 100,
+                    glitch_shards: 0,
+                    last_daily_bonus: null,
+                    owned_items: [],
+                    daily_streak: 0,
+                    isBanned: false,
+                    emailVerified: user.emailVerified,
+                    turnstileVerified: true
+                });
 
-                while (retries > 0 && !profileCreated) {
-                    try {
-                        await setDoc(userDocRef, {
-                            username: generatedUsername,
-                            email: user.email || "",
-                            avatar_url: user.photoURL || "",
-                            about_me: "",
-                            social_link: "",
-                            createdAt: serverTimestamp(),
-                            casino_credits: 100,
-                            glitch_shards: 0,
-                            last_daily_bonus: null,
-                            owned_items: [],
-                            daily_streak: 0,
-                            isBanned: false,
-                            emailVerified: user.emailVerified,
-                            turnstileVerified: true
-                        });
+                console.log('✅ Профиль создан');
 
-                        console.log('✅ Профиль успешно создан!');
-                        profileCreated = true;
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                        userDocSnap = await getDoc(userDocRef);
+                // 🔥 FIX: Принудительно обновляем userStore
+                const profileData = {
+                    uid: user.uid,
+                    username: generatedUsername,
+                    email: user.email || "",
+                    emailVerified: user.emailVerified,
+                    avatar_url: user.photoURL || "",
+                    social_link: "",
+                    about_me: "",
+                    status: "",
+                    casino_credits: 100,
+                    last_daily_bonus: null,
+                    daily_streak: 0,
+                    owned_items: [],
+                    equipped_frame: null,
+                    equipped_badge: null,
+                    equipped_bg: null,
+                    blocked_uids: []
+                };
 
-                    } catch (error: any) {
-                        retries--;
-                        console.warn(`⚠️ Попытка создания не удалась (осталось: ${retries})`, error);
+                userStore.set({ user: profileData, loading: false });
 
-                        if (retries === 0) {
-                            throw new Error(`Не удалось создать профиль: ${error.message}`);
-                        }
+                await new Promise(resolve => setTimeout(resolve, 300));
 
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    }
-                }
             } else {
-                console.log('✅ Профиль уже существует');
+                console.log('✅ Профиль существует');
+
+                // 🔥 FIX: Загружаем и обновляем userStore для существующих юзеров
+                const data = userDocSnap.data();
+                const profileData = {
+                    uid: user.uid,
+                    username: data.username,
+                    email: user.email || "",
+                    emailVerified: user.emailVerified,
+                    avatar_url: data.avatar_url || "",
+                    social_link: data.social_link || "",
+                    about_me: data.about_me || "",
+                    status: data.status || "",
+                    casino_credits: data.casino_credits ?? 100,
+                    last_daily_bonus: data.last_daily_bonus ? data.last_daily_bonus.toDate() : null,
+                    daily_streak: data.daily_streak || 0,
+                    owned_items: data.owned_items || [],
+                    equipped_frame: data.equipped_frame || null,
+                    equipped_badge: data.equipped_badge || null,
+                    equipped_bg: data.equipped_bg || null,
+                    blocked_uids: data.blocked_uids || []
+                };
+
+                userStore.set({ user: profileData, loading: false });
             }
 
             const token = await user.getIdToken();
@@ -208,26 +285,23 @@
                 body: JSON.stringify({ idToken: token }),
             });
 
-            console.log('✅ Вход выполнен успешно!');
+            console.log('✅ Вход выполнен');
+
+            await new Promise(resolve => setTimeout(resolve, 300));
+
             goto('/');
 
         } catch (e: any) {
-            console.error("❌ Ошибка входа через Google:", e);
+            console.error("❌ Google вход:", e);
 
             if (e.code === 'permission-denied' || e.message.includes('insufficient permissions')) {
-                modal.error(
-                    "Ошибка создания профиля",
-                    "Не удалось создать профиль. Попробуйте войти снова через несколько секунд."
-                );
+                modal.error("Ошибка создания профиля", "Не удалось создать профиль. Попробуйте снова.");
             } else if (e.code === 'auth/popup-blocked') {
-                modal.error(
-                    "Всплывающее окно заблокировано",
-                    "Разрешите всплывающие окна для этого сайта и попробуйте снова."
-                );
+                modal.error("Окно заблокировано", "Разрешите всплывающие окна.");
             } else if (e.code === 'auth/cancelled-popup-request') {
-                console.log("Пользователь отменил вход");
+                console.log("Отменено");
             } else {
-                modal.error("Системная ошибка", `Не удалось войти: ${e.message}`);
+                modal.error("Ошибка", `Не удалось войти: ${e.message}`);
             }
         } finally {
             googleLoading = false;

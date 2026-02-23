@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy, tick } from 'svelte';
+    import { onMount, tick } from 'svelte';
     import { db } from '$lib/firebase';
     import { collection, query, orderBy, limit, onSnapshot, where, type Unsubscribe, type Timestamp } from 'firebase/firestore';
     import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -8,6 +8,8 @@
     import { AudioManager } from '$lib/client/audioManager';
     import { t, locale } from 'svelte-i18n';
     import { get } from 'svelte/store';
+    // [ЭТАП 6] Кэш никнеймов
+    import { usernameCache, getUsername, getAvatarUrl } from '$lib/stores/usernameCache';
 
     type ReplyInfo = {
         author_username: string;
@@ -46,7 +48,6 @@
     let messagesLimit = 20;
     let chatLang = 'ru';
     let reachedEnd = false;
-
     let lastReadTime = 0;
 
     onMount(() => {
@@ -117,9 +118,7 @@
                 };
             }).filter(msg => msg.createdAt).reverse();
 
-            if (newMessages.length < messagesLimit) {
-                reachedEnd = true;
-            }
+            if (newMessages.length < messagesLimit) reachedEnd = true;
 
             if (newMessages.length > 0) {
                 const lastMsg = newMessages[newMessages.length - 1];
@@ -135,10 +134,7 @@
             isLoadingMore = false;
 
             await tick();
-
-            if (wasLoading && $chat.isOpen) {
-                scrollToTarget();
-            }
+            if (wasLoading && $chat.isOpen) scrollToTarget();
         }, (error) => {
             console.error(error);
             isLoading = false;
@@ -149,28 +145,20 @@
     function scrollToTarget() {
         if (!messagesWindow) return;
         const unreadMarker = document.getElementById('unread-marker');
-        if (unreadMarker) {
-            unreadMarker.scrollIntoView({ block: 'center', behavior: 'auto' });
-        } else {
-            messagesWindow.scrollTop = messagesWindow.scrollHeight;
-        }
+        if (unreadMarker) unreadMarker.scrollIntoView({ block: 'center', behavior: 'auto' });
+        else messagesWindow.scrollTop = messagesWindow.scrollHeight;
     }
 
     async function sendMessage() {
         if (isSending || !canSendMessage || !messageText.trim()) return;
-
         const currentUser = $userStore.user;
-        if (!currentUser) {
-            modal.error(get(t)('ui.error'), get(t)('chat.login_req'));
-            return;
-        }
+        if (!currentUser) { modal.error(get(t)('ui.error'), get(t)('chat.login_req')); return; }
 
         isSending = true;
         canSendMessage = false;
         try {
             const functions = getFunctions();
-            const sendMessageFunc = httpsCallable(functions, 'sendMessage');
-            await sendMessageFunc({
+            await httpsCallable(functions, 'sendMessage')({
                 text: messageText.trim(),
                 replyTo: replyingTo ? { author_username: replyingTo.author_username, text: replyingTo.text } : null,
                 lang: chatLang
@@ -178,15 +166,11 @@
             AudioManager.play('message');
             messageText = '';
             replyingTo = null;
-
             lastReadTime = Date.now();
             localStorage.setItem('protomap_last_read_chat', lastReadTime.toString());
-
             setTimeout(() => { canSendMessage = true; }, cooldownSeconds * 1000);
-
             await tick();
             if (messagesWindow) messagesWindow.scrollTop = messagesWindow.scrollHeight;
-
         } catch (e) {
             canSendMessage = true;
         } finally {
@@ -195,10 +179,7 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            sendMessage();
-        }
+        if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }
     }
 
     function setReplyTo(message: ChatMessage) {
@@ -219,7 +200,7 @@
 
     function formatDateSeparator(date: Date): string {
         const today = new Date();
-        const yesterday = new Date();
+        const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
         if (isSameDay(date, today)) return get(t)('profile.time.today');
         if (isSameDay(date, yesterday)) return get(t)('profile.time.yesterday');
@@ -259,14 +240,22 @@
             {/if}
 
             {#if messages.length === 0}
-                <div class="empty-chat">
-                    <p class="status-text">{$t('chat.empty')}</p>
-                </div>
+                <div class="empty-chat"><p class="status-text">{$t('chat.empty')}</p></div>
             {:else}
                 {#each messages as msg, i (msg.id)}
                     {@const prevMsg = messages[i - 1]}
                     {@const isUnread = msg.createdAt.getTime() > lastReadTime}
                     {@const isFirstUnread = isUnread && (i === 0 || messages[i - 1].createdAt.getTime() <= lastReadTime)}
+
+                    <!-- [ЭТАП 6] Реактивно берём актуальный никнейм/аватар из кэша.
+                         $usernameCache — реактивный стор, при обновлении кэша Svelte
+                         перерисует только эту строку, не весь список. -->
+                    {@const displayName = msg.author_uid
+                        ? getUsername($usernameCache, msg.author_uid, msg.author_username)
+                        : msg.author_username}
+                    {@const displayAvatar = msg.author_uid
+                        ? getAvatarUrl($usernameCache, msg.author_uid, msg.author_avatar_url)
+                        : msg.author_avatar_url}
 
                     {#if i === 0 || !isSameDay(msg.createdAt, prevMsg.createdAt)}
                         <div class="date-separator"><span>{formatDateSeparator(msg.createdAt)}</span></div>
@@ -281,25 +270,27 @@
                     {/if}
 
                     <div class="message-card" class:own-message={msg.author_uid === $userStore.user?.uid}>
-                        <a href={`/profile/${msg.author_username}`} class="shrink-0">
+                        <a href={msg.author_uid ? `/u/${msg.author_uid}` : `/profile/${msg.author_username}`} class="shrink-0">
                             <div class="avatar-container comment-avatar-wrapper {msg.author_equipped_frame || ''}">
                                 <img
-                                    src={msg.author_avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${msg.author_username}`}
-                                    alt={msg.author_username}
+                                    src={displayAvatar || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${msg.author_username}`}
+                                    alt={displayName}
                                     class="message-avatar"
                                 />
                             </div>
                         </a>
 
                         <div class="message-content-wrapper">
-                            <a href={`/profile/${msg.author_username}`} class="message-author">{msg.author_username}</a>
+                            <a href={msg.author_uid ? `/u/${msg.author_uid}` : `/profile/${msg.author_username}`} class="message-author">
+                                {displayName}
+                            </a>
                             <div class="message-body">
                                 {#if msg.replyTo}
                                     <div class="reply-quote">
                                         <strong>{msg.replyTo.author_username}:</strong>
-                                        {#if msg.replyToImage} <span class="text-cyber-cyan italic">[Изображение]</span>
-                                        {:else if msg.replyToVoiceMessage} <span class="text-cyber-yellow italic">[Голосовое]</span>
-                                        {:else} {msg.replyTo.text} {/if}
+                                        {#if msg.replyToImage}<span class="text-cyber-cyan italic">[Изображение]</span>
+                                        {:else if msg.replyToVoiceMessage}<span class="text-cyber-yellow italic">[Голосовое]</span>
+                                        {:else}{msg.replyTo.text}{/if}
                                     </div>
                                 {/if}
 
@@ -364,24 +355,8 @@
 </div>
 
 <style>
-    .chat-widget {
-        position: fixed; bottom: 4rem; right: 1rem; z-index: 40;
-        width: calc(100vw - 2rem); height: 75vh; max-width: 420px; max-height: 650px;
-        background: rgba(5, 8, 12, 0.95); backdrop-filter: blur(12px);
-        border: 1px solid #30363d;
-        border-radius: 8px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        clip-path: polygon(0 10px, 10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
-
-        transform: translateX(120%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        display: flex; flex-direction: column;
-    }
-
-    .chat-widget.open {
-        transform: translateX(0);
-    }
-
+    .chat-widget { position: fixed; bottom: 4rem; right: 1rem; z-index: 40; width: calc(100vw - 2rem); height: 75vh; max-width: 420px; max-height: 650px; background: rgba(5, 8, 12, 0.95); backdrop-filter: blur(12px); border: 1px solid #30363d; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); clip-path: polygon(0 10px, 10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%); transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
+    .chat-widget.open { transform: translateX(0); }
     .widget-header { @apply flex justify-between items-center p-3 border-b border-gray-700/50 shrink-0; }
     .widget-header h3 { @apply text-cyber-yellow uppercase tracking-widest; }
     .close-btn { @apply text-3xl text-gray-400 hover:text-white leading-none p-1; transition: transform 0.2s; }
@@ -419,21 +394,14 @@
     .mobile-exclusive .info { display: flex; flex-direction: column; }
     .mobile-exclusive .title { font-weight: bold; font-size: 0.75rem; color: #fff; }
     .mobile-exclusive .subtitle { font-size: 0.6rem; color: rgba(255, 255, 255, 0.6); }
-
     .chat-lang-toggle { display: flex; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; padding: 2px; }
     .chat-lang-toggle button { font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 2px; color: #555; transition: all 0.2s; }
     .chat-lang-toggle button.active { background: var(--cyber-yellow); color: #000; box-shadow: 0 0 5px var(--cyber-yellow); }
-
     .load-more-btn { @apply w-full py-2 text-[10px] font-bold tracking-widest text-gray-500 hover:text-white transition-colors uppercase mb-4; background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.1); }
     .reached-end-text { @apply w-full text-center py-4 text-[9px] text-gray-700 uppercase tracking-widest; }
     .empty-chat { @apply m-auto text-center p-6; }
-
-    .unread-separator {
-        display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-        margin: 1rem 0; animation: flash-red 2s infinite;
-    }
+    .unread-separator { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 1rem 0; animation: flash-red 2s infinite; }
     .unread-separator .line { flex-grow: 1; height: 1px; background: #ff003c; }
     .unread-separator .text { color: #ff003c; font-size: 0.6rem; font-weight: bold; letter-spacing: 0.2em; white-space: nowrap; }
-
     @keyframes flash-red { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 </style>

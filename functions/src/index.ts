@@ -6,6 +6,9 @@ import { FieldValue } from "firebase-admin/firestore";
 import { v2 as cloudinary } from "cloudinary";
 import * as crypto from 'crypto';
 import { telegramWebhook } from './telegramBot';
+import { getMessaging } from "firebase-admin/messaging";
+import vision from "@google-cloud/vision";
+
 
 exports.telegramWebhook = telegramWebhook;
 
@@ -151,6 +154,87 @@ async function sendToCasinoChat(message: string) {
         console.error("Ошибка отправки в Telegram:", e);
     }
 }
+
+export const sendPrivateChatNotification = onCall(async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+    const uid = request.auth.uid;
+    const { recipientUid, chatId, senderName, messageText, messageType } = request.data;
+
+    if (!recipientUid || !chatId || !senderName) {
+        throw new HttpsError('invalid-argument', 'Missing required fields.');
+    }
+
+    if (uid === recipientUid) return { status: 'skipped' };
+
+    try {
+        const recipientDoc = await db.collection('users').doc(recipientUid).get();
+        if (!recipientDoc.exists) throw new HttpsError('not-found', 'Recipient not found.');
+
+        const recipientData = recipientDoc.data()!;
+        const fcmToken = recipientData.fcmToken;
+
+        if (!fcmToken) {
+            return { status: 'no_token' };
+        }
+
+        let bodyText: string;
+        switch (messageType?.toUpperCase()) {
+            case 'IMAGE':
+                bodyText = '📷 Фото';
+                break;
+            case 'VOICE':
+                bodyText = '🎤 Голосовое сообщение';
+                break;
+            case 'STICKER':
+                bodyText = '😊 Стикер';
+                break;
+            default:
+                bodyText = messageText?.substring(0, 100) || 'Новое сообщение';
+        }
+
+        const message = {
+            token: fcmToken,
+            notification: {
+                title: senderName,
+                body: bodyText,
+            },
+            data: {
+                chatId: chatId,
+                partnerUid: uid,
+                type: 'private_message',
+            },
+            android: {
+                priority: 'high' as const,
+                notification: {
+                    channelId: 'protomap_chat_channel',
+                    priority: 'high' as const,
+                    defaultSound: true,
+                    defaultVibrateTimings: true,
+                },
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: 'default',
+                        badge: 1,
+                    },
+                },
+            },
+        };
+
+        await getMessaging().send(message);
+        return { status: 'sent' };
+
+    } catch (e: any) {
+        if (e.code === 'messaging/registration-token-not-registered' ||
+            e.code === 'messaging/invalid-registration-token') {
+            await db.collection('users').doc(recipientUid).update({ fcmToken: null });
+            return { status: 'token_cleaned' };
+        }
+        console.error('[FCM] Error sending notification:', e);
+        throw new HttpsError('internal', 'Failed to send notification.');
+    }
+});
 
 // ===================================================================
 // 🔒 SECURITY FIX #5: Исправленный migrateExternalAvatar
@@ -355,7 +439,7 @@ export const addComment = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request); // ✅ [ЭТАП 1] Исправлен баг: передаём request, а не uid
     assertEmailVerified(request.auth);
 
     const { profileUid, text, parentId } = request.data;
@@ -1486,6 +1570,7 @@ export const getLocations = onRequest({ cors: false }, async (request, response)
                 lng: loc.longitude,
                 city: loc.city,
                 user: {
+                    uid: loc.user_id || null,           // [ЭТАП 3] UID для ссылок на профиль
                     username: user.username || "Unknown",
                     avatar_url: user.avatar_url || null,
                     status: user.status || null,
@@ -1582,53 +1667,195 @@ export const updateProfileData = onCall(async (request) => {
     }
 });
 
-export const uploadAvatar = onCall({ secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"] }, async (request) => {
-    if (request.app == undefined) {
-        throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
-    }
-    if (!request.auth) throw new HttpsError("unauthenticated", "Auth required.");
 
-    const uid = request.auth.uid;
-    await assertNotBanned(request);
+// ===================================================================
+// 🔍 CLOUD VISION: SafeSearch Helper
+// ===================================================================
+const visionClient = new vision.ImageAnnotatorClient();
 
-    const { imageBase64 } = request.data;
-    if (!imageBase64?.startsWith('data:image/')) throw new HttpsError("invalid-argument", "Bad image.");
+async function checkImageSafety(imageBase64: string): Promise<{
+    safe: boolean;
+    reason?: string;
+    skipped?: boolean;
+}> {
+    const MONTHLY_LIMIT = 800; // Бесплатно 1000/мес, берём 800 как буфер
 
-    // ✅ ИСПРАВЛЕНО: Безопасное логирование секретов
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    const apiKey = process.env.CLOUDINARY_API_KEY;
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}_${now.getMonth() + 1}`; // Например: "2025_6"
+    const statsRef = db.collection("system").doc("vision_stats");
 
-    if (!cloudName || !apiKey || !apiSecret) {
-        console.error("Cloudinary credentials missing");
-        throw new HttpsError('internal', 'Service configuration error');
-    }
+    let shouldSkip = false;
 
-    console.log("Cloudinary configured:", {
-        cloudName: !!cloudName,
-        apiKey: !!apiKey
-        // ❌ НЕ ЛОГИРУЕМ apiSecret!
+    await db.runTransaction(async (t) => {
+        const doc = await t.get(statsRef);
+        const data = doc.data() || {};
+        const currentCount = data[monthKey] || 0;
+
+        if (currentCount >= MONTHLY_LIMIT) {
+            shouldSkip = true;
+            return;
+        }
+
+        t.set(statsRef, {
+            [monthKey]: currentCount + 1,
+            lastUpdated: FieldValue.serverTimestamp()
+        }, { merge: true });
     });
 
-    cloudinary.config({
-        cloud_name: cloudName,
-        api_key: apiKey,
-        api_secret: apiSecret,
-        secure: true,
-    });
+    if (shouldSkip) {
+        console.warn("[VISION] Monthly limit reached, skipping check. Avatar queued for manual review.");
+        return { safe: true, skipped: true };
+    }
+
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
     try {
-        const res = await cloudinary.uploader.upload(imageBase64, {
-            folder: "protomap_avatars", public_id: uid, overwrite: true,
-            format: "webp", transformation: [{ width: 256, height: 256, crop: "fill", gravity: "face" }]
+        const [result] = await visionClient.safeSearchDetection({
+            image: { content: base64Data }
         });
-        await db.collection('users').doc(uid).update({ avatar_url: res.secure_url });
-        await clearMapCache();
-        return { avatarUrl: res.secure_url };
-    } catch (e) {
-        throw new HttpsError("internal", "Upload failed.");
+
+        const safeSearch = result.safeSearchAnnotation;
+        if (!safeSearch) {
+            console.warn("[VISION] No safeSearch annotation returned.");
+            return { safe: true };
+        }
+
+        const BLOCK_LEVELS = ["LIKELY", "VERY_LIKELY"];
+
+        if (BLOCK_LEVELS.includes(String(safeSearch.adult || ""))) {
+            return { safe: false, reason: "adult_content" };
+        }
+        if (BLOCK_LEVELS.includes(String(safeSearch.violence || ""))) {
+            return { safe: false, reason: "violent_content" };
+        }
+        if (BLOCK_LEVELS.includes(String(safeSearch.racy || ""))) {
+            return { safe: false, reason: "racy_content" };
+        }
+
+        return { safe: true };
+
+    } catch (visionError: any) {
+        console.error("[VISION] API error:", visionError.message);
+        return { safe: true, skipped: true };
     }
-});
+}
+
+export const uploadAvatar = onCall(
+    { secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"] },
+    async (request) => {
+        if (request.app == undefined) {
+            throw new HttpsError("failed-precondition", "The function must be called from an App Check verified app.");
+        }
+        if (!request.auth) throw new HttpsError("unauthenticated", "Auth required.");
+
+        const uid = request.auth.uid;
+        await assertNotBanned(request);
+
+        const { imageBase64 } = request.data;
+        if (!imageBase64?.startsWith("data:image/")) {
+            throw new HttpsError("invalid-argument", "Bad image.");
+        }
+
+        // 🔒 Rate limit: не чаще 1 раза в 10 минут
+        const userRef = db.collection("users").doc(uid);
+        const userDoc = await userRef.get();
+        if (userDoc.exists) {
+            const lastUpload = userDoc.data()?.last_avatar_upload;
+            if (lastUpload && Date.now() - lastUpload.toMillis() < 10 * 60 * 1000) {
+                const minutesLeft = Math.ceil((10 * 60 * 1000 - (Date.now() - lastUpload.toMillis())) / 60000);
+                throw new HttpsError("resource-exhausted", `Загружать аватар можно раз в 10 минут. Подождите ещё ${minutesLeft} мин.`);
+            }
+        }
+
+        // ===================================================================
+        // 🔍 ШАГ 1: Cloud Vision SafeSearch
+        // ===================================================================
+        const safetyResult = await checkImageSafety(imageBase64);
+
+        if (!safetyResult.safe) {
+            await db.collection("moderation_flags").add({
+                uid,
+                reason: safetyResult.reason || "unknown",
+                type: "avatar_upload_blocked",
+                createdAt: FieldValue.serverTimestamp()
+            });
+
+            console.warn(`[VISION] Blocked avatar upload for ${uid}. Reason: ${safetyResult.reason}`);
+
+            const botToken = process.env.TELEGRAM_BOT_TOKEN;
+            const chatId = process.env.TELEGRAM_CHAT_ID;
+            if (botToken && chatId) {
+                const userDoc = await db.collection("users").doc(uid).get();
+                const username = userDoc.data()?.username || uid;
+                const adminLink = "https://proto-map.vercel.app/admin/users";
+                const msg = `⚠️ *ЗАБЛОКИРОВАНА ЗАГРУЗКА АВАТАРА*\n\n`
+                    + `👤 Пользователь: \`${escapeMarkdownV2(username)}\` \(${escapeMarkdownV2(uid)}\)\n`
+                    + `🚫 Причина: \`${escapeMarkdownV2(safetyResult.reason || "unknown")}\`\n`
+                    + `🔗 [Открыть админку](${escapeMarkdownV2(adminLink)})`;
+
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: msg,
+                        parse_mode: "MarkdownV2",
+                        disable_web_page_preview: true
+                    })
+                }).catch(e => console.error("[VISION] Telegram notify failed:", e));
+            }
+
+            throw new HttpsError("invalid-argument", "Изображение не прошло проверку безопасности.");
+        }
+
+        // Если лимит Vision исчерпан — аватар загружается, но ставится в очередь ручной модерации
+        if (safetyResult.skipped) {
+            await db.collection("moderation_queue").add({
+                uid,
+                type: "avatar_pending_review",
+                reason: "vision_limit_reached",
+                createdAt: FieldValue.serverTimestamp(),
+                status: "pending"
+            });
+        }
+
+        // ===================================================================
+        // ☁️ ШАГ 2: Загрузка в Cloudinary
+        // ===================================================================
+        const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+        const apiKey = process.env.CLOUDINARY_API_KEY;
+        const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+        if (!cloudName || !apiKey || !apiSecret) {
+            console.error("Cloudinary credentials missing");
+            throw new HttpsError("internal", "Service configuration error");
+        }
+
+        cloudinary.config({
+            cloud_name: cloudName,
+            api_key: apiKey,
+            api_secret: apiSecret,
+            secure: true,
+        });
+
+        try {
+            const res = await cloudinary.uploader.upload(imageBase64, {
+                folder: "protomap_avatars",
+                public_id: uid,
+                overwrite: true,
+                format: "webp",
+                transformation: [{ width: 256, height: 256, crop: "fill", gravity: "face" }]
+            });
+            await db.collection("users").doc(uid).update({ avatar_url: res.secure_url });
+            await clearMapCache();
+            await userRef.update({ last_avatar_upload: FieldValue.serverTimestamp() });
+            await clearMapCache();
+            return { avatarUrl: res.secure_url };
+        } catch (e) {
+            throw new HttpsError("internal", "Upload failed.");
+        }
+    }
+);
 
 function escapeMarkdownV2(text: string): string {
     const sourceText = String(text || '');
@@ -1763,6 +1990,94 @@ export const reportContent = onCall(
     }
 );
 
+
+export const changeUsername = onCall(async (request) => {
+    if (request.app == undefined) {
+        throw new HttpsError('failed-precondition', 'App Check required.');
+    }
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(request);
+    assertEmailVerified(request.auth);
+
+    // [ЭТАП 5] Смена никнейма теперь обновляет ТОЛЬКО документ пользователя.
+    // Комментарии и чат больше не нужно трогать — они хранят author_uid
+    // и никнейм подтягивается динамически при загрузке.
+
+    const { newUsername } = request.data;
+
+    if (!newUsername || typeof newUsername !== 'string') {
+        throw new HttpsError('invalid-argument', 'Никнейм не указан.');
+    }
+
+    const trimmed = newUsername.trim();
+
+    if (trimmed.length < 4 || trimmed.length > 20) {
+        throw new HttpsError('invalid-argument', 'Никнейм должен быть от 4 до 20 символов.');
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
+        throw new HttpsError('invalid-argument', 'Никнейм может содержать только латинские буквы, цифры и _');
+    }
+
+    const lowerName = trimmed.toLowerCase();
+    const forbiddenWords = ['admin', 'moderator', 'system', 'root', 'support', 'protomap', 'owner', 'dev', 'bot'];
+    if (forbiddenWords.some(word => lowerName.includes(word))) {
+        throw new HttpsError('invalid-argument', 'Это имя зарезервировано системой.');
+    }
+
+    const userRef = db.collection('users').doc(uid);
+
+    try {
+        await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', 'Пользователь не найден.');
+
+            const userData = userDoc.data()!;
+
+            // Rate limit: не чаще раза в 30 дней
+            const lastChange = userData.last_username_change
+                ? userData.last_username_change.toDate().getTime()
+                : 0;
+            const daysSinceLastChange = (Date.now() - lastChange) / (1000 * 60 * 60 * 24);
+
+            if (lastChange > 0 && daysSinceLastChange < 30) {
+                const daysLeft = Math.ceil(30 - daysSinceLastChange);
+                throw new HttpsError(
+                    'resource-exhausted',
+                    `Никнейм можно менять раз в 30 дней. Осталось: ${daysLeft} дн.`
+                );
+            }
+
+            // Проверяем уникальность
+            const existing = await db.collection('users')
+                .where('username', '==', trimmed)
+                .limit(1)
+                .get();
+
+            if (!existing.empty && existing.docs[0].id !== uid) {
+                throw new HttpsError('already-exists', 'Этот никнейм уже занят.');
+            }
+
+            // ✅ Обновляем ТОЛЬКО один документ
+            t.update(userRef, {
+                username: trimmed,
+                last_username_change: FieldValue.serverTimestamp()
+            });
+        });
+
+        // Инвалидируем кэш карты (никнейм отображается на маркерах)
+        await clearMapCache();
+
+        return { status: 'success', message: `Никнейм изменён на "${trimmed}"` };
+
+    } catch (error: any) {
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError('internal', 'Ошибка смены никнейма.');
+    }
+});
+
 export const deleteAccount = onCall(async (request) => {
     if (request.app == undefined) {
         throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
@@ -1770,20 +2085,50 @@ export const deleteAccount = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
     const uid = request.auth.uid;
 
-    try {
-        const batch = db.batch();
-
-        const comments = await db.collectionGroup('comments').where('author_uid', '==', uid).get();
-        comments.forEach(d => batch.update(d.ref, { author_username: 'Deleted', author_avatar_url: null, author_uid: null }));
-
-        const msgs = await db.collection('global_chat').where('author_uid', '==', uid).get();
-        msgs.forEach(d => batch.update(d.ref, { author_username: 'Deleted', author_avatar_url: null, author_uid: null }));
-
+    // ✅ [ЭТАП 1] Вспомогательная функция: commit батча и вернуть новый
+    async function commitAndRenew(batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch> {
         await batch.commit();
+        return db.batch();
+    }
+
+    try {
+        let batch = db.batch();
+        let opCount = 0;
+        const BATCH_LIMIT = 400; // Безопасный лимит (макс 500 у Firestore)
+
+        // Анонимизируем комментарии автора (может быть много)
+        const comments = await db.collectionGroup('comments').where('author_uid', '==', uid).get();
+        for (const d of comments.docs) {
+            batch.update(d.ref, { author_username: 'Deleted', author_avatar_url: null, author_uid: null });
+            opCount++;
+            if (opCount >= BATCH_LIMIT) {
+                batch = await commitAndRenew(batch);
+                opCount = 0;
+            }
+        }
+
+        // Анонимизируем сообщения в глобальном чате
+        const msgs = await db.collection('global_chat').where('author_uid', '==', uid).get();
+        for (const d of msgs.docs) {
+            batch.update(d.ref, { author_username: 'Deleted', author_avatar_url: null, author_uid: null });
+            opCount++;
+            if (opCount >= BATCH_LIMIT) {
+                batch = await commitAndRenew(batch);
+                opCount = 0;
+            }
+        }
+
+        // Финальный commit если остались незакоммиченные операции
+        if (opCount > 0) {
+            await batch.commit();
+        }
+
+        // Удаляем документ пользователя
         await db.collection('users').doc(uid).delete();
 
+        // Удаляем метки на карте (обычно 1 документ)
         const locs = await db.collection('locations').where('user_id', '==', uid).get();
-        locs.forEach(d => d.ref.delete());
+        await Promise.all(locs.docs.map(d => d.ref.delete()));
 
         await clearMapCache();
 

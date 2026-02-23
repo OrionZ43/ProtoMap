@@ -1,5 +1,5 @@
 import { firestoreAdmin } from '$lib/server/firebase.admin';
-import { error, redirect } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { FieldPath } from 'firebase-admin/firestore';
 
@@ -27,20 +27,10 @@ function isDomainInUrl(url: string, domain: string): boolean {
 
 function isSafeUrl(url: string): boolean {
     if (!url) return false;
-
     const lower = url.toLowerCase().trim();
-
-    if (!lower.match(/^https?:\/\//)) {
-        return false;
-    }
-
-    if (lower.includes('javascript:') ||
-        lower.includes('data:') ||
-        lower.includes('vbscript:') ||
-        lower.includes('file:')) {
-        return false;
-    }
-
+    if (!lower.match(/^https?:\/\//)) return false;
+    if (lower.includes('javascript:') || lower.includes('data:') ||
+        lower.includes('vbscript:') || lower.includes('file:')) return false;
     return true;
 }
 
@@ -48,45 +38,39 @@ function getAbsoluteImageUrl(avatarUrl: string | null | undefined, username: str
     if (!avatarUrl) {
         return `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(username)}`;
     }
-
     if (!isSafeUrl(avatarUrl)) {
         return `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(username)}`;
     }
-
     if (isDomainInUrl(avatarUrl, 'cloudinary.com')) {
         const parts = avatarUrl.split('/upload/');
         if (parts.length === 2 && parts[0] && parts[1]) {
             return `${parts[0]}/upload/f_auto,q_auto,w_1200,h_1200,c_fill,g_face/${parts[1]}`;
         }
     }
-
     if (isDomainInUrl(avatarUrl, 'googleusercontent.com')) {
         const parts = avatarUrl.split('=');
-        if (parts.length > 0) {
-            return parts[0] + '=s1200-c';
-        }
+        if (parts.length > 0) return parts[0] + '=s1200-c';
     }
-
     return avatarUrl;
 }
 
 export const load: PageServerLoad = async ({ params, setHeaders }) => {
-    const username = params.username;
-    const usersRef = firestoreAdmin.collection('users');
-    const userSnapshot = await usersRef.where('username', '==', username).limit(1).get();
+    const uid = params.uid;
 
-    if (userSnapshot.empty) {
+    // ✅ Прямой lookup по doc ID — O(1), без поиска по полю
+    const userDoc = await firestoreAdmin.collection('users').doc(uid).get();
+
+    if (!userDoc.exists) {
         throw error(404, 'Профиль не найден');
     }
 
-    const userProfileDoc = userSnapshot.docs[0];
-    const userProfileData = userProfileDoc.data();
+    const userProfileData = userDoc.data()!;
 
-    // ✅ [ЭТАП 4] 301 редирект: /profile/username -> /u/uid
-    // Постоянный редирект — поисковики обновят индекс на новый URL
-    throw redirect(301, `/u/${userProfileDoc.id}`);
-
-    const commentsRef = userProfileDoc.ref.collection('comments').orderBy('createdAt', 'desc').limit(50);
+    // Загружаем комментарии
+    const commentsRef = userDoc.ref
+        .collection('comments')
+        .orderBy('createdAt', 'desc')
+        .limit(50);
     const commentsSnapshot = await commentsRef.get();
 
     const rawComments: Comment[] = commentsSnapshot.docs.map(doc => {
@@ -105,6 +89,7 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
         };
     });
 
+    // Подтягиваем актуальные данные авторов по uid (динамические никнеймы)
     const authorUids = [...new Set(rawComments.map(c => c.author_uid).filter(Boolean))];
     const authorsData = new Map<string, any>();
 
@@ -118,6 +103,7 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
         }
     }
 
+    // Строим дерево комментариев
     const commentMap = new Map<string, Comment>();
     const rootComments: Comment[] = [];
 
@@ -133,8 +119,7 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 
     rawComments.forEach(c => {
         if (c.parentId && commentMap.has(c.parentId)) {
-            const parent = commentMap.get(c.parentId)!;
-            parent.replies?.push(c);
+            commentMap.get(c.parentId)!.replies?.push(c);
         } else {
             rootComments.push(c);
         }
@@ -150,9 +135,10 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
         title: `${userProfileData.username} | ProtoMap`,
         description: userProfileData.status
             ? `${userProfileData.status}`
-            : (userProfileData.about_me?.substring(0, 150) || `Профиль пользователя ${userProfileData.username} на карте протогенов ProtoMap`),
+            : (userProfileData.about_me?.substring(0, 150) ||
+               `Профиль пользователя ${userProfileData.username} на карте протогенов ProtoMap`),
         image: getAbsoluteImageUrl(userProfileData.avatar_url, userProfileData.username),
-        url: `https://proto-map.vercel.app/u/${userProfileDoc.id}`,  // [ЭТАП 3] Canonical теперь по uid
+        url: `https://proto-map.vercel.app/u/${uid}`,
         type: 'profile'
     };
 
@@ -160,7 +146,7 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 
     return {
         profile: {
-            uid: userProfileDoc.id,
+            uid: userDoc.id,
             username: userProfileData.username,
             avatar_url: userProfileData.avatar_url,
             about_me: userProfileData.about_me,

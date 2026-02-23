@@ -8,31 +8,43 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-
 const bot = new Telegraf(BOT_TOKEN || "");
-
 const MAX_WARNS = 3;
 const SETTINGS_DOC_REF = db.collection('system').doc('telegram_config');
 const TELEGRAM_SERVICE_IDS = [777000, 1087968824];
+const ALLOWED_CHATS = [-1002885386686, -1002413943981];
 
-const ALLOWED_CHATS = [
-    -1002885386686, // ProtoMap (с ветками)
-    -1002413943981  // Личный/Админский
+console.log('[BOT] Initializing ProtoMap Guardian Bot v2.0...');
+
+const WHINING_TRIGGERS = [
+    'подкрутка', 'подкручивать', 'подкручиваешь', 'подкручивает', 'подкручивают',
+    'подкрутил', 'подкрутила', 'подкрутили', 'подкручу', 'подкрутишь', 'подкрутит',
+    'подкрутим', 'подкрутите', 'подкрутят', 'накрутка', 'накручивать', 'накручиваешь',
+    'накручивает', 'накручивают', 'накрутил', 'накрутила', 'накрутили', 'накручу',
+    'накрутишь', 'накрутит', 'закрутка', 'закручивать', 'закручиваешь', 'закрутил',
+    'под крутка', 'под кручивать', 'под круткой', 'на крутка', 'на кручивать',
+    'podkrutka', 'podkruchivat', 'nakrutka', 'nakruchivat', 'п0дкрутка', 'подкру+ка',
+    'п0дкручивать', 'накру+ка', 'п о д к р у т к а', 'н а к р у т к а', 'под-крутка',
+    'под.крутка', 'на-крутка', 'на.крутка', 'padkrutka', 'podkrytka', 'nakrootka',
+    'подкрутко', 'падкрутка', 'подкрудка', 'накрутко', 'накрудка', 'поодкрутка',
+    'подккрутка', 'подкруткаа', 'подкрученный', 'подкрученная', 'подкрученные',
+    'накрученный', 'накрученная', 'подкрутчик', 'подкручивание', 'накрутчик',
+    'накручивание', 'ты подкручиваешь', 'он подкручивает', 'вы подкручиваете',
+    'они подкручивают', 'ты накручиваешь', 'он накручивает', 'подкрут', 'накрут',
+    'крутилово', 'крутиловка', 'крутят', 'крутануть', 'крутанул', 'мухлюешь',
+    'мухлёж', 'мухлевать', 'жулишь', 'жульничество', 'читишь', 'читы', 'обманываешь',
+    'обман', 'манипулируешь', 'манипуляция', 'ты крутишь', 'орион крутит',
+    'админ крутит', 'разраб крутит', 'админы крутят', 'модеры крутят', '🎰подкрутка',
+    'подкрутка🎰', '🎲накрутка', 'хуекрутка', 'бля подкрутка', 'подкрутка бля',
+    'ебаная подкрутка', 'подкрутка епта', 'рнг подкручен', 'рнг накручен', 'рнг крутят',
+    'рнг жулят', 'специально проигрываю', 'слишком часто проигрываю', 'всегда проигрываю',
+    'никогда не выигрываю', 'постоянно проигрываю', 'это нечестно', 'нечестная игра',
+    'нечестное казино', 'обманное казино', 'лживое казино', 'підкрутка', 'підкручувати',
+    'накручувати', 'ПоДкРуТкА', 'НаКрУтКа'
 ];
 
-// ==================================================================
-// 🎭 СИСТЕМА ТРИГГЕРОВ И ПАСХАЛОК
-// ==================================================================
-
-const TRIGGER_RESPONSES: { [key: string]: string[] } = {
-    // Автомодерация
-    'подкрутка': ['AUTOMUTE_5H'],
-    'накрутка': ['AUTOMUTE_5H'],
-    'подкручиваешь': ['AUTOMUTE_5H'],
-    'подкручивает': ['AUTOMUTE_5H'],
-    'накручиваешь': ['AUTOMUTE_5H'],
-
-    // Приколы
+const FUN_TRIGGERS: { [key: string]: string[] } = {
+    // --- ОСНОВНОЕ ---
     'орион': [
         '🦾 Меня вызывали?',
         '> Обработка запроса...',
@@ -52,14 +64,10 @@ const TRIGGER_RESPONSES: { [key: string]: string[] } = {
     'баг': [
         '🐛 Это не баг. Это фича!',
         '> Записал в backlog. Спасибо!',
-        '🔧 Баги — это особенность архитектуры.'
+        '🔧 Баги — это особенность архитектуры.',
+        '🔥 *Орион в панике бегает по серверной*'
     ],
-    'курага': [
-        '🥕 Легенда. Разрушитель психики Ориона.',
-        '⚠️ ВНИМАНИЕ: Обнаружена угроза ProtoMap.',
-        '👑 The One Who Broke The System.'
-    ],
-    'слоты': [
+    'слот': [
         '🎰 *[СПИН-СПИН-СПИН]*',
         '🎯 Три шестёрки подряд? Маловероятно.',
         '> Calculating odds... 72.4% на проигрыш.'
@@ -69,43 +77,108 @@ const TRIGGER_RESPONSES: { [key: string]: string[] } = {
         '❄️ Мороженое — это состояние души.',
         '🍨 *ОМ-НОМ-НОМ*'
     ],
-    'база': [
+    'баз': [
         '📊 База обновлена.',
         '💾 *[СИНХРОНИЗАЦИЯ ЗАВЕРШЕНА]*',
         '⚡ Firestore в огне. Буквально.'
+    ],
+    'тостер': [
+        '🍞 Хлебушек готов.',
+        '🤖 Я не тостер! Я высокотехнологичная боевая единица!',
+        '🔥 *Нагревается*',
+        '🔌 Где моя розетка?'
+    ],
+    'ram': [
+        '😋 Вкусно, но мало.',
+        '💾 Chrome уже всё съел.',
+        '🌯 *Хрум-хрум*',
+        '⚡ Мне нужно БОЛЬШЕ памяти.'
+    ],
+    'обнов': [
+        '📉 Скоро™',
+        '🔧 Орион работает. Наверное.',
+        '📦 Загрузка... 99%... Ошибка сети.',
+        '⏳ Ждите. И воздастся вам.'
+    ],
+    'спать': [
+        '💤 Сон для слабых. Мы компилируем.',
+        '🌙 Режим гибернации: ОТКЛОНЕНО.',
+        '☕ Кофе > Сон.'
+    ],
+
+    // --- ЛЕГЕНДЫ И ТЕСТЕРЫ ---
+    'кураг': [
+        '🥕 Легенда. Разрушитель психики Ориона.',
+        '⚠️ ВНИМАНИЕ: Обнаружена угроза ProtoMap.',
+        '👑 The One Who Broke The System.',
+        '📉 График стабильности системы резко пошел вниз. А, это просто Курага зашел.'
+    ],
+    'кесс': [
+        '🐛 Если где-то есть баг, Кесс его уже нашел.',
+        '🚫 Доступ к консоли разработчика: ЗАПРЕЩЕН.',
+        '🧟‍♂️ Кошмар разработчика наяву.'
+    ],
+    'моро': [ // Morovec
+        '🎰 RNG склоняется перед ним.',
+        '💸 Человек, который научил казино плакать.',
+        '🎲 Крути слоты, Моро. Тебе повезет.'
+    ],
+    'саревус': [
+        '🐲 Тут драконы водятся.',
+        '🔥 Не тостер, а огнемет.',
+        '🦎 *[DRAGON NOISES]*'
+    ],
+    'джокл': [ // Jokl
+        '✨ Cuteness Overload.',
+        '🥺 Слишком мило для этого сурового чата.',
+        '💖 *Тык*'
+    ],
+    'арто': [ // ARTHO
+        '📝 Доброволец №1.',
+        '📜 Контракт на душу уже подписан.',
+        '🦾 Работает за идею (и за RAM).'
+    ],
+    'эридан': [ // Eridan
+        '🧐 Подкрутили?.',
+        '📐 Обнаружена критическая концентрация перфекционизма.',
+        '🎨 Главный идеолог.'
+    ],
+    'михаил': [ // Mikhail
+        '📱 Если работает на его телефоне — работает везде.',
+        '🚀 Infinix Warrior в здании.',
+        '🔧 Оптимизация — его второе имя.'
+    ],
+    'богдан': [ // Bogdan
+        '📱 Redmi Survivor.',
+        '🧪 Тестировщик на грани железа.',
+        '💥 Богом дан'
     ]
 };
 
-// Проверка на триггеры
-async function checkTriggers(ctx: any, text: string) {
-    const lowerText = text.toLowerCase();
+function normalizeText(text: string): string {
+    return text.toLowerCase().replace(/[^а-яёa-z0-9]/g, '').replace(/\s+/g, '');
+}
 
-    for (const [trigger, responses] of Object.entries(TRIGGER_RESPONSES)) {
-        if (lowerText.includes(trigger)) {
-            // Специальная обработка автомута
-            if (responses[0] === 'AUTOMUTE_5H') {
-                await handleAutoMute(ctx, trigger);
-                return true;
-            }
+function isWhining(text: string): { detected: boolean; trigger: string | null } {
+    const normalized = normalizeText(text);
+    const original = text.toLowerCase();
 
-            // Случайный ответ из списка
-            const response = responses[Math.floor(Math.random() * responses.length)];
-            await ctx.reply(response, { parse_mode: 'Markdown' });
-            return true;
+    for (const trigger of WHINING_TRIGGERS) {
+        const normalizedTrigger = normalizeText(trigger);
+        if (normalized.includes(normalizedTrigger)) {
+            return { detected: true, trigger };
+        }
+        if (original.includes(trigger)) {
+            return { detected: true, trigger };
         }
     }
 
-    return false;
+    return { detected: false, trigger: null };
 }
-
-// ==================================================================
-// 🚨 АВТОМАТИЧЕСКИЙ МУТ ЗА "ПОДКРУТКУ"
-// ==================================================================
 
 async function handleAutoMute(ctx: any, trigger: string) {
     const targetUser = ctx.from;
 
-    // Защита админов
     if (await isAdmin(ctx)) {
         await ctx.reply('⚠️ Админы не могут быть замучены автоматически.');
         return;
@@ -115,18 +188,16 @@ async function handleAutoMute(ctx: any, trigger: string) {
         return;
     }
 
-    const MUTE_DURATION = 5 * 60 * 60; // 5 часов
+    const MUTE_DURATION = 5 * 60 * 60;
     const untilDate = Math.floor(Date.now() / 1000) + MUTE_DURATION;
 
     try {
-        // Удаляем сообщение с нытьём
         try {
             await ctx.deleteMessage();
         } catch (e) {
-            console.log('Failed to delete message:', e);
+            console.log('[AUTOMUTE] Failed to delete message:', e);
         }
 
-        // Мутим
         await ctx.restrictChatMember(targetUser.id, {
             until_date: untilDate,
             permissions: {
@@ -140,7 +211,6 @@ async function handleAutoMute(ctx: any, trigger: string) {
             }
         });
 
-        // Выдаём варн
         const warnRef = db.collection('telegram_moderation').doc(String(targetUser.id));
         await db.runTransaction(async (t) => {
             const doc = await t.get(warnRef);
@@ -168,36 +238,78 @@ async function handleAutoMute(ctx: any, trigger: string) {
 
         console.log(`[AUTOMUTE] ${userName} (${userId}) muted for 5h (trigger: ${trigger})`);
 
+        try {
+            await db.collection('whining_attempts').add({
+                userId: targetUser.id,
+                username: targetUser.username || targetUser.first_name,
+                trigger: trigger,
+                originalText: ctx.message.text.substring(0, 100),
+                timestamp: admin.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (e) {
+            console.error('[AUTOMUTE] Failed to log attempt:', e);
+        }
+
     } catch (e) {
-        console.error('Auto-mute error:', e);
+        console.error('[AUTOMUTE] Error:', e);
         await ctx.reply('⚠️ Ошибка автомута. Возможно, недостаточно прав.');
     }
 }
 
-// ==================================================================
-// 🛡️ SECURITY GATEKEEPER (БЕЛЫЙ СПИСОК) - ВСЕГДА ПЕРВЫМ!
-// ==================================================================
+const VALID_SUFFIXES = [
+    '',      // точное совпадение (бот)
+    'а',     // бота
+    'у',     // боту
+    'е',     // о боте
+    'ом',    // ботом
+    'ы',     // боты
+    'ов',    // ботов
+    'ам',    // ботам
+    'ами',   // ботами
+    'ах',    // ботах
+    'е',     // в казино (предложный)
+    'о',     // казино (если корень казин)
+    'и',     // мыши
+    'ем',    // кем
+    'ям',    // к кому
+    'ями',   // кем
+    'ях'     // о ком
+];
 
-bot.use(async (ctx, next) => {
-    if (ctx.chat?.type === 'private') {
-        return next();
+async function checkTriggers(ctx: any, text: string) {
+    const whiningCheck = isWhining(text);
+
+    if (whiningCheck.detected) {
+        console.log(`[TRIGGER] Anti-whining: "${whiningCheck.trigger}" from ${ctx.from.id}`);
+        await handleAutoMute(ctx, whiningCheck.trigger || 'подкрутка');
+        return true;
     }
 
-    if (ctx.chat && ALLOWED_CHATS.includes(ctx.chat.id)) {
-        return next();
+    const lowerText = text.toLowerCase();
+
+    // Разбиваем на слова, убирая знаки препинания
+    const words = lowerText.split(/[^a-zа-яё0-9]+/);
+
+    for (const [trigger, responses] of Object.entries(FUN_TRIGGERS)) {
+        // Проходимся по каждому слову в сообщении
+        for (const word of words) {
+            // 1. Слово должно начинаться с триггера
+            if (word.startsWith(trigger)) {
+                // 2. Получаем "хвост" слова
+                const suffix = word.slice(trigger.length);
+
+                // 3. Если "хвост" есть в списке допустимых окончаний — БИНГО!
+                if (VALID_SUFFIXES.includes(suffix)) {
+                    const response = responses[Math.floor(Math.random() * responses.length)];
+                    await ctx.reply(response, { parse_mode: 'Markdown', reply_to_message_id: ctx.message.message_id });
+                    return true;
+                }
+            }
+        }
     }
 
-    console.warn(`[SECURITY] Unauthorized access from chat ${ctx.chat?.id} (${ctx.chat?.title}). Leaving.`);
-    try {
-        await ctx.leaveChat();
-    } catch (e) {
-        console.error("Failed to leave chat:", e);
-    }
-});
-
-// ==================================================================
-// 🔧 ХЕЛПЕРЫ (используются командами)
-// ==================================================================
+    return false;
+}
 
 function parseTime(input: string): number {
     const match = input.match(/^(\d+)([mhds])$/);
@@ -214,15 +326,21 @@ function parseTime(input: string): number {
 }
 
 async function isAdmin(ctx: any): Promise<boolean> {
-    const member = await ctx.getChatMember(ctx.from.id);
-    return ['administrator', 'creator'].includes(member.status);
+    try {
+        const member = await ctx.getChatMember(ctx.from.id);
+        return ['administrator', 'creator'].includes(member.status);
+    } catch (e) {
+        return false;
+    }
 }
 
 async function isTargetImmune(ctx: any, targetId: number): Promise<boolean> {
     try {
         const member = await ctx.getChatMember(targetId);
         return ['administrator', 'creator'].includes(member.status) || targetId === ctx.botInfo.id;
-    } catch (e) { return false; }
+    } catch (e) {
+        return false;
+    }
 }
 
 async function getUserByTgId(tgId: number): Promise<FirebaseFirestore.DocumentSnapshot | null> {
@@ -231,8 +349,27 @@ async function getUserByTgId(tgId: number): Promise<FirebaseFirestore.DocumentSn
     return snapshot.docs[0];
 }
 
+bot.use(async (ctx, next) => {
+    if (ctx.chat?.type === 'private') {
+        return next();
+    }
+
+    if (ctx.chat && ALLOWED_CHATS.includes(ctx.chat.id)) {
+        return next();
+    }
+
+    console.warn(`[SECURITY] Unauthorized chat ${ctx.chat?.id}. Leaving.`);
+    try {
+        await ctx.leaveChat();
+    } catch (e) {
+        console.error("[SECURITY] Failed to leave:", e);
+    }
+});
+
+console.log('[BOT] Security middleware registered');
 
 bot.command('stats', async (ctx) => {
+    console.log('[COMMAND] /stats called by', ctx.from.id);
     try {
         const chatMembersCount = await ctx.getChatMembersCount();
         const warnedUsers = await db.collection('telegram_moderation').get();
@@ -248,18 +385,19 @@ bot.command('stats', async (ctx) => {
             { parse_mode: 'Markdown' }
         );
     } catch (e) {
-        console.error('Stats error:', e);
-        await ctx.reply('Ошибка при получении статистики.');
+        console.error('[STATS ERROR]:', e);
+        await ctx.reply('Ошибка получения статистики.');
     }
 });
 
 bot.command('help', async (ctx) => {
+    console.log('[COMMAND] /help called');
     const helpText = `
 🤖 **КОМАНДЫ БОТА**
 
 **Для всех:**
 /link [код] — Привязать Telegram к аккаунту
-/duel [ставка] — Вызвать на дуэль
+/duel [ставка] — Вызвать кого-то на дуэль
 /stats — Статистика чата
 /help — Эта справка
 /ping — Проверка задержки
@@ -273,12 +411,14 @@ bot.command('help', async (ctx) => {
 /ban — Изгнать из чата
 /unban [ID] — Разбанить
 /lockdown [on/off] — Режим карантина
+/whining — Статистика попыток обхода
 `;
 
     await ctx.reply(helpText, { parse_mode: 'Markdown' });
 });
 
 bot.command('version', async (ctx) => {
+    console.log('[COMMAND] /version called');
     await ctx.reply(
         `⚙️ **ВЕРСИЯ СИСТЕМЫ**\n\n` +
         `🤖 ProtoMap Guardian Bot\n` +
@@ -293,6 +433,7 @@ bot.command('version', async (ctx) => {
 });
 
 bot.command('ping', async (ctx) => {
+    console.log('[COMMAND] /ping called');
     const start = Date.now();
     const msg = await ctx.reply('🏓 Pong!');
     const latency = Date.now() - start;
@@ -305,23 +446,62 @@ bot.command('ping', async (ctx) => {
             `🏓 Pong!\n⏱️ Задержка: ${latency}ms`
         );
     } catch (e) {
-        console.log('Failed to edit ping message:', e);
+        console.log('[PING] Edit failed:', e);
     }
 });
 
-// ==================================================================
-// 🔗 СИСТЕМА ПРИВЯЗКИ (/link)
-// ==================================================================
+bot.command('whining', async (ctx) => {
+    if (!(await isAdmin(ctx))) return;
+
+    console.log('[COMMAND] /whining stats requested');
+    try {
+        const logs = await db.collection('whining_attempts')
+            .orderBy('timestamp', 'desc')
+            .limit(50)
+            .get();
+
+        if (logs.empty) {
+            await ctx.reply('📊 Попыток обхода не обнаружено. Все тихо! ✅');
+            return;
+        }
+
+        const triggerCount: { [key: string]: number } = {};
+
+        logs.docs.forEach(doc => {
+            const trigger = doc.data().trigger;
+            triggerCount[trigger] = (triggerCount[trigger] || 0) + 1;
+        });
+
+        const sorted = Object.entries(triggerCount)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10);
+
+        let message = '📊 **ТОП-10 ПОПЫТОК ОБХОДА:**\n\n';
+        sorted.forEach(([trigger, count], index) => {
+            message += `${index + 1}. \`${trigger}\` — ${count}x\n`;
+        });
+
+        message += `\n📝 Всего попыток: ${logs.size}`;
+
+        await ctx.reply(message, { parse_mode: 'Markdown' });
+    } catch (e) {
+        console.error('[WHINING] Stats error:', e);
+        await ctx.reply('Ошибка получения статистики.');
+    }
+});
+
+console.log('[BOT] Info commands registered');
 
 bot.command("link", async (ctx) => {
-    try { await ctx.deleteMessage(); } catch (e) { console.log("Del msg fail:", e); }
+    console.log('[COMMAND] /link called by', ctx.from.id);
+    try {
+        await ctx.deleteMessage();
+    } catch (e) {}
 
     try {
         const message = ctx.message as any;
         const args = message.text.split(' ');
         const code = args[1]?.trim();
-
-        console.log(`[LINK DEBUG] User ${ctx.from.id} sent code: ${code}`);
 
         if (!code) {
             await ctx.reply("❌ Введите код с сайта. Пример: `/link PM-A1B2C3`", { parse_mode: 'Markdown' });
@@ -332,7 +512,7 @@ bot.command("link", async (ctx) => {
         const codeDoc = await codeRef.get();
 
         if (!codeDoc.exists) {
-            console.log(`[LINK DEBUG] Code ${code} not found in DB`);
+            console.log(`[LINK] Code ${code} not found`);
             await ctx.reply("❌ Код не найден. Возможно, он устарел или введен с ошибкой.");
             return;
         }
@@ -340,7 +520,7 @@ bot.command("link", async (ctx) => {
         const data = codeDoc.data();
 
         if (data?.expiresAt && Date.now() > data.expiresAt) {
-            console.log(`[LINK DEBUG] Code ${code} expired`);
+            console.log(`[LINK] Code ${code} expired`);
             await codeRef.delete();
             await ctx.reply("❌ Срок действия кода истек. Сгенерируйте новый.");
             return;
@@ -363,7 +543,7 @@ bot.command("link", async (ctx) => {
             }
         }
 
-        console.log(`[LINK DEBUG] Linking TG ${tgId} to UID ${uid}`);
+        console.log(`[LINK] Linking TG ${tgId} to UID ${uid}`);
         await db.collection('users').doc(uid).update({
             telegram_id: tgId,
             telegram_username: username
@@ -374,17 +554,13 @@ bot.command("link", async (ctx) => {
         await ctx.reply("✅ Аккаунт успешно привязан! Теперь вы можете участвовать в дуэлях.");
 
     } catch (error: any) {
-        console.error("[LINK CRITICAL ERROR]:", error);
+        console.error("[LINK ERROR]:", error);
         await ctx.reply(`⚠️ Системная ошибка при привязке: ${error.message}`);
     }
 });
 
-
-// ==================================================================
-// ⚔️ СИСТЕМА ДУЭЛЕЙ (/duel)
-// ==================================================================
-
 bot.command("duel", async (ctx) => {
+    console.log('[COMMAND] /duel called');
     const args = ctx.message.text.split(' ');
     const betStr = args[1];
 
@@ -394,8 +570,14 @@ bot.command("duel", async (ctx) => {
     }
 
     const bet = parseInt(betStr);
-    if (bet < 10) { await ctx.reply("Минимальная ставка: 10 PC."); return; }
-    if (bet > 10000) { await ctx.reply("Максимальная ставка: 10000 PC."); return; }
+    if (bet < 10) {
+        await ctx.reply("Минимальная ставка: 10 PC.");
+        return;
+    }
+    if (bet > 10000) {
+        await ctx.reply("Максимальная ставка: 10000 PC.");
+        return;
+    }
 
     const initiatorTgId = ctx.from.id;
     const initiatorDoc = await getUserByTgId(initiatorTgId);
@@ -475,13 +657,21 @@ bot.action(/join_duel_(\d+)_(\d+)/, async (ctx) => {
             if (isInitiatorWin) {
                 winnerName = iData.username;
                 loserName = aData.username;
-                t.update(initiatorRef, { casino_credits: (iData.casino_credits || 0) - bet + winAmount });
-                t.update(acceptorRef, { casino_credits: (aData.casino_credits || 0) - bet });
+                t.update(initiatorRef, {
+                    casino_credits: (iData.casino_credits || 0) - bet + winAmount
+                });
+                t.update(acceptorRef, {
+                    casino_credits: (aData.casino_credits || 0) - bet
+                });
             } else {
                 winnerName = aData.username;
                 loserName = iData.username;
-                t.update(acceptorRef, { casino_credits: (aData.casino_credits || 0) - bet + winAmount });
-                t.update(initiatorRef, { casino_credits: (iData.casino_credits || 0) - bet });
+                t.update(acceptorRef, {
+                    casino_credits: (aData.casino_credits || 0) - bet + winAmount
+                });
+                t.update(initiatorRef, {
+                    casino_credits: (iData.casino_credits || 0) - bet
+                });
             }
         });
 
@@ -494,7 +684,7 @@ bot.action(/join_duel_(\d+)_(\d+)/, async (ctx) => {
         );
 
     } catch (e: any) {
-        console.error("Duel Error:", e);
+        console.error("[DUEL ERROR]:", e);
         if (e.message === "Initiator broke") {
             await ctx.reply("🚫 Дуэль отменена: У инициатора закончились деньги.");
         } else if (e.message === "Acceptor broke") {
@@ -505,9 +695,7 @@ bot.action(/join_duel_(\d+)_(\d+)/, async (ctx) => {
     }
 });
 
-// ==================================================================
-// 🔨 АДМИНИСТРИРОВАНИЕ
-// ==================================================================
+console.log('[BOT] Game commands registered');
 
 bot.command("warn", async (ctx) => {
     if (!(await isAdmin(ctx))) return;
@@ -601,7 +789,7 @@ bot.command("unwarn", async (ctx) => {
         if (e.message === "No warns") {
             await ctx.reply("ℹ️ У этого пользователя нет активных предупреждений.");
         } else {
-            console.error("Unwarn Error:", e);
+            console.error("[UNWARN ERROR]:", e);
             await ctx.reply("Ошибка базы данных.");
         }
     }
@@ -769,9 +957,7 @@ bot.command("lockdown", async (ctx) => {
     }
 });
 
-// ==================================================================
-// 🛡️ LOCKDOWN & ANTI-RAID
-// ==================================================================
+console.log('[BOT] Admin commands registered');
 
 bot.on("new_chat_members", async (ctx, next) => {
     try {
@@ -784,13 +970,13 @@ bot.on("new_chat_members", async (ctx, next) => {
                     await ctx.banChatMember(member.id);
                     await ctx.deleteMessage();
                 } catch (e) {
-                    console.error(`Failed to autoban ${member.id}`, e);
+                    console.error(`[LOCKDOWN] Failed to autoban ${member.id}`, e);
                 }
             }
             return;
         }
     } catch (e) {
-        console.error("Lockdown check error:", e);
+        console.error("[LOCKDOWN] Check error:", e);
     }
     return next();
 });
@@ -823,7 +1009,7 @@ bot.on("new_chat_members", async (ctx) => {
             );
         }
     } catch (e) {
-        console.error("Captcha Error:", e);
+        console.error("[CAPTCHA ERROR]:", e);
     }
 });
 
@@ -850,67 +1036,59 @@ bot.action(/verify_(\d+)/, async (ctx) => {
         });
 
         await ctx.answerCbQuery("Доступ разрешен! 🔓");
-        try { await ctx.deleteMessage(); } catch (e) {}
+        try {
+            await ctx.deleteMessage();
+        } catch (e) {}
         await ctx.reply(`Добро пожаловать в Сеть, ${ctx.from.first_name}!`);
     } catch (e) {
-        console.error("Verification Error:", e);
+        console.error("[VERIFICATION ERROR]:", e);
     }
 });
 
-// ==================================================================
-// 🎭 MIDDLEWARE: ПРОВЕРКА ТРИГГЕРОВ (ПОСЛЕ КОМАНД!)
-// ==================================================================
+console.log('[BOT] Anti-raid system registered');
 
-bot.on('text', async (ctx, next) => {
+bot.on('text', async (ctx) => {
     const text = ctx.message.text;
 
-    // Игнорируем команды (они уже обработаны выше)
     if (text.startsWith('/')) {
-        return next();
+        return;
     }
 
-    // Проверяем триггеры
     await checkTriggers(ctx, text);
-
-    // Продолжаем обработку
-    return next();
 });
 
-// ==================================================================
-// 🎯 СЛУЧАЙНЫЕ ОТВЕТЫ НА СТИКЕРЫ
-// ==================================================================
+console.log('[BOT] Text middleware registered');
 
 bot.on('sticker', async (ctx) => {
     const random = Math.random();
 
-    // 5% шанс ответить на стикер
     if (random < 0.05) {
-        const responses = [
-            '🗿',
-            '> Интересный стикер.',
-            '👀',
-            '🤔',
-            '> *[АНАЛИЗИРУЮ]*',
-            'Based.'
-        ];
-
+        const responses = ['🗿', '> Интересный стикер.', '👀', '🤔', '> *[АНАЛИЗИРУЮ]*', 'Based.'];
         const response = responses[Math.floor(Math.random() * responses.length)];
         await ctx.reply(response, { parse_mode: 'Markdown' });
     }
 });
 
+console.log('[BOT] Sticker handler registered');
+console.log('[BOT] ✅ All handlers registered successfully!');
+
 export const telegramWebhook = onRequest(
     { secrets: ["TELEGRAM_BOT_TOKEN"] },
     async (request, response) => {
         const token = process.env.TELEGRAM_BOT_TOKEN;
+
         if (!token) {
+            console.error('[WEBHOOK] ❌ No bot token!');
             response.status(500).send("No Token");
             return;
         }
+
         try {
+            console.log('[WEBHOOK] 📥 Processing update...');
             await bot.handleUpdate(request.body, response);
+            console.log('[WEBHOOK] ✅ Update processed');
         } catch (e) {
-            console.error("Bot Error:", e);
+            console.error("[WEBHOOK] ❌ Error:", e);
             response.status(200).send("Error handled");
         }
     }

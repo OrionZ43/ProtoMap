@@ -8,13 +8,17 @@ import { AudioManager } from '$lib/client/audioManager';
 
 type MarkerUserData = {
     username: string;
+    uid?: string | null;        // [ЭТАП 3] UID для ссылки на профиль
     avatar_url: string;
     status?: string | null;
     equipped_frame?: string | null;
 };
 
 function createCyberPopup(userData: MarkerUserData, city: string, isOwner: boolean): string {
-    const profileUrl = `/profile/${encodeURIComponent(userData.username.trim())}`;
+    // [ЭТАП 3] Используем uid-based URL если доступен
+    const profileUrl = userData.uid
+        ? `/u/${userData.uid}`
+        : `/profile/${encodeURIComponent(userData.username.trim())}`;
     const defaultAvatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(userData.username.trim())}`;
 
     const frameClass = userData.equipped_frame || '';
@@ -109,11 +113,11 @@ export function initMap(containerId: string) {
         map.attributionControl.setPrefix(false);
     }
 
-    const baseLayers = {
+    const baseLayers: { [key: string]: L.TileLayer } = {
         "Стандартная": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OSM' }),
-        "Полночь": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19,attribution: '© OSM',className: 'map-black'}),
+        "Полночь": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OSM', className: 'map-black' }),
         "Тёмная": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '© CARTO' }),
-        "Синий неон": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '© OSM', className: 'matrix-tiles'}),
+        "Синий неон": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OSM', className: 'matrix-tiles' }),
     };
     const storageKey = 'protomap-selected-theme';
     let savedLayerName = "Тёмная";
@@ -129,28 +133,35 @@ export function initMap(containerId: string) {
 
     baseLayers[savedLayerName].addTo(map);
 
-    const layersControl = L.control.layers(baseLayers).addTo(map);
-    map.on('baselayerchange', function (e: L.LayersControlEvent) {
-        try {
-            localStorage.setItem(storageKey, e.name);
-        } catch (error) {
-            console.error("Не удалось сохранить тему карты в localStorage", error);
-        }
-    });
+    let layersControl: L.Control.Layers | null = null;
 
-    const controlContainer = layersControl.getContainer();
-    if (controlContainer) {
-        controlContainer.classList.add('cyber-layers-control');
-        setTimeout(() => {
-            const inputs = controlContainer.querySelectorAll('.leaflet-control-layers-base input[type="radio"]');
-            inputs.forEach(input => {
-                const nextElement = input.nextElementSibling;
-                if (nextElement && nextElement.tagName === 'SPAN') {
-                    nextElement.classList.add('custom-radio-span');
+    setTimeout(() => {
+        if (map && map.getContainer()) {
+            layersControl = L.control.layers(baseLayers).addTo(map);
+
+            map.on('baselayerchange', function (e: L.LayersControlEvent) {
+                try {
+                    localStorage.setItem(storageKey, e.name);
+                } catch (error) {
+                    console.error("Не удалось сохранить тему карты в localStorage", error);
                 }
             });
-        }, 0);
-    }
+
+            const controlContainer = layersControl.getContainer();
+            if (controlContainer) {
+                controlContainer.classList.add('cyber-layers-control');
+                setTimeout(() => {
+                    const inputs = controlContainer.querySelectorAll('.leaflet-control-layers-base input[type="radio"]');
+                    inputs.forEach(input => {
+                        const nextElement = input.nextElementSibling;
+                        if (nextElement && nextElement.tagName === 'SPAN') {
+                            nextElement.classList.add('custom-radio-span');
+                        }
+                    });
+                }, 0);
+            }
+        }
+    }, 100);
 
     const createClusterIcon = function (cluster: L.MarkerCluster) {
         const count = cluster.getChildCount();
@@ -170,7 +181,6 @@ export function initMap(containerId: string) {
 
     const userMarkers: { [key: string]: L.Marker } = {};
 
-    // === ОПТИМИЗАЦИЯ: Хелпер для создания объекта маркера (чтобы не дублировать код) ===
     function createMarkerLayer(userData: MarkerUserData, lat: number, lng: number, city: string): L.Marker {
         const isOwner = currentUserProfile?.username?.trim() === userData.username.trim();
         const popupContent = createCyberPopup(userData, city, isOwner);
@@ -189,18 +199,15 @@ export function initMap(containerId: string) {
         return L.marker([lat, lng], { icon: customUserIcon }).bindPopup(popupContent, popupOptions);
     }
 
-    // === ОПТИМИЗАЦИЯ: Функция для единичного обновления (когда юзер двигается сам) ===
     function addOrUpdateMarker(userData: MarkerUserData, lat: number, lng: number, city: string): void {
         const usernameKey = userData.username.trim();
 
         if (userMarkers[usernameKey]) {
-            // Обновляем существующий
             const marker = userMarkers[usernameKey];
             const customUserIcon = createUserAvatarIcon(userData);
             const isOwner = currentUserProfile?.username?.trim() === userData.username.trim();
             const popupContent = createCyberPopup(userData, city, isOwner);
 
-            // Пересчитываем опции на случай если уехал на север
             let popupOptions: L.PopupOptions = { autoPan: true };
             if (lat > 80) {
                 popupOptions = { offset: [0, 340], className: 'popup-inverted', autoPan: true };
@@ -210,47 +217,33 @@ export function initMap(containerId: string) {
             marker.unbindPopup();
             marker.bindPopup(popupContent, popupOptions);
         } else {
-            // Создаем новый и добавляем (так как это единичное действие, addLayer тут ок)
             const newMarker = createMarkerLayer(userData, lat, lng, city);
             markers.addLayer(newMarker);
             userMarkers[usernameKey] = newMarker;
         }
     }
 
-    // === ОПТИМИЗАЦИЯ: Массовый рендер (С ЗАЩИТОЙ ОТ ДУБЛЕЙ) ===
     function renderMarkers(locations: any[]) {
-        // 1. Очищаем карту от старого мусора
         markers.clearLayers();
-
-        // Очищаем хеш-таблицу ссылок
         Object.keys(userMarkers).forEach(key => delete userMarkers[key]);
 
         const batchMarkers: L.Marker[] = [];
 
-        // 2. Проходимся по данным
         locations.forEach((loc) => {
             if (loc.user && loc.user.username && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
                 const usernameKey = loc.user.username.trim();
 
-                // 🔥 ЗАЩИТА ОТ ДУБЛИКАТОВ 🔥
-                // Если мы УЖЕ добавили этого юзера в текущем цикле рендера — пропускаем его.
-                // Это спасет, если в базе задвоились записи.
                 if (userMarkers[usernameKey]) {
                     console.warn(`[Map] Duplicate signal detected for: ${usernameKey}. Ignoring echo.`);
                     return;
                 }
 
                 const marker = createMarkerLayer(loc.user, loc.lat, loc.lng, loc.city);
-
-                // Сохраняем ссылку (и заодно помечаем, что юзер уже есть)
                 userMarkers[usernameKey] = marker;
-
-                // Добавляем в пачку
                 batchMarkers.push(marker);
             }
         });
 
-        // 3. Добавляем на карту ОДНИМ ВЫЗОВОМ
         if (batchMarkers.length > 0) {
             markers.addLayers(batchMarkers);
         }
@@ -275,7 +268,7 @@ export function initMap(containerId: string) {
             const functions = getFunctions();
             const getLocationsFunc = httpsCallable(functions, 'getLocations');
             const result = await getLocationsFunc();
-            const locations = result.data as Array<{user: MarkerUserData, lat: number, lng: number, city: string}>;
+            const locations = result.data as Array<{ user: MarkerUserData, lat: number, lng: number, city: string }>;
 
             try {
                 localStorage.setItem(CACHE_KEY, JSON.stringify(locations));
@@ -304,6 +297,7 @@ export function initMap(containerId: string) {
             const data = result.data as any;
             if (data.status === 'success') {
                 const currentUserData: MarkerUserData = {
+                    uid: currentUser.uid,   // [ЭТАП 3] uid для popup ссылки
                     username: currentUser.username,
                     avatar_url: currentUser.avatar_url,
                     status: currentUser.status,
@@ -357,7 +351,9 @@ export function initMap(containerId: string) {
                                         L.DomUtil.removeClass(container, 'loading');
                                     }
                                 );
-                            } else { modal.warning("Не поддерживается", "Ваш браузер не поддерживает геолокацию."); }
+                            } else {
+                                modal.warning("Не поддерживается", "Ваш браузер не поддерживает геолокацию.");
+                            }
                         });
                         return container;
                     }
@@ -370,7 +366,7 @@ export function initMap(containerId: string) {
                 const popupNode = e.popup._contentNode as HTMLElement;
                 const deleteButton = popupNode.querySelector('.popup-delete-btn');
                 if (deleteButton && currentUser && currentUser.username) {
-                    deleteButton.addEventListener('click', function(this: HTMLButtonElement, ev: MouseEvent) {
+                    deleteButton.addEventListener('click', function (this: HTMLButtonElement, ev: MouseEvent) {
                         ev.preventDefault();
                         const usernameToDelete = this.getAttribute('data-username');
                         if (usernameToDelete && usernameToDelete === currentUser.username.trim()) {
@@ -415,21 +411,36 @@ export function initMap(containerId: string) {
 
     loadAllMarkers();
 
-    userStore.subscribe((storeValue) => {
-        if (storeValue.loading) {
+    // ✅ [FIX] Сохраняем функцию отписки — вызываем в destroy()
+    const unsubscribeUserStore = userStore.subscribe((storeValue) => {
+        if (storeValue.loading) return;
+
+        // Guard: карта уже уничтожена (компонент размонтирован после goto())
+        // Без этого userStore.subscribe вызывает setupMapInteraction на мёртвой карте
+        if (!map || !map.getContainer() || !document.body.contains(map.getContainer())) {
+            unsubscribeUserStore();
             return;
         }
+
         currentUserProfile = storeValue.user;
         setupMapInteraction(storeValue.user);
     });
 
-    map.on('popupopen', (e) => {
+    map.on('popupopen', () => {
         AudioManager.play('popup_open');
     });
 
-    map.on('popupclose', (e) => {
+    map.on('popupclose', () => {
         AudioManager.play('popup_close');
     });
 
-    return { map, markers };
+    // ✅ [FIX] Возвращаем destroy() для вызова в onDestroy компонента
+    return {
+        map,
+        markers,
+        destroy: () => {
+            unsubscribeUserStore();
+            try { map.remove(); } catch (e) { /* already removed */ }
+        }
+    };
 }

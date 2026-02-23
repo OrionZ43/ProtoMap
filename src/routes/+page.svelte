@@ -2,22 +2,19 @@
     import { onMount, onDestroy } from 'svelte';
     import { browser } from '$app/environment';
 
-    let mapInstance: any = null;
+    let mapInstance: { map: any; markers: any; destroy: () => void } | null = null;
 
     onMount(async () => {
         if (browser) {
             const mapModule = await import('$lib/client/mapLogic');
             const result = mapModule.initMap('map-container');
-
-            if (result && result.map) {
-                mapInstance = result.map;
-            }
+            mapInstance = result;
         }
     });
 
     onDestroy(() => {
         if (mapInstance) {
-            mapInstance.remove();
+            mapInstance.destroy();
             mapInstance = null;
         }
     });
