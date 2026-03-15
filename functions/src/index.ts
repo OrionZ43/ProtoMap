@@ -8,7 +8,8 @@ import * as crypto from 'crypto';
 import { telegramWebhook } from './telegramBot';
 import { getMessaging } from "firebase-admin/messaging";
 import vision from "@google-cloud/vision";
-
+export { getStepperStatus, stepperClaim } from './stepper';
+export { getOrCreateReferralCode, claimReferral, getReferralStatus, finishReferralCampaign } from './referralFunctions';
 
 exports.telegramWebhook = telegramWebhook;
 

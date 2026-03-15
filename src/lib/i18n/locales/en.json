@@ -252,7 +252,7 @@
   },
   "privacy": {
     "title": "//: PRIVACY & DATA PROTECTION POLICY",
-    "subtitle": "Version 3.0 | Effective Date: February 1, 2026",
+    "subtitle": "Version 3.1 | Effective Date: March 15, 2026",
     "disclaimer_header": "⚠️ LEGAL DISCLAIMER",
     "disclaimer_body": "The <strong>ProtoMap</strong> software suite (including the website <em>proto-map.vercel.app</em> and the <em>ProtoMap for Android</em> mobile application) is an independent non-profit product developed and maintained by the <strong>Z43 Studios</strong> team.<br><br>We officially declare that we are <strong>NOT associated, affiliated, sponsored by, or in any business relationship</strong> with <em class=\"text-white\">Protomaps LLC</em> (protomaps.com) or their products. Any resemblance in naming, design, or functionality is coincidental. All rights to the Protomaps LLC trademark belong to their respective owners.",
     "intro_header": "1. INTRODUCTION AND SCOPE",
@@ -293,7 +293,17 @@
         "Balance (ProtoCoins), inventory, equipped items.",
         "Game history (Slots, Crash, Coin Flip) for dispute resolution.",
         "Activity timestamps (Last Active, Daily Streak)."
-      ]
+      ],
+      "media_title": "2.6. Device Hardware Access (Android)",
+      "media_text": "The ProtoMap Android mobile application requests access to the following device hardware features:",
+      "media_list": [
+        "<strong>Camera:</strong> Access is required to take real-time photos for use as an avatar or to send in chat. Camera data is not collected without your direct action (pressing the capture button).",
+        "<strong>Microphone:</strong> Access is required solely for recording and sending voice messages in the built-in chat. Recording begins only while holding the designated interface button. We do not perform background audio recording.",
+        "<strong>Storage / Gallery (Read & Write):</strong> Access is required to upload images from the gallery (avatars, stickers) and save map screenshots to your device.",
+        "<strong>Precise and Approximate Location:</strong> Used exclusively for map features described in Section 3. The app does not request geolocation in the background (only while actively in use).",
+        "<strong>Push Notifications (FCM):</strong> FCM Token — a unique device key for delivering notifications. Used only for ProtoMap notifications and is never shared with third parties."
+      ],
+      "media_android_note": "⚠️ All permission requests follow the principle of least privilege. You can revoke any permission in Android settings at any time."
     },
     "geo_chapter": {
       "title": "3. GEOLOCATION AND MAP PRIVACY",
@@ -340,7 +350,9 @@
       ],
       "anonymization_note": "After anonymization, the author's name is replaced with \"Deleted\", the avatar is removed, and the profile link is deactivated. Linking these messages to your identity becomes technically impossible.",
       "export_title": "4.3. Data Portability",
-      "export_text": "In compliance with GDPR principles, you have the right to receive a copy of all data we store about you. To do this, send a request to our email. The archive will be generated and sent to you within 30 days."
+      "export_text": "In compliance with GDPR principles, you have the right to receive a copy of all data we store about you. To do this, send a request to our email. The archive will be generated and sent to you within 30 days.",
+      "app_delete_title": "4.4. Data Deletion via Mobile App",
+      "app_delete_text": "In the ProtoMap Android app, account deletion is available via: Profile → Edit → Danger Zone → 'Delete Account'. This action is identical to deletion via the website and triggers the same irreversible full data cleanup script."
     },
     "partners_chapter": {
       "title": "5. DATA TRANSFER TO THIRD PARTIES (SUB-PROCESSORS)",
@@ -349,7 +361,8 @@
       "infra_list": [
         "<strong>Google Firebase (USA):</strong> Main provider. Stores the database (Firestore), authentication files, and executes server code (Cloud Functions).",
         "<strong>Vercel (USA):</strong> Web interface hosting and anonymous performance analytics collection (Vercel Analytics).",
-        "<strong>Cloudinary (USA):</strong> Image storage and optimization (avatars)."
+        "<strong>Cloudinary (USA):</strong> Image storage and optimization (avatars).",
+        "<strong>Google Cloud Vision AI (USA):</strong> Used for automatic screening of uploaded images (avatars, stickers) for NSFW and CSAM content. The image is submitted for analysis and immediately removed from memory after the result is received. Images are not stored on Google Cloud Vision servers."
       ],
       "services_title": "5.2. External Services",
       "services_list": [
@@ -360,15 +373,15 @@
       "legal_text": "We may disclose your data only in the event of an official, legally valid request from law enforcement agencies (e.g., a court order) in cases related to the prevention of serious crimes (terrorism, CSAM, threat to life)."
     },
     "security_chapter": {
-      "title": "6. DATA SECURITY AND LIMITATION OF LIABILITY",
+      "title": "7. DATA SECURITY AND LIMITATION OF LIABILITY",
       "intro": "We take all necessary technical and organizational measures to protect your data from unauthorized access, alteration, or destruction.",
-      "measures_title": "6.1. Security Measures",
+      "measures_title": "7.1. Security Measures",
       "measures_list": [
         "Use of HTTPS/TLS protocol for encrypting data in transit.",
         "Restricting database access via strict security rules (Firestore Security Rules).",
         "Password hashing on the authentication provider side (Google Identity Platform)."
       ],
-      "warranty_title": "6.2. Warranty Disclaimer (AS IS)",
+      "warranty_title": "7.2. Warranty Disclaimer (AS IS)",
       "warranty_text": "Despite the measures taken, no method of transmission over the Internet or method of electronic storage is 100% secure.",
       "warranty_list": [
         "The Service is provided on an \"AS IS\" basis. The Developer does not guarantee the absolute safety of data in the event of targeted hacker attacks, hosting provider failures, or force majeure circumstances.",
@@ -377,18 +390,54 @@
       ]
     },
     "contact_chapter": {
-      "title": "7. CONTACTS AND FINAL PROVISIONS",
-      "changes_title": "7.1. Changes to the Policy",
+      "title": "8. CONTACTS AND FINAL PROVISIONS",
+      "changes_title": "8.1. Changes to the Policy",
       "changes_text": "We reserve the right to make changes to this Policy. In case of significant changes, we will notify users via a notification in the App or on the Website. Continued use of the Service constitutes acceptance of the updated terms.",
-      "contact_title": "7.2. Contact Us",
+      "contact_title": "8.2. Contact Us",
       "contact_text": "For any questions regarding privacy, data deletion, or dispute resolution, please contact us directly. We are an indie team, and we answer with real people, not auto-responders.",
       "email_label": "Contact Email:",
       "email_value": "orion.z43studios@gmail.com"
+    },
+    "child_safety_chapter": {
+      "title": "6. CHILD SAFETY STANDARDS",
+      "intro": "ProtoMap (developer: Z43 Studios) maintains an absolute zero-tolerance policy regarding child sexual abuse and exploitation. This section has been drafted in compliance with Google Play Child Safety Standards Policy, 18 U.S.C. § 2258A (US law), the EU Digital Services Act (DSA), and other applicable international legislation.",
+      "prohibition_title": "6.1. Absolute Prohibition of CSAM",
+      "prohibition_text": "ProtoMap strictly and unconditionally prohibits the creation, uploading, storage, distribution, solicitation, or any other dissemination of any Child Sexual Abuse Material (CSAM). This prohibition is absolute and admits no exceptions.",
+      "prohibition_list": [
+        "<strong>Covered materials:</strong> The prohibition applies to all formats and types of content: realistic photographs and videos, computer-generated imagery, animation, drawings and illustrations, audio recordings, and any textual content aimed at describing, promoting, or normalizing sexual abuse of persons under the age of 18.",
+        "<strong>Prohibited intent:</strong> It is prohibited to use the platform for the purposes of grooming (deliberately establishing contact with minors for unlawful purposes), sexualizing children, or recruiting or exploiting minors in any form.",
+        "<strong>Context is irrelevant:</strong> Artistic merit, anonymity, intent to 'only view,' or any other circumstances do not constitute grounds for exemption from this prohibition."
+      ],
+      "moderation_title": "6.2. Automatic and Manual Moderation",
+      "moderation_text": "ProtoMap employs a multi-layered system for detecting and preventing prohibited content:",
+      "moderation_list": [
+        "<strong>Google Cloud Vision SafeSearch:</strong> Every image uploaded by a user (avatars, chat attachments, stickers) is mandatorily scanned via Google Cloud Vision SafeSearch prior to publication. Images detected as LIKELY or VERY_LIKELY across adult, violence, or racy parameters are blocked immediately and are not saved on platform servers.",
+        "<strong>Moderation team:</strong> In addition to automatic filtering, a manual moderation system is in place. Images that do not pass automatic review or are placed in a manual review queue are examined by the team within 24 hours.",
+        "<strong>Report system:</strong> Every platform user has the right at any time to report any content or profile using the built-in Report button (flag icon). All reports are handled manually."
+      ],
+      "response_title": "6.3. Immediate Response Measures",
+      "response_text": "Upon detection of content violating this policy, the administration takes the following steps immediately:",
+      "response_list": [
+        "<strong>Content removal:</strong> All detected illegal content is immediately and permanently deleted from all platform servers and storage, including backups.",
+        "<strong>Account ban:</strong> The violator's account is permanently banned without prior notice and without the right to appeal or recovery.",
+        "<strong>Evidence preservation:</strong> All data related to the incident (IP address, UID, Device ID, email, activity history, file metadata) is preserved in a secure manner and transmitted to law enforcement and authorized organizations.",
+        "<strong>NCMEC reporting:</strong> In accordance with 18 U.S.C. § 2258A, Z43 Studios reports each identified CSAM incident to the National Center for Missing & Exploited Children (NCMEC) via CyberTipline (www.cybertipline.org). We are prohibited from notifying the suspect of such a report.",
+        "<strong>Law enforcement cooperation:</strong> We immediately cooperate with law enforcement of any jurisdiction, providing all requested data in accordance with applicable law."
+      ],
+      "reporting_title": "6.4. How to Report a Violation",
+      "reporting_text": "If you discover content on the ProtoMap platform that violates this child safety policy, immediately:",
+      "reporting_list": [
+        "<strong>In the app / on the website:</strong> Click the Report button (flag icon) next to the user profile, message, avatar, or sticker. Select the reason 'Inappropriate content'.",
+        "<strong>Via email:</strong> Send a message to <strong>orion.z43studios@gmail.com</strong> with the subject line: <strong>CHILD SAFETY REPORT</strong>. Attach screenshots and provide the URL or username of the violator.",
+        "<strong>Emergency notification:</strong> If you believe a child is in immediate danger, immediately contact local law enforcement (US: 911, EU: 112) and report to NCMEC CyberTipline: www.missingkids.org."
+      ],
+      "age_title": "6.5. Age Restrictions",
+      "age_text": "The ProtoMap service is not intended for use by persons under 16 years of age. We do not knowingly collect personal data from children. If we become aware that a minor has created an account, we delete the account and all associated data within 48 hours. Parents or legal guardians who believe their child has registered on the platform may contact us at orion.z43studios@gmail.com with the subject 'UNDERAGE ACCOUNT'."
     }
   },
   "terms": {
     "title": "//: END USER LICENSE AGREEMENT (EULA)",
-    "subtitle": "Version 3.0 | Effective Date: February 1, 2026",
+    "subtitle": "Version 3.0 | Effective Date: March 15, 2026",
     "disclaimer_block": {
       "title": "⚠️ CRITICAL NOTICE (NO REAL MONEY GAMBLING)",
       "text": "This Service contains an artistic simulation of gambling games (\"The Glitch Pit\").<br><br><strong>1. NO REAL MONEY:</strong> All in-game currency (ProtoCoins) has no monetary value, is not a cryptocurrency, and cannot be exchanged for fiat money, goods, or services.<br><strong>2. NO WITHDRAWALS:</strong> Any winnings are solely virtual achievements.<br><strong>3. SIMULATION:</strong> Game mechanics (slots, crash) are tuned for entertainment purposes and do not reflect real-world casino mathematical models."
@@ -429,26 +478,45 @@
         "<strong>Hate Speech:</strong> Insults, discrimination, or incitement to violence based on race, nationality, religion, gender, or sexual orientation.",
         "<strong>Harassment and Doxxing:</strong> Publishing other people's private data (addresses, phone numbers) without the owner's consent."
       ],
-      "stickers_title": "2.3. Stickers and Intellectual Property",
+      "stickers_title": "2.4. Stickers and Intellectual Property",
       "stickers_text": "The Application functionality allows for uploading custom sticker sets (Sticker Packs).",
       "stickers_list": [
         "By uploading images, you warrant that you possess the necessary rights or licenses to use them.",
         "It is prohibited to upload materials protected by third-party copyright (e.g., art by other artists, brand logos) without their permission.",
         "<strong>DMCA:</strong> We respond to copyright infringement notifications. Disputed content will be removed, and sanctions may be applied to repeat offenders' accounts."
       ],
-      "tech_abuse_title": "2.4. Technical Violations and Cheating",
+      "tech_abuse_title": "2.5. Technical Violations and Cheating",
       "tech_abuse_text": "To protect the economy (\"The Glitch Pit\") and server stability, it is prohibited to:",
       "tech_abuse_list": [
         "Use third-party software (bots, clickers, macros) to automate actions in games or on the map.",
         "Exploit server vulnerabilities (bugs) to gain an unfair advantage (item duping, balance manipulation).",
         "Engage in reverse engineering, decompilation, or attempts to hack the Application API."
       ],
-      "enforcement_title": "2.5. Moderation and Enforcement",
+      "enforcement_title": "2.6. Moderation and Enforcement",
       "enforcement_text": "The Application is equipped with a built-in reporting system (\"Report\"). In case of violations, the Administration has the right to:",
       "enforcement_list": [
         "Remove specific content (message, sticker pack).",
         "Temporarily restrict access to features (Mute).",
         "<strong>Permanently block</strong> the account without the right to recovery or refund of virtual funds."
+      ],
+      "child_safety_title": "2.3. CHILD SAFETY — ZERO TOLERANCE POLICY (Child Safety Standards)",
+      "child_safety_intro": "This section is a mandatory condition for using the Service and has been drafted in strict compliance with Google Play Child Safety Standards. The ProtoMap application (Z43 Studios) maintains an absolute zero-tolerance policy toward any form of child sexual abuse, exploitation, or harm.",
+      "child_safety_list": [
+        "<strong>Absolute prohibition:</strong> It is categorically and unconditionally prohibited to create, upload, store, forward, or otherwise distribute any material depicting sexual abuse of minors (persons under 18 years of age), their sexual exploitation, or sexualization in any form. This prohibition covers realistic images and videos, computer-generated imagery, anime, manga, drawings, animation, and textual descriptions. The artistic or fictional nature of the material does not constitute an exception.",
+        "<strong>Prohibition of grooming:</strong> It is prohibited to use the platform's chat, direct messages, or any other communication tools for the purpose of establishing unlawful contact with minors, recruiting them, or sexually exploiting them.",
+        "<strong>Automatic screening:</strong> All uploaded images (avatars, chat attachments, stickers) are mandatorily scanned via Google Cloud Vision SafeSearch before publication. Content flagged as prohibited is blocked immediately.",
+        "<strong>Permanent ban:</strong> Detection of any content violating this section results in immediate permanent blocking of the violator's account without right of appeal, recovery, or refund of virtual assets.",
+        "<strong>NCMEC and law enforcement notification:</strong> In accordance with 18 U.S.C. § 2258A, we immediately report each identified CSAM incident to the NCMEC CyberTipline (www.cybertipline.org) and transmit all relevant data to law enforcement agencies.",
+        "<strong>How to report:</strong> Use the Report button (flag icon) in the app, or email orion.z43studios@gmail.com with subject: <strong>CHILD SAFETY REPORT</strong>. Attach screenshots and indicate the username or URL. If a child is in immediate danger — call 911 (US) / 112 (EU) and report to NCMEC: www.missingkids.org."
+      ],
+      "device_permissions_title": "2.7. Device Permissions (Android)",
+      "device_permissions_text": "By using the ProtoMap mobile app, you grant the following permissions exclusively for the stated purposes:",
+      "device_permissions_list": [
+        "Camera — for creating avatars and media attachments in chat (only upon direct user action).",
+        "Microphone — for sending voice messages (only while holding the record button).",
+        "Storage — for uploading images from the gallery and saving content.",
+        "Location — for map features (active mode only, not in background).",
+        "Use of permissions for any other purpose is strictly prohibited and constitutes a violation of this Agreement."
       ]
     },
     "virtual_chapter": {
@@ -921,92 +989,5 @@
     "point3": "We stand for transparency and modern development tools. ProtoMap is a community project, and its source code is open.",
     "link_text": "Read the full story",
     "close_btn": "Understood"
-  },
-  "app_privacy_policy": {
-    "page_title": "Application Privacy Policy",
-    "last_updated": "Last updated: December 18, 2025",
-    "intro": "This Privacy Policy describes how the ProtoMap application (hereinafter \"App\", \"Service\", \"We\"), developed by Z43 Studios, collects, uses, and discloses your information when using our mobile application.",
-    "section_geo_title": "1. Geolocation and Location Data",
-    "section_geo_text": "Our App is an interactive map-based service. Collecting location data is a fundamental feature to ensure the Service works properly. We request access to your geolocation (\"Precise Location\" and \"Approximate Location\") for the following purposes:",
-    "section_geo_list": [
-      "Displaying your avatar on the global map for other users.",
-      "Finding other users and events nearby.",
-      "Enabling the \"Signal Beacons\" mechanic."
-    ],
-    "section_geo_processing": "We respect your privacy and offer two modes of geo-data processing:",
-    "section_geo_mode_auto": "Automatic Mode (GPS): We receive your precise coordinates, but before saving to the server, they undergo an anonymization (coarsening) procedure to the center of the nearest settlement or district. Your exact GPS coordinates are NOT saved in the database.",
-    "section_geo_mode_manual": "Manual Mode: You can manually select a point on the map. In this case, the coordinates you manually specified are saved.",
-    "section_media_title": "2. Camera, Microphone, and Media Files",
-    "section_media_text": "The App requests access to hardware features of your device to provide communication and customization capabilities:",
-    "section_media_camera": "Camera: Access is required to create real-time photos that you can use as a profile avatar or send to chat. Camera data is not collected without your direct action.",
-    "section_media_mic": "Microphone: Access is required solely for recording and sending voice messages in the built-in chat. Recording begins only when the corresponding interface button is held down.",
-    "section_media_storage": "Storage/Gallery (Read/Write): Access is required to upload and save images (avatars, map screenshots) to your device.",
-    "section_safety_title": "3. Child Safety and Content Moderation (UGC)",
-    "section_safety_text": "ProtoMap is a social platform with User Generated Content (UGC). We strive to provide a safe environment for all users.",
-    "section_safety_age": "Age Restriction: The Service is not intended for use by persons under 16 years of age (or other age of digital consent in your jurisdiction). We do not knowingly collect personal data from children.",
-    "section_safety_csam": "Child Safety Policy (CSAM): We adhere to a ZERO TOLERANCE policy regarding any material depicting child sexual abuse, child exploitation, or harm to children.",
-    "section_safety_measures": "Response Measures: In case such content is detected, we immediately:",
-    "section_safety_actions": [
-      "Permanently remove the content without the possibility of recovery.",
-      "Permanently ban the violator's account.",
-      "In accordance with legislation (including the DSA in the EU and US laws), we report all user data (IP, Device ID, Email, logs) to the NCMEC (National Center for Missing & Exploited Children) and relevant law enforcement agencies."
-    ],
-    "section_data_title": "4. Data Collection and Storage",
-    "section_data_text": "We collect the following types of data:",
-    "section_data_list": [
-      "Identity Data: Email, UID, Username.",
-      "Device Data: Device model, OS version (for crash analytics and security via Google Firebase Crashlytics).",
-      "Game Data: Virtual currency balance, inventory, activity history."
-    ],
-    "section_third_party": "We use trusted third-party services for data processing: Google Firebase (data storage, authentication), OpenStreetMap/Nominatim (geocoding). We do not sell your data to third parties.",
-    "section_delete_title": "5. Data Deletion",
-    "section_delete_text": "You have full control over your data. You can request the complete deletion of your account and all associated data (including messages, markers, and history) via the app settings ('Delete Account' button in the profile editing section) or by emailing us.",
-    "section_contact_title": "6. Contact Us",
-    "section_contact_text": "If you have questions regarding our Privacy Policy, please contact us:",
-    "contact_email": "orion.z43studios@gmail.com"
-  },
-  "app_terms": {
-    "page_title": "End User License Agreement (EULA)",
-    "last_updated": "Last updated: December 18, 2025",
-    "intro": "This End User License Agreement (“Agreement”, “EULA”) is a legal agreement between you (“User”) and Z43 Studios (“Developer”) regarding the use of the mobile application ProtoMap (“App”). By installing or using the App, you agree to be bound by the terms of this Agreement.",
-    "sec_license_title": "1. License and Access",
-    "sec_license_text": "Z43 Studios grants you a limited, non-exclusive, non-transferable, revocable license to use the App for personal, non-commercial purposes. You may not:",
-    "sec_license_list": [
-      "Decompile, reverse engineer, or attempt to extract the source code of the App (except for parts published by us as Open Source).",
-      "Use the App to create a competing product.",
-      "Use automated scripts (bots, clickers) to collect data or gain an advantage in mini-games."
-    ],
-    "sec_content_title": "2. User Generated Content (UGC) and Moderation",
-    "sec_content_text": "The App allows users to create content (text messages, image uploads, statuses). You are solely responsible for the content you post.",
-    "sec_content_policy": "We adhere to a ZERO TOLERANCE policy regarding objectionable content. It is strictly prohibited to publish:",
-    "sec_content_prohibited": [
-      "Material depicting sexual abuse, especially involving minors (CSAM).",
-      "Pornographic material and sexually explicit content (NSFW) in public areas (global chat, map avatars).",
-      "Threats, incitement to violence, or Hate Speech based on race, nationality, religion, or sexual orientation.",
-      "Private information of other users (Doxxing)."
-    ],
-    "sec_content_moderation": "The Developer reserves the right to moderate content. We provide users with tools to Report objectionable content. Content violating these rules will be removed, and the violator's account will be banned within 24 hours of report verification.",
-    "sec_virtual_title": "3. Virtual Currency and Goods",
-    "sec_virtual_text": "The App includes virtual currency (“ProtoCoins”) and digital goods (frames, backgrounds).",
-    "sec_virtual_list": [
-      "ProtoCoins are not real money, cryptocurrency, or a financial instrument.",
-      "Virtual items have no monetary value in the real world and are not subject to refund or exchange for fiat currency.",
-      "The “Casino” mechanics (The Glitch Pit) are a simulation intended solely for entertainment purposes. Winning real money is impossible.",
-      "The Developer has the right to regulate, modify, or delete virtual currency and goods at their discretion."
-    ],
-    "sec_safety_title": "4. Safety and the Real World",
-    "sec_safety_text": "By using map features, you agree to exercise caution:",
-    "sec_safety_list": [
-      "Do not use the App while driving or performing actions requiring high attention.",
-      "You are responsible for meetings with other users in the real world. The Developer does not control user actions offline and is not liable for any damage resulting from such meetings.",
-      "We recommend using the automatic location anonymization feature to protect your privacy."
-    ],
-    "sec_termination_title": "5. Termination",
-    "sec_termination_text": "We reserve the right to immediately suspend or terminate your account without prior notice if you violate the terms of this Agreement, especially regarding user safety and content rules.",
-    "sec_disclaimer_title": "6. Disclaimer of Warranties (As Is)",
-    "sec_disclaimer_text": "The App is provided “AS IS”. Z43 Studios does not guarantee that the App will function uninterrupted, error-free, or be compatible with your device. We are not liable for the loss of virtual data resulting from server failures.",
-    "sec_contact_title": "7. Contact",
-    "sec_contact_text": "For questions regarding these terms:",
-    "contact_email": "orion.z43studios@gmail.com"
   }
 }

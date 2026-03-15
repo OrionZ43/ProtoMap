@@ -2,12 +2,16 @@
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
-    import { t } from 'svelte-i18n';
+    import { t, json } from 'svelte-i18n';
 
     const opacity = tweened(0, { duration: 400, easing: quintOut });
-    onMount(() => {
-        opacity.set(1);
-    });
+    onMount(() => { opacity.set(1); });
+
+    // Хелпер: получить массив из i18n без ошибок
+    function tArr(key: string): string[] {
+        const val = $json(key);
+        return Array.isArray(val) ? val : [];
+    }
 </script>
 
 <svelte:head>
@@ -20,7 +24,7 @@
 
     <div class="content-text">
 
-        <!-- === DISCLAIMER (ГЛАВНЫЙ) === -->
+        <!-- === DISCLAIMER === -->
         <div class="disclaimer-box warning">
             <strong class="font-display text-lg">{$t('terms.disclaimer_block.title')}</strong>
             <p class="mt-2 text-sm">{@html $t('terms.disclaimer_block.text')}</p>
@@ -32,14 +36,18 @@
         <h4 class="subsection-title">{$t('terms.intro_chapter.definitions_title')}</h4>
         <p>{$t('terms.intro_chapter.definitions_text')}</p>
         <ul>
-            {#each $t('terms.intro_chapter.definitions_list') as item} <li>{@html item}</li> {/each}
+            {#each tArr('terms.intro_chapter.definitions_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
         <p class="mt-2">{$t('terms.intro_chapter.scope_text')}</p>
 
         <h4 class="subsection-title">{$t('terms.intro_chapter.acceptance_title')}</h4>
         <p>{$t('terms.intro_chapter.acceptance_text')}</p>
         <ul>
-            {#each $t('terms.intro_chapter.acceptance_list') as item} <li>{@html item}</li> {/each}
+            {#each tArr('terms.intro_chapter.acceptance_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
         <div class="alert-box error mt-4 font-bold text-center">
             {$t('terms.intro_chapter.rejection_warning')}
@@ -54,31 +62,61 @@
         <h4 class="subsection-title">{$t('terms.behavior_chapter.ugc_title')}</h4>
         <p>{$t('terms.behavior_chapter.ugc_text')}</p>
         <ul>
-            {#each $t('terms.behavior_chapter.ugc_list') as item} <li>{@html item}</li> {/each}
+            {#each tArr('terms.behavior_chapter.ugc_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
         <h4 class="subsection-title text-red-400">{$t('terms.behavior_chapter.zero_tolerance_title')}</h4>
         <p>{$t('terms.behavior_chapter.zero_tolerance_text')}</p>
         <ul>
-            {#each $t('terms.behavior_chapter.zero_tolerance_list') as item} <li>{@html item}</li> {/each}
+            {#each tArr('terms.behavior_chapter.zero_tolerance_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
+
+        <!-- === 2.3 CHILD SAFETY (НОВЫЙ РАЗДЕЛ) === -->
+        <div class="child-safety-box">
+            <h4 class="subsection-title text-red-400">{$t('terms.behavior_chapter.child_safety_title')}</h4>
+            <p>{$t('terms.behavior_chapter.child_safety_intro')}</p>
+            <ul>
+                {#each tArr('terms.behavior_chapter.child_safety_list') as item}
+                    <li>{@html item}</li>
+                {/each}
+            </ul>
+        </div>
 
         <h4 class="subsection-title">{$t('terms.behavior_chapter.stickers_title')}</h4>
         <p>{$t('terms.behavior_chapter.stickers_text')}</p>
         <ul>
-            {#each $t('terms.behavior_chapter.stickers_list') as item} <li>{@html item}</li> {/each}
+            {#each tArr('terms.behavior_chapter.stickers_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
         <h4 class="subsection-title">{$t('terms.behavior_chapter.tech_abuse_title')}</h4>
         <p>{$t('terms.behavior_chapter.tech_abuse_text')}</p>
         <ul>
-            {#each $t('terms.behavior_chapter.tech_abuse_list') as item} <li>{@html item}</li> {/each}
+            {#each tArr('terms.behavior_chapter.tech_abuse_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
         <h4 class="subsection-title">{$t('terms.behavior_chapter.enforcement_title')}</h4>
         <p>{$t('terms.behavior_chapter.enforcement_text')}</p>
         <ul>
-            {#each $t('terms.behavior_chapter.enforcement_list') as item} <li>{@html item}</li> {/each}
+            {#each tArr('terms.behavior_chapter.enforcement_list') as item}
+                <li>{@html item}</li>
+            {/each}
+        </ul>
+
+        <!-- 2.7 РАЗРЕШЕНИЯ УСТРОЙСТВА (ANDROID) -->
+        <h4 class="subsection-title">{$t('terms.behavior_chapter.device_permissions_title')}</h4>
+        <p>{$t('terms.behavior_chapter.device_permissions_text')}</p>
+        <ul>
+            {#each tArr('terms.behavior_chapter.device_permissions_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
         <!-- === 3. VIRTUAL ASSETS === -->
@@ -87,13 +125,17 @@
         <h4 class="subsection-title">{$t('terms.virtual_chapter.currency_title')}</h4>
         <p>{$t('terms.virtual_chapter.currency_text')}</p>
         <ul>
-            {#each $t('terms.virtual_chapter.currency_list') as item} <li>{@html item}</li> {/each}
+            {#each tArr('terms.virtual_chapter.currency_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
         <h4 class="subsection-title">{$t('terms.virtual_chapter.casino_title')}</h4>
         <p>{$t('terms.virtual_chapter.casino_text')}</p>
         <ul>
-            {#each $t('terms.virtual_chapter.casino_list') as item} <li>{@html item}</li> {/each}
+            {#each tArr('terms.virtual_chapter.casino_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
         <h4 class="subsection-title">{$t('terms.virtual_chapter.rmt_title')}</h4>
@@ -105,7 +147,9 @@
         <h4 class="subsection-title">{$t('terms.virtual_chapter.management_title')}</h4>
         <p>{$t('terms.virtual_chapter.management_text')}</p>
         <ul>
-            {#each $t('terms.virtual_chapter.management_list') as item} <li>{@html item}</li> {/each}
+            {#each tArr('terms.virtual_chapter.management_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
         <!-- === 4. WARRANTIES (AS IS) === -->
@@ -114,13 +158,17 @@
         <h4 class="subsection-title">{$t('terms.warranty_chapter.asis_title')}</h4>
         <p>{$t('terms.warranty_chapter.asis_text')}</p>
         <ul>
-            {#each $t('terms.warranty_chapter.asis_list') as item} <li>{@html item}</li> {/each}
+            {#each tArr('terms.warranty_chapter.asis_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
         <h4 class="subsection-title">{$t('terms.warranty_chapter.real_world_title')}</h4>
         <p>{$t('terms.warranty_chapter.real_world_text')}</p>
         <ul>
-            {#each $t('terms.warranty_chapter.real_world_list') as item} <li>{@html item}</li> {/each}
+            {#each tArr('terms.warranty_chapter.real_world_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
         <!-- === 5. FINAL & EASTER EGG === -->
@@ -129,7 +177,9 @@
         <h4 class="subsection-title text-red-400">{$t('terms.final_chapter.termination_title')}</h4>
         <p>{$t('terms.final_chapter.termination_text')}</p>
         <ul>
-            {#each $t('terms.final_chapter.termination_list') as item} <li>{@html item}</li> {/each}
+            {#each tArr('terms.final_chapter.termination_list') as item}
+                <li>{@html item}</li>
+            {/each}
         </ul>
 
         <h4 class="subsection-title">{$t('terms.final_chapter.updates_title')}</h4>
@@ -143,7 +193,9 @@
             <h4 class="subsection-title text-purple-400">{$t('terms.final_chapter.easter_egg_title')}</h4>
             <p>{$t('terms.final_chapter.easter_egg_text')}</p>
             <ul>
-                {#each $t('terms.final_chapter.easter_egg_list') as item} <li>{@html item}</li> {/each}
+                {#each tArr('terms.final_chapter.easter_egg_list') as item}
+                    <li>{@html item}</li>
+                {/each}
             </ul>
         </div>
 
@@ -172,7 +224,6 @@
         clip-path: polygon(0 20px, 20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
     }
 
-    /* Блоки предупреждений */
     .disclaimer-box, .alert-box {
         padding: 1rem;
         border-radius: 4px;
@@ -191,7 +242,16 @@
         color: #ffccd5;
     }
 
-    /* Пасхалка */
+    /* Child Safety блок — выделяем красной рамкой */
+    .child-safety-box {
+        background: rgba(255, 0, 60, 0.05);
+        border: 1px solid rgba(255, 0, 60, 0.4);
+        border-left: 3px solid var(--cyber-red, #ff003c);
+        padding: 1.25rem 1.5rem;
+        border-radius: 4px;
+        margin: 1.5rem 0;
+    }
+
     .easter-egg-box {
         background: rgba(189, 0, 255, 0.05);
         border: 1px dashed #bd00ff;
@@ -290,8 +350,13 @@
             margin: 1rem;
             padding: 1.5rem;
         }
+
         .title {
             font-size: 1.8rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
         }
     }
 </style>
