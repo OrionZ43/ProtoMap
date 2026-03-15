@@ -10,6 +10,7 @@ import { getMessaging } from "firebase-admin/messaging";
 import vision from "@google-cloud/vision";
 export { getStepperStatus, stepperClaim } from './stepper';
 export { getOrCreateReferralCode, claimReferral, getReferralStatus, finishReferralCampaign } from './referralFunctions';
+export { rebuildLeaderboard } from './rebuildLeaderboard';
 
 exports.telegramWebhook = telegramWebhook;
 
