@@ -885,7 +885,7 @@ bot.on("new_chat_members", async (ctx) => {
             // Генерируем HMAC-подписанную ссылку
             const verifyUrl = buildVerifyUrl(member.id);
 
-            await ctx.reply(
+            const sentMsg = await ctx.reply(
                 `🛡 *ЗАЩИТА ПЕРИМЕТРА*\n\n` +
                 `Привет, [${member.first_name}](tg://user?id=${member.id})!\n\n` +
                 `Нажми кнопку — тебя перекинет на сайт. Там нужно пройти проверку Cloudflare.\n` +
@@ -897,6 +897,12 @@ bot.on("new_chat_members", async (ctx) => {
                     ])
                 }
             );
+
+            // Сохраняем messageId чтобы удалить после верификации
+            await db.collection('telegram_chat_pending_msg').doc(String(member.id)).set({
+                messageId: sentMsg.message_id,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            }).catch((e: any) => console.warn('[CAPTCHA] Failed to save messageId:', e));
 
             console.log(`[CAPTCHA] Sent Turnstile verify link to ${member.id} (${member.first_name})`);
         }

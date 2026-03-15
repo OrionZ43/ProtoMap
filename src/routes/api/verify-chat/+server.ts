@@ -1,15 +1,63 @@
 // src/routes/api/verify-chat/+server.ts
-// Верифицирует Cloudflare Turnstile токен + HMAC подпись,
-// затем записывает telegram_chat_verified = true в Firestore
 
-import { json }         from '@sveltejs/kit';
+import { json }              from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { firestoreAdmin }      from '$lib/server/firebase.admin';
+import { firestoreAdmin }    from '$lib/server/firebase.admin';
 import {
     PRIVATE_TURNSTILE_SECRET_KEY,
     PRIVATE_TG_VERIFY_HMAC_SECRET,
+    TELEGRAM_BOT_TOKEN,
 } from '$env/static/private';
 import * as crypto from 'crypto';
+
+// ID чата @proto_map — тот же что в telegramBot.ts
+const PROTO_MAP_CHAT_ID = -1002885386686;
+
+/** Снимаем ограничения через Bot API — даём полные права участника */
+async function unlockChatMember(tgId: number): Promise<void> {
+    if (!TELEGRAM_BOT_TOKEN) return;
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/restrictChatMember`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+            chat_id:     PROTO_MAP_CHAT_ID,
+            user_id:     tgId,
+            permissions: {
+                can_send_messages:          true,
+                can_send_audios:            true,
+                can_send_documents:         true,
+                can_send_photos:            true,
+                can_send_videos:            true,
+                can_send_other_messages:    true,
+                can_add_web_page_previews:  true,
+                can_invite_users:           true,
+            },
+        }),
+    });
+}
+
+/** Удаляем приветственное сообщение бота — оно больше не нужно */
+async function deleteBotMessage(tgId: number): Promise<void> {
+    if (!TELEGRAM_BOT_TOKEN) return;
+    try {
+        // Ищем messageId который бот сохранил при отправке приглашения
+        const pendingRef = firestoreAdmin
+            .collection('telegram_chat_pending_msg')
+            .doc(String(tgId));
+        const snap = await pendingRef.get();
+        if (!snap.exists) return;
+
+        const { messageId } = snap.data()!;
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ chat_id: PROTO_MAP_CHAT_ID, message_id: messageId }),
+        });
+        await pendingRef.delete();
+    } catch (e) {
+        // Не критично если не удалилось
+    }
+}
 
 export const POST: RequestHandler = async ({ request }) => {
     let body: { tgId?: string; sig?: string; token?: string };
@@ -31,20 +79,22 @@ export const POST: RequestHandler = async ({ request }) => {
         return json({ success: false, error: 'Invalid tgId.' }, { status: 400 });
     }
 
-    // ── 2. Проверяем HMAC-подпись (генерируется ботом) ───────────
-    // Бот подписывает: HMAC-SHA256(tgId, PRIVATE_TG_VERIFY_HMAC_SECRET)
-    // Это гарантирует что ссылку сгенерировал наш бот, а не кто-то другой
+    // ── 2. HMAC-подпись ───────────────────────────────────────────
     const expectedSig = crypto
         .createHmac('sha256', PRIVATE_TG_VERIFY_HMAC_SECRET)
         .update(tgId)
         .digest('hex');
 
-    if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
+    // timingSafeEqual требует одинаковую длину буферов
+    const sigBuf      = Buffer.from(sig.padEnd(expectedSig.length, ' '));
+    const expectedBuf = Buffer.from(expectedSig);
+    if (sigBuf.length !== expectedBuf.length ||
+        !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
         return json({ success: false, error: 'Invalid signature.' }, { status: 403 });
     }
 
-    // ── 3. Верифицируем токен Cloudflare Turnstile ─────────────────
-    const cfRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    // ── 3. Cloudflare Turnstile ───────────────────────────────────
+    const cfRes  = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -52,7 +102,6 @@ export const POST: RequestHandler = async ({ request }) => {
             response: token,
         }),
     });
-
     const cfData = await cfRes.json() as { success: boolean; 'error-codes'?: string[] };
 
     if (!cfData.success) {
@@ -60,7 +109,7 @@ export const POST: RequestHandler = async ({ request }) => {
         return json({ success: false, error: 'Cloudflare check failed. Try again.' }, { status: 400 });
     }
 
-    // ── 4. Находим пользователя в Firestore по telegram_id ────────
+    // ── 4. Firestore + разблокировка ─────────────────────────────
     try {
         const snapshot = await firestoreAdmin
             .collection('users')
@@ -69,15 +118,12 @@ export const POST: RequestHandler = async ({ request }) => {
             .get();
 
         if (snapshot.empty) {
-            // Пользователь не привязал аккаунт — сохраняем отдельно,
-            // запишем в профиль когда он привяжется через /link
+            // Аккаунт ещё не привязан — сохраняем pending,
+            // флаг перенесётся при /link
             await firestoreAdmin
                 .collection('telegram_chat_pending')
                 .doc(String(tgIdNum))
-                .set({
-                    verifiedAt: firestoreAdmin.FieldValue?.serverTimestamp?.() ?? new Date(),
-                    tgId:       tgIdNum,
-                });
+                .set({ verifiedAt: new Date(), tgId: tgIdNum });
             console.log(`[VERIFY-CHAT] No linked account for tgId=${tgIdNum}, saved to pending.`);
         } else {
             await snapshot.docs[0].ref.update({
@@ -86,6 +132,12 @@ export const POST: RequestHandler = async ({ request }) => {
             });
             console.log(`[VERIFY-CHAT] Verified uid=${snapshot.docs[0].id} tgId=${tgIdNum}`);
         }
+
+        // ✅ Снимаем ограничения в чате — человек может писать
+        await unlockChatMember(tgIdNum);
+
+        // Удаляем сообщение бота с кнопкой (best-effort)
+        await deleteBotMessage(tgIdNum);
 
         return json({ success: true });
 
