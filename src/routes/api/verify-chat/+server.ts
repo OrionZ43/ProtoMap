@@ -59,6 +59,25 @@ async function deleteBotMessage(tgId: number): Promise<void> {
     }
 }
 
+
+/** Отправляем приветственное сообщение после верификации */
+async function sendWelcomeMessage(tgId: number): Promise<void> {
+    if (!TELEGRAM_BOT_TOKEN) return;
+    try {
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({
+                chat_id:    PROTO_MAP_CHAT_ID,
+                text:       `✅ [tg://user?id=${tgId}](tg://user?id=${tgId}) прошёл верификацию Cloudflare и теперь полноправный участник сети ProtoMap. Добро пожаловать! 🦾`,
+                parse_mode: 'Markdown',
+            }),
+        });
+    } catch (e) {
+        // не критично
+    }
+}
+
 export const POST: RequestHandler = async ({ request }) => {
     let body: { tgId?: string; sig?: string; token?: string };
     try {
@@ -136,8 +155,9 @@ export const POST: RequestHandler = async ({ request }) => {
         // ✅ Снимаем ограничения в чате — человек может писать
         await unlockChatMember(tgIdNum);
 
-        // Удаляем сообщение бота с кнопкой (best-effort)
+        // Удаляем сообщение с кнопкой и шлём приветствие
         await deleteBotMessage(tgIdNum);
+        await sendWelcomeMessage(tgIdNum);
 
         return json({ success: true });
 

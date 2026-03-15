@@ -35,7 +35,6 @@ const db = admin.firestore();
 const REFERRAL_PC       = 250;    // PC рефереру за приглашённого
 const NEW_USER_BONUS_PC = 500;    // PC новичку при активации кода
 const WINNER_PC         = 10_000; // PC победителю месяца
-const PROTO_MAP_CHAT    = "@proto_map";
 
 // ─── Утилиты ─────────────────────────────────────────────────────────────────
 
@@ -44,21 +43,10 @@ function getCurrentMonthKey(): string {
     return `${now.getUTCFullYear()}_${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-async function isUserInProtoMapChat(telegramId: number, botToken: string): Promise<boolean> {
-    try {
-        const res = await fetch(`https://api.telegram.org/bot${botToken}/getChatMember`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chat_id: PROTO_MAP_CHAT, user_id: telegramId }),
-        });
-        if (!res.ok) return false;
-        const data = await res.json() as any;
-        if (!data.ok) return false;
-        return ["creator", "administrator", "member"].includes(data.result?.status);
-    } catch (e) {
-        console.error("[REFERRAL] getChatMember error:", e);
-        return false;
-    }
+// Проверка через флаг telegram_chat_verified который бот выставляет
+// когда пользователь нажимает "✅ Я НЕ БОТ" в капче чата @proto_map
+function isChatVerified(userData: FirebaseFirestore.DocumentData): boolean {
+    return userData.telegram_chat_verified === true;
 }
 
 // ─── getOrCreateReferralCode ──────────────────────────────────────────────────
@@ -124,7 +112,6 @@ async function buildReferralStatusResponse(uid: string, data: any) {
 // ─── claimReferral ────────────────────────────────────────────────────────────
 
 export const claimReferral = onCall(
-    { secrets: ["TELEGRAM_BOT_TOKEN"] },
     async (request) => {
         if (request.app == undefined) throw new HttpsError("failed-precondition", "App Check required.");
         if (!request.auth)            throw new HttpsError("unauthenticated",      "Auth required.");
@@ -135,9 +122,6 @@ export const claimReferral = onCall(
         if (!code || typeof code !== "string" || code.length < 10 || code.length > 40) {
             throw new HttpsError("invalid-argument", "Некорректный реферальный код.");
         }
-
-        const botToken = process.env.TELEGRAM_BOT_TOKEN;
-        if (!botToken) throw new HttpsError("internal", "Конфигурация сервиса недоступна.");
 
         try {
             // ── Идемпотентность ───────────────────────────────────────────────
@@ -176,11 +160,10 @@ export const claimReferral = onCall(
                     "Привяжите Telegram-аккаунт в разделе «Безопасность», затем попробуйте снова.");
             }
 
-            // ── Условие 3: Чат @proto_map ──────────────────────────────────
-            const inChat = await isUserInProtoMapChat(telegramId, botToken);
-            if (!inChat) {
+            // ── Условие 3: Верификация Cloudflare в чате @proto_map ─────────
+            if (!isChatVerified(newUserData)) {
                 throw new HttpsError("failed-precondition",
-                    "Вступите в Telegram-чат @proto_map, затем попробуйте снова.");
+                    "Пройдите верификацию Cloudflare при входе в чат @proto_map.");
             }
 
             // ── Реферер жив ────────────────────────────────────────────────
@@ -311,7 +294,7 @@ export const getReferralStatus = onCall(async (request) => {
             conditions: {
                 email:    emailVerified,
                 telegram: !!(userData.telegram_id),
-                chat:     false, // проверяется только при клейме (дорого делать каждый раз)
+                chat:     isChatVerified(userData),
             },
         };
 
