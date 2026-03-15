@@ -320,21 +320,25 @@ export const getReferralStatus = onCall(async (request) => {
 // ─── updateLeaderboard (внутренняя) ──────────────────────────────────────────
 
 async function updateLeaderboard(referrerId: string, monthKey: string): Promise<void> {
+    // Без orderBy чтобы не требовать составной индекс Firestore
+    // Сортируем в памяти после получения
     const snap = await db.collection("referrals")
         .where("monthKey", "==", monthKey)
-        .orderBy("monthlyCount", "desc")
-        .limit(11)
         .get();
 
-    const uids     = snap.docs.map(d => d.id);
-    if (uids.length === 0) return;
+    if (snap.empty) return;
 
+    const sortedDocs = snap.docs
+        .sort((a, b) => (b.data().monthlyCount ?? 0) - (a.data().monthlyCount ?? 0))
+        .slice(0, 10);
+
+    const uids     = sortedDocs.map(d => d.id);
     const usersSnap = await db.collection("users")
-        .where(admin.firestore.FieldPath.documentId(), "in", uids.slice(0, 10))
+        .where(admin.firestore.FieldPath.documentId(), "in", uids)
         .get();
     const usersMap  = new Map(usersSnap.docs.map(d => [d.id, d.data()]));
 
-    const leaderboard = snap.docs.slice(0, 10).map((d, i) => ({
+    const leaderboard = sortedDocs.map((d, i) => ({
         rank:         i + 1,
         uid:          d.id,
         username:     usersMap.get(d.id)?.username ?? "Unknown",
@@ -372,8 +376,6 @@ export const finishReferralCampaign = onCall(
 
             const topSnap = await db.collection("referrals")
                 .where("monthKey", "==", targetMonth)
-                .orderBy("monthlyCount", "desc")
-                .limit(1)
                 .get();
 
             if (topSnap.empty || (topSnap.docs[0].data().monthlyCount ?? 0) === 0) {

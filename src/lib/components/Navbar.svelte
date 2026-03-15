@@ -187,6 +187,16 @@
                     </div>
                 {/if}
             </div>
+            <!-- Реферальная программа -->
+            <a href="/referral" class="icon-btn referral-btn" title={$t('menu.referral')}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+            </a>
+            <!-- Android App -->
             <a href="/mobile-beta" class="icon-btn android-btn" title="Download App">
                 <svg width="20" height="20" viewBox="0 0 512 512" fill="currentColor">
                     <path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/>
@@ -301,6 +311,9 @@
                     </a>
                 {/if}
 
+                <a href="/referral" class="mobile-link text-cyber-yellow border-l-cyber-yellow">
+                    🎯 {$t('menu.referral')}
+                </a>
                 <a href="/mobile-beta" class="mobile-link text-green-400 border-l-green-400">
                     📱 ANDROID APP (BETA)
                 </a>
@@ -501,6 +514,16 @@
         background: rgba(57, 255, 20, 0.2);
         box-shadow: 0 0 15px #39ff14;
         transform: scale(1.05);
+        color: #fff;
+    }
+
+    .referral-btn {
+        color: var(--cyber-yellow, #fcee0a);
+        border-color: rgba(252,238,10,0.3);
+    }
+    .referral-btn:hover {
+        background: rgba(252,238,10,0.1);
+        box-shadow: 0 0 12px rgba(252,238,10,0.25);
         color: #fff;
     }
 </style>

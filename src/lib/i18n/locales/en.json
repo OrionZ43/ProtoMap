@@ -5,7 +5,8 @@
     "casino": "THE GLITCH PIT",
     "about": "ABOUT",
     "login": "LOGIN",
-    "register": "REGISTER"
+    "register": "REGISTER",
+    "referral": "REFERRAL"
   },
   "menu": {
     "profile": "Profile Dossier",
@@ -16,7 +17,8 @@
     "anim": "CINEMATIC FX",
     "lang": "LANGUAGE / ЯЗЫК",
     "seasonal": "SEASONAL FX",
-    "security": "SECURITY"
+    "security": "SECURITY",
+    "referral": "Referrals"
   },
   "ui": {
     "balance": "Balance",
@@ -437,7 +439,7 @@
   },
   "terms": {
     "title": "//: END USER LICENSE AGREEMENT (EULA)",
-    "subtitle": "Version 3.0 | Effective Date: March 15, 2026",
+    "subtitle": "Version 3.1 | Effective Date: March 15, 2026",
     "disclaimer_block": {
       "title": "⚠️ CRITICAL NOTICE (NO REAL MONEY GAMBLING)",
       "text": "This Service contains an artistic simulation of gambling games (\"The Glitch Pit\").<br><br><strong>1. NO REAL MONEY:</strong> All in-game currency (ProtoCoins) has no monetary value, is not a cryptocurrency, and cannot be exchanged for fiat money, goods, or services.<br><strong>2. NO WITHDRAWALS:</strong> Any winnings are solely virtual achievements.<br><strong>3. SIMULATION:</strong> Game mechanics (slots, crash) are tuned for entertainment purposes and do not reflect real-world casino mathematical models."
@@ -989,5 +991,77 @@
     "point3": "We stand for transparency and modern development tools. ProtoMap is a community project, and its source code is open.",
     "link_text": "Read the full story",
     "close_btn": "Understood"
+  },
+  "app_privacy_policy": {
+    "_merged": true,
+    "redirect_note": "This section has been merged into the main Privacy Policy. Use keys from the 'privacy' section.",
+    "page_title": "Application Privacy Policy",
+    "contact_email": "orion.z43studios@gmail.com"
+  },
+  "app_terms": {
+    "_merged": true,
+    "redirect_note": "This section has been merged into the main Terms of Service. Use keys from the 'terms' section.",
+    "page_title": "End User License Agreement (EULA)",
+    "contact_email": "orion.z43studios@gmail.com"
+  },
+  "referral": {
+    "page_title": "Referral Program",
+    "header_tag": "// EVENT.EXE",
+    "title": "REFERRAL PROTOCOL",
+    "subtitle": "Invite the pack. Dominate the leaderboard. Claim the throne.",
+    "timer_label": "CAMPAIGN ENDS IN",
+    "reward_new_amount": "500 PC",
+    "reward_new_label": "for you when activating a code",
+    "reward_invite_amount": "250 PC",
+    "reward_invite_label": "to referrer per invite",
+    "reward_winner_amount": "10 000 PC",
+    "reward_winner_label": "to the monthly winner",
+    "welcome_tag": "// WELCOME BONUS",
+    "welcome_claimed": "Bonus already credited to your account. 🎉",
+    "welcome_badge_claimed": "✓ RECEIVED",
+    "welcome_badge_pc": "+500 PC",
+    "welcome_desc": "Enter the referral code of the person who invited you — get <strong>500 PC</strong> welcome bonus. The referrer gets <strong>250 PC</strong> too.",
+    "check_email": "Verify email",
+    "check_email_hint": "Check your inbox and click the confirmation link",
+    "check_telegram": "Link Telegram",
+    "check_telegram_hint": "Profile → Security → Link Telegram",
+    "check_chat": "Join @proto_map",
+    "check_chat_hint": "Verified at the moment of code activation",
+    "code_placeholder": "REF_XXXXXXXX_XXXX",
+    "claim_btn": "GO",
+    "claim_loading": "...",
+    "claim_success": "Code activated! You got <strong>+{earned} PC</strong>. Referrer got +{referrer} PC.",
+    "claim_already": "You have already activated a referral code.",
+    "your_code_tag": "// YOUR CODE",
+    "stat_this_month": "this month",
+    "stat_total": "total",
+    "share_hint": "For everyone who activates your code you get <strong>250 PC</strong>. The monthly leader wins another <strong>10 000 PC</strong>.",
+    "no_code_text": "You don't have a referral code yet.",
+    "get_code_btn": "⚡ GET CODE",
+    "generating": "GENERATING...",
+    "copy": "COPY",
+    "copied": "COPIED!",
+    "leaderboard_tag": "// LEADERBOARD",
+    "leaderboard_empty": "No data yet. Be the first!",
+    "leaderboard_prize_label": "The winner will also get",
+    "leaderboard_prize": "10 000 PC 👑",
+    "leaderboard_you": "YOU",
+    "rules_tag": "// RULES",
+    "rules_intro": "A referral is counted only if the new user completed all conditions:",
+    "rule_1_title": "Email verified",
+    "rule_1_desc": "Code cannot be activated without verification",
+    "rule_2_title": "Telegram linked",
+    "rule_2_desc": "Via the Security section in profile",
+    "rule_3_title": "Joined @proto_map",
+    "rule_3_desc": "Verified server-side at the moment of activation",
+    "rules_note": "⚠️ One account — one code. Cannot activate your own code. Program is for users registered after March 14, 2026.",
+    "howto_tag": "// HOW TO WIN",
+    "howto_1": "Get your referral code above",
+    "howto_2": "Share with your protogen, synth, primagen friends",
+    "howto_3": "Friend registers → verifies email → links Telegram → joins @proto_map → enters your code",
+    "howto_4": "You: <strong>+250 PC</strong> instantly. Friend: <strong>+500 PC</strong>. Monthly leader gets another <strong>+10 000 PC</strong>.",
+    "login_tag": "// ACCESS DENIED",
+    "login_text": "Log in to participate.",
+    "login_btn": "LOGIN"
   }
 }

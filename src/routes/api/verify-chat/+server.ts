@@ -61,15 +61,22 @@ async function deleteBotMessage(tgId: number): Promise<void> {
 
 
 /** Отправляем приветственное сообщение после верификации */
-async function sendWelcomeMessage(tgId: number): Promise<void> {
+async function sendWelcomeMessage(tgId: number, snapshot: FirebaseFirestore.QuerySnapshot | null): Promise<void> {
     if (!TELEGRAM_BOT_TOKEN) return;
     try {
+        // Берём имя из Firestore если аккаунт привязан
+        let displayName = `[tg://user?id=${tgId}](tg://user?id=${tgId})`;
+        if (snapshot && !snapshot.empty) {
+            const userData = snapshot.docs[0].data();
+            const name = userData.telegram_username || userData.username;
+            if (name) displayName = `[${name}](tg://user?id=${tgId})`;
+        }
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify({
                 chat_id:    PROTO_MAP_CHAT_ID,
-                text:       `✅ [tg://user?id=${tgId}](tg://user?id=${tgId}) прошёл верификацию Cloudflare и теперь полноправный участник сети ProtoMap. Добро пожаловать! 🦾`,
+                text:       `✅ ${displayName} прошёл верификацию Cloudflare и теперь полноправный участник сети ProtoMap. Добро пожаловать! 🦾`,
                 parse_mode: 'Markdown',
             }),
         });
@@ -157,7 +164,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
         // Удаляем сообщение с кнопкой и шлём приветствие
         await deleteBotMessage(tgIdNum);
-        await sendWelcomeMessage(tgIdNum);
+        await sendWelcomeMessage(tgIdNum, snapshot.empty ? null : snapshot);
 
         return json({ success: true });
 
