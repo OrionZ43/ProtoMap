@@ -19,6 +19,16 @@
     import { renderMarkdown } from '$lib/utils/markdown';
     import { AudioManager } from '$lib/client/audioManager';
     import { page } from '$app/stores';
+    import { chat } from '$lib/stores';
+
+    // Открыть личку прямо с профиля
+    function openDM() {
+        chat.openDM({
+            uid:      data.profile.uid,
+            username: data.profile.username,
+            avatarUrl: data.profile.avatar_url ?? null,
+        });
+    }
     import WatermelonInteractive from '$lib/components/WatermelonInteractive.svelte';
     // [ЭТАП 6] Кэш никнеймов
     import { usernameCache, getUsername, getAvatarUrl } from '$lib/stores/usernameCache';
@@ -472,6 +482,16 @@
             {#if isOwner}
                 <div class="profile-actions">
                     <NeonButton href="/profile/edit">{$t('profile.edit')}</NeonButton>
+                </div>
+            {:else if $userStore.user}
+                <div class="profile-actions">
+                    <button class="write-btn" on:click={openDM}>
+                        <svg class="write-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <span>НАПИСАТЬ</span>
+                    </button>
                 </div>
             {/if}
 
@@ -1274,4 +1294,56 @@
             font-size: 16px; /* Фикс зума на айфоне */
         }
     }
+
+    /* NeonButton с голубым цветом для кнопки «Написать» */
+    :global(.dm-neon) {
+        --primary-color: #00f0ff !important;
+        display: inline-flex !important;
+        align-items: center !important;
+    }
+
+    .write-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-family: 'Chakra Petch', monospace;
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        color: var(--cyber-yellow, #fcee0a);
+        background: transparent;
+        border: 2px solid var(--cyber-yellow, #fcee0a);
+        padding: 0.6rem 1.8rem;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: color 0.3s, box-shadow 0.3s;
+        box-shadow: 0 0 6px var(--cyber-yellow, #fcee0a),
+                    inset 0 0 6px rgba(252,238,10,0.08);
+    }
+
+    .write-btn::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%;
+        width: 100%; height: 100%;
+        background: linear-gradient(120deg, transparent, rgba(252,238,10,0.15), transparent);
+        transition: left 0.45s ease-in-out;
+    }
+
+    .write-btn:hover {
+        box-shadow: 0 0 22px var(--cyber-yellow, #fcee0a),
+                    inset 0 0 12px rgba(252,238,10,0.12);
+    }
+
+    .write-btn:hover::before { left: 100%; }
+
+    .write-btn-icon {
+        width: 18px; height: 18px;
+        flex-shrink: 0;
+        position: relative; z-index: 1;
+    }
+
+    .write-btn span { position: relative; z-index: 1; }
+
 </style>

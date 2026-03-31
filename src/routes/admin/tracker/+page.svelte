@@ -1,3 +1,4 @@
+<!-- src/routes/admin/tracker/+page.svelte -->
 <script lang="ts">
     import { enhance } from '$app/forms';
     import { fade, slide, scale } from 'svelte/transition';
@@ -7,103 +8,136 @@
 
     export let data: PageData;
 
-    // === ФИЛЬТРЫ ===
-    let filterPlatform: string = 'all';
-    let filterAssignee: string = 'all';
+    // Фильтры
+    let filterPlatform = 'all';
+    let filterAssignee = 'all';
+    let filterPriority = 'all';
 
-    // Реактивная фильтрация
-    $: filteredTasks = data.tasks.filter(t => {
-        const matchPlatform = filterPlatform === 'all' || t.platform === filterPlatform;
-        const matchAssignee = filterAssignee === 'all' || t.assignee === filterAssignee;
-        return matchPlatform && matchAssignee;
-    });
+    $: filtered = data.tasks.filter(t =>
+        (filterPlatform === 'all' || t.platform === filterPlatform) &&
+        (filterAssignee === 'all' || t.assignee === filterAssignee) &&
+        (filterPriority === 'all' || t.priority === filterPriority)
+    );
 
-    $: todoTasks = filteredTasks.filter(t => t.status === 'todo');
-    $: progressTasks = filteredTasks.filter(t => t.status === 'in_progress');
-    $: doneTasks = filteredTasks.filter(t => t.status === 'done');
+    $: todo     = filtered.filter(t => t.status === 'todo');
+    $: progress = filtered.filter(t => t.status === 'in_progress');
+    $: done     = filtered.filter(t => t.status === 'done');
 
-    // === UI STATE ===
-    let showCreateForm = false;
-    let editingTask: any = null; // Если не null, показываем модалку редактирования
+    let showCreate  = false;
+    let editingTask: any = null;
 
-    function getShortId(id: string) { return 'T-' + id.substring(0, 4).toUpperCase(); }
+    function shortId(id: string) { return 'T·' + id.slice(0,4).toUpperCase(); }
 
-    // Аватарки для команды
-    const AVATARS: any = {
-        'orion': '/casino/orioncasino.png', // Твой аватар
-        'iposdev': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=iposdev', // Заглушка для друга
-        'system': '/logo.svg'
+    const AVATARS: Record<string,string> = {
+        orion:   '/casino/orioncasino.png',
+        iposdev: 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=iposdev',
+        system:  '/logo.svg'
+    };
+
+    const PLATFORM_COLOR: Record<string,string> = {
+        web:     '#60a5fa',
+        app:     '#c084fc',
+        backend: '#facc15',
+        design:  '#f472b6'
+    };
+
+    const PRIORITY_LABEL: Record<string,string> = {
+        low:      'LOW',
+        medium:   'MED',
+        critical: 'CRIT'
     };
 </script>
 
-<svelte:head>
-    <title>Neural Planner v2.0</title>
-</svelte:head>
+<svelte:head><title>Neural Planner | Overlord</title></svelte:head>
 
-<div class="mission-control" in:fade={{duration: 500}}>
+<div class="planner" in:fade={{ duration: 400 }}>
     <div class="grid-bg"></div>
 
-    <!-- HEADER & FILTERS -->
-    <header class="hud-header">
+    <!-- HEADER -->
+    <header class="planner-header">
         <div class="header-left">
-            <h1 class="glitch-title" data-text="NEURAL_PLANNER">NEURAL_PLANNER</h1>
-            <div class="filters-bar">
-                <span class="filter-label">FILTER:</span>
-                <button class="filter-btn" class:active={filterPlatform === 'all'} on:click={() => filterPlatform = 'all'}>ALL</button>
-                <button class="filter-btn" class:active={filterPlatform === 'web'} on:click={() => filterPlatform = 'web'}>WEB</button>
-                <button class="filter-btn" class:active={filterPlatform === 'app'} on:click={() => filterPlatform = 'app'}>APP</button>
-                <span class="separator">|</span>
-                <button class="filter-btn" class:active={filterAssignee === 'orion'} on:click={() => filterAssignee = filterAssignee === 'orion' ? 'all' : 'orion'}>ORION</button>
-                <button class="filter-btn" class:active={filterAssignee === 'iposdev'} on:click={() => filterAssignee = filterAssignee === 'iposdev' ? 'all' : 'iposdev'}>IPOS</button>
+            <h1 class="planner-title">NEURAL_PLANNER</h1>
+            <!-- Фильтры -->
+            <div class="filters">
+                <div class="filter-group">
+                    <span class="filter-sep">PLATFORM:</span>
+                    {#each ['all','web','app','backend','design'] as p}
+                        <button class="ftag" class:ftag-on={filterPlatform === p}
+                                on:click={() => filterPlatform = p}>
+                            {p === 'all' ? 'ALL' : p.toUpperCase()}
+                        </button>
+                    {/each}
+                </div>
+                <div class="filter-group">
+                    <span class="filter-sep">WHO:</span>
+                    {#each ['all','orion','iposdev','system'] as a}
+                        <button class="ftag" class:ftag-on={filterAssignee === a}
+                                on:click={() => filterAssignee = a}>
+                            {a.toUpperCase()}
+                        </button>
+                    {/each}
+                </div>
+                <div class="filter-group">
+                    <span class="filter-sep">PRIO:</span>
+                    {#each ['all','low','medium','critical'] as p}
+                        <button class="ftag"
+                                class:ftag-on={filterPriority === p}
+                                class:ftag-crit={p === 'critical' && filterPriority === 'critical'}
+                                on:click={() => filterPriority = p}>
+                            {p === 'all' ? 'ALL' : PRIORITY_LABEL[p]}
+                        </button>
+                    {/each}
+                </div>
             </div>
         </div>
-
-        <button class="cyber-btn" on:click={() => showCreateForm = !showCreateForm}>
-            {showCreateForm ? 'CLOSE UPLINK' : 'NEW DIRECTIVE'}
+        <button class="new-btn" on:click={() => showCreate = !showCreate}>
+            {showCreate ? '✕ CLOSE' : '+ NEW DIRECTIVE'}
         </button>
     </header>
 
     <!-- CREATE FORM -->
-    {#if showCreateForm}
-        <div class="form-wrapper" transition:slide>
-            <form method="POST" action="?/create" use:enhance={() => { showCreateForm = false; return async ({ update }) => update(); }} class="tech-form">
-                <h3 class="form-title">> INITIATE_PROTOCOL</h3>
-                <div class="inputs-grid">
-                    <div class="group">
+    {#if showCreate}
+        <div class="form-wrap" transition:slide={{ duration: 250 }}>
+            <form method="POST" action="?/create"
+                  use:enhance={() => { showCreate = false; return async ({ update }) => update(); }}
+                  class="directive-form">
+                <h3 class="form-tag">> INITIATE_PROTOCOL</h3>
+                <div class="form-grid">
+                    <div class="fg full">
                         <label>TITLE</label>
-                        <input type="text" name="title" class="hud-input" required placeholder="Task name..."/>
+                        <input type="text" name="title" class="fi" required placeholder="Task name..." />
                     </div>
-                    <div class="group">
+                    <div class="fg">
                         <label>MODULE</label>
-                        <select name="platform" class="hud-input">
+                        <select name="platform" class="fi">
                             <option value="web">WEB_CLIENT</option>
                             <option value="app">MOBILE_APP</option>
                             <option value="backend">SERVER_CORE</option>
                             <option value="design">VISUAL_ARTS</option>
                         </select>
                     </div>
-                    <div class="group">
+                    <div class="fg">
                         <label>OPERATOR</label>
-                        <select name="assignee" class="hud-input">
+                        <select name="assignee" class="fi">
                             <option value="orion">ORION</option>
                             <option value="iposdev">IPOSDEV</option>
                             <option value="system">SYSTEM</option>
                         </select>
                     </div>
-                    <div class="group">
+                    <div class="fg">
                         <label>PRIORITY</label>
-                        <select name="priority" class="hud-input">
+                        <select name="priority" class="fi">
                             <option value="low">LOW</option>
                             <option value="medium" selected>MEDIUM</option>
                             <option value="critical">CRITICAL</option>
                         </select>
                     </div>
-                    <div class="group full">
+                    <div class="fg full">
                         <label>DETAILS</label>
-                        <input type="text" name="description" class="hud-input" placeholder="Technical specifications..."/>
+                        <input type="text" name="description" class="fi" placeholder="Technical specs..." />
                     </div>
                 </div>
-                <button type="submit" class="submit-cmd">EXECUTE</button>
+                <button type="submit" class="exec-btn">EXECUTE</button>
             </form>
         </div>
     {/if}
@@ -111,74 +145,82 @@
     <!-- EDIT MODAL -->
     {#if editingTask}
         <div class="modal-overlay" transition:fade on:click|self={() => editingTask = null}>
-            <div class="modal-content tech-form" transition:scale>
-                <h3 class="form-title">> EDIT_DIRECTIVE: {getShortId(editingTask.id)}</h3>
-                <form method="POST" action="?/edit" use:enhance={() => { editingTask = null; return async ({ update }) => update(); }}>
+            <div class="edit-modal" transition:scale={{ duration: 180, easing: quintOut }}>
+                <h3 class="form-tag">> EDIT: {shortId(editingTask.id)}</h3>
+                <form method="POST" action="?/edit"
+                      use:enhance={() => { editingTask = null; return async ({ update }) => update(); }}>
                     <input type="hidden" name="id" value={editingTask.id} />
-                    <div class="inputs-grid">
-                        <div class="group full">
+                    <div class="form-grid">
+                        <div class="fg full">
                             <label>TITLE</label>
-                            <input type="text" name="title" class="hud-input" value={editingTask.title} required />
+                            <input type="text" name="title" class="fi" value={editingTask.title} required />
                         </div>
-                        <div class="group">
+                        <div class="fg">
                             <label>OPERATOR</label>
-                            <select name="assignee" class="hud-input" value={editingTask.assignee}>
-                                <option value="orion">ORION</option>
-                                <option value="iposdev">IPOSDEV</option>
-                                <option value="system">SYSTEM</option>
+                            <select name="assignee" class="fi">
+                                <option value="orion"   selected={editingTask.assignee === 'orion'}>ORION</option>
+                                <option value="iposdev" selected={editingTask.assignee === 'iposdev'}>IPOSDEV</option>
+                                <option value="system"  selected={editingTask.assignee === 'system'}>SYSTEM</option>
                             </select>
                         </div>
-                        <div class="group">
+                        <div class="fg">
                             <label>PRIORITY</label>
-                            <select name="priority" class="hud-input" value={editingTask.priority}>
-                                <option value="low">LOW</option>
-                                <option value="medium">MEDIUM</option>
-                                <option value="critical">CRITICAL</option>
+                            <select name="priority" class="fi">
+                                <option value="low"      selected={editingTask.priority === 'low'}>LOW</option>
+                                <option value="medium"   selected={editingTask.priority === 'medium'}>MEDIUM</option>
+                                <option value="critical" selected={editingTask.priority === 'critical'}>CRITICAL</option>
                             </select>
                         </div>
-                        <div class="group full">
+                        <div class="fg full">
                             <label>DETAILS</label>
-                            <input type="text" name="description" class="hud-input" value={editingTask.description} />
+                            <input type="text" name="description" class="fi" value={editingTask.description} />
                         </div>
                     </div>
                     <div class="modal-actions">
-                        <button type="button" class="cancel-cmd" on:click={() => editingTask = null}>CANCEL</button>
-                        <button type="submit" class="submit-cmd">SAVE CHANGES</button>
+                        <button type="button" class="cancel-btn" on:click={() => editingTask = null}>CANCEL</button>
+                        <button type="submit" class="exec-btn">SAVE</button>
                     </div>
                 </form>
             </div>
         </div>
     {/if}
 
-    <!-- KANBAN BOARD -->
-    <div class="kanban-grid">
+    <!-- KANBAN -->
+    <div class="kanban">
 
         <!-- TODO -->
-        <div class="lane todo">
-            <div class="lane-header">
-                <span class="lane-name">PENDING</span>
-                <span class="count">{todoTasks.length}</span>
+        <div class="lane">
+            <div class="lane-head">
+                <div class="lane-name">
+                    <span class="lane-dot" style="background:#475569"></span>
+                    PENDING
+                </div>
+                <span class="lane-count">{todo.length}</span>
             </div>
             <div class="lane-body">
-                {#each todoTasks as task (task.id)}
-                    <div class="tech-card priority-{task.priority}" animate:flip={{duration: 300, easing: quintOut}}>
+                {#each todo as task (task.id)}
+                    <div class="card prio-{task.priority}" animate:flip={{ duration: 280, easing: quintOut }}>
                         <div class="card-top">
-                            <span class="id-tag">{getShortId(task.id)}</span>
-                            <div class="assignee-avatar" title={task.assignee}>
-                                <img src={AVATARS[task.assignee]} alt={task.assignee}>
+                            <span class="card-id">{shortId(task.id)}</span>
+                            <div class="card-badges">
+                                <span class="pbadge" style="color:{PLATFORM_COLOR[task.platform]}">{task.platform}</span>
+                                <img src={AVATARS[task.assignee]} alt={task.assignee} class="assignee-av" title={task.assignee} />
                             </div>
                         </div>
-
-                        <div class="card-main" on:click={() => editingTask = task}>
+                        <div class="card-body" on:click={() => editingTask = task} role="button" tabindex="0"
+                             on:keydown={(e) => e.key === 'Enter' && (editingTask = task)}>
                             <h4 class="card-title">{task.title}</h4>
-                            <span class="platform-tag {task.platform}">{task.platform}</span>
+                            {#if task.description}<p class="card-desc">{task.description}</p>{/if}
                         </div>
-
-                        <div class="card-controls">
-                            <form method="POST" action="?/delete" use:enhance><input type="hidden" name="id" value={task.id}><button class="ctrl-btn del">×</button></form>
+                        <div class="card-foot">
+                            <form method="POST" action="?/delete" use:enhance>
+                                <input type="hidden" name="id" value={task.id} />
+                                <button class="ctrl-btn del" title="Delete">×</button>
+                            </form>
                             <form method="POST" action="?/updateStatus" use:enhance>
-                                <input type="hidden" name="id" value={task.id}><input type="hidden" name="status" value="in_progress">
-                                <button class="ctrl-btn next">►</button>
+                                <input type="hidden" name="id" value={task.id} />
+                                <input type="hidden" name="status" value="in_progress" />
+                                <button class="ctrl-btn go" title="Start">▶</button>
                             </form>
                         </div>
                     </div>
@@ -186,37 +228,41 @@
             </div>
         </div>
 
-        <!-- PROGRESS -->
-        <div class="lane progress">
-            <div class="lane-header">
-                <span class="lane-name text-cyber-yellow">PROCESSING</span>
-                <span class="count warning">{progressTasks.length}</span>
+        <!-- IN PROGRESS -->
+        <div class="lane lane-active">
+            <div class="lane-head">
+                <div class="lane-name">
+                    <span class="lane-dot pulse" style="background:#fcee0a"></span>
+                    PROCESSING
+                </div>
+                <span class="lane-count warn">{progress.length}</span>
             </div>
             <div class="lane-body">
-                {#each progressTasks as task (task.id)}
-                    <div class="tech-card priority-{task.priority} active" animate:flip={{duration: 300, easing: quintOut}}>
-                        <div class="active-scanline"></div>
+                {#each progress as task (task.id)}
+                    <div class="card card-active prio-{task.priority}" animate:flip={{ duration: 280, easing: quintOut }}>
+                        <div class="scanline"></div>
                         <div class="card-top">
-                            <span class="id-tag text-cyber-yellow">{getShortId(task.id)}</span>
-                            <div class="assignee-avatar" title={task.assignee}>
-                                <img src={AVATARS[task.assignee]} alt={task.assignee}>
+                            <span class="card-id cy">{shortId(task.id)}</span>
+                            <div class="card-badges">
+                                <span class="pbadge" style="color:{PLATFORM_COLOR[task.platform]}">{task.platform}</span>
+                                <img src={AVATARS[task.assignee]} alt={task.assignee} class="assignee-av" />
                             </div>
                         </div>
-
-                        <div class="card-main" on:click={() => editingTask = task}>
-                            <h4 class="card-title text-cyber-yellow">{task.title}</h4>
+                        <div class="card-body" on:click={() => editingTask = task} role="button" tabindex="0"
+                             on:keydown={(e) => e.key === 'Enter' && (editingTask = task)}>
+                            <h4 class="card-title cy">{task.title}</h4>
                             {#if task.description}<p class="card-desc">{task.description}</p>{/if}
-                            <span class="platform-tag {task.platform}">{task.platform}</span>
                         </div>
-
-                        <div class="card-controls">
+                        <div class="card-foot">
                             <form method="POST" action="?/updateStatus" use:enhance>
-                                <input type="hidden" name="id" value={task.id}><input type="hidden" name="status" value="todo">
-                                <button class="ctrl-btn prev">◄</button>
+                                <input type="hidden" name="id" value={task.id} />
+                                <input type="hidden" name="status" value="todo" />
+                                <button class="ctrl-btn back" title="Back">◀</button>
                             </form>
                             <form method="POST" action="?/updateStatus" use:enhance>
-                                <input type="hidden" name="id" value={task.id}><input type="hidden" name="status" value="done">
-                                <button class="ctrl-btn next">✔</button>
+                                <input type="hidden" name="id" value={task.id} />
+                                <input type="hidden" name="status" value="done" />
+                                <button class="ctrl-btn done" title="Done">✔</button>
                             </form>
                         </div>
                     </div>
@@ -225,25 +271,31 @@
         </div>
 
         <!-- DONE -->
-        <div class="lane done">
-            <div class="lane-header">
-                <span class="lane-name text-green-400">ONLINE</span>
-                <span class="count success">{doneTasks.length}</span>
+        <div class="lane lane-done">
+            <div class="lane-head">
+                <div class="lane-name">
+                    <span class="lane-dot" style="background:#4ade80"></span>
+                    ONLINE
+                </div>
+                <span class="lane-count ok">{done.length}</span>
             </div>
             <div class="lane-body">
-                {#each doneTasks as task (task.id)}
-                    <div class="tech-card done" animate:flip={{duration: 300, easing: quintOut}}>
+                {#each done as task (task.id)}
+                    <div class="card card-done" animate:flip={{ duration: 280, easing: quintOut }}>
                         <div class="card-top">
-                            <span class="id-tag">{getShortId(task.id)}</span>
-                            <div class="assignee-avatar dimmed">
-                                <img src={AVATARS[task.assignee]} alt={task.assignee}>
-                            </div>
+                            <span class="card-id muted">{shortId(task.id)}</span>
+                            <img src={AVATARS[task.assignee]} alt={task.assignee} class="assignee-av dimmed" />
                         </div>
-                        <h4 class="card-title line-through text-gray-500">{task.title}</h4>
-                        <div class="card-controls justify-end">
+                        <h4 class="card-title muted struck">{task.title}</h4>
+                        <div class="card-foot justify-end">
+                            <form method="POST" action="?/updateStatus" use:enhance>
+                                <input type="hidden" name="id" value={task.id} />
+                                <input type="hidden" name="status" value="in_progress" />
+                                <button class="ctrl-btn back" title="Reopen">↩</button>
+                            </form>
                             <form method="POST" action="?/delete" use:enhance>
-                                <input type="hidden" name="id" value={task.id}>
-                                <button class="ctrl-btn archive">ARCHIVE</button>
+                                <input type="hidden" name="id" value={task.id} />
+                                <button class="ctrl-btn del" title="Archive">×</button>
                             </form>
                         </div>
                     </div>
@@ -255,105 +307,215 @@
 </div>
 
 <style>
-    /* Базовые стили такие же, но с добавками */
-    .mission-control { padding: 2rem; color: #e0f7fa; min-height: 100vh; position: relative; }
-    .grid-bg { position: absolute; inset: 0; z-index: -1; background-size: 40px 40px; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); }
+    :root { --cy:#fcee0a; --cc:#00f3ff; --cr:#ff003c; --cg:#39ff14; }
 
-    .hud-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; border-bottom: 1px solid rgba(0,243,255,0.2); padding-bottom: 1rem; }
-    .glitch-title { font-family: 'Chakra Petch', monospace; font-size: 2rem; font-weight: 800; color: white; text-shadow: 0 0 10px rgba(0,243,255,0.5); }
+    .planner { padding: 1.5rem; min-height: 100%; position: relative; color: #e2e8f0; }
+
+    .grid-bg {
+        position: absolute; inset: 0; z-index: 0; pointer-events: none;
+        background-size: 32px 32px;
+        background-image:
+            linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,.015) 1px, transparent 1px);
+    }
+
+    /* HEADER */
+    .planner-header {
+        position: relative; z-index: 1;
+        display: flex; justify-content: space-between; align-items: flex-start;
+        margin-bottom: 1.5rem; padding-bottom: 1.25rem;
+        border-bottom: 1px solid rgba(0,243,255,.15);
+        flex-wrap: wrap; gap: 1rem;
+    }
+    .planner-title {
+        font-family: 'Chakra Petch', monospace; font-size: 1.6rem; font-weight: 900;
+        color: #fff; letter-spacing: .08em; margin-bottom: .6rem;
+        text-shadow: 0 0 20px rgba(0,243,255,.3);
+    }
 
     /* FILTERS */
-    .filters-bar { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
-    .filter-label { font-size: 0.7rem; color: #64748b; font-weight: bold; margin-right: 0.5rem; }
-    .filter-btn {
-        background: transparent; border: 1px solid #333; color: #666;
-        padding: 2px 8px; font-size: 0.7rem; font-family: 'Chakra Petch', monospace;
-        cursor: pointer; transition: all 0.2s; border-radius: 4px;
+    .filters { display: flex; flex-direction: column; gap: .4rem; }
+    .filter-group { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; }
+    .filter-sep { font-family: 'Chakra Petch', monospace; font-size: .6rem; color: #334155; letter-spacing: .15em; min-width: 55px; }
+    .ftag {
+        background: transparent; border: 1px solid rgba(255,255,255,.07);
+        color: #475569; padding: .15rem .5rem; font-size: .65rem;
+        font-family: 'Chakra Petch', monospace; cursor: pointer; border-radius: 2px;
+        transition: all .15s;
     }
-    .filter-btn:hover { color: white; border-color: #666; }
-    .filter-btn.active { background: rgba(0,243,255,0.1); border-color: var(--cyber-cyan); color: var(--cyber-cyan); }
-    .separator { color: #333; font-size: 0.8rem; }
+    .ftag:hover   { color: #e2e8f0; border-color: rgba(255,255,255,.2); }
+    .ftag.ftag-on { background: rgba(0,243,255,.1); border-color: var(--cc); color: var(--cc); }
+    .ftag.ftag-crit { background: rgba(255,0,60,.1); border-color: var(--cr); color: var(--cr); }
 
-    /* CARD STYLES */
-    .tech-card {
-        background: rgba(30,35,45,0.7); padding: 0.8rem; border-radius: 6px;
-        border-left: 3px solid #555; margin-bottom: 1rem; position: relative;
-        transition: transform 0.2s;
+    /* BUTTONS */
+    .new-btn {
+        background: rgba(0,243,255,.08); border: 1px solid rgba(0,243,255,.3);
+        color: var(--cc); padding: .55rem 1.25rem;
+        font-family: 'Chakra Petch', monospace; font-weight: 700; font-size: .8rem;
+        cursor: pointer; letter-spacing: .1em; transition: all .2s; white-space: nowrap;
     }
-    .tech-card:hover { transform: translateY(-2px); background: rgba(40,45,55,0.9); }
+    .new-btn:hover { background: var(--cc); color: #000; box-shadow: 0 0 16px rgba(0,243,255,.3); }
 
-    .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-    .id-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: #64748b; }
-
-    .assignee-avatar { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #555; overflow: hidden; }
-    .assignee-avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .assignee-avatar.dimmed { filter: grayscale(1); opacity: 0.5; }
-
-    .card-main { cursor: pointer; }
-    .card-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 0.3rem; line-height: 1.3; }
-    .card-desc { font-size: 0.75rem; color: #9ca3af; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-
-    .platform-tag {
-        font-size: 0.6rem; padding: 1px 4px; border-radius: 3px; font-weight: bold; text-transform: uppercase;
-        display: inline-block; margin-bottom: 0.5rem; border: 1px solid transparent;
+    /* FORM */
+    .form-wrap { position: relative; z-index: 1; margin-bottom: 1.5rem; }
+    .directive-form, .edit-modal form {
+        background: rgba(9,11,17,.95); border: 1px solid var(--cc);
+        padding: 1.5rem; box-shadow: 0 0 30px rgba(0,243,255,.08);
     }
-    .platform-tag.web { color: #60a5fa; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.1); }
-    .platform-tag.app { color: #c084fc; border-color: rgba(192,132,252,0.3); background: rgba(192,132,252,0.1); }
-    .platform-tag.backend { color: #facc15; border-color: rgba(250,204,21,0.3); background: rgba(250,204,21,0.1); }
-    .platform-tag.design { color: #f472b6; border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.1); }
+    .form-tag {
+        font-family: 'JetBrains Mono', monospace; font-size: .75rem;
+        color: #475569; margin-bottom: 1rem;
+        border-bottom: 1px dashed rgba(255,255,255,.07); padding-bottom: .5rem;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .75rem; }
+    @media(max-width:640px) { .form-grid { grid-template-columns: 1fr; } }
+    .fg { display: flex; flex-direction: column; gap: .25rem; }
+    .fg.full { grid-column: 1 / -1; }
+    .fg label { font-family: 'Chakra Petch', monospace; font-size: .6rem; color: var(--cc); letter-spacing: .15em; }
+    .fi {
+        background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.1);
+        color: #fff; padding: .5rem .65rem; font-size: .85rem; outline: none;
+        font-family: 'Chakra Petch', monospace; transition: border-color .2s;
+    }
+    .fi:focus { border-color: var(--cy); }
+    .fi option { background: #0f172a; }
 
-    /* Priorities */
-    .priority-low { border-left-color: #60a5fa; }
-    .priority-medium { border-left-color: var(--cyber-yellow); }
-    .priority-critical { border-left-color: #ff003c; background: repeating-linear-gradient(45deg, rgba(30,35,45,0.7), rgba(30,35,45,0.7) 10px, rgba(255,0,60,0.05) 10px, rgba(255,0,60,0.05) 20px); }
+    .exec-btn {
+        background: var(--cy); color: #000; font-weight: 900;
+        font-family: 'Chakra Petch', monospace; border: none;
+        padding: .65rem 2rem; cursor: pointer; margin-top: 1rem;
+        letter-spacing: .1em; transition: box-shadow .2s; width: 100%;
+    }
+    .exec-btn:hover { box-shadow: 0 0 16px rgba(252,238,10,.4); }
 
-    .active-scanline {
+    .modal-actions { display: flex; gap: .75rem; margin-top: 1rem; }
+    .cancel-btn {
+        flex: 1; padding: .65rem; background: transparent;
+        border: 1px solid rgba(255,255,255,.1); color: #64748b;
+        font-family: 'Chakra Petch', monospace; font-weight: 700;
+        cursor: pointer; transition: all .2s;
+    }
+    .cancel-btn:hover { border-color: #94a3b8; color: #fff; }
+
+    /* KANBAN */
+    .kanban {
+        position: relative; z-index: 1;
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem; align-items: start;
+    }
+    @media(max-width:900px) { .kanban { grid-template-columns: 1fr; } }
+
+    .lane {
+        background: rgba(10,12,18,.6); border: 1px solid rgba(255,255,255,.05);
+        border-radius: 4px; padding: 1rem; min-height: 400px;
+    }
+    .lane-active { border-color: rgba(252,238,10,.1); }
+    .lane-done   { opacity: .8; }
+
+    .lane-head {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 1rem; padding-bottom: .6rem;
+        border-bottom: 1px solid rgba(255,255,255,.05);
+    }
+    .lane-name {
+        display: flex; align-items: center; gap: .5rem;
+        font-family: 'Chakra Petch', monospace; font-size: .75rem;
+        font-weight: 700; letter-spacing: .12em; color: #94a3b8;
+    }
+    .lane-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .lane-dot.pulse { animation: blink 1.5s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    .lane-count {
+        font-family: 'Chakra Petch', monospace; font-size: .7rem;
+        background: rgba(255,255,255,.06); padding: .1rem .4rem;
+        border-radius: 2px; color: #475569;
+    }
+    .lane-count.warn { color: var(--cy); }
+    .lane-count.ok   { color: #4ade80; }
+
+    .lane-body { display: flex; flex-direction: column; gap: .6rem; }
+
+    /* CARDS */
+    .card {
+        background: rgba(20,25,35,.7); border: 1px solid rgba(255,255,255,.06);
+        border-left: 3px solid #334155; border-radius: 3px; padding: .8rem;
+        position: relative; overflow: hidden; transition: transform .2s, background .2s;
+    }
+    .card:hover { transform: translateY(-2px); background: rgba(30,35,45,.9); }
+
+    .prio-low      { border-left-color: #60a5fa; }
+    .prio-medium   { border-left-color: var(--cy); }
+    .prio-critical {
+        border-left-color: var(--cr);
+        background: repeating-linear-gradient(
+            45deg, rgba(20,25,35,.7), rgba(20,25,35,.7) 12px,
+            rgba(255,0,60,.04) 12px, rgba(255,0,60,.04) 24px
+        );
+    }
+
+    .card-active { border-color: rgba(252,238,10,.15); }
+    .card-done   { border-left-color: #1e293b; }
+
+    .scanline {
         position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-        background: var(--cyber-yellow); opacity: 0.5; animation: scan 2s infinite linear; pointer-events: none;
+        background: linear-gradient(90deg, transparent, var(--cy), transparent);
+        opacity: .4; animation: scan-y 2.5s linear infinite;
     }
-    @keyframes scan { 0% { top: 0; opacity: 0; } 50% { opacity: 0.5; } 100% { top: 100%; opacity: 0; } }
+    @keyframes scan-y { 0%{top:0;opacity:0} 20%{opacity:.4} 80%{opacity:.4} 100%{top:100%;opacity:0} }
 
-    /* CONTROLS */
-    .card-controls { display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.5rem; }
-    .ctrl-btn { background: transparent; border: 1px solid transparent; color: #555; padding: 0 6px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
-    .ctrl-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
-    .ctrl-btn.next:hover { color: #4ade80; }
-    .ctrl-btn.del:hover { color: #ff003c; }
+    .card-top {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: .4rem;
+    }
+    .card-id {
+        font-family: 'JetBrains Mono', monospace; font-size: .62rem; color: #475569;
+    }
+    .card-id.cy    { color: var(--cy); }
+    .card-id.muted { color: #1e293b; }
 
-    /* COLUMNS */
-    .kanban-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
-    .lane { background: rgba(15, 20, 30, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 1rem; min-height: 60vh; }
-    .lane-header { display: flex; justify-content: space-between; margin-bottom: 1rem; font-family: 'Chakra Petch', monospace; font-weight: bold; font-size: 0.9rem; }
-    .count { background: #333; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
-    .count.warning { color: var(--cyber-yellow); }
-    .count.success { color: #4ade80; }
+    .card-badges { display: flex; align-items: center; gap: .4rem; }
+    .pbadge { font-family: 'Chakra Petch', monospace; font-size: .58rem; font-weight: 700; }
+
+    .assignee-av { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,.1); }
+    .assignee-av.dimmed { filter: grayscale(1); opacity: .4; }
+
+    .card-body { cursor: pointer; }
+    .card-title { font-weight: 700; font-size: .88rem; color: #e2e8f0; line-height: 1.35; margin-bottom: .25rem; }
+    .card-title.cy     { color: var(--cy); }
+    .card-title.muted  { color: #334155; }
+    .card-title.struck { text-decoration: line-through; }
+    .card-desc { font-size: .72rem; color: #475569; line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+    .card-foot {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: .6rem; padding-top: .5rem;
+        border-top: 1px solid rgba(255,255,255,.04);
+    }
+    .card-foot.justify-end { justify-content: flex-end; gap: .4rem; }
+
+    .ctrl-btn {
+        background: transparent; border: 1px solid transparent;
+        color: #334155; width: 26px; height: 26px;
+        border-radius: 3px; cursor: pointer; font-size: .85rem;
+        display: flex; align-items: center; justify-content: center;
+        transition: all .15s;
+    }
+    .ctrl-btn:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.1); }
+    .ctrl-btn.del:hover  { color: var(--cr); border-color: rgba(255,0,60,.3); }
+    .ctrl-btn.go:hover   { color: #4ade80; border-color: rgba(74,222,128,.3); }
+    .ctrl-btn.done:hover { color: #4ade80; border-color: rgba(74,222,128,.3); }
+    .ctrl-btn.back:hover { color: #60a5fa; border-color: rgba(96,165,250,.3); }
 
     /* MODAL */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-    .modal-content { width: 90%; max-width: 600px; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
-    .cancel-btn, .cancel-cmd { background: transparent; border: 1px solid #555; color: #ccc; padding: 0.8rem 1.5rem; font-family: 'Chakra Petch', monospace; font-weight: bold; cursor: pointer; }
-    .cancel-cmd:hover { border-color: #fff; color: #fff; }
-
-    /* COMMON FORM STYLES */
-    .form-wrapper { margin-bottom: 2rem; }
-    .tech-form { background: rgba(15,20,25,0.95); padding: 2rem; border: 1px solid var(--cyber-cyan); box-shadow: 0 0 30px rgba(0,243,255,0.1); }
-    .form-title { font-family: 'JetBrains Mono', monospace; color: #64748b; margin-bottom: 1rem; border-bottom: 1px dashed #333; padding-bottom: 0.5rem; }
-    .inputs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    .group { display: flex; flex-direction: column; gap: 0.3rem; }
-    .group.full { grid-column: span 2; }
-    .group label { font-size: 0.7rem; font-weight: bold; color: var(--cyber-cyan); letter-spacing: 0.1em; }
-    .hud-input { background: rgba(0,0,0,0.3); border: 1px solid #333; color: white; padding: 0.6rem; font-family: 'Inter', sans-serif; width: 100%; }
-    .hud-input:focus { border-color: var(--cyber-yellow); outline: none; }
-    .submit-cmd { background: var(--cyber-yellow); color: black; font-weight: 800; border: none; padding: 0.8rem 2rem; cursor: pointer; font-family: 'Chakra Petch', monospace; width: 100%; margin-top: 1rem; }
-    .submit-cmd:hover { box-shadow: 0 0 15px var(--cyber-yellow); }
-    .cyber-btn { background: rgba(0,243,255,0.1); border: 1px solid var(--cyber-cyan); color: var(--cyber-cyan); padding: 0.5rem 1.5rem; font-weight: bold; font-family: 'Chakra Petch', monospace; cursor: pointer; }
-    .cyber-btn:hover { background: var(--cyber-cyan); color: black; box-shadow: 0 0 15px var(--cyber-cyan); }
-
-    @media(max-width: 768px) {
-        .hud-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
-        .filters-bar { flex-wrap: wrap; }
-        .inputs-grid { grid-template-columns: 1fr; }
-        .group.full { grid-column: span 1; }
+    .modal-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,.85);
+        z-index: 100; display: flex; align-items: center; justify-content: center;
+        backdrop-filter: blur(6px);
+    }
+    .edit-modal {
+        width: 90%; max-width: 560px;
+        background: rgba(9,11,17,.98); border: 1px solid var(--cc);
+        padding: 1.75rem; box-shadow: 0 0 40px rgba(0,243,255,.1);
     }
 </style>

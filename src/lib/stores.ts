@@ -92,22 +92,35 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
 // --- CHAT STORE ---
 
 type ChatState = {
-    isOpen: boolean;
-    hasUnread: boolean; // Флаг непрочитанных сообщений
+    isOpen:    boolean;
+    hasUnread: boolean;
+    dmUnread:  boolean;
+    // Если задан — при открытии виджет сразу переходит на DM с этим пользователем
+    pendingDM: { uid: string; username: string; avatarUrl: string | null } | null;
 };
+
 
 function createChatStore() {
     const { subscribe, update, set } = writable<ChatState>({
-        isOpen: false,
-        hasUnread: false
+        isOpen:    false,
+        hasUnread: false,
+        dmUnread:  false,
     });
 
     return {
         subscribe,
-        toggle: () => update(state => ({ ...state, isOpen: !state.isOpen })),
-        open: () => update(state => ({ ...state, isOpen: true, hasUnread: false })), // При открытии сбрасываем уведомление
-        close: () => update(state => ({ ...state, isOpen: false })),
-        setUnread: (val: boolean) => update(state => ({ ...state, hasUnread: val }))
+        toggle:      () => update(s => ({ ...s, isOpen: !s.isOpen })),
+        open:        () => update(s => ({ ...s, isOpen: true, hasUnread: false })),
+        close:       () => update(s => ({ ...s, isOpen: false })),
+        setUnread:   (val: boolean) => update(s => ({ ...s, hasUnread: val })),
+        setDmUnread: (val: boolean) => update(s => ({ ...s, dmUnread: val })),
+
+        // Открыть виджет сразу на вкладке DM с конкретным пользователем
+        openDM: (partner: { uid: string; username: string; avatarUrl: string | null }) =>
+            update(s => ({ ...s, isOpen: true, hasUnread: false, pendingDM: partner })),
+
+        // Вызывается из DMInbox когда он обработал pendingDM
+        clearPendingDM: () => update(s => ({ ...s, pendingDM: null })),
     };
 }
 

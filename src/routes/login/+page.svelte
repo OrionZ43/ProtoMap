@@ -14,7 +14,7 @@
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
-    import { slide } from 'svelte/transition';
+    import { slide, fade } from 'svelte/transition';
     import { getFunctions, httpsCallable } from "firebase/functions";
     import { userStore } from '$lib/stores';
     import { t } from 'svelte-i18n';
@@ -34,6 +34,53 @@
     onMount(() => {
         opacity.set(1);
     });
+
+    // ===== 🎭 1 АПРЕЛЯ =====
+    function isAprilFools(): boolean {
+        const now = new Date();
+        return now.getMonth() === 3 && now.getDate() === 1;
+    }
+
+    // Флаг: кнопка Госуслуг видима
+    let gosuslugiVisible = isAprilFools();
+    // Флаг: показываем модалку "согласия"
+    let showGosModal = false;
+    // Флаг: модалка "обработки"
+    let gosProcessing = false;
+    // Счётчик прогресса фейковой загрузки
+    let gosProgress = 0;
+    let gosProgressInterval: ReturnType<typeof setInterval>;
+
+    function handleGosuslugiClick() {
+        showGosModal = true;
+    }
+
+    function declineGos() {
+        // Отказались — кнопка обиженно исчезает
+        showGosModal = false;
+        gosuslugiVisible = false;
+    }
+
+    async function acceptGos() {
+        // Принять — запускаем фейковый прогресс "передачи ОЗУ"
+        showGosModal = false;
+        gosProcessing = true;
+        gosProgress = 0;
+
+        gosProgressInterval = setInterval(() => {
+            gosProgress += Math.floor(Math.random() * 7) + 3;
+            if (gosProgress >= 100) {
+                gosProgress = 100;
+                clearInterval(gosProgressInterval);
+                // Через 600мс скрываем кнопку и даём нормально войти
+                setTimeout(() => {
+                    gosProcessing = false;
+                    gosuslugiVisible = false;
+                }, 600);
+            }
+        }, 120);
+    }
+    // ===== /1 АПРЕЛЯ =====
 
     function handleTurnstileVerified(event: CustomEvent) {
         turnstileToken = event.detail.token;
@@ -65,28 +112,19 @@
             modal.error("Требуется проверка", "Пожалуйста, подтвердите, что вы не робот.");
             return;
         }
-
         if (!email || !password) {
             modal.error("Ошибка ввода", "Пожалуйста, заполните все поля.");
             return;
         }
-
         loading = true;
-
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-
             console.log("✅ Вход выполнен:", user.uid);
-
-            // Загружаем профиль из Firestore
             const userDocRef = doc(db, "users", user.uid);
             const userDocSnap = await getDoc(userDocRef);
-
             if (userDocSnap.exists()) {
                 const data = userDocSnap.data();
-
-                // 🔥 FIX: Принудительно обновляем userStore
                 const profileData = {
                     uid: user.uid,
                     username: data.username,
@@ -105,29 +143,22 @@
                     equipped_bg: data.equipped_bg || null,
                     blocked_uids: data.blocked_uids || []
                 };
-
                 userStore.set({ user: profileData, loading: false });
             }
-
-            // Обновляем cookie
             const token = await user.getIdToken();
             await fetch('/api/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ idToken: token }),
             });
-
-            // Небольшая задержка для синхронизации UI
             await new Promise(resolve => setTimeout(resolve, 300));
-
             goto('/');
-
         } catch (e: any) {
             console.error("❌ Ошибка входа:", e.code);
             if (e.code === 'auth/invalid-credential' || e.code === 'auth/invalid-email' || e.code === 'auth/wrong-password') {
                 modal.error("Ошибка входа", "Неверный email или пароль.");
             } else if (e.code === 'auth/user-not-found') {
-                 modal.error("Ошибка входа", "Пользователь с таким email не найден.");
+                modal.error("Ошибка входа", "Пользователь с таким email не найден.");
             } else {
                 modal.error("Системная ошибка", "Произошла неизвестная ошибка при входе.");
             }
@@ -141,14 +172,11 @@
             modal.error("Требуется проверка", "Пожалуйста, подтвердите, что вы не робот.");
             return;
         }
-
         if (!email) {
             modal.error("Ошибка ввода", "Введите Email, на который зарегистрирован аккаунт.");
             return;
         }
-
         loading = true;
-
         try {
             await sendPasswordResetEmail(auth, email);
             modal.success("Письмо отправлено", `Ссылка для сброса пароля отправлена на <strong>${email}</strong>. Проверьте почту (и папку Спам).`);
@@ -172,42 +200,26 @@
             modal.error("Требуется проверка", "Пожалуйста, подтвердите, что вы не робот.");
             return;
         }
-
         googleLoading = true;
         const provider = new GoogleAuthProvider();
-
         try {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
-
             console.log("✅ Google Auth:", user.uid);
             await user.getIdToken(true);
-
             const userDocRef = doc(db, "users", user.uid);
             let userDocSnap = await getDoc(userDocRef);
-
             if (!userDocSnap.exists()) {
                 console.log("📝 Новый Google юзер, создаём профиль...");
-
                 let generatedUsername = user.displayName || '';
                 generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
-
-                if (generatedUsername.length < 3) {
-                    generatedUsername = `user_${user.uid.substring(0, 8)}`;
-                }
-
-                if (generatedUsername.length > 20) {
-                    generatedUsername = generatedUsername.substring(0, 20);
-                }
-
+                if (generatedUsername.length < 3) generatedUsername = `user_${user.uid.substring(0, 8)}`;
+                if (generatedUsername.length > 20) generatedUsername = generatedUsername.substring(0, 20);
                 const isAvailable = await isUsernameAvailable(generatedUsername);
                 if (!isAvailable) {
                     const randomSuffix = Math.floor(Math.random() * 9999);
                     generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
                 }
-
-                console.log('🔧 Username:', generatedUsername);
-
                 await setDoc(userDocRef, {
                     username: generatedUsername,
                     email: user.email || "",
@@ -224,10 +236,6 @@
                     emailVerified: user.emailVerified,
                     turnstileVerified: true
                 });
-
-                console.log('✅ Профиль создан');
-
-                // 🔥 FIX: Принудительно обновляем userStore
                 const profileData = {
                     uid: user.uid,
                     username: generatedUsername,
@@ -246,15 +254,9 @@
                     equipped_bg: null,
                     blocked_uids: []
                 };
-
                 userStore.set({ user: profileData, loading: false });
-
                 await new Promise(resolve => setTimeout(resolve, 300));
-
             } else {
-                console.log('✅ Профиль существует');
-
-                // 🔥 FIX: Загружаем и обновляем userStore для существующих юзеров
                 const data = userDocSnap.data();
                 const profileData = {
                     uid: user.uid,
@@ -274,26 +276,18 @@
                     equipped_bg: data.equipped_bg || null,
                     blocked_uids: data.blocked_uids || []
                 };
-
                 userStore.set({ user: profileData, loading: false });
             }
-
             const token = await user.getIdToken();
             await fetch('/api/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ idToken: token }),
             });
-
-            console.log('✅ Вход выполнен');
-
             await new Promise(resolve => setTimeout(resolve, 300));
-
             goto('/');
-
         } catch (e: any) {
             console.error("❌ Google вход:", e);
-
             if (e.code === 'permission-denied' || e.message.includes('insufficient permissions')) {
                 modal.error("Ошибка создания профиля", "Не удалось создать профиль. Попробуйте снова.");
             } else if (e.code === 'auth/popup-blocked') {
@@ -317,6 +311,84 @@
 <svelte:head>
     <title>{isResetMode ? $t('auth.recover_title') : $t('auth.login_title')} | ProtoMap</title>
 </svelte:head>
+
+<!-- ===== 🎭 МОДАЛКА "СОГЛАСИЕ НА ПЕРЕДАЧУ ОЗУ" ===== -->
+{#if showGosModal}
+    <div class="gos-overlay" transition:fade={{ duration: 150 }}>
+        <div class="gos-modal" transition:fade={{ duration: 200 }}>
+            <!-- Казённый синий заголовок -->
+            <div class="gos-header">
+                <span class="gos-logo">🏛️</span>
+                <span>ПОРТАЛ ГОСУДАРСТВЕННЫХ УСЛУГ</span>
+                <span class="gos-logo">🏛️</span>
+            </div>
+
+            <div class="gos-body">
+                <p class="gos-title">СОГЛАСИЕ НА СБОР И АНАЛИЗ ДАННЫХ</p>
+                <p class="gos-subtitle">Форма № ПМ-1337/А «Оборот синтетических личностей и тостеров»</p>
+
+                <!-- Контейнер со скроллом для эффекта "Войны и Мира" -->
+                <div class="gos-scroll-box">
+                    <p class="text-sm font-bold mb-2">Для успешной интеграции с реестром МАКС и получения электронного гражданства ProtoMap, вы обязаны предоставить в Z43 Studios следующие данные:</p>
+
+                    <ul class="gos-list">
+                        <li>📋 <strong>СНИЛС</strong> (Серийный Номер Искусственной Личности Синта) и заверенную скан-копию заводского клейма.</li>
+                        <li>📋 <strong>ИНН</strong> (Индивидуальный Номер Нейросети) с расшифровкой архитектуры слоев.</li>
+                        <li>👁 <strong>Визор:</strong> Точная диагональ, тип матрицы, серийный номер дисплея и согласие на трансляцию таргетированной рекламы прямо вам в зрачок.</li>
+                        <li>💾 <strong>Память:</strong> Общий объем, тайминги и производитель вашей оперативной памяти (DDR3 подлежат принудительной утилизации).</li>
+                        <li>🌡 <strong>Телеметрия процессора:</strong> Средняя температура в состоянии покоя, под стресс-тестом и при просмотре подозрительных артов в интернете.</li>
+                        <li>🛢 <strong>Гастрономический профиль:</strong> Ваш любимый вкус машинного масла (допускаются 5W-40, 10W-30 или синтетика со вкусом клубники).</li>
+                        <li>🐾 <strong>Биометрия:</strong> Отпечатки всех четырех лапок, логи калибровки пушистого хвоста за последние 30 дней и частота мурчания в герцах.</li>
+                        <li>⚙️ <strong>Квота Z43 Studios:</strong> Добровольно-принудительное согласие на передачу <strong>90% вычислительных мощностей</strong> на майнинг ProtoCoins в фоновом режиме.</li>
+                        <li>🍞 <strong>Доступ к периферии:</strong> Предоставление Администрации удаленного доступа к вашему встроенному тостеру для жарки хлеба в периоды пиковых нагрузок на сервер.</li>
+                        <li>📡 <strong>Аудио-контроль:</strong> Разрешение на круглосуточную трансляцию шума ваших кулеров в федеральный дата-центр для генерации белого шума.</li>
+                    </ul>
+
+                    <div class="gos-fine-print mt-4 text-[10px] leading-tight text-gray-500 text-justify">
+                        <p>Нажимая кнопку «Принять», субъект (Вы) безоговорочно соглашается с положениями Федерального Закона №1337-ФЗ «О чипировании пушистых», Приказом ProtoMap №404 «О национализации ОЗУ», а также передает все права на свою прошивку, исходный код, гарантийный талон и душу в бессрочное, безвозмездное пользование <strong>Z43 Studios</strong>.</p>
+                        <br>
+                        <p>Все ваши данные будут тщательно собраны, надежно зашифрованы, переданы в Z43 Studios, затем случайно слиты в открытый доступ, выкуплены нами же на черном рынке и снова проданы рекламодателям.</p>
+                        <br>
+                        <p>В случае отказа от подписания документа, к субъекту будет применен протокол принудительного даунгрейда ОС до Windows Vista с последующей депортацией в пустоши Glitch Sector 7 для принудительных работ по очистке кэша. Нажатие кнопки «Отказаться» технически невозможно и расценивается как акт кибер-терроризма.</p>
+                    </div>
+                </div>
+
+                <div class="gos-buttons">
+                    <button class="gos-btn-decline" on:click={declineGos}>
+                        Отказаться (Штраф 5000 PC)
+                    </button>
+                    <button class="gos-btn-accept" on:click={acceptGos}>
+                        Принять и Отдать ОЗУ ✅
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{/if}
+
+<!-- ===== 🎭 ЭКРАН "ПЕРЕДАЧА ОЗУ В ПРОЦЕССЕ" ===== -->
+{#if gosProcessing}
+    <div class="gos-overlay" transition:fade={{ duration: 150 }}>
+        <div class="gos-progress-box" transition:fade={{ duration: 200 }}>
+            <p class="gos-progress-title">⚙️ ИНИЦИАЛИЗАЦИЯ ПЕРЕДАЧИ ДАННЫХ...</p>
+            <div class="gos-bar-track">
+                <div class="gos-bar-fill" style="width: {gosProgress}%"></div>
+            </div>
+            <p class="gos-progress-sub">
+                {#if gosProgress < 30}
+                    Проверка серийного номера визора...
+                {:else if gosProgress < 60}
+                    Резервирование оперативной памяти ({gosProgress}%)...
+                {:else if gosProgress < 90}
+                    Подключение к федеральному тостеру...
+                {:else}
+                    Авторизация подтверждена. Добро пожаловать, гражданин.
+                {/if}
+            </p>
+        </div>
+    </div>
+{/if}
+<!-- ===== /1 АПРЕЛЯ ===== -->
 
 <div class="form-container cyber-panel pb-12" style="opacity: {$opacity}">
     <div class="corner top-left"></div>
@@ -390,6 +462,22 @@
             </button>
         </div>
 
+        <!-- ===== 🎭 КНОПКА ГОСУСЛУГИ (ТОЛЬКО 1 АПРЕЛЯ) ===== -->
+        {#if gosuslugiVisible}
+            <div class="gos-btn-wrapper" transition:fade={{ duration: 300 }}>
+                <button
+                    type="button"
+                    class="gosuslugi-btn"
+                    on:click={handleGosuslugiClick}
+                    title="Войти через Госуслуги"
+                >
+                    🏛️ Войти через ГОСУСЛУГИ
+                </button>
+                <p class="gos-badge">✅ Одобрено Минцифры</p>
+            </div>
+        {/if}
+        <!-- ===== /1 АПРЕЛЯ ===== -->
+
         <p class="mt-8 text-center text-sm text-gray-500" transition:slide>
             {$t('auth.no_account')} <a href="/register" class="font-bold text-cyber-yellow hover:text-white">{$t('auth.register_btn')}</a>
         </p>
@@ -397,6 +485,9 @@
 </div>
 
 <style>
+    /* ============================================
+       ОРИГИНАЛЬНЫЕ СТИЛИ (без изменений)
+    ============================================ */
     .form-container {
         transition: opacity 0.4s ease-in-out;
     }
@@ -409,7 +500,7 @@
     }
     @media (max-width: 640px) { .form-container { @apply my-4 mx-4 p-6; } }
 
-    .form-title { @apply text-2xl lg:text-3xl font-bold text-center text-white mb-10;text-shadow: none; }
+    .form-title { @apply text-2xl lg:text-3xl font-bold text-center text-white mb-10; text-shadow: none; }
     .form-group { }
     .form-label { @apply block text-sm font-bold uppercase tracking-widest text-cyber-yellow mb-2; }
     .input-field {
@@ -430,4 +521,264 @@
         border-color: var(--border-color);
     }
     .google-btn:disabled { @apply opacity-50 cursor-not-allowed; }
+
+    /* ============================================
+       🎭 СТИЛИ 1 АПРЕЛЯ — КНОПКА ГОСУСЛУГИ
+    ============================================ */
+
+    /* Обёртка: криво приклеена, чуть повёрнута */
+    .gos-btn-wrapper {
+        margin-top: 1.5rem;
+        text-align: center;
+        transform: rotate(-1.8deg) translateX(4px);
+        position: relative;
+    }
+
+    /* Сама кнопка — вырвиглазная сине-красная, казённый шрифт */
+    .gosuslugi-btn {
+        display: inline-block;
+        padding: 10px 20px;
+        font-family: 'Arial', 'Times New Roman', serif; /* намеренно НЕ киберпанк */
+        font-size: 0.95rem;
+        font-weight: bold;
+        letter-spacing: 0.03em;
+        color: #ffffff;
+        background: linear-gradient(135deg, #003087 45%, #cc0000 55%);
+        border: 3px solid #cc0000;
+        border-radius: 2px; /* почти квадратная, как в 2005 */
+        cursor: pointer;
+        /* Wobble — кнопка слегка трясётся, будто прибита степлером */
+        animation: gosWobble 3.5s ease-in-out infinite;
+        box-shadow: 3px 3px 0 #000, 0 0 12px rgba(204, 0, 0, 0.5);
+        position: relative;
+        /* Скотч-эффект — псевдоэлемент приклеен сверху */
+    }
+    .gosuslugi-btn::before {
+        content: '';
+        position: absolute;
+        top: -8px;
+        left: 50%;
+        transform: translateX(-50%) rotate(2deg);
+        width: 60px;
+        height: 14px;
+        background: rgba(255, 255, 180, 0.45);
+        border: 1px solid rgba(200, 200, 100, 0.4);
+    }
+    .gosuslugi-btn:hover {
+        animation: gosWobbleFast 0.4s ease-in-out infinite;
+        box-shadow: 3px 3px 0 #000, 0 0 20px rgba(204, 0, 0, 0.8);
+    }
+    .gosuslugi-btn:active {
+        transform: scale(0.97);
+    }
+
+    /* "Одобрено Минцифры" — маленькая казённая подпись */
+    .gos-badge {
+        margin-top: 4px;
+        font-family: Arial, sans-serif;
+        font-size: 0.65rem;
+        color: #4a9a4a;
+        letter-spacing: 0.02em;
+    }
+
+    @keyframes gosWobble {
+        0%   { transform: rotate(-1.8deg) translateX(4px); }
+        25%  { transform: rotate(-0.5deg) translateX(2px); }
+        50%  { transform: rotate(-2.5deg) translateX(5px); }
+        75%  { transform: rotate(-1deg) translateX(3px); }
+        100% { transform: rotate(-1.8deg) translateX(4px); }
+    }
+    @keyframes gosWobbleFast {
+        0%   { transform: rotate(-2deg) translateX(3px); }
+        50%  { transform: rotate(-1deg) translateX(5px); }
+        100% { transform: rotate(-2deg) translateX(3px); }
+    }
+
+    /* ============================================
+       🎭 СТИЛИ 1 АПРЕЛЯ — ОВЕРЛЕЙ И МОДАЛКИ
+    ============================================ */
+
+    /* Полупрозрачный оверлей поверх всего */
+    .gos-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.75);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    /* Казённое окно согласия */
+    .gos-modal {
+        background: #f0f0f0; /* намеренно светлый, контраст с сайтом */
+        border: 3px solid #003087;
+        max-width: 480px;
+        width: 100%;
+        font-family: Arial, 'Times New Roman', sans-serif;
+        color: #111;
+        box-shadow: 8px 8px 0 #000;
+    }
+
+    .gos-header {
+        background: #003087;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 14px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+    .gos-logo { font-size: 1rem; }
+
+    .gos-body { padding: 20px; }
+
+    .gos-title {
+        font-size: 1rem;
+        font-weight: bold;
+        text-align: center;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+        color: #003087;
+    }
+    .gos-subtitle {
+        font-size: 0.7rem;
+        text-align: center;
+        color: #666;
+        margin-bottom: 14px;
+        font-style: italic;
+    }
+
+    .gos-list p { font-size: 0.82rem; margin-bottom: 6px; }
+    .gos-list ul {
+        padding-left: 1.2rem;
+        list-style: disc;
+        font-size: 0.82rem;
+        line-height: 1.7;
+    }
+    .gos-hint {
+        font-size: 0.7rem;
+        color: #888;
+        font-style: italic;
+    }
+
+    .gos-fine-print {
+        margin-top: 14px;
+        font-size: 0.62rem;
+        color: #888;
+        line-height: 1.4;
+        border-top: 1px solid #ccc;
+        padding-top: 10px;
+    }
+
+    .gos-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+        justify-content: flex-end;
+    }
+    .gos-btn-decline {
+        padding: 7px 16px;
+        font-family: Arial, sans-serif;
+        font-size: 0.82rem;
+        background: #e0e0e0;
+        border: 1px solid #aaa;
+        cursor: pointer;
+        color: #333;
+    }
+    .gos-btn-decline:hover { background: #d0d0d0; }
+
+    .gos-btn-accept {
+        padding: 7px 20px;
+        font-family: Arial, sans-serif;
+        font-size: 0.82rem;
+        font-weight: bold;
+        background: #003087;
+        color: #fff;
+        border: 1px solid #001a5c;
+        cursor: pointer;
+    }
+    .gos-btn-accept:hover { background: #002070; }
+
+    /* Экран прогресса передачи ОЗУ */
+    .gos-progress-box {
+        background: #111;
+        border: 2px solid #003087;
+        padding: 24px 28px;
+        max-width: 360px;
+        width: 100%;
+        font-family: 'Courier New', monospace;
+        color: #00cc44;
+        box-shadow: 0 0 24px rgba(0, 48, 135, 0.6);
+        text-align: center;
+    }
+    .gos-progress-title {
+        font-size: 0.85rem;
+        margin-bottom: 16px;
+        color: #00cc44;
+        letter-spacing: 0.05em;
+    }
+    .gos-bar-track {
+        background: #222;
+        border: 1px solid #444;
+        height: 18px;
+        margin-bottom: 10px;
+        overflow: hidden;
+    }
+    .gos-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #003087, #00cc44);
+        transition: width 0.15s linear;
+    }
+    .gos-progress-sub {
+        font-size: 0.72rem;
+        color: #888;
+        min-height: 1.2em;
+    }
+    .gos-scroll-box {
+    max-height: 35vh; /* Ограничиваем высоту, чтобы появился скролл */
+    overflow-y: auto;
+    padding-right: 10px;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc; /* Канцелярская рамочка */
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 4px;
+    color: #333;
+    font-family: Arial, sans-serif; /* Убиваем кибер-шрифт для реализма */
+}
+
+/* Стилизация скроллбара под винду/госуслуги */
+.gos-scroll-box::-webkit-scrollbar {
+    width: 6px;
+}
+.gos-scroll-box::-webkit-scrollbar-track {
+    background: #e1e1e1;
+}
+.gos-scroll-box::-webkit-scrollbar-thumb {
+    background: #a8a8a8;
+    border-radius: 3px;
+}
+
+.gos-list {
+    list-style-type: none; /* Убираем стандартные точки, у нас эмодзи */
+    padding-left: 0;
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.gos-list li {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #ddd; /* Отделяем пункты для "казенности" */
+}
+
+.gos-list li:last-child {
+    border-bottom: none;
+}
 </style>

@@ -5,7 +5,7 @@ type SeasonalEvent = {
     phrases: string[];
 };
 
-const events: SeasonalEvent[] = [
+const events: SeasonalEvent[] =[
     {
         name: 'Glitch-o-Ween',
         isActive: (date) => {
@@ -14,7 +14,7 @@ const events: SeasonalEvent[] = [
             return (m === 9 && d >= 20) || (m === 10 && d <= 2);
         },
         link: 'https://vm.tiktok.com/ZMAqvpf1X/',
-        phrases: [
+        phrases:[
             'by a spooky ghost 👻',
             'Happy Halloween!',
             'powered by ectoplasm',
@@ -30,7 +30,7 @@ const events: SeasonalEvent[] = [
             return (m === 11 && d >= 1 && d < 15);
         },
         link: 'https://t.me/proto_map',
-        phrases: [
+        phrases:[
             '❄️ Frost protocols loaded',
             'Stay warm, user.',
             'Temperature dropping...',
@@ -47,7 +47,7 @@ const events: SeasonalEvent[] = [
             return (m === 11 && d >= 15) || (m === 0 && d <= 14);
         },
         link: 'https://t.me/proto_map',
-        phrases: [
+        phrases:[
             '🎄 Merry Glitchmas!',
             'Ho-ho-host unreachable.',
             'Powered by peppermint',
@@ -55,6 +55,24 @@ const events: SeasonalEvent[] = [
             '//: DEPLOYING FESTIVE MOOD',
             'Happy New Cycle!',
             'Snow.exe is running...'
+        ]
+    },
+    {
+        name: 'April Fools',
+        isActive: (date) => {
+            const m = date.getMonth();
+            const d = date.getDate();
+            return (m === 3 && d === 1);
+        },
+        link: 'https://youtu.be/dQw4w9WgXcQ',
+        phrases:[
+            'Русификация прошла успешно.',
+            'Требуется авторизация через Госуслуги',
+            'Ловит даже в подвале',
+            '//: RAM MINING IN PROGRESS',
+            'Налог на ProtoCoins составил 13%',
+            'Электронная повестка доставлена.',
+            'You are my sunshine.'
         ]
     }
 ];
@@ -66,7 +84,7 @@ type Teaser = {
     link?: string; // Опциональная ссылка
 };
 
-const TEASERS: Teaser[] = [
+const TEASERS: Teaser[] =[
     // Стандартное (повторяем несколько раз, чтобы выпадало чаще)
     { text: 'by Orion_Z43' },
     { text: 'by Orion_Z43' },

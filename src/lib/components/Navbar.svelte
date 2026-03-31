@@ -26,6 +26,10 @@
     $: latestNewsDate = $page.data.latestNewsDate;
     $: isAdmin = $page.data.isAdmin;
 
+    // 🎉 1 АПРЕЛЯ: проверяем дату один раз при загрузке
+    const now = new Date();
+    const isAprilFools = now.getMonth() === 3 && now.getDate() === 1;
+
     onMount(() => {
         checkUnreadNews();
     });
@@ -97,10 +101,19 @@
         <div class="flex-shrink-0 flex items-center gap-3 z-20">
             <a href="/" class="flex items-center gap-2 group text-decoration-none">
                 <div class="logo-container">
-                    <img src="/logo.svg" alt="Logo" class="logo-icon" />
+                    {#if isAprilFools}
+                        <!-- 🇷🇺 1 апреля: логотип в цветах российского флага -->
+                        <div class="logo-russia-flag"></div>
+                    {:else}
+                        <img src="/logo.svg" alt="Logo" class="logo-icon" />
+                    {/if}
                 </div>
-                <span class="nav-brand text-xl font-bold tracking-widest hidden xl:block" data-text="PROTOMAP">
-                    PROTOMAP
+                <span
+                    class="nav-brand text-xl font-bold tracking-widest hidden xl:block"
+                    class:april-fools-brand={isAprilFools}
+                    data-text={isAprilFools ? 'ПРОТО-КАРТА' : 'PROTOMAP'}
+                >
+                    {isAprilFools ? 'ПРОТО-КАРТА' : 'PROTOMAP'}
                 </span>
             </a>
 
@@ -347,7 +360,7 @@
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
     }
 
-    /* ... ЛОГО И ПРОЧЕЕ (без изменений) ... */
+    /* ЛОГО */
     .logo-container {
         width: 50px; height: 50px;
         display: flex; align-items: center; justify-content: center;
@@ -360,6 +373,48 @@
         width: 100%; height: 100%; object-fit: contain;
         filter: invert(1) drop-shadow(0 0 5px var(--cyber-yellow));
     }
+
+    /* 🇷🇺 1 АПРЕЛЯ: логотип-маска с российским флагом */
+    .logo-russia-flag {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            to bottom,
+            #ffffff 33.33%,
+            #0039A6 33.33% 66.66%,
+            #D52B1E 66.66%
+        );
+        -webkit-mask-image: url('/logo.svg');
+        -webkit-mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-image: url('/logo.svg');
+        mask-size: contain;
+        mask-repeat: no-repeat;
+        mask-position: center;
+        /* Лёгкое свечение в цветах флага */
+        filter: drop-shadow(0 0 6px rgba(213, 43, 30, 0.6));
+        transition: filter 0.3s;
+    }
+    a:hover .logo-russia-flag {
+        filter: drop-shadow(0 0 10px rgba(213, 43, 30, 0.9)) drop-shadow(0 0 4px rgba(0, 57, 166, 0.7));
+    }
+
+    /* 🎉 1 АПРЕЛЯ: бренд-надпись в цветах триколора */
+    .april-fools-brand {
+        background: linear-gradient(
+            to bottom,
+            #ffffff 30%,
+            #0039A6 30% 65%,
+            #D52B1E 65%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: none;
+        filter: drop-shadow(0 0 8px rgba(213, 43, 30, 0.4));
+    }
+
     .seasonal-phrase-container {
         display: block; font-size: 0.7rem; line-height: 1.3; color: #6b7280;
         max-width: 150px; font-family: 'Chakra Petch', monospace;
@@ -483,7 +538,6 @@
         box-shadow: 0 0 5px rgba(0, 243, 255, 0.3); margin: 0 0.5rem;
     }
 
-    /* === СТИЛЬ НОВОЙ КНОПКИ НАСТРОЕК В МОБИЛЬНОМ МЕНЮ === */
     .settings-btn-mobile {
         width: calc(100% - 2rem);
         margin: 0.5rem 1rem;
@@ -506,7 +560,7 @@
     }
     .settings-btn-mobile .icon { font-size: 1.2rem; }
     .android-btn {
-        color: #39ff14; /* Cyber Green */
+        color: #39ff14;
         border: 1px solid rgba(57, 255, 20, 0.3);
         background: rgba(57, 255, 20, 0.1);
     }
