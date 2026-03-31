@@ -26,12 +26,16 @@
 }
 
 /* === 1 АПРЕЛЯ: КРИВЫЕ КНОПКИ === */
-button, a, [role="button"] {
+/* Исключаем саму карту (.leaflet-container) и всё внутри неё от этой вакханалии */
+button:not(.leaflet-container *),
+a:not(.leaflet-container *),
+[role="button"]:not(.leaflet-container *) {
     animation: april-wobble 3s ease-in-out infinite;
     transform-origin: center;
 }
 
-button:nth-child(odd), a:nth-child(odd) {
+button:not(.leaflet-container *):nth-child(odd),
+a:not(.leaflet-container *):nth-child(odd) {
     animation-delay: -1.5s;
 }
 
@@ -764,3 +768,52 @@ html {
     border-left: none !important;
     border-top: none !important;
 }
+/* ========================================================
+   🤡 ПАСХАЛКА 1 АПРЕЛЯ: ГОСУДАРСТВЕННЫЙ ИНТЕРФЕЙС
+   ======================================================== */
+
+/* 1. ПЬЯНЫЕ КНОПКИ (С ЗАЩИТОЙ КАРТЫ LEAFLET) */
+button:not(.leaflet-container *),
+a:not(.leaflet-container *),
+[role="button"]:not(.leaflet-container *) {
+    animation: april-wobble 3s ease-in-out infinite;
+    transform-origin: center;
+}
+
+button:not(.leaflet-container *):nth-child(odd),
+a:not(.leaflet-container *):nth-child(odd) {
+    animation-delay: -1.5s;
+}
+
+@keyframes april-wobble {
+    0%   { transform: rotate(0deg); }
+    20%  { transform: rotate(-4deg) scale(1.02); }
+    40%  { transform: rotate(3deg); }
+    60%  { transform: rotate(-2deg) scale(0.98); }
+    80%  { transform: rotate(5deg); }
+    100% { transform: rotate(0deg); }
+}
+
+/* 2. ИМПОРТОЗАМЕЩЕННЫЕ КЛАСТЕРЫ (ТРИКОЛОР) */
+
+/* 🤍 БЕЛЫЙ (Малые кластеры) */
+.small .reactor-core .count { color: #ffffff !important; text-shadow: 0 0 5px #fff, 0 0 3px #000 !important; }
+.small .reactor-ring { border-top-color: #ffffff !important; border-right-color: #ffffff !important; filter: drop-shadow(0 0 4px #fff) !important; }
+.small .reactor-charge-indicator { color: #ffffff !important; }
+.small .reactor-glow { background: #ffffff !important; box-shadow: 0 0 20px 5px #ffffff !important; }
+.small .particle { color: #ffffff !important; }
+
+/* 💙 СИНИЙ (Средние кластеры) */
+.medium .reactor-core .count { color: #005bfb !important; text-shadow: 0 0 5px #005bfb, 0 0 3px #000 !important; }
+.medium .reactor-ring { border-top-color: #005bfb !important; border-right-color: #005bfb !important; filter: drop-shadow(0 0 4px #005bfb) !important; }
+.medium .reactor-charge-indicator { color: #005bfb !important; }
+.medium .reactor-glow { background: #005bfb !important; box-shadow: 0 0 25px 7px #005bfb !important; }
+.medium .particle { color: #005bfb !important; }
+
+/* ❤️ КРАСНЫЙ (Большие кластеры) */
+.large .reactor-core .count { color: #d52b1e !important; text-shadow: 0 0 5px #d52b1e, 0 0 3px #000 !important; }
+.large .reactor-ring { border-top-color: #d52b1e !important; border-right-color: #d52b1e !important; filter: drop-shadow(0 0 4px #d52b1e) !important;}
+.large .reactor-charge-indicator { color: #d52b1e !important; }
+.large .reactor-glow { background: #d52b1e !important; box-shadow: 0 0 30px 10px #d52b1e !important; }
+.large .particle { color: #d52b1e !important; }
+/* ======================================================== */
