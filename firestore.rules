@@ -3,12 +3,521 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isSuperAdmin() {
+      return isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin';
+    }
+
+    function isNotBanned() {
+      return !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isBanned', false) != true;
+    }
+
+    // =========================================================
+    // 💬 РАЗДЕЛ 2: ЛИЧНЫЕ СООБЩЕНИЯ
+    // =========================================================
+
+    match /chats/{chatId} {
+      allow read: if isAuthenticated() && (
+          request.auth.uid in resource.data.participantIds ||
+          resource.data.participants[request.auth.uid] != null ||
+          isAdmin()
+      );
+      allow write: if isAuthenticated()
+                   && chatId.matches('.*_.*')
+                   && request.auth.uid in chatId.split('_');
+
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && (
+            request.auth.uid in chatId.split('_') || isAdmin()
+        );
+        allow create: if isAuthenticated()
+                      && chatId.matches('.*_.*')
+                      && request.auth.uid in chatId.split('_')
+                      && request.resource.data.author_uid == request.auth.uid;
+        allow update: if isAuthenticated()
+                      && chatId.matches('.*_.*')
+                      && request.auth.uid in chatId.split('_')
+                      && request.resource.data.author_uid == resource.data.author_uid
+                      && resource.data.author_uid == request.auth.uid;
+        allow delete: if isAuthenticated() && (
+            resource.data.author_uid == request.auth.uid || isAdmin()
+        );
+      }
+    }
+
+    // =========================================================
+    // 👤 РАЗДЕЛ 3: ПОЛЬЗОВАТЕЛИ
+    // =========================================================
+
     match /users/{userId} {
-      allow read: if true;
+      allow get:  if true;
+      allow list: if true;
 
-      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && 'username'  in request.resource.data
+        && 'email'     in request.resource.data
+        && 'createdAt' in request.resource.data
+        && request.resource.data.username is string
+        && request.resource.data.username.size() >= 3
+        && request.resource.data.username.size() <= 20
+        && request.resource.data.email is string
+        && request.resource.data.email.size() > 0
+        && (!('lastBackupSignature' in request.resource.data) || request.resource.data.lastBackupSignature is string)
+        && (!('casino_credits'   in request.resource.data) || request.resource.data.casino_credits   == 100)
+        && (!('glitch_shards'    in request.resource.data) || request.resource.data.glitch_shards    == 0)
+        && (!('daily_streak'     in request.resource.data) || request.resource.data.daily_streak     == 0)
+        && !('role' in request.resource.data)
+        && (!('owned_items'      in request.resource.data) || (request.resource.data.owned_items is list && request.resource.data.owned_items.size() == 0))
+        && (!('isBanned'         in request.resource.data) || request.resource.data.isBanned         == false)
+        && (!('last_daily_bonus' in request.resource.data) || request.resource.data.last_daily_bonus == null);
 
+      allow update: if isOwner(userId)
+              && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['fcmToken', 'lastBackupSignature']);
+
+      allow update: if isAdmin() || (
+                      isOwner(userId)
+                      && isNotBanned()
+                      && !(request.resource.data.diff(resource.data).affectedKeys()
+                           .hasAny([
+                             'casino_credits', 'last_daily_bonus', 'role',
+                             'isBanned', 'banReason', 'bannedAt',
+                             'owned_items', 'email', 'daily_streak',
+                             'glitch_shards', 'createdAt', 'username',
+                             'last_username_change', 'avatar_url', 'status',
+                             'about_me', 'socials', 'equipped_frame', 'equipped_bg'
+                           ]))
+                      && (!('lastBackupSignature' in request.resource.data) || request.resource.data.lastBackupSignature is string)
+                    );
+
+      allow delete: if isSuperAdmin();
+
+      match /comments/{commentId} {
+        allow get:  if true;
+        allow list: if true;
+        allow create: if isAuthenticated()
+                      && isNotBanned()
+                      && request.resource.data.author_uid == request.auth.uid;
+        allow update: if false;
+        allow delete: if isAdmin()
+                      || (isAuthenticated() && resource.data.author_uid == request.auth.uid)
+                      || (isAuthenticated() && userId == request.auth.uid);
+      }
+    }
+
+    // =========================================================
+    // ⚙️ РАЗДЕЛ 4: СИСТЕМНЫЕ КОЛЛЕКЦИИ
+    // =========================================================
+
+    // 🌟 НОВОЕ: Правило для документов с лицензиями
+    match /system/licenses {
+      allow read:  if true;          // Читать могут все (нужно для регистрации)
+      allow write: if isAdmin();    // Обновлять только админы
+    }
+
+    match /system/map_cache {
+      allow read:  if isAuthenticated();
+      allow write: if false;
+    }
+    match /system/casino_stats {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
+    match /system/telegram_codes/{document=**} {
+      allow read:  if false;
+      allow write: if false;
+    }
+    match /system/vision_stats {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
+    match /system/telegram_config {
+      allow read:  if false;
+      allow write: if false;
+    }
+    match /mobileapp/{document=**} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+    //Исключение для сбора телеметрии
+    match /mobileapp/beta_stats/users/{userId} {
+      // Разрешаем пользователю обновлять свой корневой документ со статистикой и версиями
+      allow write: if isOwner(userId);
+
+      // Разрешаем пользователю писать в свои ежедневные логи (daily_stats)
+      match /daily_stats/{date} {
+        allow write: if isOwner(userId);
+      }
+    }
+    match /admins/{adminId} {
+      allow read:  if isOwner(adminId);
+      allow write: if false;
+    }
+    match /auth_logs/{deviceId} {
+      allow list: if isAdmin();
+      allow get:  if isAdmin()
+                  || (isAuthenticated() && resource.data.last_uid == request.auth.uid);
+      allow create: if isAuthenticated()
+                    && request.resource.data.last_uid == request.auth.uid;
+      allow update: if isAuthenticated()
+                    && request.resource.data.last_uid == request.auth.uid;
       allow delete: if false;
+    }
+
+    // =========================================================
+    // 🦶 РАЗДЕЛ 5: ШАГОМЕР
+    // =========================================================
+
+    match /stepper/{userId} {
+      allow read:  if isOwner(userId);
+      allow write: if false;
+      match /claim_history/{claimId} {
+        allow read:  if isOwner(userId) || isAdmin();
+        allow write: if false;
+      }
+    }
+    match /stepper_idempotency/{requestId} {
+      allow read:  if false;
+      allow write: if false;
+    }
+
+    // =========================================================
+    // 🎮 РАЗДЕЛ 6: ИГРОВОЙ КОНТЕНТ
+    // =========================================================
+
+    match /shop_items/{itemId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+    match /news/{newsId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+    match /crash_games/{gameId} {
+      allow read:  if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+    match /reports/{reportId} {
+      allow create: if isAuthenticated() && isNotBanned();
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+    match /locations/{locationId} {
+      allow read:  if true;
+      allow write: if false;
+    }
+    match /global_chat/{messageId} {
+      allow read:   if true;
+      allow create: if false;
+      allow delete: if isAdmin();
+    }
+
+    // =========================================================
+    // 🚨 РАЗДЕЛ 7: МОДЕРАЦИЯ
+    // =========================================================
+
+    match /moderation_flags/{flagId} {
+      allow read:   if isAdmin();
+      allow create: if false;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    match /moderation_queue/{itemId} {
+      allow read:   if isAdmin();
+      allow create: if false;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    match /telegram_moderation/{document=**} {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
+
+    // =========================================================
+    // 🔁 РАЗДЕЛ 8: RATE LIMITS
+    // =========================================================
+
+    match /rate_limits/{userId} {
+      allow read:  if false;
+      allow write: if false;
+    }
+
+    // =========================================================
+    // 📢 РАЗДЕЛ 9: КАНАЛЫ
+    // =========================================================
+
+    match /channels/{channelId} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+                    && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() >= 3
+                    && request.resource.data.name.size() <= 50;
+
+      allow update: if isAdmin()
+                    || (isAuthenticated() && resource.data.ownerUid == request.auth.uid)
+                    || (
+                         isAuthenticated()
+                         && isNotBanned()
+                         && request.resource.data.diff(resource.data).affectedKeys()
+                              .hasOnly(['subscriberUids', 'subscriberCount'])
+                         && (
+                              (
+                                request.auth.uid in request.resource.data.subscriberUids
+                                && !(request.auth.uid in resource.data.subscriberUids)
+                                && request.resource.data.subscriberUids.size() == resource.data.subscriberUids.size() + 1
+                                && request.resource.data.subscriberCount == resource.data.subscriberCount + 1
+                              )
+                              ||
+                              (
+                                !(request.auth.uid in request.resource.data.subscriberUids)
+                                && request.auth.uid in resource.data.subscriberUids
+                                && request.resource.data.subscriberUids.size() == resource.data.subscriberUids.size() - 1
+                                && request.resource.data.subscriberCount == resource.data.subscriberCount - 1
+                              )
+                            )
+                       );
+
+      allow delete: if isSuperAdmin()
+                    || (isAuthenticated() && resource.data.ownerUid == request.auth.uid);
+
+      match /posts/{postId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated()
+                      && request.resource.data.author_uid == request.auth.uid
+                      && request.resource.data.owner_uid == request.auth.uid;
+        allow update: if isAuthenticated() && (
+                        resource.data.owner_uid == request.auth.uid
+                        || request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['reactions'])
+                      );
+        allow delete: if isAuthenticated() && (
+                        resource.data.owner_uid == request.auth.uid || isAdmin()
+                      );
+      }
+
+      match /subscribers/{subscriberUid} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated()
+                      && subscriberUid == request.auth.uid
+                      && request.resource.data.uid == request.auth.uid;
+        allow update: if isAuthenticated() && subscriberUid == request.auth.uid;
+        allow delete: if isAuthenticated() && (
+                        subscriberUid == request.auth.uid || isAdmin()
+                      );
+      }
+    }
+
+    // =========================================================
+    // 🗺️ РАЗДЕЛ 10: ROADMAP
+    // =========================================================
+
+    match /roadmap/{taskId} {
+      allow read, write: if isAdmin();
+    }
+
+    // =========================================================
+    // 🎯 РАЗДЕЛ 11: РЕФЕРАЛЬНАЯ ПРОГРАММА
+    // =========================================================
+
+    match /referrals/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if false;
+      match /claimed/{newUserId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if false;
+      }
+    }
+
+    match /referral_codes/{code} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /referral_campaign/{monthKey} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /referral_idempotency/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    match /telegram_chat_pending/{tgId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    match /telegram_chat_pending_msg/{tgId} {
+      allow read: if false;
+      allow write: if false;
+    }
+    // =========================================================
+    // 👥 РАЗДЕЛ 12: ГРУППЫ
+    // =========================================================
+
+    match /groups/{groupId} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+                    && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() >= 3
+                    && request.resource.data.name.size() <= 50;
+
+      allow update: if isAuthenticated()
+                        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids
+                        && (
+                             // 1. Автор обновляет сообщение (редакт текста ИЛИ подгрузка медиа/голоса)
+                             (resource.data.author_uid == request.auth.uid
+                              && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                                'edited_text', 'edited_at',
+                                'mediaUrl', 'media_url',
+                                'uploadState', 'upload_state',
+                                'status', 'duration', 'waveform'
+                              ]))
+                             ||
+                             // 2. Реакции (любой участник)
+                             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+                             ||
+                             // 3. Удаление (пометка is_deleted)
+                             (
+                               request.resource.data.diff(resource.data).affectedKeys().hasOnly(['is_deleted'])
+                               && (
+                                    resource.data.author_uid == request.auth.uid
+                                    || get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == request.auth.uid
+                                    || get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin'
+                                    || isAdmin()
+                                  )
+                             )
+                           );
+
+      allow delete: if isSuperAdmin()
+                    || (isAuthenticated() && resource.data.ownerUid == request.auth.uid);
+
+      // ── Topics ──────────────────────────────────────────────────────────────
+      match /topics/{topicId} {
+        allow read: if isAuthenticated()
+                    && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids;
+
+        allow create: if isAuthenticated()
+                      && isNotBanned()
+                      && (
+                           get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == request.auth.uid
+                           || get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin'
+                         );
+
+        allow update: if isAuthenticated()
+                      && (
+                           get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == request.auth.uid
+                           || get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin'
+                         );
+
+        allow delete: if isAuthenticated()
+                      && (
+                           get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == request.auth.uid
+                           || get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin'
+                           || isAdmin()
+                         );
+
+        // ── Messages ───────────────────────────────────────────────────────────
+        match /messages/{messageId} {
+          allow read: if isAuthenticated()
+                      && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids;
+
+          allow create: if isAuthenticated()
+                        && isNotBanned()
+                        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids
+                        && request.resource.data.author_uid == request.auth.uid
+                        && (
+                             !get(/databases/$(database)/documents/groups/$(groupId)/topics/$(topicId)).data.isLocked
+                             || get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == request.auth.uid
+                             || get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin'
+                           );
+
+          allow update: if isAuthenticated()
+                        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids
+                        && (
+                             // 1. Автор обновляет своё сообщение (можно всё, кроме подмены автора и даты создания)
+                             (resource.data.author_uid == request.auth.uid
+                              && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['author_uid', 'createdAt', 'created_at', 'type']))
+                             ||
+                             // 2. Реакции (любой участник)
+                             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+                             ||
+                             // 3. Удаление
+                             (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['is_deleted'])
+                              && (
+                                   resource.data.author_uid == request.auth.uid
+                                   || get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == request.auth.uid
+                                   || get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin'
+                                   || isAdmin()
+                                 )
+                             )
+                           );
+
+          allow delete: if isAdmin()
+                        || (isAuthenticated() && resource.data.author_uid == request.auth.uid)
+                        || (isAuthenticated() && get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == request.auth.uid)
+                        || (isAuthenticated() && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin');
+        }
+      }
+
+      // ── Members ──────────────────────────────────────────────────────────────
+      match /members/{memberUid} {
+        allow read: if isAuthenticated()
+                    && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids;
+
+        allow create: if isAuthenticated()
+                      && memberUid == request.auth.uid
+                      && request.resource.data.uid == request.auth.uid;
+
+        allow update: if isAuthenticated()
+                      && (
+                           get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == request.auth.uid
+                           || isAdmin()
+                         );
+
+        allow delete: if isAuthenticated()
+                      && (
+                           memberUid == request.auth.uid    // leave
+                           || get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == request.auth.uid  // owner kicks
+                           || get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin'  // admin kicks
+                           || isAdmin()
+                         );
+      }
+    }
+
+    // ── Invite codes ────────────────────────────────────────────────────────────
+    match /group_invites/{code} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+                    && isNotBanned()
+                    && request.resource.data.createdBy == request.auth.uid;
+
+      allow delete: if isAuthenticated()
+                    && (
+                         resource.data.createdBy == request.auth.uid
+                         || isAdmin()
+                       );
+
+      allow update: if false;  // immutable once created
     }
   }
 }
