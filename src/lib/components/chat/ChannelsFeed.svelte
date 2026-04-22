@@ -83,7 +83,8 @@
 
         const q = query(
             collection(db, 'channels', channel.id, 'posts'),
-            orderBy('createdAt', 'desc')
+            orderBy('createdAt', 'desc'),
+            limit(50)
         );
 
         unsubPosts = onSnapshot(q, snap => {
