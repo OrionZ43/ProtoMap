@@ -11,7 +11,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
-		"lint": "prettier --check . && eslint ."
+		"lint": "prettier --check . && eslint .",
+		"test": "vitest run"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
@@ -25,6 +26,7 @@
 		"@types/leaflet": "^1.9.18",
 		"@types/leaflet.markercluster": "^1.5.5",
 		"@types/three": "^0.180.0",
+		"@vitest/coverage-v8": "^4.1.5",
 		"autoprefixer": "^10.4.20",
 		"eslint": "^9.29.0",
 		"eslint-config-prettier": "^10.0.1",
