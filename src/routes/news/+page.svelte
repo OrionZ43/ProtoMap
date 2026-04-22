@@ -5,7 +5,7 @@
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { t, locale } from 'svelte-i18n';
-    import { marked } from 'marked'; // <--- ИМПОРТИРУЕМ БИБЛИОТЕКУ
+    import { renderMarkdown } from '$lib/utils/markdown';
 
     export let data: PageData;
 
@@ -25,11 +25,6 @@
         }).format(date);
     }
 
-    // Функция рендеринга Markdown
-    function renderContent(content: string): string {
-        // Настройки: breaks = true (энтер = новая строка)
-        return marked.parse(content, { breaks: true, gfm: true }) as string;
-    }
 </script>
 
 <svelte:head>
@@ -69,7 +64,7 @@
 
                         <!-- СЮДА ВСТАВЛЯЕМ ОТФОРМАТИРОВАННЫЙ HTML -->
                         <div class="post-text markdown-body">
-                            {@html renderContent(post.content)}
+                            {@html renderMarkdown(post.content)}
                         </div>
                     </div>
                 </article>
