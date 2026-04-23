@@ -10,7 +10,7 @@
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
-    import { userStore } from '$lib/stores';
+    import { userStore } from '$lib/stores'; 
     import { t } from 'svelte-i18n';
 
     let email = "";
@@ -26,6 +26,7 @@
     const TURNSTILE_SITE_KEY = "0x4AAAAAACYHm8usBkEdoF37";
 
     const opacity = tweened(0, { duration: 400, easing: quintOut });
+    
     onMount(() => {
         opacity.set(1);
     });
@@ -33,7 +34,6 @@
     function handleTurnstileVerified(event: CustomEvent) {
         turnstileToken = event.detail.token;
         turnstileVerified = true;
-        console.log('✅ Капча пройдена');
     }
 
     function handleTurnstileError() {
@@ -51,32 +51,8 @@
             return (result.data as { isAvailable: boolean }).isAvailable;
         } catch (e) {
             console.error("Ошибка проверки username:", e);
-            modal.error("Системная ошибка", "Не удалось проверить имя пользователя.");
             return false;
         }
-    }
-
-    // 🔥 NEW: Функция ожидания загрузки userStore
-    async function waitForUserStoreUpdate(uid: string, maxAttempts = 10): Promise<void> {
-        for (let i = 0; i < maxAttempts; i++) {
-            const currentStore = await new Promise<any>(resolve => {
-                let unsubscribeFn: (() => void) | null = null;
-                unsubscribeFn = userStore.subscribe(value => {
-                    if (unsubscribeFn) unsubscribeFn();
-                    resolve(value);
-                });
-            });
-
-            if (currentStore.user?.uid === uid) {
-                console.log('✅ UserStore обновлён, профиль загружен');
-                return;
-            }
-
-            console.log(`⏳ Ожидание userStore (${i + 1}/${maxAttempts})...`);
-            await new Promise(resolve => setTimeout(resolve, 300));
-        }
-
-        console.warn('⚠️ UserStore не обновился, но продолжаем');
     }
 
     async function handleRegister() {
@@ -97,11 +73,7 @@
             modal.error("Ошибка ввода", "Заполните все поля.");
             return;
         }
-        if (finalUsername.length < 4) {
-             modal.error("Ошибка ввода", "Username минимум 4 символа.");
-             return;
-        }
-
+        
         loading = true;
 
         const usernameIsAvailable = await isUsernameAvailable(finalUsername);
@@ -130,50 +102,11 @@
                 turnstileVerified: true
             });
 
-            console.log("✅ Зарегистрирован:", user.uid);
-
-            const token = await user.getIdToken();
-            await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: token }),
-            });
-
-            // 🔥 FIX: Принудительно обновляем userStore
-            const profileData = {
-                uid: user.uid,
-                username: finalUsername,
-                email: user.email,
-                emailVerified: user.emailVerified,
-                avatar_url: "",
-                social_link: "",
-                about_me: "",
-                status: "",
-                casino_credits: 100,
-                last_daily_bonus: null,
-                daily_streak: 0,
-                owned_items: [],
-                equipped_frame: null,
-                equipped_badge: null,
-                equipped_bg: null,
-                blocked_uids: []
-            };
-
-            userStore.set({ user: profileData, loading: false });
-
-            // Небольшая задержка для синхронизации
-            await new Promise(resolve => setTimeout(resolve, 300));
-
+            await new Promise(resolve => setTimeout(resolve, 500));
             goto('/');
         } catch (e: any) {
             console.error("Ошибка регистрации:", e.code);
-            if (e.code === 'auth/email-already-in-use') {
-                modal.error("Ошибка", "Email занят.");
-            } else if (e.code === 'auth/weak-password') {
-                modal.error("Ошибка", "Пароль слабый (минимум 6 символов).");
-            } else {
-                modal.error("Ошибка", "Произошла ошибка.");
-            }
+            modal.error("Ошибка", e.message || "Произошла ошибка при регистрации.");
         } finally {
             loading = false;
         }
@@ -192,33 +125,21 @@
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
 
-            console.log("✅ Google Auth:", user.uid);
-            await user.getIdToken(true);
-
             const userDocRef = doc(db, "users", user.uid);
             let userDocSnap = await getDoc(userDocRef);
 
             if (!userDocSnap.exists()) {
-                console.log("📝 Новый Google юзер, создаём профиль...");
-
                 let generatedUsername = user.displayName || '';
                 generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
 
-                if (generatedUsername.length < 3) {
-                    generatedUsername = `user_${user.uid.substring(0, 8)}`;
-                }
-
-                if (generatedUsername.length > 20) {
-                    generatedUsername = generatedUsername.substring(0, 20);
-                }
+                if (generatedUsername.length < 3) generatedUsername = `user_${user.uid.substring(0, 8)}`;
+                if (generatedUsername.length > 20) generatedUsername = generatedUsername.substring(0, 20);
 
                 const isAvailable = await isUsernameAvailable(generatedUsername);
                 if (!isAvailable) {
                     const randomSuffix = Math.floor(Math.random() * 9999);
                     generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
                 }
-
-                console.log('🔧 Username:', generatedUsername);
 
                 await setDoc(userDocRef, {
                     username: generatedUsername,
@@ -237,61 +158,13 @@
                     turnstileVerified: true
                 });
 
-                console.log('✅ Профиль создан');
-
-                // 🔥 FIX: Принудительно обновляем профиль в userStore
-                // Иначе onAuthStateChanged не сработает повторно
-                const profileData = {
-                    uid: user.uid,
-                    username: generatedUsername,
-                    email: user.email || "",
-                    emailVerified: user.emailVerified,
-                    avatar_url: user.photoURL || "",
-                    social_link: "",
-                    about_me: "",
-                    status: "",
-                    casino_credits: 100,
-                    last_daily_bonus: null,
-                    daily_streak: 0,
-                    owned_items: [],
-                    equipped_frame: null,
-                    equipped_badge: null,
-                    equipped_bg: null,
-                    blocked_uids: []
-                };
-
-                // Обновляем стор вручную
-                userStore.set({ user: profileData, loading: false });
-
-                // Ждём подтверждения записи в Firestore
-                await new Promise(resolve => setTimeout(resolve, 300));
-                userDocSnap = await getDoc(userDocRef);
-
-            } else {
-                console.log('✅ Профиль существует');
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
-
-            const token = await user.getIdToken();
-            await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: token }),
-            });
-
-            console.log('✅ Вход выполнен');
 
             goto('/');
-
         } catch (e: any) {
             console.error("❌ Google вход:", e);
-
-            if (e.code === 'auth/popup-blocked') {
-                modal.error("Окно заблокировано", "Разрешите всплывающие окна.");
-            } else if (e.code === 'auth/cancelled-popup-request') {
-                console.log("Отменено");
-            } else {
-                modal.error("Ошибка", `Не удалось войти: ${e.message}`);
-            }
+            modal.error("Ошибка", e.message || "Не удалось войти через Google.");
         } finally {
             googleLoading = false;
         }
