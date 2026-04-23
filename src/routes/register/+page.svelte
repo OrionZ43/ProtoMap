@@ -113,11 +113,6 @@
     }
 
     async function handleGoogleLogin() {
-        if (!turnstileVerified) {
-            modal.error("Требуется проверка", "Подтвердите, что вы не робот.");
-            return;
-        }
-
         googleLoading = true;
         const provider = new GoogleAuthProvider();
 
@@ -237,7 +232,7 @@
     <div class="text-center">
         <button
             on:click={handleGoogleLogin}
-            disabled={googleLoading || loading || !turnstileVerified}
+            disabled={googleLoading || loading}
             type="button"
             title="Войти/Зарегистрироваться с Google"
             class="google-btn"
