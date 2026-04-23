@@ -1,4 +1,5 @@
-import { auth, db } from "$lib/firebase";
+<script lang="ts">
+    import { auth, db } from "$lib/firebase";
     import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
     import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
     import { getFunctions, httpsCallable } from "firebase/functions";
@@ -9,7 +10,7 @@ import { auth, db } from "$lib/firebase";
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
-    import { userStore } from '$lib/stores'; // refreshUserStore удален
+    import { userStore } from '$lib/stores'; 
     import { t } from 'svelte-i18n';
 
     let email = "";
@@ -25,6 +26,7 @@ import { auth, db } from "$lib/firebase";
     const TURNSTILE_SITE_KEY = "0x4AAAAAACYHm8usBkEdoF37";
 
     const opacity = tweened(0, { duration: 400, easing: quintOut });
+    
     onMount(() => {
         opacity.set(1);
     });
@@ -32,7 +34,6 @@ import { auth, db } from "$lib/firebase";
     function handleTurnstileVerified(event: CustomEvent) {
         turnstileToken = event.detail.token;
         turnstileVerified = true;
-        console.log('✅ Капча пройдена');
     }
 
     function handleTurnstileError() {
@@ -50,7 +51,6 @@ import { auth, db } from "$lib/firebase";
             return (result.data as { isAvailable: boolean }).isAvailable;
         } catch (e) {
             console.error("Ошибка проверки username:", e);
-            modal.error("Системная ошибка", "Не удалось проверить имя пользователя.");
             return false;
         }
     }
@@ -73,11 +73,7 @@ import { auth, db } from "$lib/firebase";
             modal.error("Ошибка ввода", "Заполните все поля.");
             return;
         }
-        if (finalUsername.length < 4) {
-             modal.error("Ошибка ввода", "Username минимум 4 символа.");
-             return;
-        }
-
+        
         loading = true;
 
         const usernameIsAvailable = await isUsernameAvailable(finalUsername);
@@ -106,21 +102,11 @@ import { auth, db } from "$lib/firebase";
                 turnstileVerified: true
             });
 
-            console.log("✅ Зарегистрирован:", user.uid);
-
-            // Ждём 500мс, чтобы onSnapshot в stores.ts успел подхватить новый документ
             await new Promise(resolve => setTimeout(resolve, 500));
-
             goto('/');
         } catch (e: any) {
             console.error("Ошибка регистрации:", e.code);
-            if (e.code === 'auth/email-already-in-use') {
-                modal.error("Ошибка", "Email занят.");
-            } else if (e.code === 'auth/weak-password') {
-                modal.error("Ошибка", "Пароль слабый (минимум 6 символов).");
-            } else {
-                modal.error("Ошибка", "Произошла ошибка.");
-            }
+            modal.error("Ошибка", e.message || "Произошла ошибка при регистрации.");
         } finally {
             loading = false;
         }
@@ -139,24 +125,15 @@ import { auth, db } from "$lib/firebase";
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
 
-            console.log("✅ Google Auth:", user.uid);
-            
             const userDocRef = doc(db, "users", user.uid);
             let userDocSnap = await getDoc(userDocRef);
 
             if (!userDocSnap.exists()) {
-                console.log("📝 Новый Google юзер, создаём профиль...");
-
                 let generatedUsername = user.displayName || '';
                 generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
 
-                if (generatedUsername.length < 3) {
-                    generatedUsername = `user_${user.uid.substring(0, 8)}`;
-                }
-
-                if (generatedUsername.length > 20) {
-                    generatedUsername = generatedUsername.substring(0, 20);
-                }
+                if (generatedUsername.length < 3) generatedUsername = `user_${user.uid.substring(0, 8)}`;
+                if (generatedUsername.length > 20) generatedUsername = generatedUsername.substring(0, 20);
 
                 const isAvailable = await isUsernameAvailable(generatedUsername);
                 if (!isAvailable) {
@@ -181,30 +158,18 @@ import { auth, db } from "$lib/firebase";
                     turnstileVerified: true
                 });
 
-                console.log('✅ Профиль создан');
-                // Ждём обновления onSnapshot в stores.ts
                 await new Promise(resolve => setTimeout(resolve, 500));
-            } else {
-                console.log('✅ Профиль существует');
             }
 
-            console.log('✅ Вход выполнен');
             goto('/');
-
         } catch (e: any) {
             console.error("❌ Google вход:", e);
-
-            if (e.code === 'auth/popup-blocked') {
-                modal.error("Окно заблокировано", "Разрешите всплывающие окна.");
-            } else if (e.code === 'auth/cancelled-popup-request') {
-                console.log("Отменено");
-            } else {
-                modal.error("Ошибка", `Не удалось войти: ${e.message}`);
-            }
+            modal.error("Ошибка", e.message || "Не удалось войти через Google.");
         } finally {
             googleLoading = false;
         }
     }
+</script>
 
 <svelte:head>
     <title>{$t('auth.register_title')} | ProtoMap</title>
