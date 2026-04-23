@@ -10,7 +10,7 @@
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
-    import { userStore } from '$lib/stores';
+    import { userStore, refreshUserStore } from '$lib/stores';
     import { t } from 'svelte-i18n';
 
     let email = "";
@@ -54,29 +54,6 @@
             modal.error("Системная ошибка", "Не удалось проверить имя пользователя.");
             return false;
         }
-    }
-
-    // 🔥 NEW: Функция ожидания загрузки userStore
-    async function waitForUserStoreUpdate(uid: string, maxAttempts = 10): Promise<void> {
-        for (let i = 0; i < maxAttempts; i++) {
-            const currentStore = await new Promise<any>(resolve => {
-                let unsubscribeFn: (() => void) | null = null;
-                unsubscribeFn = userStore.subscribe(value => {
-                    if (unsubscribeFn) unsubscribeFn();
-                    resolve(value);
-                });
-            });
-
-            if (currentStore.user?.uid === uid) {
-                console.log('✅ UserStore обновлён, профиль загружен');
-                return;
-            }
-
-            console.log(`⏳ Ожидание userStore (${i + 1}/${maxAttempts})...`);
-            await new Promise(resolve => setTimeout(resolve, 300));
-        }
-
-        console.warn('⚠️ UserStore не обновился, но продолжаем');
     }
 
     async function handleRegister() {
@@ -132,37 +109,8 @@
 
             console.log("✅ Зарегистрирован:", user.uid);
 
-            const token = await user.getIdToken();
-            await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: token }),
-            });
-
-            // 🔥 FIX: Принудительно обновляем userStore
-            const profileData = {
-                uid: user.uid,
-                username: finalUsername,
-                email: user.email,
-                emailVerified: user.emailVerified,
-                avatar_url: "",
-                social_link: "",
-                about_me: "",
-                status: "",
-                casino_credits: 100,
-                last_daily_bonus: null,
-                daily_streak: 0,
-                owned_items: [],
-                equipped_frame: null,
-                equipped_badge: null,
-                equipped_bg: null,
-                blocked_uids: []
-            };
-
-            userStore.set({ user: profileData, loading: false });
-
-            // Небольшая задержка для синхронизации
-            await new Promise(resolve => setTimeout(resolve, 300));
+            // 🔥 Принудительно обновляем userStore и синхронизируем серверную сессию
+            await refreshUserStore(user);
 
             goto('/');
         } catch (e: any) {
@@ -238,45 +186,12 @@
                 });
 
                 console.log('✅ Профиль создан');
-
-                // 🔥 FIX: Принудительно обновляем профиль в userStore
-                // Иначе onAuthStateChanged не сработает повторно
-                const profileData = {
-                    uid: user.uid,
-                    username: generatedUsername,
-                    email: user.email || "",
-                    emailVerified: user.emailVerified,
-                    avatar_url: user.photoURL || "",
-                    social_link: "",
-                    about_me: "",
-                    status: "",
-                    casino_credits: 100,
-                    last_daily_bonus: null,
-                    daily_streak: 0,
-                    owned_items: [],
-                    equipped_frame: null,
-                    equipped_badge: null,
-                    equipped_bg: null,
-                    blocked_uids: []
-                };
-
-                // Обновляем стор вручную
-                userStore.set({ user: profileData, loading: false });
-
-                // Ждём подтверждения записи в Firestore
-                await new Promise(resolve => setTimeout(resolve, 300));
-                userDocSnap = await getDoc(userDocRef);
-
             } else {
                 console.log('✅ Профиль существует');
             }
 
-            const token = await user.getIdToken();
-            await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: token }),
-            });
+            // 🔥 Принудительно обновляем userStore и синхронизируем серверную сессию
+            await refreshUserStore(user);
 
             console.log('✅ Вход выполнен');
 

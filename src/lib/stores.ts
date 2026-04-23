@@ -34,7 +34,8 @@ export const userStore: Writable<AuthStore> = writable({
     loading: true,
 });
 
-onAuthStateChanged(auth, async (userAuth: User | null) => {
+export async function refreshUserStore(forceUser?: User | null) {
+    const userAuth = forceUser !== undefined ? forceUser : auth.currentUser;
     let userProfile: UserProfile | null = null;
     let token: string | null = null;
 
@@ -87,6 +88,10 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
     }
 
     userStore.set({ user: userProfile, loading: false });
+}
+
+onAuthStateChanged(auth, async (userAuth: User | null) => {
+    await refreshUserStore(userAuth);
 });
 
 // --- CHAT STORE ---
