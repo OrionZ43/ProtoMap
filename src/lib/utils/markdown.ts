@@ -1,6 +1,18 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
+if (typeof window !== 'undefined') {
+    DOMPurify.addHook('afterSanitizeAttributes', function(node) {
+        if (node.tagName === 'A' && node.hasAttribute('href')) {
+            const href = node.getAttribute('href') || '';
+            if (href.match(/^https?:\/\//i)) {
+                node.setAttribute('target', '_blank');
+                node.setAttribute('rel', 'noopener noreferrer');
+            }
+        }
+    });
+}
+
 /**
  * Основная функция рендеринга Markdown.
  * Использует DOMPurify на клиенте и кастомный санитайзер на сервере.
