@@ -22,8 +22,11 @@ if (!getApps().length) {
     app = getApp();
 }
 
+import { getDatabase } from "firebase/database";
+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const rtdb = getDatabase(app);
 
 // 2. Инициализация App Check (Только на клиенте)
 if (browser) {
