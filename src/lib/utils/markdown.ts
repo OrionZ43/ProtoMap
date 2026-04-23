@@ -1,6 +1,10 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
+/**
+ * Основная функция рендеринга Markdown.
+ * Использует DOMPurify на клиенте и кастомный санитайзер на сервере.
+ */
 export function renderMarkdown(text: string | null | undefined): string {
     if (!text) return '';
 
@@ -12,8 +16,10 @@ export function renderMarkdown(text: string | null | undefined): string {
         }) as string;
 
         if (typeof window !== 'undefined') {
+            // На клиенте используем проверенный DOMPurify
             return DOMPurify.sanitize(html);
         } else {
+            // На сервере используем нашу логику
             return sanitizeServerSide(html);
         }
     } catch (error) {
@@ -22,6 +28,9 @@ export function renderMarkdown(text: string | null | undefined): string {
     }
 }
 
+/**
+ * Простая очистка HTML на стороне сервера (SSR).
+ */
 function sanitizeServerSide(html: string): string {
     const allowedTags = new Set([
         'p', 'br', 'strong', 'b', 'em', 'i', 's', 'del',
@@ -51,7 +60,6 @@ function sanitizeServerSide(html: string): string {
 
             if (tagMatch) {
                 const tagName = tagMatch[1].toLowerCase();
-
                 if (allowedTags.has(tagName)) {
                     if (isClosing) {
                         result += `</${tagName}>`;
@@ -91,23 +99,28 @@ function cleanTag(tagHtml: string, tagName: string): string {
         return '';
     }
 
-    // Block any other attributes on other tags
     return `<${tagName}>`;
 }
 
-function isSafeUrl(url: string): boolean {
+/**
+ * Проверка URL на безопасность. 
+ * Учитывает фикс Болта по очистке пробелов и проверке всех частей строки.
+ */
+export function isSafeUrl(url: string): boolean {
     const lower = url.toLowerCase().trim();
 
-    // Block dangerous protocols
-    if (lower.startsWith('javascript:') ||
-        lower.startsWith('data:') ||
-        lower.startsWith('vbscript:') ||
-        lower.startsWith('file:')) {
+    // Блокируем опасные протоколы (используем .includes для защиты от обхода через пробелы)
+    if (
+        lower.includes('javascript:') ||
+        lower.includes('data:text') ||
+        lower.includes('vbscript:') ||
+        lower.includes('file:')
+    ) {
         return false;
     }
 
-    // Only allow safe protocols or relative paths
-    return /^(https?:\/\/|mailto:|tel:|\/|#)/i.test(url);
+    // Разрешаем только безопасные протоколы, относительные пути и якоря
+    return /^(https?:\/\/|mailto:|tel:|\/|#)/i.test(lower);
 }
 
 function escapeAttr(value: string): string {
@@ -120,7 +133,7 @@ function escapeAttr(value: string): string {
 }
 
 function escapeHtml(text: string): string {
-    return text
+    return (text || '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
