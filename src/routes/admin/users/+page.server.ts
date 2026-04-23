@@ -128,8 +128,9 @@ export const actions: Actions = {
             await authAdmin.updateUser(targetUid, { emailVerified: true });
             console.log(`[ADMIN] Email verified for uid=${targetUid} by admin=${locals.user!.uid}`);
             return { actionSuccess: true, message: 'EMAIL ВЕРИФИЦИРОВАН ПРИНУДИТЕЛЬНО.' };
-        } catch (e: any) {
-            return fail(500, { message: 'Ошибка верификации: ' + e.message });
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            return fail(500, { message: 'Ошибка верификации: ' + errorMessage });
         }
     },
 
@@ -152,8 +153,9 @@ export const actions: Actions = {
             });
             console.log(`[ADMIN] Banned uid=${targetUid} reason="${reason}" by admin=${locals.user!.uid}`);
             return { actionSuccess: true, message: 'СУБЪЕКТ ИЗОЛИРОВАН (TOKEN REVOKED).' };
-        } catch (e: any) {
-            return fail(500, { message: 'Сбой протокола блокировки: ' + e.message });
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            return fail(500, { message: 'Сбой протокола блокировки: ' + errorMessage });
         }
     },
 
@@ -170,8 +172,9 @@ export const actions: Actions = {
                 bannedAt:  FieldValue.delete()
             });
             return { actionSuccess: true, message: 'СУБЪЕКТ ВОССТАНОВЛЕН В ПРАВАХ.' };
-        } catch (e: any) {
-            return fail(500, { message: 'Ошибка разблокировки: ' + e.message });
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            return fail(500, { message: 'Ошибка разблокировки: ' + errorMessage });
         }
     },
 
@@ -227,8 +230,9 @@ export const actions: Actions = {
             console.log(`[ADMIN] Migrated ${sourceUid} -> ${targetUid} by admin=${locals.user!.uid}`);
             return { actionSuccess: true, message: `Миграция успешна! ${sourceUid} → ${targetUid}` };
 
-        } catch (e: any) {
-            return fail(500, { message: `Ошибка: ${e.message}` });
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            return fail(500, { message: `Ошибка: ${errorMessage}` });
         }
     }
 };

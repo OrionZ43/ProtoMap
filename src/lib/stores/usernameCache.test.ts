@@ -1,41 +1,106 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getAvatarUrl } from './usernameCache';
+import { getUsername, getAvatarUrl } from './usernameCache';
+import { getDoc } from 'firebase/firestore';
 
-import * as firestore from 'firebase/firestore';
+// --- ГЛОБАЛЬНЫЕ МОКИ ---
+vi.mock('$lib/firebase', () => ({
+    db: {}
+}));
 
-// We need to mock firebase/firestore and svelte/store
-vi.mock('firebase/firestore', () => {
-    return {
-        doc: vi.fn(),
-        getDoc: vi.fn()
-    };
-});
+vi.mock('firebase/firestore', () => ({
+    doc: vi.fn(),
+    getDoc: vi.fn()
+}));
 
-vi.mock('$lib/firebase', () => {
-    return {
-        db: {}
-    };
-});
+vi.mock('svelte/store', () => ({
+    writable: vi.fn(() => ({
+        update: vi.fn(),
+        subscribe: vi.fn(),
+        set: vi.fn()
+    })),
+    get: vi.fn()
+}));
 
-vi.mock('svelte/store', () => {
-    return {
-        writable: vi.fn(() => ({
-            update: vi.fn(),
-            subscribe: vi.fn(),
-            set: vi.fn()
-        })),
-        get: vi.fn()
-    };
-});
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
-describe('usernameCache - getAvatarUrl', () => {
-    const CACHE_TTL_MS = 5 * 60 * 1000;
-
+// =========================================================
+// ТЕСТЫ: getUsername (Из ветки main)
+// =========================================================
+describe('getUsername', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        // Since we cannot directly clear the `pending` set inside the module,
-        // tests that check "pending" states might bleed state if not isolated.
-        // We will mock `Date.now` to control cache expiration.
+    });
+
+    it('returns the fallback and calls fetchUser if cache is empty', () => {
+        const uid = 'test-uid-1';
+        const fallback = 'Fallback Name';
+
+        vi.mocked(getDoc).mockReturnValue(new Promise(() => {}));
+
+        const result = getUsername({}, uid, fallback);
+
+        expect(result).toBe(fallback);
+        expect(getDoc).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns the cached username if cache is fresh', () => {
+        const uid = 'test-uid-2';
+        const fallback = 'Fallback Name';
+        const cacheState = {
+            [uid]: {
+                username: 'Cached Name',
+                avatar_url: '',
+                equipped_frame: null,
+                fetchedAt: Date.now() - 1000 // 1 секунда назад
+            }
+        };
+
+        const result = getUsername(cacheState, uid, fallback);
+
+        expect(result).toBe('Cached Name');
+        expect(getDoc).not.toHaveBeenCalled();
+    });
+
+    it('returns the fallback and calls fetchUser if cache is expired', () => {
+        const uid = 'test-uid-3';
+        const fallback = 'Fallback Name';
+        const cacheState = {
+            [uid]: {
+                username: 'Expired Name',
+                avatar_url: '',
+                equipped_frame: null,
+                fetchedAt: Date.now() - CACHE_TTL_MS - 1000 // протухло
+            }
+        };
+
+        vi.mocked(getDoc).mockReturnValue(new Promise(() => {}));
+
+        const result = getUsername(cacheState, uid, fallback);
+
+        expect(result).toBe(fallback);
+        expect(getDoc).toHaveBeenCalledTimes(1);
+    });
+
+    it('deduplicates fetch calls for the same uid', () => {
+        const uid = 'test-uid-4';
+        const fallback = 'Fallback Name';
+
+        vi.mocked(getDoc).mockReturnValue(new Promise(() => {}));
+
+        getUsername({}, uid, fallback);
+        expect(getDoc).toHaveBeenCalledTimes(1);
+
+        getUsername({}, uid, fallback);
+        expect(getDoc).toHaveBeenCalledTimes(1);
+    });
+});
+
+// =========================================================
+// ТЕСТЫ: getAvatarUrl (Из текущего PR #10)
+// =========================================================
+describe('usernameCache - getAvatarUrl', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
         vi.useFakeTimers();
     });
 
@@ -50,7 +115,7 @@ describe('usernameCache - getAvatarUrl', () => {
                 username: 'Test User',
                 avatar_url: 'https://example.com/avatar.png',
                 equipped_frame: null,
-                fetchedAt: Date.now() - 1000 // 1 second ago
+                fetchedAt: Date.now() - 1000 // 1 секунда назад
             }
         };
 
@@ -65,7 +130,7 @@ describe('usernameCache - getAvatarUrl', () => {
                 username: 'Test User',
                 avatar_url: '',
                 equipped_frame: null,
-                fetchedAt: Date.now() - 1000 // 1 second ago
+                fetchedAt: Date.now() - 1000
             }
         };
 
@@ -76,7 +141,7 @@ describe('usernameCache - getAvatarUrl', () => {
     it('should return fallback and trigger fetch if cache is expired', () => {
         vi.setSystemTime(new Date('2023-01-01T12:00:00Z'));
 
-        vi.mocked(firestore.getDoc).mockResolvedValue({
+        vi.mocked(getDoc).mockResolvedValue({
             exists: () => true,
             data: () => ({ avatar_url: 'https://example.com/new_avatar.png' }),
             id: 'user2',
@@ -90,24 +155,21 @@ describe('usernameCache - getAvatarUrl', () => {
                 username: 'Test User',
                 avatar_url: 'https://example.com/old_avatar.png',
                 equipped_frame: null,
-                fetchedAt: Date.now() - CACHE_TTL_MS - 1000 // Expired
+                fetchedAt: Date.now() - CACHE_TTL_MS - 1000 // протухло
             }
         };
 
         const result = getAvatarUrl(cacheState, 'user2', 'fallback.png');
 
-        // It should return fallback immediately because cache is expired
         expect(result).toBe('fallback.png');
-
-        // It should have triggered a fetch
-        expect(firestore.getDoc).toHaveBeenCalled();
+        expect(getDoc).toHaveBeenCalled();
     });
 
     it('should return fallback and trigger fetch if cache is missing', () => {
         vi.setSystemTime(new Date('2023-01-01T12:00:00Z'));
         const cacheState = {};
 
-        vi.mocked(firestore.getDoc).mockResolvedValue({
+        vi.mocked(getDoc).mockResolvedValue({
             exists: () => true,
             data: () => ({ avatar_url: 'https://example.com/avatar.png' }),
             id: 'user3',
@@ -118,34 +180,30 @@ describe('usernameCache - getAvatarUrl', () => {
 
         const result = getAvatarUrl(cacheState, 'user3', 'fallback.png');
 
-        // It should return fallback
         expect(result).toBe('fallback.png');
-
-        // It should have triggered a fetch
-        expect(firestore.getDoc).toHaveBeenCalled();
+        expect(getDoc).toHaveBeenCalled();
     });
 
     it('should not trigger fetch again if a fetch is already pending', () => {
         vi.setSystemTime(new Date('2023-01-01T12:00:00Z'));
         const cacheState = {};
 
-        // Create a delayed promise to keep it pending
         let resolvePromise: any;
         const promise = new Promise(resolve => {
             resolvePromise = resolve;
         });
 
-        vi.mocked(firestore.getDoc).mockReturnValue(promise as any);
+        vi.mocked(getDoc).mockReturnValue(promise as any);
 
-        // First call should trigger fetch
+        // Первый вызов
         getAvatarUrl(cacheState, 'user4', 'fallback.png');
-        expect(firestore.getDoc).toHaveBeenCalledTimes(1);
+        expect(getDoc).toHaveBeenCalledTimes(1);
 
-        // Second call should NOT trigger fetch because it's pending
+        // Второй вызов
         getAvatarUrl(cacheState, 'user4', 'fallback.png');
-        expect(firestore.getDoc).toHaveBeenCalledTimes(1);
+        expect(getDoc).toHaveBeenCalledTimes(1); // Количество вызовов не выросло
 
-        // Cleanup: resolve the promise so it doesn't hang the test suite
+        // Очистка, чтобы тест не повис
         resolvePromise({ exists: () => false });
     });
 });
