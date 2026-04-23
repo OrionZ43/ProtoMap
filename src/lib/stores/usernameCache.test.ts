@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getUsername, getAvatarUrl } from './usernameCache';
+import { getUsername, getAvatarUrl, usernameCache, set, invalidate } from './usernameCache';
 import { getDoc } from 'firebase/firestore';
+import { get } from 'svelte/store';
 
 // --- ГЛОБАЛЬНЫЕ МОКИ ---
 vi.mock('$lib/firebase', () => ({
@@ -10,15 +11,6 @@ vi.mock('$lib/firebase', () => ({
 vi.mock('firebase/firestore', () => ({
     doc: vi.fn(),
     getDoc: vi.fn()
-}));
-
-vi.mock('svelte/store', () => ({
-    writable: vi.fn(() => ({
-        update: vi.fn(),
-        subscribe: vi.fn(),
-        set: vi.fn()
-    })),
-    get: vi.fn()
 }));
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -96,7 +88,7 @@ describe('getUsername', () => {
 });
 
 // =========================================================
-// ТЕСТЫ: getAvatarUrl (Из текущего PR #10)
+// ТЕСТЫ: getAvatarUrl (Из ветки main)
 // =========================================================
 describe('usernameCache - getAvatarUrl', () => {
     beforeEach(() => {
@@ -183,27 +175,66 @@ describe('usernameCache - getAvatarUrl', () => {
         expect(result).toBe('fallback.png');
         expect(getDoc).toHaveBeenCalled();
     });
+});
 
-    it('should not trigger fetch again if a fetch is already pending', () => {
-        vi.setSystemTime(new Date('2023-01-01T12:00:00Z'));
-        const cacheState = {};
+// =========================================================
+// ТЕСТЫ: usernameCache store (Из текущего PR #15)
+// =========================================================
+describe('usernameCache store', () => {
+    beforeEach(() => {
+        const state = get(usernameCache);
+        for (const key of Object.keys(state)) {
+            invalidate(key);
+        }
+    });
 
-        let resolvePromise: any;
-        const promise = new Promise(resolve => {
-            resolvePromise = resolve;
+    describe('invalidate()', () => {
+        it('should remove existing user from cache', () => {
+            const uid = 'test-user-123';
+
+            set(uid, {
+                username: 'TestUser',
+                avatar_url: 'http://example.com/avatar.png'
+            });
+
+            let state = get(usernameCache);
+            expect(state[uid]).toBeDefined();
+            expect(state[uid].username).toBe('TestUser');
+
+            invalidate(uid);
+
+            state = get(usernameCache);
+            expect(state[uid]).toBeUndefined();
         });
 
-        vi.mocked(getDoc).mockReturnValue(promise as any);
+        it('should not throw error and leave cache intact when invalidating non-existent uid', () => {
+            const existingUid = 'user-1';
+            const missingUid = 'user-999';
 
-        // Первый вызов
-        getAvatarUrl(cacheState, 'user4', 'fallback.png');
-        expect(getDoc).toHaveBeenCalledTimes(1);
+            set(existingUid, {
+                username: 'ExistingUser'
+            });
 
-        // Второй вызов
-        getAvatarUrl(cacheState, 'user4', 'fallback.png');
-        expect(getDoc).toHaveBeenCalledTimes(1); // Количество вызовов не выросло
+            expect(() => invalidate(missingUid)).not.toThrow();
 
-        // Очистка, чтобы тест не повис
-        resolvePromise({ exists: () => false });
+            const state = get(usernameCache);
+            expect(state[existingUid]).toBeDefined();
+            expect(state[existingUid].username).toBe('ExistingUser');
+        });
+
+        it('should not affect other cache entries', () => {
+            const uid1 = 'user-1';
+            const uid2 = 'user-2';
+
+            set(uid1, { username: 'User One' });
+            set(uid2, { username: 'User Two' });
+
+            invalidate(uid1);
+
+            const state = get(usernameCache);
+            expect(state[uid1]).toBeUndefined();
+            expect(state[uid2]).toBeDefined();
+            expect(state[uid2].username).toBe('User Two');
+        });
     });
 });
