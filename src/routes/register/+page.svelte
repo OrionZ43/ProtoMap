@@ -1,5 +1,4 @@
-<script lang="ts">
-    import { auth, db } from "$lib/firebase";
+import { auth, db } from "$lib/firebase";
     import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
     import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
     import { getFunctions, httpsCallable } from "firebase/functions";
@@ -10,7 +9,7 @@
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
-    import { userStore, refreshUserStore } from '$lib/stores';
+    import { userStore } from '$lib/stores'; // refreshUserStore удален
     import { t } from 'svelte-i18n';
 
     let email = "";
@@ -109,8 +108,8 @@
 
             console.log("✅ Зарегистрирован:", user.uid);
 
-            // 🔥 Принудительно обновляем userStore и синхронизируем серверную сессию
-            await refreshUserStore(user);
+            // Ждём 500мс, чтобы onSnapshot в stores.ts успел подхватить новый документ
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             goto('/');
         } catch (e: any) {
@@ -141,8 +140,7 @@
             const user = result.user;
 
             console.log("✅ Google Auth:", user.uid);
-            await user.getIdToken(true);
-
+            
             const userDocRef = doc(db, "users", user.uid);
             let userDocSnap = await getDoc(userDocRef);
 
@@ -166,8 +164,6 @@
                     generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
                 }
 
-                console.log('🔧 Username:', generatedUsername);
-
                 await setDoc(userDocRef, {
                     username: generatedUsername,
                     email: user.email || "",
@@ -186,15 +182,13 @@
                 });
 
                 console.log('✅ Профиль создан');
+                // Ждём обновления onSnapshot в stores.ts
+                await new Promise(resolve => setTimeout(resolve, 500));
             } else {
                 console.log('✅ Профиль существует');
             }
 
-            // 🔥 Принудительно обновляем userStore и синхронизируем серверную сессию
-            await refreshUserStore(user);
-
             console.log('✅ Вход выполнен');
-
             goto('/');
 
         } catch (e: any) {
@@ -211,7 +205,6 @@
             googleLoading = false;
         }
     }
-</script>
 
 <svelte:head>
     <title>{$t('auth.register_title')} | ProtoMap</title>
