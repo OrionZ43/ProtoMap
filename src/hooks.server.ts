@@ -59,8 +59,6 @@ export const handle: Handle = async ({ event, resolve }) => {
         // Если мы здесь — токен невалиден (истек, подделка или ОТОЗВАН админом).
         // Единственное правильное действие — убить сессию.
 
-        console.log("Auth Hook: Invalid/Revoked Token. Destroying session.");
-
         // Удаляем куку с параметрами (важно для надежности)
         event.cookies.delete('__session', { path: '/' });
 

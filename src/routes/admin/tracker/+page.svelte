@@ -5,6 +5,7 @@
     import { flip } from 'svelte/animate';
     import { quintOut } from 'svelte/easing';
     import type { PageData } from './$types';
+    import type { Task } from './+page.server';
 
     export let data: PageData;
 
@@ -24,7 +25,7 @@
     $: done     = filtered.filter(t => t.status === 'done');
 
     let showCreate  = false;
-    let editingTask: any = null;
+    let editingTask: Task | null = null;
 
     function shortId(id: string) { return 'T·' + id.slice(0,4).toUpperCase(); }
 
