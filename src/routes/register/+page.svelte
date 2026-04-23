@@ -1,5 +1,4 @@
-<script lang="ts">
-    import { auth, db } from "$lib/firebase";
+import { auth, db } from "$lib/firebase";
     import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
     import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
     import { getFunctions, httpsCallable } from "firebase/functions";
@@ -10,7 +9,7 @@
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
-    import { userStore } from '$lib/stores';
+    import { userStore } from '$lib/stores'; // refreshUserStore удален
     import { t } from 'svelte-i18n';
 
     let email = "";
@@ -109,15 +108,8 @@
 
             console.log("✅ Зарегистрирован:", user.uid);
 
-            const token = await user.getIdToken();
-            await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: token }),
-            });
-
-            // Ждём, пока onAuthStateChanged (и onSnapshot) не подхватит профиль из Firestore
-            await new Promise(resolve => setTimeout(resolve, 600));
+            // Ждём 500мс, чтобы onSnapshot в stores.ts успел подхватить новый документ
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             goto('/');
         } catch (e: any) {
@@ -148,8 +140,7 @@
             const user = result.user;
 
             console.log("✅ Google Auth:", user.uid);
-            await user.getIdToken(true);
-
+            
             const userDocRef = doc(db, "users", user.uid);
             let userDocSnap = await getDoc(userDocRef);
 
@@ -173,8 +164,6 @@
                     generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
                 }
 
-                console.log('🔧 Username:', generatedUsername);
-
                 await setDoc(userDocRef, {
                     username: generatedUsername,
                     email: user.email || "",
@@ -193,24 +182,13 @@
                 });
 
                 console.log('✅ Профиль создан');
-
-                // Ждём подтверждения записи в Firestore и обновления userStore через onSnapshot
-                await new Promise(resolve => setTimeout(resolve, 300));
-                userDocSnap = await getDoc(userDocRef);
-
+                // Ждём обновления onSnapshot в stores.ts
+                await new Promise(resolve => setTimeout(resolve, 500));
             } else {
                 console.log('✅ Профиль существует');
             }
 
-            const token = await user.getIdToken();
-            await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: token }),
-            });
-
             console.log('✅ Вход выполнен');
-
             goto('/');
 
         } catch (e: any) {
@@ -227,7 +205,6 @@
             googleLoading = false;
         }
     }
-</script>
 
 <svelte:head>
     <title>{$t('auth.register_title')} | ProtoMap</title>

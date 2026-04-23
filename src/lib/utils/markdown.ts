@@ -1,4 +1,5 @@
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 export function renderMarkdown(text: string | null | undefined): string {
     if (!text) return '';
@@ -10,8 +11,8 @@ export function renderMarkdown(text: string | null | undefined): string {
             silent: true
         }) as string;
 
-        if (typeof document !== 'undefined') {
-            return sanitizeWithDOM(html);
+        if (typeof window !== 'undefined') {
+            return DOMPurify.sanitize(html);
         } else {
             return sanitizeServerSide(html);
         }
@@ -19,83 +20,6 @@ export function renderMarkdown(text: string | null | undefined): string {
         console.error('[Markdown] Error:', error);
         return escapeHtml(text);
     }
-}
-
-function sanitizeWithDOM(html: string): string {
-    const template = document.createElement('template');
-    template.innerHTML = html;
-
-    const allowedTags = new Set([
-        'P', 'BR', 'STRONG', 'B', 'EM', 'I', 'S', 'DEL',
-        'A', 'CODE', 'PRE', 'BLOCKQUOTE',
-        'UL', 'OL', 'LI',
-        'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
-        'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD',
-        'HR', 'IMG'
-    ]);
-
-    const allowedAttrs = new Set(['href', 'src', 'alt', 'title', 'width', 'height']);
-
-    function clean(node: Node): Node | null {
-        if (node.nodeType === Node.TEXT_NODE) {
-            return node.cloneNode(true);
-        }
-
-        if (node.nodeType === Node.ELEMENT_NODE) {
-            const el = node as Element;
-
-            if (!allowedTags.has(el.tagName)) {
-                const frag = document.createDocumentFragment();
-                Array.from(el.childNodes).forEach(child => {
-                    const cleaned = clean(child);
-                    if (cleaned) frag.appendChild(cleaned);
-                });
-                return frag;
-            }
-
-            const newEl = el.cloneNode(false) as Element;
-
-            Array.from(el.attributes).forEach(attr => {
-                if (allowedAttrs.has(attr.name)) {
-                    if (attr.name === 'href' || attr.name === 'src') {
-                        const url = attr.value.toLowerCase();
-                        if (!url.includes('javascript:') &&
-                            !url.includes('data:text') &&
-                            !url.includes('vbscript:')) {
-                            newEl.setAttribute(attr.name, attr.value);
-                        }
-                    } else {
-                        newEl.setAttribute(attr.name, attr.value);
-                    }
-                }
-            });
-
-            if (newEl.tagName === 'A' && newEl.hasAttribute('href')) {
-                newEl.setAttribute('rel', 'noopener noreferrer');
-                const href = newEl.getAttribute('href') || '';
-                if (href.match(/^https?:\/\//)) {
-                    newEl.setAttribute('target', '_blank');
-                }
-            }
-
-            Array.from(el.childNodes).forEach(child => {
-                const cleaned = clean(child);
-                if (cleaned) newEl.appendChild(cleaned);
-            });
-
-            return newEl;
-        }
-
-        return null;
-    }
-
-    const div = document.createElement('div');
-    Array.from(template.content.childNodes).forEach(child => {
-        const cleaned = clean(child);
-        if (cleaned) div.appendChild(cleaned);
-    });
-
-    return div.innerHTML;
 }
 
 function sanitizeServerSide(html: string): string {
@@ -167,20 +91,23 @@ function cleanTag(tagHtml: string, tagName: string): string {
         return '';
     }
 
+    // Block any other attributes on other tags
     return `<${tagName}>`;
 }
 
 function isSafeUrl(url: string): boolean {
     const lower = url.toLowerCase().trim();
 
-    if (lower.includes('javascript:') ||
-        lower.includes('data:text') ||
-        lower.includes('vbscript:') ||
-        lower.includes('file:')) {
+    // Block dangerous protocols
+    if (lower.startsWith('javascript:') ||
+        lower.startsWith('data:') ||
+        lower.startsWith('vbscript:') ||
+        lower.startsWith('file:')) {
         return false;
     }
 
-    return /^(https?:\/\/|mailto:|tel:|\/)/i.test(url);
+    // Only allow safe protocols or relative paths
+    return /^(https?:\/\/|mailto:|tel:|\/|#)/i.test(url);
 }
 
 function escapeAttr(value: string): string {
