@@ -189,7 +189,7 @@
     <!-- KANBAN -->
     <div class="kanban">
 
-        <!-- TODO -->
+        <!-- PENDING -->
         <div class="lane">
             <div class="lane-head">
                 <div class="lane-name">
