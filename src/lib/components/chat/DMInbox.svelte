@@ -16,6 +16,12 @@
     export let onUnreadChange: (count: number) => void = () => {};
 
     // ── Типы ───────────────────────────────────────────────────────────────
+    type ParticipantData = {
+        username?: string;
+        avatarUrl?: string | null;
+        frameId?: string | null;
+    };
+
     type DMChat = {
         id: string;
         partner: { uid: string; username: string; avatarUrl: string | null; frameId?: string | null };
@@ -202,7 +208,7 @@
                 const data = d.data();
                 const partnerEntry = Object.entries(data.participants || {}).find(([id]) => id !== uid);
                 const partnerUid  = partnerEntry?.[0] ?? '';
-                const partnerData = partnerEntry?.[1] as any ?? {};
+                const partnerData = (partnerEntry?.[1] as ParticipantData) ?? {};
                 return {
                     id: d.id,
                     partner: { uid: partnerUid, username: partnerData.username ?? 'Unknown',
