@@ -2,7 +2,8 @@
     import { auth, db } from "$lib/firebase";
     import {
         signInWithEmailAndPassword,
-        signInWithPopup,
+        signInWithRedirect,
+        getRedirectResult,
         GoogleAuthProvider,
         sendPasswordResetEmail
     } from "firebase/auth";
@@ -31,8 +32,108 @@
     const TURNSTILE_SITE_KEY = "0x4AAAAAACYHm8usBkEdoF37";
 
     const opacity = tweened(0, { duration: 400, easing: quintOut });
-    onMount(() => {
+    onMount(async () => {
         opacity.set(1);
+
+        try {
+            googleLoading = true;
+            const result = await getRedirectResult(auth);
+            if (result && result.user) {
+                const user = result.user;
+                console.log("✅ Google Auth Redirect:", user.uid);
+                await user.getIdToken(true);
+                const userDocRef = doc(db, "users", user.uid);
+                let userDocSnap = await getDoc(userDocRef);
+
+                if (!userDocSnap.exists()) {
+                    console.log("📝 Новый Google юзер, создаём профиль...");
+                    let generatedUsername = user.displayName || '';
+                    generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
+                    if (generatedUsername.length < 3) generatedUsername = `user_${user.uid.substring(0, 8)}`;
+                    if (generatedUsername.length > 20) generatedUsername = generatedUsername.substring(0, 20);
+
+                    const isAvailable = await isUsernameAvailable(generatedUsername);
+                    if (!isAvailable) {
+                        const randomSuffix = Math.floor(Math.random() * 9999);
+                        generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
+                    }
+
+                    await setDoc(userDocRef, {
+                        username: generatedUsername,
+                        email: user.email || "",
+                        avatar_url: user.photoURL || "",
+                        about_me: "",
+                        social_link: "",
+                        createdAt: serverTimestamp(),
+                        casino_credits: 100,
+                        glitch_shards: 0,
+                        last_daily_bonus: null,
+                        owned_items: [],
+                        daily_streak: 0,
+                        isBanned: false,
+                        emailVerified: user.emailVerified,
+                        turnstileVerified: true
+                    });
+
+                    const profileData = {
+                        uid: user.uid,
+                        username: generatedUsername,
+                        email: user.email || "",
+                        emailVerified: user.emailVerified,
+                        avatar_url: user.photoURL || "",
+                        social_link: "",
+                        about_me: "",
+                        status: "",
+                        casino_credits: 100,
+                        last_daily_bonus: null,
+                        daily_streak: 0,
+                        owned_items: [],
+                        equipped_frame: null,
+                        equipped_badge: null,
+                        equipped_bg: null,
+                        blocked_uids: []
+                    };
+                    userStore.set({ user: profileData, loading: false });
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                } else {
+                    const data = userDocSnap.data();
+                    const profileData = {
+                        uid: user.uid,
+                        username: data.username,
+                        email: user.email || "",
+                        emailVerified: user.emailVerified,
+                        avatar_url: data.avatar_url || "",
+                        social_link: data.social_link || "",
+                        about_me: data.about_me || "",
+                        status: data.status || "",
+                        casino_credits: data.casino_credits ?? 100,
+                        last_daily_bonus: data.last_daily_bonus ? data.last_daily_bonus.toDate() : null,
+                        daily_streak: data.daily_streak || 0,
+                        owned_items: data.owned_items || [],
+                        equipped_frame: data.equipped_frame || null,
+                        equipped_badge: data.equipped_badge || null,
+                        equipped_bg: data.equipped_bg || null,
+                        blocked_uids: data.blocked_uids || []
+                    };
+                    userStore.set({ user: profileData, loading: false });
+                }
+
+                const token = await user.getIdToken();
+                await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idToken: token }),
+                });
+
+                await new Promise(resolve => setTimeout(resolve, 300));
+                goto('/');
+            }
+        } catch (e: any) {
+            console.error("❌ Google вход (Redirect):", e);
+            modal.error("Ошибка", `Не удалось войти через Google: ${e.message}`);
+        } finally {
+            googleLoading = false;
+        }
     });
 
     // ===== 🎭 1 АПРЕЛЯ =====
@@ -203,101 +304,10 @@
         googleLoading = true;
         const provider = new GoogleAuthProvider();
         try {
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
-            console.log("✅ Google Auth:", user.uid);
-            await user.getIdToken(true);
-            const userDocRef = doc(db, "users", user.uid);
-            let userDocSnap = await getDoc(userDocRef);
-            if (!userDocSnap.exists()) {
-                console.log("📝 Новый Google юзер, создаём профиль...");
-                let generatedUsername = user.displayName || '';
-                generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
-                if (generatedUsername.length < 3) generatedUsername = `user_${user.uid.substring(0, 8)}`;
-                if (generatedUsername.length > 20) generatedUsername = generatedUsername.substring(0, 20);
-                const isAvailable = await isUsernameAvailable(generatedUsername);
-                if (!isAvailable) {
-                    const randomSuffix = Math.floor(Math.random() * 9999);
-                    generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
-                }
-                await setDoc(userDocRef, {
-                    username: generatedUsername,
-                    email: user.email || "",
-                    avatar_url: user.photoURL || "",
-                    about_me: "",
-                    social_link: "",
-                    createdAt: serverTimestamp(),
-                    casino_credits: 100,
-                    glitch_shards: 0,
-                    last_daily_bonus: null,
-                    owned_items: [],
-                    daily_streak: 0,
-                    isBanned: false,
-                    emailVerified: user.emailVerified,
-                    turnstileVerified: true
-                });
-                const profileData = {
-                    uid: user.uid,
-                    username: generatedUsername,
-                    email: user.email || "",
-                    emailVerified: user.emailVerified,
-                    avatar_url: user.photoURL || "",
-                    social_link: "",
-                    about_me: "",
-                    status: "",
-                    casino_credits: 100,
-                    last_daily_bonus: null,
-                    daily_streak: 0,
-                    owned_items: [],
-                    equipped_frame: null,
-                    equipped_badge: null,
-                    equipped_bg: null,
-                    blocked_uids: []
-                };
-                userStore.set({ user: profileData, loading: false });
-                await new Promise(resolve => setTimeout(resolve, 300));
-            } else {
-                const data = userDocSnap.data();
-                const profileData = {
-                    uid: user.uid,
-                    username: data.username,
-                    email: user.email || "",
-                    emailVerified: user.emailVerified,
-                    avatar_url: data.avatar_url || "",
-                    social_link: data.social_link || "",
-                    about_me: data.about_me || "",
-                    status: data.status || "",
-                    casino_credits: data.casino_credits ?? 100,
-                    last_daily_bonus: data.last_daily_bonus ? data.last_daily_bonus.toDate() : null,
-                    daily_streak: data.daily_streak || 0,
-                    owned_items: data.owned_items || [],
-                    equipped_frame: data.equipped_frame || null,
-                    equipped_badge: data.equipped_badge || null,
-                    equipped_bg: data.equipped_bg || null,
-                    blocked_uids: data.blocked_uids || []
-                };
-                userStore.set({ user: profileData, loading: false });
-            }
-            const token = await user.getIdToken();
-            await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: token }),
-            });
-            await new Promise(resolve => setTimeout(resolve, 300));
-            goto('/');
+            await signInWithRedirect(auth, provider);
         } catch (e: any) {
             console.error("❌ Google вход:", e);
-            if (e.code === 'permission-denied' || e.message.includes('insufficient permissions')) {
-                modal.error("Ошибка создания профиля", "Не удалось создать профиль. Попробуйте снова.");
-            } else if (e.code === 'auth/popup-blocked') {
-                modal.error("Окно заблокировано", "Разрешите всплывающие окна.");
-            } else if (e.code === 'auth/cancelled-popup-request') {
-                console.log("Отменено");
-            } else {
-                modal.error("Ошибка", `Не удалось войти: ${e.message}`);
-            }
-        } finally {
+            modal.error("Ошибка", `Не удалось начать вход через Google: ${e.message}`);
             googleLoading = false;
         }
     }
