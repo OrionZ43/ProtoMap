@@ -7,6 +7,7 @@ const config = {
     kit: {
         adapter: adapter(),
         csp: {
+            mode: 'hash',
             directives: {
                 'script-src': ["'self'", 'https://apis.google.com', 'https://www.gstatic.com', 'https://challenges.cloudflare.com', 'https://www.google.com/recaptcha/', 'https://www.google.com', "'unsafe-inline'", "'unsafe-eval'"],
                 'frame-src': ["'self'", 'https://*.firebaseapp.com', 'https://apis.google.com', 'https://challenges.cloudflare.com', 'https://www.google.com']
