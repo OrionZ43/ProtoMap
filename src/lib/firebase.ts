@@ -32,10 +32,11 @@ export const functions = getFunctions(app, 'us-central1');
 
 // 2. Инициализация App Check (Только на клиенте)
 if (browser) {
-    // В режиме разработки (localhost) включаем дебаг-токен, чтобы тебя не банило
-    // Firebase выведет этот токен в консоль браузера, его нужно будет добавить в Firebase Console
+    // В режиме разработки (localhost) включаем дебаг-токен, чтобы избежать лимитов и блокировок 403.
+    // Firebase выведет этот токен в консоль браузера, его нужно будет добавить в Firebase Console.
     if (dev) {
-        (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+        const debugToken = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN;
+        (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken ? debugToken : true;
     }
 
     try {
