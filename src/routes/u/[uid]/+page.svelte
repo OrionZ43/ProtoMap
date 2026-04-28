@@ -2,7 +2,7 @@
     import { userStore } from '$lib/stores';
     import type { ActionData, PageData } from './$types';
     import NeonButton from '$lib/components/NeonButton.svelte';
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
@@ -20,6 +20,28 @@
     import { AudioManager } from '$lib/client/audioManager';
     import { page } from '$app/stores';
     import { chat } from '$lib/stores';
+    import { onValue, ref, off } from 'firebase/database';
+    import { rtdb } from '$lib/firebase';
+
+    function formatRelativeTime(timestamp: number) {
+        if (!timestamp) return '';
+        const now = Date.now();
+        const diffInSeconds = Math.floor((now - timestamp) / 1000);
+
+        if (diffInSeconds < 60) return 'только что';
+        if (diffInSeconds < 3600) {
+            const m = Math.floor(diffInSeconds / 60);
+            return `${m} м. назад`;
+        }
+        if (diffInSeconds < 86400) {
+            const h = Math.floor(diffInSeconds / 3600);
+            return `${h} ч. назад`;
+        }
+
+        const date = new Date(timestamp);
+        return date.toLocaleDateString('ru-RU');
+    }
+
 
     // Открыть личку прямо с профиля
     function openDM() {
@@ -44,6 +66,26 @@
     const containerOpacity = tweened(0, { duration: 500, easing: quintOut });
 
     const translate = (key: string, vars = {}) => get(t)(key, vars);
+
+    let partnerPresence: { state: string, last_changed: number } | null = null;
+    let presenceUnsubscribe: (() => void) | null = null;
+
+    // Реактивная подписка на статус профиля
+    $: {
+        if (browser && rtdb && data?.profile?.uid) {
+            if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; }
+            const statusRef = ref(rtdb, `status/${data.profile.uid}`);
+            const cb = onValue(statusRef, (snap) => {
+                if (snap.exists()) {
+                    partnerPresence = snap.val();
+                } else {
+                    partnerPresence = null;
+                }
+            });
+            presenceUnsubscribe = () => off(statusRef, 'value', cb);
+        }
+    }
+
 
     function getOptimizedAvatar(url: string | null | undefined, size: number = 100): string {
         if (!url) return '';
@@ -71,6 +113,13 @@
             { id: 'other', label: translate('profile.reasons.other'), text: 'Other' }
         ];
     }
+
+
+    onDestroy(() => {
+        if (presenceUnsubscribe) {
+            presenceUnsubscribe();
+        }
+    });
 
     onMount(async () => {
         if (browser) {
@@ -431,7 +480,16 @@
                         class="profile-avatar"
                     />
                 </div>
+
                 <h2 class="profile-username font-display">{data.profile.username}</h2>
+                {#if partnerPresence}
+                    {#if partnerPresence.state === 'online'}
+                        <div class="presence-indicator online">[ ONLINE ]</div>
+                    {:else if partnerPresence.last_changed}
+                        <div class="presence-indicator offline">Был(а) в сети: {formatRelativeTime(partnerPresence.last_changed)}</div>
+                    {/if}
+                {/if}
+
             </div>
 
             <div class="profile-content">
@@ -689,7 +747,13 @@
 
     .profile-header { @apply flex flex-col items-center text-center p-6; }
     .profile-avatar { @apply w-32 h-32 rounded-full object-cover mb-4; border: 4px solid var(--cyber-yellow); box-shadow: 0 0 20px var(--cyber-yellow); }
+
     .profile-username { @apply text-4xl font-bold text-white break-words; }
+
+    .presence-indicator { font-family: 'Chakra Petch', monospace; font-size: 0.85rem; margin-top: 0.25rem; }
+    .presence-indicator.online { color: #39ff14; text-shadow: 0 0 8px #39ff14; font-weight: bold; }
+    .presence-indicator.offline { color: #94a3b8; }
+
 
     .profile-content { @apply p-6 text-left; }
     .profile-section { @apply pb-6 mb-6; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }

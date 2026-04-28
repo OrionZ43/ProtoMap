@@ -4,6 +4,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { browser } from '$app/environment';
 import { doc, onSnapshot, type Unsubscribe } from 'firebase/firestore';
 import { db } from '$lib/firebase';
+import { initPresence, setOffline } from '$lib/client/presence';
 
 export type UserProfile = {
     uid: string;
@@ -35,6 +36,7 @@ export const userStore: Writable<AuthStore> = writable({
 });
 
 let profileUnsubscribe: Unsubscribe | null = null;
+let lastUid: string | null = null;
 
 onAuthStateChanged(auth, async (userAuth: User | null) => {
     // Чистим старую подписку при любом изменении Auth
@@ -45,6 +47,12 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
 
     if (!userAuth) {
         // Логика выхода (сброс кук и стора)
+
+        if (lastUid) {
+            setOffline(lastUid);
+            lastUid = null;
+        }
+
         if (browser) {
             try {
                 await fetch('/api/auth', { method: 'DELETE' });
@@ -56,9 +64,15 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
         return;
     }
 
+
+    lastUid = userAuth.uid;
+    initPresence(userAuth.uid);
+
     try {
         // Синхронизация сессии для SSR
+
         const token = await userAuth.getIdToken(true);
+
         if (browser) {
             try {
                 await fetch('/api/auth', {
