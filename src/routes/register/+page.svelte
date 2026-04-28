@@ -1,6 +1,6 @@
 <script lang="ts">
     import { auth, db } from "$lib/firebase";
-    import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, getRedirectResult, GoogleAuthProvider } from "firebase/auth";
+    import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
     import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
     import { getFunctions, httpsCallable } from "firebase/functions";
     import { goto } from "$app/navigation";
@@ -27,59 +27,8 @@
 
     const opacity = tweened(0, { duration: 400, easing: quintOut });
     
-    onMount(async () => {
+    onMount(() => {
         opacity.set(1);
-
-        try {
-            googleLoading = true;
-            const result = await getRedirectResult(auth);
-            if (result && result.user) {
-                const user = result.user;
-
-                const userDocRef = doc(db, "users", user.uid);
-                let userDocSnap = await getDoc(userDocRef);
-
-                if (!userDocSnap.exists()) {
-                    let generatedUsername = user.displayName || '';
-                    generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
-
-                    if (generatedUsername.length < 3) generatedUsername = `user_${user.uid.substring(0, 8)}`;
-                    if (generatedUsername.length > 20) generatedUsername = generatedUsername.substring(0, 20);
-
-                    const isAvailable = await isUsernameAvailable(generatedUsername);
-                    if (!isAvailable) {
-                        const randomSuffix = Math.floor(Math.random() * 9999);
-                        generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
-                    }
-
-                    await setDoc(userDocRef, {
-                        username: generatedUsername,
-                        email: user.email || "",
-                        avatar_url: user.photoURL || "",
-                        about_me: "",
-                        social_link: "",
-                        createdAt: serverTimestamp(),
-                        casino_credits: 100,
-                        glitch_shards: 0,
-                        last_daily_bonus: null,
-                        owned_items: [],
-                        daily_streak: 0,
-                        isBanned: false,
-                        emailVerified: user.emailVerified,
-                        turnstileVerified: true
-                    });
-
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-
-                goto('/');
-            }
-        } catch (e: any) {
-            console.error("❌ Google вход (Redirect):", e);
-            modal.error("Ошибка", e.message || "Не удалось войти через Google.");
-        } finally {
-            googleLoading = false;
-        }
     });
 
     function handleTurnstileVerified(event: CustomEvent) {
@@ -173,10 +122,60 @@
         const provider = new GoogleAuthProvider();
 
         try {
-            await signInWithRedirect(auth, provider);
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            const userDocRef = doc(db, "users", user.uid);
+            let userDocSnap = await getDoc(userDocRef);
+
+            if (!userDocSnap.exists()) {
+                let generatedUsername = user.displayName || '';
+                generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
+
+                if (generatedUsername.length < 3) generatedUsername = `user_${user.uid.substring(0, 8)}`;
+                if (generatedUsername.length > 20) generatedUsername = generatedUsername.substring(0, 20);
+
+                const isAvailable = await isUsernameAvailable(generatedUsername);
+                if (!isAvailable) {
+                    const randomSuffix = Math.floor(Math.random() * 9999);
+                    generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
+                }
+
+                await setDoc(userDocRef, {
+                    username: generatedUsername,
+                    email: user.email || "",
+                    avatar_url: user.photoURL || "",
+                    about_me: "",
+                    social_link: "",
+                    createdAt: serverTimestamp(),
+                    casino_credits: 100,
+                    glitch_shards: 0,
+                    last_daily_bonus: null,
+                    owned_items: [],
+                    daily_streak: 0,
+                    isBanned: false,
+                    emailVerified: user.emailVerified,
+                    turnstileVerified: true
+                });
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            goto('/');
         } catch (e: any) {
             console.error("❌ Google вход:", e);
-            modal.error("Ошибка", e.message || "Не удалось начать вход через Google.");
+            if (e.code === 'auth/popup-blocked') {
+                modal.error(
+                    "Всплывающее окно заблокировано",
+                    "Ваш браузер заблокировал окно авторизации Google. \n\n" +
+                    "Пожалуйста, найдите значок заблокированного окна в правой части адресной строки (сверху экрана), " +
+                    "нажмите на него и выберите «Всегда разрешать всплывающие окна». " +
+                    "Затем нажмите кнопку входа еще раз."
+                );
+            } else {
+                modal.error("Ошибка", e.message || "Не удалось войти через Google.");
+            }
+        } finally {
             googleLoading = false;
         }
     }
