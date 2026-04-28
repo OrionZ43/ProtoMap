@@ -16,7 +16,8 @@
         type Unsubscribe
     } from 'firebase/firestore';
     import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-    import { db } from '$lib/firebase';
+    import { db, rtdb } from '$lib/firebase';
+    import { onValue, ref, off } from 'firebase/database';
     import VoiceMessage from '$lib/components/chat/VoiceMessage.svelte';
 
 // ── Загрузка стикер-паков из mobileapp/sticker_packs ─────────────────
@@ -32,6 +33,53 @@
     let showStickerPicker = false;
     let hoveredMsg: string | null = null;
     let reactionPanelMsg: string | null = null;
+
+    let partnerPresence: { state: string, last_changed: number } | null = null;
+    let presenceUnsubscribe: (() => void) | null = null;
+
+    $: if ($activeChat?.partner?.uid) {
+        if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; }
+        if (rtdb) {
+            const statusRef = ref(rtdb, `status/${$activeChat.partner.uid}`);
+            const cb = onValue(statusRef, (snap) => {
+                if (snap.exists()) {
+                    partnerPresence = snap.val();
+                } else {
+                    partnerPresence = null;
+                }
+            });
+            presenceUnsubscribe = () => off(statusRef, 'value', cb);
+        }
+    } else {
+        if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; }
+        partnerPresence = null;
+    }
+
+    onDestroy(() => {
+        if (presenceUnsubscribe) {
+            presenceUnsubscribe();
+        }
+    });
+
+    function formatRelativeTime(timestamp: number) {
+        if (!timestamp) return '';
+        const now = Date.now();
+        const diffInSeconds = Math.floor((now - timestamp) / 1000);
+
+        if (diffInSeconds < 60) return 'только что';
+        if (diffInSeconds < 3600) {
+            const m = Math.floor(diffInSeconds / 60);
+            return `${m} м. назад`;
+        }
+        if (diffInSeconds < 86400) {
+            const h = Math.floor(diffInSeconds / 3600);
+            return `${h} ч. назад`;
+        }
+
+        const date = new Date(timestamp);
+        return date.toLocaleDateString('ru-RU');
+    }
+
     let messagesWindow: HTMLDivElement;
     let fileInputEl: HTMLInputElement;
     let mediaRecorder: MediaRecorder | null = null;
@@ -426,7 +474,18 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
                     {:else}
                         <img src={$activeChat.partner.avatarUrl || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$activeChat.partner.username}`}
                              alt="" class="partner-ava" />
-                        <a href="/u/{$activeChat.partner.uid}" class="partner-name">{$activeChat.partner.username}</a>
+
+                        <div class="chat-partner-info">
+                            <a href="/u/{$activeChat.partner.uid}" class="partner-name">{$activeChat.partner.username}</a>
+                            {#if partnerPresence}
+                                {#if partnerPresence.state === 'online'}
+                                    <span class="presence-dot online"></span>
+                                {:else if partnerPresence.last_changed}
+                                    <span class="presence-text">Был(а) в сети: {formatRelativeTime(partnerPresence.last_changed)}</span>
+                                {/if}
+                            {/if}
+                        </div>
+
                         {#if $partnerTyping}<span class="typing-status">печатает...</span>{/if}
                     {/if}
                 </div>
@@ -624,7 +683,14 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
     .chat-header { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; background: rgba(9,11,17,0.9); }
     .chat-header-info { display: flex; align-items: center; gap: 0.65rem; }
     .partner-ava { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+
     .partner-name { font-size: 0.95rem; font-weight: 700; color: #e2e8f0; text-decoration: none; }
+
+    .chat-partner-info { display: flex; align-items: baseline; gap: 0.4rem; }
+    .presence-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .presence-dot.online { background-color: #39ff14; box-shadow: 0 0 5px #39ff14; }
+    .presence-text { font-size: 0.65rem; color: #64748b; font-family: 'Chakra Petch', monospace; }
+
     .partner-name:hover { color: var(--cyber-yellow); }
     .fav-icon-sm { width: 34px; height: 34px; border-radius: 50%; background: rgba(252,238,10,0.1); display: flex; align-items: center; justify-content: center; color: var(--cyber-yellow); }
     .typing-status { font-size: 0.72rem; color: #64748b; font-style: italic; }

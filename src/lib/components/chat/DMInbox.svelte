@@ -1,7 +1,8 @@
 <!-- src/lib/components/chat/DMInbox.svelte -->
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte';
-    import { db } from '$lib/firebase';
+    import { db, rtdb } from '$lib/firebase';
+    import { onValue, ref, off } from 'firebase/database';
     import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
     import {
         collection, query, where, orderBy, limit, onSnapshot, doc, getDoc, getDocs,
@@ -538,7 +539,54 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
 
     const QUICK_EMOJI = ['❤️','🔥','😂','👍','😮'];
     let hoveredMsg: string | null = null;
-    let reactionPanelMsg: string | null = null; // ID сообщения с открытой панелью реакций
+    let reactionPanelMsg: string | null = null;
+
+    let partnerPresence: { state: string, last_changed: number } | null = null;
+    let presenceUnsubscribe: (() => void) | null = null;
+
+    $: if (activeChat?.partner?.uid) {
+        if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; }
+        if (rtdb) {
+            const statusRef = ref(rtdb, `status/${activeChat.partner.uid}`);
+            const cb = onValue(statusRef, (snap) => {
+                if (snap.exists()) {
+                    partnerPresence = snap.val();
+                } else {
+                    partnerPresence = null;
+                }
+            });
+            presenceUnsubscribe = () => off(statusRef, 'value', cb);
+        }
+    } else {
+        if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; }
+        partnerPresence = null;
+    }
+
+    onDestroy(() => {
+        if (presenceUnsubscribe) {
+            presenceUnsubscribe();
+        }
+    });
+
+    function formatRelativeTime(timestamp: number) {
+        if (!timestamp) return '';
+        const now = Date.now();
+        const diffInSeconds = Math.floor((now - timestamp) / 1000);
+
+        if (diffInSeconds < 60) return 'только что';
+        if (diffInSeconds < 3600) {
+            const m = Math.floor(diffInSeconds / 60);
+            return `${m} м. назад`;
+        }
+        if (diffInSeconds < 86400) {
+            const h = Math.floor(diffInSeconds / 3600);
+            return `${h} ч. назад`;
+        }
+
+        const date = new Date(timestamp);
+        return date.toLocaleDateString('ru-RU');
+    }
+ // ID сообщения с открытой панелью реакций
 
     function toggleReactionPanel(msgId: string, e: MouseEvent) {
         e.stopPropagation();
@@ -621,7 +669,18 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
                 <img src={activeChat.partner.avatarUrl || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${activeChat.partner.username}`}
                      alt={activeChat.partner.username} class="avatar" />
             </div>
-            <a href="/u/{activeChat.partner.uid}" class="dm-partner-name">{activeChat.partner.username}</a>
+
+            <div class="dm-partner-info">
+                <a href="/u/{activeChat.partner.uid}" class="dm-partner-name">{activeChat.partner.username}</a>
+                {#if partnerPresence}
+                    {#if partnerPresence.state === 'online'}
+                        <span class="presence-dot online"></span>
+                    {:else if partnerPresence.last_changed}
+                        <span class="presence-text">Был(а) в сети: {formatRelativeTime(partnerPresence.last_changed)}</span>
+                    {/if}
+                {/if}
+            </div>
+
         {/if}
     </div>
 
@@ -871,7 +930,14 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
     .dm-header { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
     .back-btn { color: #94a3b8; padding: 0.25rem; border-radius: 4px; transition: color 0.2s; }
     .back-btn:hover { color: var(--cyber-yellow); }
+
     .dm-partner-name { font-size: 0.9rem; font-weight: 700; color: #e2e8f0; text-decoration: none; }
+
+    .dm-partner-info { display: flex; align-items: baseline; gap: 0.4rem; }
+    .presence-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .presence-dot.online { background-color: #39ff14; box-shadow: 0 0 5px #39ff14; }
+    .presence-text { font-size: 0.65rem; color: #64748b; font-family: 'Chakra Petch', monospace; }
+
     .dm-partner-name:hover { color: var(--cyber-yellow); text-decoration: underline; }
 
     /* ── Лента ──────────────────────────────────────────────────────── */
