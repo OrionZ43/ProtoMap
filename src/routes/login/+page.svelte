@@ -1,11 +1,12 @@
 <script lang="ts">
-    import { auth, db } from "$lib/firebase";
+    import { auth, db, appCheck } from "$lib/firebase";
     import {
         signInWithEmailAndPassword,
         signInWithPopup,
         GoogleAuthProvider,
         sendPasswordResetEmail
     } from "firebase/auth";
+    import { getToken } from "firebase/app-check";
     import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
     import { goto } from "$app/navigation";
     import NeonButton from '$lib/components/NeonButton.svelte';
@@ -25,14 +26,32 @@
     let googleLoading = false;
     let isResetMode = false;
 
+    // Флаг готовности App Check токена — кнопка Google заблокирована до прогрева
+    let appCheckReady = false;
+
     let turnstileToken = '';
     let turnstileVerified = false;
 
     const TURNSTILE_SITE_KEY = "0x4AAAAAACYHm8usBkEdoF37";
 
     const opacity = tweened(0, { duration: 400, easing: quintOut });
-    onMount(() => {
+
+    onMount(async () => {
         opacity.set(1);
+
+        // Прогреваем App Check токен ДО того как юзер нажмёт кнопку.
+        // Без этого signInWithPopup уходит за токеном асинхронно,
+        // браузер теряет контекст пользовательского жеста и блокирует попап.
+        if (appCheck) {
+            try {
+                await getToken(appCheck, false);
+                console.log("[AppCheck] Token pre-warmed ✅");
+            } catch (e) {
+                // Не критично — пробуем войти в любом случае
+                console.warn("[AppCheck] Pre-warm failed, will retry on click:", e);
+            }
+        }
+        appCheckReady = true;
     });
 
     // ===== 🎭 1 АПРЕЛЯ =====
@@ -41,13 +60,9 @@
         return now.getMonth() === 3 && now.getDate() === 1;
     }
 
-    // Флаг: кнопка Госуслуг видима
     let gosuslugiVisible = isAprilFools();
-    // Флаг: показываем модалку "согласия"
     let showGosModal = false;
-    // Флаг: модалка "обработки"
     let gosProcessing = false;
-    // Счётчик прогресса фейковой загрузки
     let gosProgress = 0;
     let gosProgressInterval: ReturnType<typeof setInterval>;
 
@@ -56,13 +71,11 @@
     }
 
     function declineGos() {
-        // Отказались — кнопка обиженно исчезает
         showGosModal = false;
         gosuslugiVisible = false;
     }
 
     async function acceptGos() {
-        // Принять — запускаем фейковый прогресс "передачи ОЗУ"
         showGosModal = false;
         gosProcessing = true;
         gosProgress = 0;
@@ -72,7 +85,6 @@
             if (gosProgress >= 100) {
                 gosProgress = 100;
                 clearInterval(gosProgressInterval);
-                // Через 600мс скрываем кнопку и даём нормально войти
                 setTimeout(() => {
                     gosProcessing = false;
                     gosuslugiVisible = false;
@@ -200,7 +212,19 @@
             modal.error("Требуется проверка", "Пожалуйста, подтвердите, что вы не робот.");
             return;
         }
+
         googleLoading = true;
+
+        // Если токен ещё не прогрет (страница только открылась) — ждём ещё раз
+        // Это гарантирует, что signInWithPopup сработает синхронно без задержки на App Check
+        if (appCheck && !appCheckReady) {
+            try {
+                await getToken(appCheck, false);
+            } catch (e) {
+                console.warn("[AppCheck] Token fetch on click failed:", e);
+            }
+        }
+
         const provider = new GoogleAuthProvider();
         try {
             const result = await signInWithPopup(auth, provider);
@@ -291,7 +315,7 @@
             if (e.code === 'permission-denied' || e.message.includes('insufficient permissions')) {
                 modal.error("Ошибка создания профиля", "Не удалось создать профиль. Попробуйте снова.");
             } else if (e.code === 'auth/popup-blocked') {
-                modal.error("Окно заблокировано", "Разрешите всплывающие окна.");
+                modal.error("Окно заблокировано", "Разрешите всплывающие окна в настройках браузера и попробуйте снова.");
             } else if (e.code === 'auth/cancelled-popup-request') {
                 console.log("Отменено");
             } else {
@@ -316,7 +340,6 @@
 {#if showGosModal}
     <div class="gos-overlay" transition:fade={{ duration: 150 }}>
         <div class="gos-modal" transition:fade={{ duration: 200 }}>
-            <!-- Казённый синий заголовок -->
             <div class="gos-header">
                 <span class="gos-logo">🏛️</span>
                 <span>ПОРТАЛ ГОСУДАРСТВЕННЫХ УСЛУГ</span>
@@ -327,7 +350,6 @@
                 <p class="gos-title">СОГЛАСИЕ НА СБОР И АНАЛИЗ ДАННЫХ</p>
                 <p class="gos-subtitle">Форма № ПМ-1337/А «Оборот синтетических личностей и тостеров»</p>
 
-                <!-- Контейнер со скроллом для эффекта "Войны и Мира" -->
                 <div class="gos-scroll-box">
                     <p class="text-sm font-bold mb-2">Для успешной интеграции с реестром МАКС и получения электронного гражданства ProtoMap, вы обязаны предоставить в Z43 Studios следующие данные:</p>
 
@@ -452,13 +474,26 @@
         </div>
 
         <div class="text-center" transition:slide>
-            <button on:click={handleGoogleLogin} disabled={googleLoading || loading || !turnstileVerified} type="button" title="Войти с помощью Google" class="google-btn">
-                <svg class="w-6 h-6" viewBox="0 0 48 48">
-                    <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
-                    <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
-                    <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.223,0-9.65-3.657-11.303-8l-6.571,4.819C9.656,39.663,16.318,44,24,44z"></path>
-                    <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C41.38,36.435,44,30.836,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
-                </svg>
+            <button
+                on:click={handleGoogleLogin}
+                disabled={googleLoading || loading || !turnstileVerified || !appCheckReady}
+                type="button"
+                title={appCheckReady ? "Войти с помощью Google" : "Подготовка..."}
+                class="google-btn"
+            >
+                {#if !appCheckReady}
+                    <svg class="w-5 h-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                {:else}
+                    <svg class="w-6 h-6" viewBox="0 0 48 48">
+                        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
+                        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
+                        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.223,0-9.65-3.657-11.303-8l-6.571,4.819C9.656,39.663,16.318,44,24,44z"></path>
+                        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C41.38,36.435,44,30.836,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+                    </svg>
+                {/if}
             </button>
         </div>
 
@@ -485,9 +520,6 @@
 </div>
 
 <style>
-    /* ============================================
-       ОРИГИНАЛЬНЫЕ СТИЛИ (без изменений)
-    ============================================ */
     .form-container {
         transition: opacity 0.4s ease-in-out;
     }
@@ -526,7 +558,6 @@
        🎭 СТИЛИ 1 АПРЕЛЯ — КНОПКА ГОСУСЛУГИ
     ============================================ */
 
-    /* Обёртка: криво приклеена, чуть повёрнута */
     .gos-btn-wrapper {
         margin-top: 1.5rem;
         text-align: center;
@@ -534,24 +565,21 @@
         position: relative;
     }
 
-    /* Сама кнопка — вырвиглазная сине-красная, казённый шрифт */
     .gosuslugi-btn {
         display: inline-block;
         padding: 10px 20px;
-        font-family: 'Arial', 'Times New Roman', serif; /* намеренно НЕ киберпанк */
+        font-family: 'Arial', 'Times New Roman', serif;
         font-size: 0.95rem;
         font-weight: bold;
         letter-spacing: 0.03em;
         color: #ffffff;
         background: linear-gradient(135deg, #003087 45%, #cc0000 55%);
         border: 3px solid #cc0000;
-        border-radius: 2px; /* почти квадратная, как в 2005 */
+        border-radius: 2px;
         cursor: pointer;
-        /* Wobble — кнопка слегка трясётся, будто прибита степлером */
         animation: gosWobble 3.5s ease-in-out infinite;
         box-shadow: 3px 3px 0 #000, 0 0 12px rgba(204, 0, 0, 0.5);
         position: relative;
-        /* Скотч-эффект — псевдоэлемент приклеен сверху */
     }
     .gosuslugi-btn::before {
         content: '';
@@ -572,7 +600,6 @@
         transform: scale(0.97);
     }
 
-    /* "Одобрено Минцифры" — маленькая казённая подпись */
     .gos-badge {
         margin-top: 4px;
         font-family: Arial, sans-serif;
@@ -598,7 +625,6 @@
        🎭 СТИЛИ 1 АПРЕЛЯ — ОВЕРЛЕЙ И МОДАЛКИ
     ============================================ */
 
-    /* Полупрозрачный оверлей поверх всего */
     .gos-overlay {
         position: fixed;
         inset: 0;
@@ -610,9 +636,8 @@
         padding: 1rem;
     }
 
-    /* Казённое окно согласия */
     .gos-modal {
-        background: #f0f0f0; /* намеренно светлый, контраст с сайтом */
+        background: #f0f0f0;
         border: 3px solid #003087;
         max-width: 480px;
         width: 100%;
@@ -650,19 +675,6 @@
         text-align: center;
         color: #666;
         margin-bottom: 14px;
-        font-style: italic;
-    }
-
-    .gos-list p { font-size: 0.82rem; margin-bottom: 6px; }
-    .gos-list ul {
-        padding-left: 1.2rem;
-        list-style: disc;
-        font-size: 0.82rem;
-        line-height: 1.7;
-    }
-    .gos-hint {
-        font-size: 0.7rem;
-        color: #888;
         font-style: italic;
     }
 
@@ -704,7 +716,6 @@
     }
     .gos-btn-accept:hover { background: #002070; }
 
-    /* Экран прогресса передачи ОЗУ */
     .gos-progress-box {
         background: #111;
         border: 2px solid #003087;
@@ -740,45 +751,32 @@
         min-height: 1.2em;
     }
     .gos-scroll-box {
-    max-height: 35vh; /* Ограничиваем высоту, чтобы появился скролл */
-    overflow-y: auto;
-    padding-right: 10px;
-    margin-bottom: 1rem;
-    border: 1px solid #ccc; /* Канцелярская рамочка */
-    background: #f9f9f9;
-    padding: 10px;
-    border-radius: 4px;
-    color: #333;
-    font-family: Arial, sans-serif; /* Убиваем кибер-шрифт для реализма */
-}
+        max-height: 35vh;
+        overflow-y: auto;
+        padding-right: 10px;
+        margin-bottom: 1rem;
+        border: 1px solid #ccc;
+        background: #f9f9f9;
+        padding: 10px;
+        border-radius: 4px;
+        color: #333;
+        font-family: Arial, sans-serif;
+    }
+    .gos-scroll-box::-webkit-scrollbar { width: 6px; }
+    .gos-scroll-box::-webkit-scrollbar-track { background: #e1e1e1; }
+    .gos-scroll-box::-webkit-scrollbar-thumb { background: #a8a8a8; border-radius: 3px; }
 
-/* Стилизация скроллбара под винду/госуслуги */
-.gos-scroll-box::-webkit-scrollbar {
-    width: 6px;
-}
-.gos-scroll-box::-webkit-scrollbar-track {
-    background: #e1e1e1;
-}
-.gos-scroll-box::-webkit-scrollbar-thumb {
-    background: #a8a8a8;
-    border-radius: 3px;
-}
-
-.gos-list {
-    list-style-type: none; /* Убираем стандартные точки, у нас эмодзи */
-    padding-left: 0;
-    margin: 0;
-    font-size: 0.85rem;
-    line-height: 1.4;
-}
-
-.gos-list li {
-    margin-bottom: 8px;
-    padding-bottom: 8px;
-    border-bottom: 1px dashed #ddd; /* Отделяем пункты для "казенности" */
-}
-
-.gos-list li:last-child {
-    border-bottom: none;
-}
+    .gos-list {
+        list-style-type: none;
+        padding-left: 0;
+        margin: 0;
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    .gos-list li {
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px dashed #ddd;
+    }
+    .gos-list li:last-child { border-bottom: none; }
 </style>

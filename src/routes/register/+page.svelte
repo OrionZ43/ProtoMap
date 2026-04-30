@@ -1,6 +1,7 @@
 <script lang="ts">
-    import { auth, db } from "$lib/firebase";
+    import { auth, db, appCheck } from "$lib/firebase";
     import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+    import { getToken } from "firebase/app-check";
     import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
     import { getFunctions, httpsCallable } from "firebase/functions";
     import { goto } from "$app/navigation";
@@ -10,7 +11,7 @@
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
-    import { userStore } from '$lib/stores'; 
+    import { userStore } from '$lib/stores';
     import { t } from 'svelte-i18n';
 
     let email = "";
@@ -20,15 +21,31 @@
     let googleLoading = false;
     let termsAccepted = false;
 
+    // Флаг готовности App Check токена — кнопка Google заблокирована до прогрева
+    let appCheckReady = false;
+
     let turnstileToken = '';
     let turnstileVerified = false;
 
     const TURNSTILE_SITE_KEY = "0x4AAAAAACYHm8usBkEdoF37";
 
     const opacity = tweened(0, { duration: 400, easing: quintOut });
-    
-    onMount(() => {
+
+    onMount(async () => {
         opacity.set(1);
+
+        // Прогреваем App Check токен ДО того как юзер нажмёт кнопку.
+        // Без этого signInWithPopup уходит за токеном асинхронно,
+        // браузер теряет контекст пользовательского жеста и блокирует попап.
+        if (appCheck) {
+            try {
+                await getToken(appCheck, false);
+                console.log("[AppCheck] Token pre-warmed ✅");
+            } catch (e) {
+                console.warn("[AppCheck] Pre-warm failed, will retry on click:", e);
+            }
+        }
+        appCheckReady = true;
     });
 
     function handleTurnstileVerified(event: CustomEvent) {
@@ -73,7 +90,7 @@
             modal.error("Ошибка ввода", "Заполните все поля.");
             return;
         }
-        
+
         loading = true;
 
         const usernameIsAvailable = await isUsernameAvailable(finalUsername);
@@ -119,6 +136,16 @@
         }
 
         googleLoading = true;
+
+        // Если токен ещё не прогрет (страница только открылась) — ждём ещё раз
+        if (appCheck && !appCheckReady) {
+            try {
+                await getToken(appCheck, false);
+            } catch (e) {
+                console.warn("[AppCheck] Token fetch on click failed:", e);
+            }
+        }
+
         const provider = new GoogleAuthProvider();
 
         try {
@@ -158,13 +185,66 @@
                     turnstileVerified: true
                 });
 
-                await new Promise(resolve => setTimeout(resolve, 500));
+                const profileData = {
+                    uid: user.uid,
+                    username: generatedUsername,
+                    email: user.email || "",
+                    emailVerified: user.emailVerified,
+                    avatar_url: user.photoURL || "",
+                    social_link: "",
+                    about_me: "",
+                    status: "",
+                    casino_credits: 100,
+                    last_daily_bonus: null,
+                    daily_streak: 0,
+                    owned_items: [],
+                    equipped_frame: null,
+                    equipped_badge: null,
+                    equipped_bg: null,
+                    blocked_uids: []
+                };
+                userStore.set({ user: profileData, loading: false });
+                await new Promise(resolve => setTimeout(resolve, 300));
+            } else {
+                const data = userDocSnap.data();
+                const profileData = {
+                    uid: user.uid,
+                    username: data.username,
+                    email: user.email || "",
+                    emailVerified: user.emailVerified,
+                    avatar_url: data.avatar_url || "",
+                    social_link: data.social_link || "",
+                    about_me: data.about_me || "",
+                    status: data.status || "",
+                    casino_credits: data.casino_credits ?? 100,
+                    last_daily_bonus: data.last_daily_bonus ? data.last_daily_bonus.toDate() : null,
+                    daily_streak: data.daily_streak || 0,
+                    owned_items: data.owned_items || [],
+                    equipped_frame: data.equipped_frame || null,
+                    equipped_badge: data.equipped_badge || null,
+                    equipped_bg: data.equipped_bg || null,
+                    blocked_uids: data.blocked_uids || []
+                };
+                userStore.set({ user: profileData, loading: false });
             }
 
+            const token = await user.getIdToken();
+            await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: token }),
+            });
+            await new Promise(resolve => setTimeout(resolve, 300));
             goto('/');
         } catch (e: any) {
             console.error("❌ Google вход:", e);
-            modal.error("Ошибка", e.message || "Не удалось войти через Google.");
+            if (e.code === 'auth/popup-blocked') {
+                modal.error("Окно заблокировано", "Разрешите всплывающие окна в настройках браузера и попробуйте снова.");
+            } else if (e.code === 'auth/cancelled-popup-request') {
+                console.log("Отменено");
+            } else {
+                modal.error("Ошибка", e.message || "Не удалось войти через Google.");
+            }
         } finally {
             googleLoading = false;
         }
@@ -237,17 +317,24 @@
     <div class="text-center">
         <button
             on:click={handleGoogleLogin}
-            disabled={googleLoading || loading || !turnstileVerified}
+            disabled={googleLoading || loading || !turnstileVerified || !appCheckReady}
             type="button"
-            title="Войти/Зарегистрироваться с Google"
+            title={appCheckReady ? "Войти/Зарегистрироваться с Google" : "Подготовка..."}
             class="google-btn"
         >
-            <svg class="w-6 h-6" viewBox="0 0 48 48">
-                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
-                <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
-                <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.223,0-9.65-3.657-11.303-8l-6.571,4.819C9.656,39.663,16.318,44,24,44z"></path>
-                <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C41.38,36.435,44,30.836,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
-            </svg>
+            {#if !appCheckReady}
+                <svg class="w-5 h-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                </svg>
+            {:else}
+                <svg class="w-6 h-6" viewBox="0 0 48 48">
+                    <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
+                    <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
+                    <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.223,0-9.65-3.657-11.303-8l-6.571,4.819C9.656,39.663,16.318,44,24,44z"></path>
+                    <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C41.38,36.435,44,30.836,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+                </svg>
+            {/if}
         </button>
     </div>
 

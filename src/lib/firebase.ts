@@ -1,8 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-// 1. Импорты для защиты
-import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken, type AppCheck } from "firebase/app-check";
 import { browser, dev } from '$app/environment';
 
 const firebaseConfig = {
@@ -30,23 +29,25 @@ export const db = getFirestore(app);
 export const rtdb = getDatabase(app);
 export const functions = getFunctions(app, 'us-central1');
 
-// 2. Инициализация App Check (Только на клиенте)
+// Экспортируем инстанс App Check, чтобы страницы могли прогреть токен заранее
+export let appCheck: AppCheck | null = null;
+
 if (browser) {
-    // В режиме разработки (localhost) включаем дебаг-токен, чтобы тебя не банило
-    // Firebase выведет этот токен в консоль браузера, его нужно будет добавить в Firebase Console
     if (dev) {
         (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
     }
 
     try {
-        initializeAppCheck(app, {
-            // Твой Enterprise ключ
+        appCheck = initializeAppCheck(app, {
             provider: new ReCaptchaEnterpriseProvider('6LdUABssAAAAAPr3oiK3j525Wsb5_EjYvxFex13-'),
-
-            // Автоматически обновлять токен в фоне
             isTokenAutoRefreshEnabled: true
         });
         console.log("[Security] App Check shield activated (Enterprise).");
+
+        // Сразу прогреваем токен в фоне — чтобы при первом клике он уже был закэширован
+        getToken(appCheck, false).catch(() => {
+            // Молча игнорируем — прогрев необязателен, просто оптимизация
+        });
     } catch (e) {
         console.error("[Security] App Check failed to load:", e);
     }
