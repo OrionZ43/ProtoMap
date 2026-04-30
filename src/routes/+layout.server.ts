@@ -9,25 +9,44 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
     const isAdmin = locals.user && adminList.includes(locals.user.uid);
 
-    try {
-        const snapshot = await firestoreAdmin.collection('news')
+    // ── Parallel fetch: news + legal versions ────────────────────────────
+    const [newsResult, licensesResult] = await Promise.allSettled([
+
+        firestoreAdmin.collection('news')
             .orderBy('createdAt', 'desc')
             .limit(1)
-            .get();
+            .get(),
 
-        if (!snapshot.empty) {
-            const data = snapshot.docs[0].data();
-            if (data.createdAt) {
-                latestNewsDate = data.createdAt.toDate().toISOString();
-            }
+        // Single doc read — very cheap, ~1 Firestore read unit
+        firestoreAdmin.collection('system').doc('licenses').get(),
+    ]);
+
+    // Process news
+    if (newsResult.status === 'fulfilled' && !newsResult.value.empty) {
+        const data = newsResult.value.docs[0].data();
+        if (data.createdAt) {
+            latestNewsDate = data.createdAt.toDate().toISOString();
         }
-    } catch (e) {
-        console.error("Ошибка получения даты последней новости:", e);
+    } else if (newsResult.status === 'rejected') {
+        console.error('[layout] Failed to load news date:', newsResult.reason);
+    }
+
+    // Process legal versions
+    let legalVersions: { privacy: string; tos: string } = { privacy: '', tos: '' };
+    if (licensesResult.status === 'fulfilled' && licensesResult.value.exists) {
+        const d = licensesResult.value.data() ?? {};
+        legalVersions = {
+            privacy: (d['privacy_policy_version']  as string) ?? '',
+            tos:     (d['terms_of_service_version'] as string) ?? '',
+        };
+    } else if (licensesResult.status === 'rejected') {
+        console.error('[layout] Failed to load legal versions:', licensesResult.reason);
     }
 
     return {
-        user: locals.user,
+        user:          locals.user,
         latestNewsDate,
-        isAdmin
+        isAdmin,
+        legalVersions, // ← new field consumed by LegalUpdateBanner
     };
 };

@@ -2140,3 +2140,72 @@ export const deleteAccount = onCall(async (request) => {
         throw new HttpsError('internal', 'Delete error.');
     }
 });
+
+// ===================================================================
+// 🎁 EVENT: Выдача приветственного бонуса (День Рождения)
+// ===================================================================
+export const claimBirthdayBonus = onCall(async (request) => {
+    // 🔒 Базовые проверки безопасности
+    if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(request);
+    assertEmailVerified(request.auth);
+
+    // Защита от спам-запросов (5 попыток в минуту)
+    await checkGlobalRateLimit(uid, 'birthday_claim', 5, 60 * 1000);
+
+    const { androidId } = request.data;
+    if (!androidId || typeof androidId !== 'string' || androidId.length < 5) {
+        throw new HttpsError('invalid-argument', 'Некорректный идентификатор устройства.');
+    }
+
+    // Хешируем Android ID для сохранения приватности устройства (не храним в открытом виде)
+    const deviceHash = crypto.createHash('sha256').update(androidId).digest('hex');
+
+    const userRef = db.collection('users').doc(uid);
+    const deviceRef = db.collection('system').doc('birthday_bonus_claims').collection('devices').doc(deviceHash);
+
+    try {
+        const result = await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+            const deviceDoc = await t.get(deviceRef);
+
+            if (!userDoc.exists) throw new HttpsError('not-found', 'Пользователь не найден.');
+
+            const userData = userDoc.data()!;
+
+            // 1. Проверка: забирал ли этот аккаунт бонус?
+            if (userData.birthday_bonus_claimed) {
+                throw new HttpsError('already-exists', 'Вы уже получили праздничный бонус на этот аккаунт.');
+            }
+
+            // 2. Проверка: забирали ли бонус с этого устройства?
+            if (deviceDoc.exists) {
+                throw new HttpsError('already-exists', 'Праздничный бонус уже был получен на этом устройстве.');
+            }
+
+            const newBalance = (userData.casino_credits || 0) + 1000;
+
+            // Выдаем баланс и ставим флаг аккаунта
+            t.update(userRef, {
+                casino_credits: newBalance,
+                birthday_bonus_claimed: true
+            });
+
+            // Запоминаем устройство
+            t.set(deviceRef, {
+                uid: uid,
+                claimedAt: FieldValue.serverTimestamp()
+            });
+
+            return { newBalance };
+        });
+
+        return { data: { status: 'success', message: 'Бонус 1000 PC успешно зачислен!', newBalance: result.newBalance } };
+    } catch (e: any) {
+        if (e instanceof HttpsError) throw e;
+        throw new HttpsError('internal', 'Ошибка сервера при выдаче бонуса.');
+    }
+});

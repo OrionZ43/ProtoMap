@@ -6,6 +6,24 @@ type SeasonalEvent = {
 };
 
 const events: SeasonalEvent[] =[
+    // 🎂 ГОДОВЩИНА PROTOMAP (4-10 мая)
+    {
+        name: 'anniversary',
+        isActive: (date) => {
+            const m = date.getMonth();
+            const d = date.getDate();
+            // Месяц 4 = Май (отсчет с нуля)
+            return (m === 4 && d >= 4 && d <= 10);
+        },
+        link: 'https://t.me/proto_map',
+        phrases:[
+            '🎂 Happy 1st Birthday, ProtoMap!',
+            '🎉 Система празднует год!',
+            '//: DEPLOYING CAKE.EXE',
+            '1 year of pure glitch!',
+            '🥳 ПРОТОКОЛ ГОДОВЩИНЫ: АКТИВЕН'
+        ]
+    },
     {
         name: 'Glitch-o-Ween',
         isActive: (date) => {
@@ -64,7 +82,7 @@ const events: SeasonalEvent[] =[
             const d = date.getDate();
             return (m === 3 && d === 1);
         },
-        link: 'https://youtu.be/dQw4w9WgXcQ',
+        link: 'https://t.me/proto_map', // Добавил ссылку, так как в старом коде была незакрытая кавычка (link: ',)
         phrases:[
             'Русификация прошла успешно.',
             'Требуется авторизация через Госуслуги',

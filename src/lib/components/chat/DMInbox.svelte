@@ -1,17 +1,17 @@
 <!-- src/lib/components/chat/DMInbox.svelte -->
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte';
-    import { db, rtdb } from '$lib/firebase';
-    import { onValue, ref, off } from 'firebase/database';
+    import { db } from '$lib/firebase';
     import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
     import {
-        collection, query, where, orderBy, limit, onSnapshot, doc, getDoc, getDocs,
+        collection, query, where, orderBy, limit, onSnapshot, doc,
         setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp,
         increment, arrayUnion, arrayRemove,
         type Unsubscribe, type Timestamp
     } from 'firebase/firestore';
     import { userStore, chat } from '$lib/stores';
-    import { getCached, setCache, upsertMessage, dmCacheVersion } from '$lib/stores/dmCache';
+    import { getCached, setCache } from '$lib/stores/dmCache';
+    import { stickerStore, getStickerUrl } from '$lib/stores/stickerStore';
     import VoiceMessage from '$lib/components/chat/VoiceMessage.svelte';
 
     export let onUnreadChange: (count: number) => void = () => {};
@@ -38,12 +38,13 @@
         author_username: string;
         createdAt: Date;
         is_deleted: boolean;
-        type: string;           // TEXT | IMAGE | VOICE | sticker
+        type: string;
         media_url: string | null;
         sticker_pack_id: string | null;
         sticker_id: string | null;
         reactions: Record<string, string>;
         replyTo: { author_username: string; text: string } | null;
+        read_by?: Record<string, any>;
     };
 
     // ── Состояние ──────────────────────────────────────────────────────────
@@ -56,124 +57,64 @@
     let messagesWindow: HTMLDivElement;
     let inputEl: HTMLTextAreaElement;
     let fileInputEl: HTMLInputElement;
-    let uploadProgress = 0;   // 0–100, показываем прогресс-бар
+    let uploadProgress = 0;
     let isRecording = false;
     let mediaRecorder: MediaRecorder | null = null;
     let audioChunks: Blob[] = [];
     let showStickerPicker = false;
 
-    // Стикер-паки — строятся динамически из Storage
+    // Стикеры из глобального стора (один запрос на всё приложение)
+    $: packs = $stickerStore.packs;
+    let activePack = $stickerStore.packs[0] ?? null;
+    $: if (packs.length > 0 && !activePack) activePack = packs[0];
 
-// ── Загрузка стикер-паков из mobileapp/sticker_packs ─────────────────
-    type StickerPack = { id: string; name: string; folder: string; stickers: string[]; iconUrl: string };
-    let stickerPacks: StickerPack[] = [];
-    let activePack: StickerPack | null = null;
-
-    async function loadStickerPacks() {
-        try {
-            const snap = await getDoc(doc(db, 'mobileapp', 'sticker_packs'));
-            if (!snap.exists()) return;
-            const data = snap.data();
-
-            let rawPacks = data.sticker_packs;
-
-            // 1. В базе лежит СТРОКА! Нам нужно превратить её в объекты.
-            if (typeof rawPacks === 'string') {
-                try {
-                    // Вырезаем кривые лишние запятые перед скобками, чтобы парсер не сломался
-                    let fixedString = rawPacks.replace(/,\s*]/g, ']').replace(/,\s*}/g, '}');
-                    rawPacks = JSON.parse(fixedString);
-                } catch (err) {
-                    console.error("Ошибка парсинга JSON из базы. Строка кривая:", err);
-                    return;
-                }
-            }
-
-            // 2. Достаем нужный массив (у тебя он лежит внутри pack_list)
-            let packList =[];
-            if (rawPacks && Array.isArray(rawPacks.pack_list)) {
-                packList = rawPacks.pack_list;
-            } else if (Array.isArray(rawPacks)) {
-                packList = rawPacks;
-            } else if (rawPacks && typeof rawPacks === 'object') {
-                packList = Object.values(rawPacks);
-            }
-
-            // 3. Собираем паки для отображения
-            const parsedPacks = packList.map(p => {
-                if (!p || typeof p !== 'object' || !p.id) return null;
-
-                const packId = p.id;
-                // Данные о стикерах лежат рядом (например, rawPacks.sp_oriosha)
-                const packData = rawPacks[packId] || data[packId] || {};
-
-                const cleanId = packId.replace(/^(pack_|sp_)/, '');
-                const spFolder = 'sp_' + cleanId;
-                const basePath = packData.base_path || `stickers/${spFolder}`;
-
-                let stickers = packData.stickers || p.stickers ||[];
-                if (!Array.isArray(stickers) || stickers.length === 0) {
-                    const count = packData.count || p.count || 30;
-                    stickers =[];
-                    for (let i = 1; i <= count; i++) {
-                        stickers.push(`${spFolder}_${i}.png`);
-                    }
-                }
-
-                let iconFile = p.icon_file || packData.icon_file || stickers[0] || `${spFolder}_1.png`;
-                if (!String(iconFile).endsWith('.png')) {
-                    iconFile = `${spFolder}_${iconFile}.png`;
-                }
-
-                // Чистим опечатку sp_sp_ в именах иконок
-                iconFile = String(iconFile).replace('sp_sp_', 'sp_');
-
-                return {
-                    id: packId,
-                    name: p.title || packData.title || cleanId,
-                    folder: basePath,
-                    stickers,
-                    iconUrl: `https://firebasestorage.googleapis.com/v0/b/protomap-1e1db.firebasestorage.app/o/${encodeURIComponent(basePath + '/' + iconFile)}?alt=media`
-                };
-            }).filter(Boolean); // Убираем пустые (null)
-
-            stickerPacks = parsedPacks;
-            if (stickerPacks.length > 0) {
-                activePack = stickerPacks[0];
-            }
-
-            console.log("✅ УРА! СТИКЕРЫ УСПЕШНО ЗАГРУЖЕНЫ:", stickerPacks);
-
-        } catch (e) {
-            console.error('[Stickers] load failed:', e);
-        }
-    }
-
-    loadStickerPacks();
-
+    // ── Подписки ───────────────────────────────────────────────────────────
     let unsubInbox: Unsubscribe | null = null;
     let unsubMessages: Unsubscribe | null = null;
+    let unsubTyping: Unsubscribe | null = null;
 
-    onMount(() => subscribeInbox());
-    onDestroy(() => { unsubInbox?.(); unsubMessages?.(); });
+    // FIX: Таймауты typing нужно хранить чтобы очищать при destroy
+    let myTypingTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    onMount(() => {
+        // Ленивая загрузка стикеров — только один запрос на всё приложение
+        stickerStore.load();
+        subscribeInbox();
+    });
+
+    onDestroy(() => {
+        // FIX: Полная очистка всех подписок при размонтировании
+        unsubInbox?.();
+        unsubMessages?.();
+        unsubTyping?.();
+
+        // FIX: Сбрасываем таймеры
+        if (myTypingTimeout) clearTimeout(myTypingTimeout);
+
+        // FIX: Сбрасываем свой typing при уничтожении компонента
+        if (activeChat && $userStore.user) {
+            updateDoc(doc(db, 'chats', activeChat.id), {
+                [`typing.${$userStore.user.uid}`]: false
+            }).catch(() => {});
+        }
+
+        // FIX: Останавливаем запись если компонент убился во время записи
+        if (isRecording && mediaRecorder) {
+            mediaRecorder.stop();
+        }
+    });
 
     export function onTabActivated() {
         if (view === 'chat' && messagesWindow)
             tick().then(() => { messagesWindow.scrollTop = messagesWindow.scrollHeight; });
     }
 
-    // Открыть Избранное (чат с самим собой)
     export function openFavorites() {
         const me = $userStore.user;
         if (!me) return;
         openChat({
-            id:      me.uid + '_' + me.uid, // chatId с самим собой
-            partner: {
-                uid:      me.uid,
-                username: 'Избранное',
-                avatarUrl: null,
-                frameId:  null,
-            },
+            id: me.uid + '_' + me.uid,
+            partner: { uid: me.uid, username: 'Избранное', avatarUrl: null, frameId: null },
             lastMessage: '', lastMessageTimestamp: null, unread: 0,
         });
     }
@@ -218,19 +159,21 @@
                     lastMessageTimestamp: (data.lastMessageTimestamp as Timestamp)?.toDate() ?? null,
                     unread: data.unreadCount?.[uid] ?? 0,
                 };
-            }).filter(c => c.partner.uid !== uid && c.partner.username !== 'Unknown'); // скрываем self-chat и битые чаты
+            }).filter(c => c.partner.uid !== uid && c.partner.username !== 'Unknown');
             onUnreadChange(chats.reduce((s, c) => s + c.unread, 0));
         });
     }
 
     // ── Открыть переписку ─────────────────────────────────────────────────
     function openChat(dmChat: DMChat) {
+        // FIX: Явно отписываемся от предыдущего чата перед открытием нового
         unsubMessages?.();
+        unsubTyping?.();
+
         activeChat = dmChat;
         view = 'chat';
         showStickerPicker = false;
 
-        // Сразу показываем кэш — без мигания загрузки
         const cached = getCached(dmChat.id);
         messages = cached.length > 0 ? cached : [];
 
@@ -255,14 +198,13 @@
                     sticker_id:      data.sticker_id ?? null,
                     reactions:       data.reactions ?? {},
                     replyTo:         data.replyTo ?? null,
+                    read_by:         data.read_by ?? {},
                 };
             }).reverse();
 
-            // Обновляем кэш и список
             setCache(dmChat.id, fresh);
             messages = fresh;
 
-            // Скролл только если это первая загрузка (кэш был пустой)
             if (cached.length === 0) {
                 tick().then(() => { if (messagesWindow) messagesWindow.scrollTop = messagesWindow.scrollHeight; });
             }
@@ -270,22 +212,31 @@
 
         markRead(dmChat.id);
 
-        // Подписываемся на typing партнёра
+        // Typing — только для чужих чатов (не Избранное)
         if (dmChat.partner.uid !== $userStore.user?.uid) {
             subscribeTyping(dmChat.id, dmChat.partner.uid);
         }
     }
 
     function backToInbox() {
-        unsubMessages?.();
-        unsubTyping?.();
-        // Сбрасываем свой typing статус
+        // FIX: Сначала сбрасываем typing, потом отписываемся
         if (activeChat && $userStore.user) {
+            if (myTypingTimeout) clearTimeout(myTypingTimeout);
             updateDoc(doc(db, 'chats', activeChat.id), {
                 [`typing.${$userStore.user.uid}`]: false
             }).catch(() => {});
         }
-        view = 'inbox'; activeChat = null; messages = []; showStickerPicker = false; partnerTyping = false;
+
+        unsubMessages?.();
+        unsubTyping?.();
+        unsubMessages = null;
+        unsubTyping = null;
+
+        view = 'inbox';
+        activeChat = null;
+        messages = [];
+        showStickerPicker = false;
+        partnerTyping = false;
     }
 
     // ── Отправка текста ────────────────────────────────────────────────────
@@ -326,8 +277,12 @@
                     }
                 );
             });
-        } catch (e) { console.error('[DM] image upload:', e); }
-        finally { isSending = false; uploadProgress = 0; (e.target as HTMLInputElement).value = ''; }
+        } catch (err) { console.error('[DM] image upload:', err); }
+        finally {
+            isSending = false;
+            uploadProgress = 0;
+            (e.target as HTMLInputElement).value = '';
+        }
     }
 
     // ── Запись голосового ──────────────────────────────────────────────────
@@ -342,13 +297,13 @@
                 mediaRecorder = new MediaRecorder(stream);
                 mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
                 mediaRecorder.onstop = async () => {
-                    const blob   = new Blob(audioChunks, { type: 'audio/webm' });
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
                     stream.getTracks().forEach(t => t.stop());
                     await _uploadVoice(blob);
                 };
                 mediaRecorder.start();
                 isRecording = true;
-            } catch (e) { console.error('[DM] mic:', e); }
+            } catch (err) { console.error('[DM] mic:', err); }
         }
     }
 
@@ -363,18 +318,16 @@
             await task;
             const url = await getDownloadURL(task.snapshot.ref);
             await _writeMessage({ type: 'VOICE', text: '', media_url: url }, msgRef);
-        } catch (e) { console.error('[DM] voice upload:', e); }
+        } catch (err) { console.error('[DM] voice upload:', err); }
         finally { isSending = false; }
     }
 
-    // ── Отправка стикера ───────────────────────────────────────────────────
     async function sendSticker(packId: string, filename: string) {
         if (!activeChat || !$userStore.user) return;
         showStickerPicker = false;
         await _writeMessage({ type: 'STICKER', text: '', sticker_pack_id: packId, sticker_id: filename });
     }
 
-    // ── Вспомогательная запись сообщения ──────────────────────────────────
     async function _writeMessage(
         fields: Partial<DMMessage> & { type: string },
         existingRef?: any
@@ -401,9 +354,9 @@
             replyTo:         null,
         });
 
-        const preview = fields.type === 'IMAGE' || fields.type === 'image'   ? '📷 Изображение'
-                      : fields.type === 'VOICE' || fields.type === 'voice'   ? '🎙 Голосовое'
-                      : fields.type === 'sticker' || fields.type === 'STICKER' ? '🌟 Стикер'
+        const preview = fields.type === 'IMAGE' || fields.type === 'image'     ? '📷 Изображение'
+                      : fields.type === 'VOICE' || fields.type === 'voice'     ? '🎙 Голосовое'
+                      : fields.type === 'STICKER' || fields.type === 'sticker' ? '🌟 Стикер'
                       : fields.text ?? '';
 
         await setDoc(doc(db, 'chats', chatId), {
@@ -418,7 +371,7 @@
         }, { merge: true });
     }
 
-    // ── Реакция ────────────────────────────────────────────────────────────
+    // ── Реакции ────────────────────────────────────────────────────────────
     async function toggleReaction(msg: DMMessage, emoji: string) {
         const uid = $userStore.user?.uid;
         if (!uid || !activeChat) return;
@@ -442,35 +395,41 @@
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     }
 
-function getStickerUrl(packId: string | undefined, filenameRaw: string | number): string {
-        if (!packId) return '';
-        const pack = stickerPacks.find(p => p.id === packId);
+    // ── Typing indicator ───────────────────────────────────────────────────
+    let partnerTyping = false;
 
-        const cleanId = packId.replace(/^(pack_|sp_)/, '');
-        const spFolder = 'sp_' + cleanId;
+    function onInputTyping() {
+        if (!activeChat || !$userStore.user) return;
+        // FIX: Сбрасываем старый таймер перед установкой нового
+        if (myTypingTimeout) clearTimeout(myTypingTimeout);
 
-        const folder = pack?.folder || `stickers/${spFolder}`;
+        updateDoc(doc(db, 'chats', activeChat.id), {
+            [`typing.${$userStore.user.uid}`]: true
+        }).catch(() => {});
 
-        let file = String(filenameRaw);
-        if (!file.endsWith('.png')) {
-            file = `${spFolder}_${file}.png`;
-        }
-
-        // Автоматически чиним опечатки вроде sp_sp_kess_1.png, которые есть в базе
-        file = file.replace('sp_sp_', 'sp_');
-
-        return `https://firebasestorage.googleapis.com/v0/b/protomap-1e1db.firebasestorage.app/o/${encodeURIComponent(folder + '/' + file)}?alt=media`;
+        const chatId = activeChat.id;
+        const uid = $userStore.user.uid;
+        myTypingTimeout = setTimeout(() => {
+            updateDoc(doc(db, 'chats', chatId), {
+                [`typing.${uid}`]: false
+            }).catch(() => {});
+            myTypingTimeout = null;
+        }, 2000);
     }
 
-    function getStickerPreviewUrl(packId: string, filenameRaw: string | number): string {
-        return getStickerUrl(packId, filenameRaw);
+    function subscribeTyping(chatId: string, partnerId: string) {
+        // FIX: Всегда отписываемся от предыдущего typing перед новой подпиской
+        unsubTyping?.();
+        unsubTyping = onSnapshot(doc(db, 'chats', chatId), snap => {
+            partnerTyping = snap.data()?.typing?.[partnerId] === true;
+        });
     }
 
+    // ── Утилиты ────────────────────────────────────────────────────────────
     function formatTime(date: Date) {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    // ── Разделители по дням ───────────────────────────────────────────────
     function isSameDay(a: Date, b: Date) {
         return a.getFullYear() === b.getFullYear() &&
                a.getMonth()    === b.getMonth()    &&
@@ -483,43 +442,12 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
         yesterday.setDate(yesterday.getDate() - 1);
         if (isSameDay(date, today))     return 'Сегодня';
         if (isSameDay(date, yesterday)) return 'Вчера';
-        return date.toLocaleDateString('ru', { day: 'numeric', month: 'long', year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined });
+        return date.toLocaleDateString('ru', { day: 'numeric', month: 'long' });
     }
 
     function needsDaySeparator(msg: DMMessage, prev: DMMessage | undefined): boolean {
         if (!prev) return true;
         return !isSameDay(msg.createdAt, prev.createdAt);
-    }
-
-    // ── Typing indicator ──────────────────────────────────────────────────
-    // Typing через Firestore
-    let partnerTyping = false;
-    let typingTimeout: ReturnType<typeof setTimeout>;
-    let myTypingTimeout: ReturnType<typeof setTimeout>;
-
-    function onInputTyping() {
-        // Отправляем статус печатания
-        if (!activeChat || !$userStore.user) return;
-        clearTimeout(myTypingTimeout);
-        updateDoc(doc(db, 'chats', activeChat.id), {
-            [`typing.${$userStore.user.uid}`]: true
-        }).catch(() => {});
-        myTypingTimeout = setTimeout(() => {
-            if (!activeChat || !$userStore.user) return;
-            updateDoc(doc(db, 'chats', activeChat.id), {
-                [`typing.${$userStore.user.uid}`]: false
-            }).catch(() => {});
-        }, 2000);
-    }
-
-    // Слушаем typing партнёра
-    let unsubTyping: Unsubscribe | null = null;
-
-    function subscribeTyping(chatId: string, partnerId: string) {
-        unsubTyping?.();
-        unsubTyping = onSnapshot(doc(db, 'chats', chatId), snap => {
-            partnerTyping = snap.data()?.typing?.[partnerId] === true;
-        });
     }
 
     function formatLastSeen(date: Date | null) {
@@ -537,56 +465,14 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
         return Object.entries(c);
     }
 
+    // Обёртка getStickerUrl с текущими паками из стора
+    function getSticker(packId: string | null | undefined, filename: string | number): string {
+        return getStickerUrl(packs, packId, filename);
+    }
+
     const QUICK_EMOJI = ['❤️','🔥','😂','👍','😮'];
     let hoveredMsg: string | null = null;
     let reactionPanelMsg: string | null = null;
-
-    let partnerPresence: { state: string, last_changed: number } | null = null;
-    let presenceUnsubscribe: (() => void) | null = null;
-
-    $: if (activeChat?.partner?.uid) {
-        if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; }
-        if (rtdb) {
-            const statusRef = ref(rtdb, `status/${activeChat.partner.uid}`);
-            const cb = onValue(statusRef, (snap) => {
-                if (snap.exists()) {
-                    partnerPresence = snap.val();
-                } else {
-                    partnerPresence = null;
-                }
-            });
-            presenceUnsubscribe = () => off(statusRef, 'value', cb);
-        }
-    } else {
-        if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; }
-        partnerPresence = null;
-    }
-
-    onDestroy(() => {
-        if (presenceUnsubscribe) {
-            presenceUnsubscribe();
-        }
-    });
-
-    function formatRelativeTime(timestamp: number) {
-        if (!timestamp) return '';
-        const now = Date.now();
-        const diffInSeconds = Math.floor((now - timestamp) / 1000);
-
-        if (diffInSeconds < 60) return 'только что';
-        if (diffInSeconds < 3600) {
-            const m = Math.floor(diffInSeconds / 60);
-            return `${m} м. назад`;
-        }
-        if (diffInSeconds < 86400) {
-            const h = Math.floor(diffInSeconds / 3600);
-            return `${h} ч. назад`;
-        }
-
-        const date = new Date(timestamp);
-        return date.toLocaleDateString('ru-RU');
-    }
- // ID сообщения с открытой панелью реакций
 
     function toggleReactionPanel(msgId: string, e: MouseEvent) {
         e.stopPropagation();
@@ -605,21 +491,19 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
             </div>
         {:else}
             <!-- Избранное — всегда первым -->
-            {#if $userStore.user}
-                <button class="chat-row favorites-row" on:click={openFavorites}>
-                    <div class="favorites-icon">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                            <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z"/>
-                        </svg>
+            <button class="chat-row favorites-row" on:click={openFavorites}>
+                <div class="favorites-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                        <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z"/>
+                    </svg>
+                </div>
+                <div class="chat-info">
+                    <div class="chat-header-row">
+                        <span class="chat-name favorites-name">Избранное</span>
                     </div>
-                    <div class="chat-info">
-                        <div class="chat-header-row">
-                            <span class="chat-name favorites-name">Избранное</span>
-                        </div>
-                        <span class="chat-preview">Заметки, ссылки, файлы для себя</span>
-                    </div>
-                </button>
-            {/if}
+                    <span class="chat-preview">Заметки, ссылки, файлы для себя</span>
+                </div>
+            </button>
 
             {#if chats.length === 0}
                 <div class="empty-state" style="margin-top: 1rem;">
@@ -669,18 +553,7 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
                 <img src={activeChat.partner.avatarUrl || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${activeChat.partner.username}`}
                      alt={activeChat.partner.username} class="avatar" />
             </div>
-
-            <div class="dm-partner-info">
-                <a href="/u/{activeChat.partner.uid}" class="dm-partner-name">{activeChat.partner.username}</a>
-                {#if partnerPresence}
-                    {#if partnerPresence.state === 'online'}
-                        <span class="presence-dot online"></span>
-                    {:else if partnerPresence.last_changed}
-                        <span class="presence-text">Был(а) в сети: {formatRelativeTime(partnerPresence.last_changed)}</span>
-                    {/if}
-                {/if}
-            </div>
-
+            <a href="/u/{activeChat.partner.uid}" class="dm-partner-name">{activeChat.partner.username}</a>
         {/if}
     </div>
 
@@ -693,7 +566,6 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
                 {@const isOwn = msg.author_uid === $userStore.user?.uid}
                 {@const prevMsg = messages[idx - 1]}
 
-                <!-- Разделитель по дням -->
                 {#if needsDaySeparator(msg, prevMsg)}
                     <div class="day-sep">
                         <span>{formatDaySeparator(msg.createdAt)}</span>
@@ -715,7 +587,7 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
                                 <span class="deleted-text">Сообщение удалено</span>
 
                             {:else if (msg.type === 'sticker' || msg.type === 'STICKER') && msg.sticker_pack_id && msg.sticker_id}
-                                <img src={getStickerUrl(msg.sticker_pack_id, msg.sticker_id)}
+                                <img src={getSticker(msg.sticker_pack_id, msg.sticker_id)}
                                      alt="sticker" class="sticker-img" loading="lazy" />
 
                             {:else if (msg.type === 'IMAGE' || msg.type === 'image')}
@@ -724,7 +596,6 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
                                         <img src={msg.media_url} alt="image" class="chat-img" loading="lazy" />
                                     </a>
                                 {:else if msg.text}
-                                    <!-- Старый формат приложения — base64 в поле text -->
                                     <img src="data:image/jpeg;base64,{msg.text}" alt="image" class="chat-img" loading="lazy" />
                                 {:else}
                                     <span class="muted-text">Изображение недоступно</span>
@@ -743,11 +614,10 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
                                 <p class="msg-text">{msg.text}</p>
                             {/if}
 
-                            {#if msg.type !== 'sticker'}
+                            {#if msg.type !== 'sticker' && msg.type !== 'STICKER'}
                                 <span class="msg-time">
                                     {formatTime(msg.createdAt)}
                                     {#if isOwn}
-                                        <!-- Галочки: одна = доставлено, две = прочитано -->
                                         {@const readByPartner = activeChat && msg.read_by?.[activeChat.partner.uid]}
                                         <span class="ticks" class:read={readByPartner}>
                                             {readByPartner ? '✓✓' : '✓'}
@@ -757,7 +627,6 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
                             {/if}
                         </div>
 
-                        <!-- Кнопка 😊 при ховере — справа для чужих, слева для своих -->
                         {#if hoveredMsg === msg.id && $userStore.user}
                             <button class="react-trigger" class:react-own={isOwn}
                                     on:click={(e) => toggleReactionPanel(msg.id, e)}>
@@ -765,7 +634,6 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
                             </button>
                         {/if}
 
-                        <!-- Кнопка копирования — появляется рядом с эмодзи -->
                         {#if hoveredMsg === msg.id && msg.text && $userStore.user}
                             <button class="copy-btn-msg" class:react-own={isOwn}
                                     on:click={() => { navigator.clipboard.writeText(msg.text); hoveredMsg = null; }}
@@ -777,7 +645,6 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
                             </button>
                         {/if}
 
-                        <!-- Панель эмодзи по клику -->
                         {#if reactionPanelMsg === msg.id && $userStore.user}
                             <div class="reaction-panel" class:reaction-panel-own={isOwn}>
                                 {#each QUICK_EMOJI as emoji}
@@ -788,7 +655,6 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
                             </div>
                         {/if}
 
-                        <!-- Реакции под сообщением -->
                         {#if Object.keys(msg.reactions).length > 0}
                             <div class="reactions" class:own={isOwn}>
                                 {#each countReactions(msg.reactions) as [emoji, count]}
@@ -806,7 +672,6 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
         {/if}
     </div>
 
-    <!-- Typing indicator -->
     {#if partnerTyping && activeChat}
         <div class="typing-indicator">
             <div class="typing-avatar">
@@ -823,8 +688,8 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
     {#if showStickerPicker}
         <div class="sticker-picker">
             <div class="pack-tabs">
-                {#each stickerPacks as pack}
-                    <button class="pack-tab" class:active={activePack.id === pack.id}
+                {#each packs as pack (pack.id)}
+                    <button class="pack-tab" class:active={activePack?.id === pack.id}
                             on:click={() => activePack = pack}>
                         <img src={pack.iconUrl} alt={pack.name} class="pack-thumb" />
                     </button>
@@ -832,9 +697,9 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
             </div>
             <div class="sticker-grid">
                 {#if activePack}
-                    {#each activePack.stickers as filename}
+                    {#each activePack.stickers as filename (filename)}
                         <button class="sticker-btn" on:click={() => sendSticker(activePack!.id, filename)}>
-                            <img src={getStickerUrl(activePack!.id, filename)} alt=""
+                            <img src={getSticker(activePack!.id, filename)} alt=""
                                  loading="lazy" class="sticker-preview" />
                         </button>
                     {/each}
@@ -845,7 +710,6 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
 
     <!-- Поле ввода -->
     <div class="input-area">
-        <!-- Прогресс загрузки -->
         {#if uploadProgress > 0}
             <div class="upload-bar">
                 <div class="upload-fill" style="width: {uploadProgress}%"></div>
@@ -853,7 +717,6 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
         {/if}
 
         <div class="input-row">
-            <!-- Прикрепить фото -->
             <button class="tool-btn" title="Изображение" on:click={() => fileInputEl.click()} disabled={isSending}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                     <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
@@ -863,7 +726,6 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
             <input bind:this={fileInputEl} type="file" accept="image/*" class="hidden-file"
                    on:change={handleFileSelect} />
 
-            <!-- Стикеры -->
             <button class="tool-btn" title="Стикеры" on:click={() => showStickerPicker = !showStickerPicker}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                     <circle cx="12" cy="12" r="10"/>
@@ -872,16 +734,13 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
                 </svg>
             </button>
 
-            <!-- Поле текста -->
             <textarea bind:this={inputEl} bind:value={messageText}
                 on:keydown={handleKeydown}
                 on:input={onInputTyping}
                 maxlength="1000" placeholder={isRecording ? '🔴 Запись...' : 'Написать...'}
                 disabled={isSending || isRecording} class="input-field" rows="1"></textarea>
 
-            <!-- Голосовое / Отправить -->
             {#if isRecording}
-                <!-- Анимация записи -->
                 <div class="recording-indicator">
                     <div class="rec-rings">
                         <div class="rec-ring r1"></div>
@@ -930,14 +789,7 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
     .dm-header { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
     .back-btn { color: #94a3b8; padding: 0.25rem; border-radius: 4px; transition: color 0.2s; }
     .back-btn:hover { color: var(--cyber-yellow); }
-
     .dm-partner-name { font-size: 0.9rem; font-weight: 700; color: #e2e8f0; text-decoration: none; }
-
-    .dm-partner-info { display: flex; align-items: baseline; gap: 0.4rem; }
-    .presence-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-    .presence-dot.online { background-color: #39ff14; box-shadow: 0 0 5px #39ff14; }
-    .presence-text { font-size: 0.65rem; color: #64748b; font-family: 'Chakra Petch', monospace; }
-
     .dm-partner-name:hover { color: var(--cyber-yellow); text-decoration: underline; }
 
     /* ── Лента ──────────────────────────────────────────────────────── */
@@ -953,28 +805,17 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
     .msg-text { font-size: 0.85rem; color: #e2e8f0; white-space: pre-wrap; word-break: break-words; line-height: 1.45; }
     .msg-time { position: absolute; bottom: 0.3rem; right: 0.5rem; font-size: 0.6rem; color: #64748b; }
     .deleted-text { font-size: 0.8rem; color: #64748b; font-style: italic; }
-
-    /* ── Изображение ────────────────────────────────────────────────── */
     .chat-img { max-width: 220px; max-height: 200px; border-radius: 8px; object-fit: cover; display: block; cursor: pointer; transition: opacity 0.2s; }
     .chat-img:hover { opacity: 0.9; }
-
-    /* ── Голосовое ──────────────────────────────────────────────────── */
-    .voice-msg { display: flex; align-items: center; gap: 0.5rem; color: var(--cyber-yellow); min-width: 180px; }
-    .audio-player { height: 28px; width: 150px; accent-color: var(--cyber-yellow); flex: 1; }
     .muted-text { font-size: 0.75rem; color: #475569; font-style: italic; }
-
-    /* ── Стикер ─────────────────────────────────────────────────────── */
     .sticker-img { width: 110px; height: 110px; object-fit: contain; display: block; }
 
     /* ── Реакции ────────────────────────────────────────────────────── */
-    /* Кнопка 😊 при ховере */
-    .react-trigger { position: absolute; bottom: -8px; right: -10px; font-size: 0.85rem; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; background: rgba(20,25,35,0.95); border: 1px solid rgba(255,255,255,0.12); border-radius: 50%; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.4); opacity: 0; animation: none; transition: transform 0.15s; }
+    .react-trigger { position: absolute; bottom: -8px; right: -10px; font-size: 0.85rem; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; background: rgba(20,25,35,0.95); border: 1px solid rgba(255,255,255,0.12); border-radius: 50%; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.4); opacity: 0; transition: transform 0.15s; }
     .react-trigger.react-own { right: auto; left: -10px; }
     .msg-bubble-wrap:hover .react-trigger { animation: delayed-show 0.8s forwards; }
     .react-trigger:hover { transform: scale(1.2); }
     @keyframes delayed-show { 0%,79% { opacity: 0; } 80%,100% { opacity: 1; } }
-
-    /* Панель реакций по клику */
     .reaction-panel { position: absolute; bottom: 20px; right: -10px; display: flex; gap: 2px; background: rgba(10,12,18,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 4px 8px; z-index: 20; box-shadow: 0 4px 16px rgba(0,0,0,0.6); animation: pop-in 0.12s cubic-bezier(0.34,1.56,0.64,1); }
     .reaction-panel-own { right: auto; left: -10px; }
     .rp-btn { font-size: 1.25rem; padding: 2px 4px; border-radius: 6px; transition: transform 0.12s; }
@@ -1008,16 +849,12 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
     .tool-btn { flex-shrink: 0; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; color: #64748b; border-radius: 8px; transition: color 0.2s, background 0.2s; }
     .tool-btn:hover { color: #e2e8f0; background: rgba(255,255,255,0.06); }
     .tool-btn:disabled { opacity: 0.35; }
-    /* Анимация записи */
     .recording-indicator { position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .rec-rings { position: absolute; inset: 0; }
     .rec-ring { position: absolute; border-radius: 50%; border: 1.5px solid #ff003c; inset: 0; animation: ring-expand 1.8s ease-out infinite; }
-    .rec-ring.r1 { animation-delay: 0s; }
-    .rec-ring.r2 { animation-delay: 0.6s; }
-    .rec-ring.r3 { animation-delay: 1.2s; }
+    .rec-ring.r1 { animation-delay: 0s; } .rec-ring.r2 { animation-delay: 0.6s; } .rec-ring.r3 { animation-delay: 1.2s; }
     @keyframes ring-expand { 0% { transform: scale(0.4); opacity: 0.8; } 100% { transform: scale(1.6); opacity: 0; } }
-    .stop-rec-btn { position: relative; z-index: 1; width: 24px; height: 24px; border-radius: 50%; background: #ff003c; display: flex; align-items: center; justify-content: center; transition: transform 0.15s; }
-    .stop-rec-btn:hover { transform: scale(1.1); }
+    .stop-rec-btn { position: relative; z-index: 1; width: 24px; height: 24px; border-radius: 50%; background: #ff003c; display: flex; align-items: center; justify-content: center; }
     .stop-square { width: 8px; height: 8px; background: white; border-radius: 1px; }
     .send-btn { flex-shrink: 0; width: 34px; height: 34px; background: var(--cyber-yellow); color: black; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: box-shadow 0.2s; }
     .send-btn:hover { box-shadow: 0 0 10px rgba(252,238,10,0.4); }
@@ -1030,29 +867,19 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
     .empty-title { font-size: 0.85rem; color: #94a3b8; font-weight: 600; }
     .empty-hint { font-size: 0.75rem; color: #475569; line-height: 1.5; }
     .link { color: var(--cyber-yellow); text-decoration: underline; }
-
     .favorites-row { border-bottom: 1px solid rgba(252,238,10,0.08); }
     .favorites-row:hover { background: rgba(252,238,10,0.04); }
     .favorites-icon { width: 42px; height: 42px; border-radius: 50%; background: rgba(252,238,10,0.1); border: 1px solid rgba(252,238,10,0.25); display: flex; align-items: center; justify-content: center; color: var(--cyber-yellow); flex-shrink: 0; }
     .favorites-name { color: var(--cyber-yellow) !important; }
     .favorites-icon-sm { width: 32px; height: 32px; border-radius: 50%; background: rgba(252,238,10,0.1); display: flex; align-items: center; justify-content: center; color: var(--cyber-yellow); flex-shrink: 0; }
-
-
-    /* ── Разделители по дням ────────────────────────────────────── */
     .day-sep { display: flex; align-items: center; justify-content: center; margin: 0.75rem 0 0.5rem; }
     .day-sep span { font-family: 'Chakra Petch', monospace; font-size: 0.62rem; color: #475569; background: rgba(15,20,30,0.8); border: 1px solid rgba(255,255,255,0.06); padding: 0.2rem 0.65rem; border-radius: 10px; letter-spacing: 0.08em; }
-
-    /* ── Галочки прочтения ──────────────────────────────────────── */
     .ticks { font-size: 0.55rem; color: rgba(255,255,255,0.3); margin-left: 2px; letter-spacing: -1px; }
     .ticks.read { color: var(--cyber-cyan, #00f0ff); }
-
-    /* ── Кнопка копирования ─────────────────────────────────────── */
     .copy-btn-msg { position: absolute; bottom: -10px; right: -48px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: rgba(20,25,35,0.95); border: 1px solid rgba(255,255,255,0.12); border-radius: 50%; z-index: 10; color: #94a3b8; opacity: 0; transition: opacity 0.15s, color 0.15s; }
     .msg-bubble-wrap:hover .copy-btn-msg { opacity: 1; }
     .copy-btn-msg:hover { color: white; }
     .copy-btn-msg.react-own { right: auto; left: -48px; }
-
-    /* ── Typing indicator ────────────────────────────────────────── */
     .typing-indicator { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.75rem 0.1rem; flex-shrink: 0; }
     .typing-avatar img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; opacity: 0.7; }
     .typing-dots { display: flex; align-items: center; gap: 3px; background: rgba(31,41,55,0.7); border: 1px solid rgba(75,85,99,0.4); border-radius: 12px; padding: 6px 10px; }
@@ -1060,5 +887,4 @@ function getStickerUrl(packId: string | undefined, filenameRaw: string | number)
     .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
     .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
     @keyframes typing-bounce { 0%,60%,100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-4px); opacity: 1; } }
-
 </style>

@@ -1,362 +1,151 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import { quintOut } from 'svelte/easing';
-    import { tweened } from 'svelte/motion';
-    import { t, json } from 'svelte-i18n';
+    import LegalDocRenderer from '$lib/components/LegalDocRenderer.svelte';
+    import { t } from 'svelte-i18n';
+    import type { PageData } from './$types';
 
-    const opacity = tweened(0, { duration: 400, easing: quintOut });
-    onMount(() => { opacity.set(1); });
-
-    // Хелпер: получить массив из i18n без ошибок
-    function tArr(key: string): string[] {
-        const val = $json(key);
-        return Array.isArray(val) ? val : [];
-    }
+    export let data: PageData;
 </script>
 
 <svelte:head>
-    <title>{$t('terms.title')} | ProtoMap</title>
+    <title>{$t('usage_terms')} | ProtoMap</title>
+    <meta name="description" content="ProtoMap Terms of Service / End User License Agreement" />
+    <meta name="robots" content="noindex" />
 </svelte:head>
 
-<div class="legal-container cyber-panel" style="opacity: {$opacity}">
-    <h1 class="title font-display">{$t('terms.title')}</h1>
-    <p class="subtitle">{$t('terms.subtitle')}</p>
+<div class="page-wrap">
+    <div class="page-bg" aria-hidden="true"></div>
 
-    <div class="content-text">
-
-        <!-- === DISCLAIMER === -->
-        <div class="disclaimer-box warning">
-            <strong class="font-display text-lg">{$t('terms.disclaimer_block.title')}</strong>
-            <p class="mt-2 text-sm">{@html $t('terms.disclaimer_block.text')}</p>
+    <article class="legal-container cyber-panel">
+        <div class="top-bar">
+            <span class="bar-dot"></span>
+            <span class="bar-text font-display">// TERMS_OF_SERVICE.XML</span>
+            {#if data.version}
+                <span class="bar-version font-display">{data.version}</span>
+            {/if}
         </div>
 
-        <!-- === 1. INTRO & LICENSE === -->
-        <h3 class="section-title">{$t('terms.intro_chapter.title')}</h3>
-
-        <h4 class="subsection-title">{$t('terms.intro_chapter.definitions_title')}</h4>
-        <p>{$t('terms.intro_chapter.definitions_text')}</p>
-        <ul>
-            {#each tArr('terms.intro_chapter.definitions_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-        <p class="mt-2">{$t('terms.intro_chapter.scope_text')}</p>
-
-        <h4 class="subsection-title">{$t('terms.intro_chapter.acceptance_title')}</h4>
-        <p>{$t('terms.intro_chapter.acceptance_text')}</p>
-        <ul>
-            {#each tArr('terms.intro_chapter.acceptance_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-        <div class="alert-box error mt-4 font-bold text-center">
-            {$t('terms.intro_chapter.rejection_warning')}
+        <div class="doc-body">
+            {#if data.doc.nodes.length > 0}
+                <LegalDocRenderer nodes={data.doc.nodes} />
+            {:else}
+                <div class="empty-state">
+                    <div class="empty-icon">📡</div>
+                    <p class="font-display empty-text">DOCUMENT_NOT_FOUND</p>
+                    <p class="empty-sub">Документ временно недоступен. Попробуйте позже.</p>
+                </div>
+            {/if}
         </div>
 
-        <h4 class="subsection-title">{$t('terms.intro_chapter.license_title')}</h4>
-        <p>{$t('terms.intro_chapter.license_text')}</p>
-
-        <!-- === 2. BEHAVIOR (CODE OF CONDUCT) === -->
-        <h3 class="section-title">{$t('terms.behavior_chapter.title')}</h3>
-
-        <h4 class="subsection-title">{$t('terms.behavior_chapter.ugc_title')}</h4>
-        <p>{$t('terms.behavior_chapter.ugc_text')}</p>
-        <ul>
-            {#each tArr('terms.behavior_chapter.ugc_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <h4 class="subsection-title text-red-400">{$t('terms.behavior_chapter.zero_tolerance_title')}</h4>
-        <p>{$t('terms.behavior_chapter.zero_tolerance_text')}</p>
-        <ul>
-            {#each tArr('terms.behavior_chapter.zero_tolerance_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <!-- === 2.3 CHILD SAFETY (НОВЫЙ РАЗДЕЛ) === -->
-        <div class="child-safety-box">
-            <h4 class="subsection-title text-red-400">{$t('terms.behavior_chapter.child_safety_title')}</h4>
-            <p>{$t('terms.behavior_chapter.child_safety_intro')}</p>
-            <ul>
-                {#each tArr('terms.behavior_chapter.child_safety_list') as item}
-                    <li>{@html item}</li>
-                {/each}
-            </ul>
-        </div>
-
-        <h4 class="subsection-title">{$t('terms.behavior_chapter.stickers_title')}</h4>
-        <p>{$t('terms.behavior_chapter.stickers_text')}</p>
-        <ul>
-            {#each tArr('terms.behavior_chapter.stickers_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <h4 class="subsection-title">{$t('terms.behavior_chapter.tech_abuse_title')}</h4>
-        <p>{$t('terms.behavior_chapter.tech_abuse_text')}</p>
-        <ul>
-            {#each tArr('terms.behavior_chapter.tech_abuse_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <h4 class="subsection-title">{$t('terms.behavior_chapter.enforcement_title')}</h4>
-        <p>{$t('terms.behavior_chapter.enforcement_text')}</p>
-        <ul>
-            {#each tArr('terms.behavior_chapter.enforcement_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <!-- 2.7 РАЗРЕШЕНИЯ УСТРОЙСТВА (ANDROID) -->
-        <h4 class="subsection-title">{$t('terms.behavior_chapter.device_permissions_title')}</h4>
-        <p>{$t('terms.behavior_chapter.device_permissions_text')}</p>
-        <ul>
-            {#each tArr('terms.behavior_chapter.device_permissions_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <!-- === 3. VIRTUAL ASSETS === -->
-        <h3 class="section-title">{$t('terms.virtual_chapter.title')}</h3>
-
-        <h4 class="subsection-title">{$t('terms.virtual_chapter.currency_title')}</h4>
-        <p>{$t('terms.virtual_chapter.currency_text')}</p>
-        <ul>
-            {#each tArr('terms.virtual_chapter.currency_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <h4 class="subsection-title">{$t('terms.virtual_chapter.casino_title')}</h4>
-        <p>{$t('terms.virtual_chapter.casino_text')}</p>
-        <ul>
-            {#each tArr('terms.virtual_chapter.casino_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <h4 class="subsection-title">{$t('terms.virtual_chapter.rmt_title')}</h4>
-        <p>{$t('terms.virtual_chapter.rmt_text')}</p>
-        <div class="alert-box error mt-2">
-            <p>{$t('terms.virtual_chapter.rmt_warning')}</p>
-        </div>
-
-        <h4 class="subsection-title">{$t('terms.virtual_chapter.management_title')}</h4>
-        <p>{$t('terms.virtual_chapter.management_text')}</p>
-        <ul>
-            {#each tArr('terms.virtual_chapter.management_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <!-- === 4. WARRANTIES (AS IS) === -->
-        <h3 class="section-title">{$t('terms.warranty_chapter.title')}</h3>
-
-        <h4 class="subsection-title">{$t('terms.warranty_chapter.asis_title')}</h4>
-        <p>{$t('terms.warranty_chapter.asis_text')}</p>
-        <ul>
-            {#each tArr('terms.warranty_chapter.asis_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <h4 class="subsection-title">{$t('terms.warranty_chapter.real_world_title')}</h4>
-        <p>{$t('terms.warranty_chapter.real_world_text')}</p>
-        <ul>
-            {#each tArr('terms.warranty_chapter.real_world_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <!-- === 5. FINAL & EASTER EGG === -->
-        <h3 class="section-title">{$t('terms.final_chapter.title')}</h3>
-
-        <h4 class="subsection-title text-red-400">{$t('terms.final_chapter.termination_title')}</h4>
-        <p>{$t('terms.final_chapter.termination_text')}</p>
-        <ul>
-            {#each tArr('terms.final_chapter.termination_list') as item}
-                <li>{@html item}</li>
-            {/each}
-        </ul>
-
-        <h4 class="subsection-title">{$t('terms.final_chapter.updates_title')}</h4>
-        <p>{$t('terms.final_chapter.updates_text')}</p>
-
-        <h4 class="subsection-title">{$t('terms.final_chapter.severability_title')}</h4>
-        <p>{$t('terms.final_chapter.severability_text')}</p>
-
-        <!-- ПАСХАЛКА (FORCE MAJEURE) -->
-        <div class="easter-egg-box mt-8">
-            <h4 class="subsection-title text-purple-400">{$t('terms.final_chapter.easter_egg_title')}</h4>
-            <p>{$t('terms.final_chapter.easter_egg_text')}</p>
-            <ul>
-                {#each tArr('terms.final_chapter.easter_egg_list') as item}
-                    <li>{@html item}</li>
-                {/each}
-            </ul>
-        </div>
-
-        <!-- КОНТАКТЫ -->
-        <h4 class="subsection-title">{$t('terms.final_chapter.contact_title')}</h4>
-        <p>
-            {$t('terms.final_chapter.contact_text')}
-            <br>
-            <a href="mailto:{$t('terms.final_chapter.contact_email')}" class="link text-xl font-bold">
-                {$t('terms.final_chapter.contact_email')}
+        <div class="bottom-bar">
+            <a href="/" class="back-link font-display">← ВЕРНУТЬСЯ НА КАРТУ</a>
+            <a href="/privacy-policy" class="sibling-link font-display">
+                ← ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ
             </a>
-        </p>
-
-    </div>
+        </div>
+    </article>
 </div>
 
 <style>
-    .legal-container {
-        max-width: 900px;
-        margin: 2.5rem auto;
-        padding: 3rem;
-        background: rgba(10, 12, 15, 0.85);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        clip-path: polygon(0 20px, 20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
-    }
-
-    .disclaimer-box, .alert-box {
-        padding: 1rem;
-        border-radius: 4px;
-        margin-bottom: 1.5rem;
-    }
-
-    .disclaimer-box.warning, .alert-box.warning {
-        background: rgba(252, 238, 10, 0.1);
-        border: 1px solid var(--cyber-yellow, #fcee0a);
-        color: #fff;
-    }
-
-    .alert-box.error {
-        background: rgba(255, 0, 60, 0.1);
-        border: 1px solid var(--cyber-red, #ff003c);
-        color: #ffccd5;
-    }
-
-    /* Child Safety блок — выделяем красной рамкой */
-    .child-safety-box {
-        background: rgba(255, 0, 60, 0.05);
-        border: 1px solid rgba(255, 0, 60, 0.4);
-        border-left: 3px solid var(--cyber-red, #ff003c);
-        padding: 1.25rem 1.5rem;
-        border-radius: 4px;
-        margin: 1.5rem 0;
-    }
-
-    .easter-egg-box {
-        background: rgba(189, 0, 255, 0.05);
-        border: 1px dashed #bd00ff;
-        padding: 1.5rem;
-        border-radius: 8px;
-    }
-
-    .title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        text-align: center;
-        color: #fff;
-        margin-bottom: 0.5rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        text-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-    }
-
-    .subtitle {
-        text-align: center;
-        color: var(--text-muted-color, #909dab);
-        margin-bottom: 3rem;
-        font-family: 'Chakra Petch', monospace;
-        font-size: 0.9rem;
-    }
-
-    .content-text {
-        font-size: 1rem;
-        line-height: 1.7;
-        color: #d1d5db;
-    }
-
-    .content-text p {
-        margin-bottom: 1rem;
-        text-align: justify;
-    }
-
-    .section-title {
-        font-family: 'Chakra Petch', monospace;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--cyber-yellow, #fcee0a);
-        margin-top: 3.5rem;
-        margin-bottom: 1.5rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding-bottom: 0.5rem;
-        text-transform: uppercase;
-    }
-
-    .subsection-title {
-        font-family: 'Chakra Petch', monospace;
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #fff;
-        margin-top: 2rem;
-        margin-bottom: 0.8rem;
-    }
-
-    .content-text ul {
-        list-style-type: none;
-        padding-left: 0.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .content-text li {
+    .page-wrap {
+        min-height: 100vh;
         position: relative;
-        padding-left: 1.5rem;
-        margin-bottom: 0.6rem;
-        font-size: 0.95rem;
+        padding: 2rem 1rem 5rem;
+        overflow: hidden;
     }
 
-    .content-text li::before {
-        content: '>';
-        position: absolute;
-        left: 0;
-        color: var(--cyber-yellow, #fcee0a);
-        font-weight: bold;
-        font-family: 'Chakra Petch', monospace;
+    .page-bg {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background-image:
+            linear-gradient(rgba(0, 240, 255, 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 240, 255, 0.02) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
     }
 
-    .link {
-        color: var(--cyber-cyan, #00f0ff);
-        text-decoration: none;
-        border-bottom: 1px dashed var(--cyber-cyan);
-        transition: all 0.2s;
+    .legal-container {
+        position: relative;
+        max-width: 860px;
+        margin: 0 auto;
+        background: rgba(8, 10, 14, 0.92);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(0, 240, 255, 0.15);
+        clip-path: polygon(0 16px, 16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+        box-shadow: 0 0 40px rgba(0, 240, 255, 0.04);
     }
 
-    .link:hover {
-        color: #fff;
-        border-bottom-style: solid;
-        text-shadow: 0 0 10px var(--cyber-cyan);
+    .top-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 1.5rem;
+        border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+        background: rgba(0, 240, 255, 0.02);
+        flex-wrap: wrap;
+    }
+    .bar-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--cyber-cyan, #00f0ff);
+        box-shadow: 0 0 6px var(--cyber-cyan, #00f0ff);
+        flex-shrink: 0;
+        animation: dot-pulse 2s infinite;
+    }
+    @keyframes dot-pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.4; }
+    }
+    .bar-text {
+        font-size: 0.72rem;
+        color: rgba(0, 240, 255, 0.65);
+        letter-spacing: 0.18em;
+    }
+    .bar-version {
+        margin-left: auto;
+        font-size: 0.65rem;
+        color: #475569;
+        letter-spacing: 0.12em;
     }
 
+    .doc-body {
+        padding: 2.5rem 2.5rem 2rem;
+    }
     @media (max-width: 640px) {
-        .legal-container {
-            margin: 1rem;
-            padding: 1.5rem;
-        }
-
-        .title {
-            font-size: 1.8rem;
-        }
-
-        .section-title {
-            font-size: 1.2rem;
-        }
+        .doc-body { padding: 1.5rem 1.25rem 1.5rem; }
     }
+
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 4rem 0;
+        text-align: center;
+    }
+    .empty-icon { font-size: 2.5rem; opacity: 0.4; }
+    .empty-text { font-size: 1rem; color: #ff003c; letter-spacing: 0.2em; }
+    .empty-sub  { font-size: 0.8rem; color: #475569; }
+
+    .bottom-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(0, 0, 0, 0.2);
+    }
+    .back-link,
+    .sibling-link {
+        font-size: 0.72rem;
+        letter-spacing: 0.14em;
+        text-decoration: none;
+        color: #475569;
+        transition: color 0.2s, text-shadow 0.2s;
+    }
+    .back-link:hover    { color: var(--cyber-yellow, #fcee0a); text-shadow: 0 0 8px rgba(252,238,10,0.3); }
+    .sibling-link:hover { color: var(--cyber-cyan, #00f0ff);   text-shadow: 0 0 8px rgba(0,240,255,0.3); }
 </style>

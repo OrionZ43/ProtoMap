@@ -1,396 +1,524 @@
-import { onCall, HttpsError } from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
+/**
+ * VOLT DEADLOCK — Cloud Functions v2
+ * Гипер-оптимизированная логика казино-рулетки.
+ *
+ * Архитектура:
+ *  - startRoulette:       Списывает 500 PC, генерирует игру, пишет в RTDB.
+ *  - makeRouletteAction:  Обрабатывает ход игрока + ВСЕ ходы Ориона в одном вызове.
+ *  - abandonRoulette:     Вызывается при уходе со страницы; удаляет игру без возврата.
+ *
+ * RTDB структура:
+ *  games/{id}   → публичный стейт (только чтение для владельца)
+ *  secrets/{id} → массив патронов (нет прав у клиента)
+ */
 
-const db = admin.firestore();
-const rtdb = admin.database();
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import * as admin from 'firebase-admin';
 
-const COST = 500;
-const REWARD = 1000;
+/* ══════════════════════════════════════════════════════════
+   ТИПЫ (короткие ключи = меньше байт в RTDB)
+══════════════════════════════════════════════════════════ */
 
-interface PubState {
-    turn: 'player' | 'orion';
-    php: number; // Player HP
-    ohp: number; // Orion HP
-    mhp: number; // Max HP
-    pit: string[]; // Player items
-    oit: string[]; // Orion items
-    sl: number; // Shells left
-    log: string[]; // Action log
-    st: 'lobby' | 'playing' | 'result'; // State
-    pdbl: boolean; // Player next shot is double damage
-    odbl: boolean; // Orion next shot is double damage
-    pskip: boolean; // Player skips turn
-    oskip: boolean; // Orion skips turn
-    scan: 'live' | 'blank' | null; // Result of last scan (if any)
+/** Предметы игрока/Ориона. Счётчик каждого типа. */
+export interface Items {
+  sc: number; // scanner
+  co: number; // coolant
+  ad: number; // air_duster
+  od: number; // overdrive
+  ew: number; // emp_wire
+  ps: number; // polarity_switch
 }
 
-function generateAmmo(): ('live' | 'blank')[] {
-    const minLive = 1;
-    const minBlank = 1;
-    const maxTotal = 8;
-
-    // Random total between 2 and 8
-    const total = Math.floor(Math.random() * 7) + 2;
-
-    let live = Math.floor(Math.random() * (total - 1)) + 1;
-    let blank = total - live;
-
-    if (live === 0) live = 1;
-    if (blank === 0) blank = 1;
-    if (live + blank > maxTotal) {
-        // Adjust if over
-        live = Math.min(live, Math.floor(maxTotal / 2));
-        blank = maxTotal - live;
-    }
-
-    const ammo: ('live' | 'blank')[] = [];
-    for (let i = 0; i < live; i++) ammo.push('live');
-    for (let i = 0; i < blank; i++) ammo.push('blank');
-
-    return ammo.sort(() => Math.random() - 0.5);
+/** Публичный стейт в RTDB (читает клиент). */
+export interface PubState {
+  uid:   string;
+  turn:  'p' | 'o';
+  php:   number;       // player HP
+  ohp:   number;       // orion HP
+  mhp:   number;       // max HP (для отображения)
+  pit:   Items;        // player items
+  oit:   Items;        // orion items
+  sl:    number;       // shells left
+  log:   string;       // последнее действие для UI
+  st:    'a' | 'p' | 'o'; // active | player-won | orion-won
+  pdbl:  boolean;      // overdrive игрока активен
+  odbl:  boolean;      // overdrive Ориона активен
+  pskip: boolean;      // ход игрока будет пропущен (EMP)
+  oskip: boolean;      // ход Ориона будет пропущен (EMP)
+  scan:  number | null; // результат сканера (-1 нет, 0 пусто, 1 заряд)
 }
 
-function generateItems(): string[] {
-    const itemsPool = ['sc', 'co', 'ad', 'od', 'ew', 'ps'];
-    const count = Math.floor(Math.random() * 4) + 1; // 1 to 4 items
-    const items: string[] = [];
-    for (let i = 0; i < count; i++) {
-        items.push(itemsPool[Math.floor(Math.random() * itemsPool.length)]);
-    }
-    return items;
+/** Секретный стейт (только бэкенд). */
+interface Secrets {
+  ammo: number[]; // 0=blank, 1=live
 }
 
-export const startRoulette = onCall({ region: 'us-central1' }, async (request) => {
-    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required');
-    const uid = request.auth.uid;
+/* ══════════════════════════════════════════════════════════
+   КОНСТАНТЫ И ХЕЛПЕРЫ
+══════════════════════════════════════════════════════════ */
 
-    const userRef = db.collection('users').doc(uid);
+const ENTRY_FEE   = 500;
+const WIN_REWARD  = 1000;
+const MAX_ITEM    = 5;   // максимум одного предмета
+const ITEM_KEYS: (keyof Items)[] = ['sc', 'co', 'ad', 'od', 'ew', 'ps'];
 
-    try {
-        await db.runTransaction(async (t) => {
-            const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found');
-            const data = userDoc.data()!;
-            if ((data.proto_coins || 0) < COST) {
-                throw new HttpsError('failed-precondition', 'Недостаточно ProtoCoins');
-            }
-            t.update(userRef, { proto_coins: data.proto_coins - COST });
-        });
+const rtdb   = () => admin.app().database("https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app");
+const fstore = () => admin.firestore();
 
-        // Delete old games in RTDB
-        const oldGameRef = rtdb.ref(`games/${uid}`);
-        await oldGameRef.remove();
-        const oldSecretRef = rtdb.ref(`secrets/${uid}`);
-        await oldSecretRef.remove();
+function emptyItems(): Items {
+  return { sc: 0, co: 0, ad: 0, od: 0, ew: 0, ps: 0 };
+}
 
-        const hp = Math.floor(Math.random() * 3) + 4; // 4 to 6
-        const ammo = generateAmmo();
+/** Выдаёт 2-4 случайных предмета. */
+function distributeItems(): Items {
+  const it = emptyItems();
+  const count = 2 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < count; i++) {
+    const k = ITEM_KEYS[Math.floor(Math.random() * ITEM_KEYS.length)];
+    it[k] = Math.min(MAX_ITEM, it[k] + 1);
+  }
+  return it;
+}
 
-        const pub: PubState = {
-            turn: 'player',
-            php: hp,
-            ohp: hp,
-            mhp: hp,
-            pit: generateItems(),
-            oit: generateItems(),
-            sl: ammo.length,
-            log: ['Игра началась. Ваш ход.'],
-            st: 'playing',
-            pdbl: false,
-            odbl: false,
-            pskip: false,
-            oskip: false,
-            scan: null,
-        };
+/** Суммирует предметы (cap = MAX_ITEM). */
+function mergeItems(target: Items, source: Items) {
+  for (const k of ITEM_KEYS) {
+    target[k] = Math.min(MAX_ITEM, target[k] + source[k]);
+  }
+}
 
-        await rtdb.ref(`secrets/${uid}`).set({ ammo });
-        await rtdb.ref(`games/${uid}`).set(pub);
+/** Генерирует перемешанный магазин (2-8 патронов, хотя бы 1 боевой и 1 холостой). */
+function generateAmmo(): number[] {
+  const total  = 2 + Math.floor(Math.random() * 7);
+  const lives  = Math.max(1, Math.floor(Math.random() * (total - 1)) + 1);
+  const blanks = Math.max(1, total - lives);
+  const arr    = [...Array(lives).fill(1), ...Array(blanks).fill(0)];
+  // Fisher-Yates
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
-        return { gameId: uid };
-    } catch (e) {
-        throw new HttpsError('internal', e instanceof Error ? e.message : String(e));
+function genHp(): number {
+  return 4 + Math.floor(Math.random() * 3); // 4-6
+}
+
+/** Перезарядка магазина + выдача новых предметов. Мутирует ammo[]. */
+function reloadMagazine(pub: PubState, ammo: number[]): void {
+  const fresh = generateAmmo();
+  ammo.push(...fresh);
+  pub.sl = ammo.length;
+  mergeItems(pub.pit, distributeItems());
+  mergeItems(pub.oit, distributeItems());
+  pub.log += ' ║ 🔄 Новый магазин [' + fresh.length + ' патр.]';
+}
+
+/* ══════════════════════════════════════════════════════════
+   ИИ ОРИОНА — вычисляется на сервере в рамках одного вызова
+══════════════════════════════════════════════════════════ */
+
+function orionDecide(pub: PubState, ammo: number[]): string {
+  const oit    = pub.oit;
+  const shell  = ammo[0];
+  const isLive = shell === 1;
+  const total  = ammo.length;
+  const lives  = ammo.filter(x => x === 1).length;
+  const liveOdds = total > 0 ? lives / total : 0;
+  const pItems = Object.values(pub.pit).reduce((a, b) => a + b, 0);
+
+  // ── Предметы (приоритет сверху вниз) ──────────────────
+
+  // EMP: нейтрализуем overdrive игрока или многочисленный инвентарь
+  if (oit.ew > 0 && (pub.pdbl || pItems >= 4)) {
+    return 'item_ew';
+  }
+
+  // Coolant: heal при критическом HP
+  if (oit.co > 0 && pub.ohp === 1) {
+    return 'item_co';
+  }
+
+  // Air Duster: выброс боевого при угрозе жизни
+  if (oit.ad > 0 && isLive && pub.ohp <= 2 && !pub.odbl) {
+    return 'item_ad';
+  }
+
+  // Polarity Switch: тактические инверсии
+  if (oit.ps > 0) {
+    // холостой при низкой вероятности боевых → сделать боевым, стрелять в игрока
+    if (!isLive && liveOdds < 0.35) {
+      return 'item_ps';
     }
-});
-
-export const makeRouletteAction = onCall({ region: 'us-central1' }, async (request) => {
-    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required');
-    const uid = request.auth.uid;
-
-    const action = request.data.action;
-    const itemIndex = request.data.itemIndex;
-
-    const gameRef = rtdb.ref(`games/${uid}`);
-    const secretRef = rtdb.ref(`secrets/${uid}`);
-
-    const [gameSnap, secretSnap] = await Promise.all([
-        gameRef.once('value'),
-        secretRef.once('value')
-    ]);
-
-    if (!gameSnap.exists() || !secretSnap.exists()) {
-        throw new HttpsError('not-found', 'Игра не найдена');
+    // боевой, Орион почти мёртв, игрок здоров → инвертируем (станет холостым), безопасный выстрел в себя
+    if (isLive && pub.ohp === 1 && pub.php > 2) {
+      return 'item_ps';
     }
+  }
 
-    const pub = gameSnap.val() as PubState;
-    const secret = secretSnap.val() as { ammo: ('live' | 'blank')[] };
+  // Coolant: heal при отставании по HP
+  if (oit.co > 0 && pub.ohp < pub.php && pub.ohp <= 2) {
+    return 'item_co';
+  }
 
-    // RTDB doesn't store empty arrays, provide defaults
-    pub.pit = pub.pit || [];
-    pub.oit = pub.oit || [];
-    pub.log = pub.log || [];
+  // Overdrive: активируем перед боевым выстрелом в игрока
+  if (oit.od > 0 && isLive && !pub.odbl && pub.ohp > 2) {
+    return 'item_od';
+  }
 
-    if (pub.st !== 'playing') {
-        throw new HttpsError('failed-precondition', 'Игра уже завершена');
-    }
-    if (pub.turn !== 'player') {
-        throw new HttpsError('failed-precondition', 'Не ваш ход');
-    }
+  // ── Выстрел ───────────────────────────────────────────
+  if (isLive) {
+    return 'shoot_enemy'; // точно стреляем в игрока
+  } else {
+    return 'shoot_self';  // холостой → бесплатный доп. ход
+  }
+}
 
-    function addLog(msg: string) {
-        pub.log.push(msg);
-        if (pub.log.length > 10) pub.log.shift();
-    }
+/* ══════════════════════════════════════════════════════════
+   ОБРАБОТКА ДЕЙСТВИЯ (универсальная для игрока и Ориона)
+   Возвращает true если ход остаётся у того же игрока.
+══════════════════════════════════════════════════════════ */
 
-    // Check game over
-    async function checkGameOver() {
-        if (pub.php <= 0 || pub.ohp <= 0) {
-            pub.st = 'result';
-            if (pub.ohp <= 0) {
-                addLog('Орион уничтожен. Вы победили!');
-                const userRef = db.collection('users').doc(uid);
-                await db.runTransaction(async (t) => {
-                    const doc = await t.get(userRef);
-                    if (doc.exists) {
-                        t.update(userRef, { proto_coins: (doc.data()?.proto_coins || 0) + REWARD });
-                    }
-                });
-            } else {
-                addLog('Ваши системы отказали. Вы проиграли.');
-            }
-            return true;
-        }
-        if (pub.sl <= 0) {
-            // Reload
-            const newAmmo = generateAmmo();
-            secret.ammo = newAmmo;
-            pub.sl = newAmmo.length;
-            pub.pit = [...pub.pit, ...generateItems()].slice(0, 8);
-            pub.oit = [...pub.oit, ...generateItems()].slice(0, 8);
-            pub.scan = null;
-            addLog(`Магазин пуст. Перезарядка. Патронов: ${pub.sl}. Выданы предметы.`);
-        }
-        return false;
-    }
+function processAction(
+  action:   string,
+  isPlayer: boolean,
+  pub:      PubState,
+  ammo:     number[]
+): boolean {
+  const items: Items = isPlayer ? pub.pit : pub.oit;
+  const who = isPlayer ? 'Игрок' : 'Орион';
 
-    let endTurn = false;
+  /* ── ПРЕДМЕТЫ ── */
 
-    // --- Player Action Processing ---
-    if (action === 'shoot_self' || action === 'shoot_enemy') {
-        const bullet = secret.ammo.shift()!;
-        pub.sl--;
-        const isLive = bullet === 'live';
-        const damage = isLive ? (pub.pdbl ? 2 : 1) : 0;
-        pub.pdbl = false;
-        pub.scan = null;
+  if (action === 'item_sc') {
+    if (items.sc <= 0) throw new HttpsError('failed-precondition', 'Нет сканера');
+    items.sc--;
+    if (isPlayer) pub.scan = ammo[0]; // показываем только игроку
+    pub.log = isPlayer
+      ? `[SCANNER] Следующий: ${ammo[0] === 1 ? '⚡ БОЕВОЙ' : '○ ХОЛОСТОЙ'}`
+      : '[ОРИОН] Орион просканировал патрон';
+    return true; // ход продолжается
+  }
 
-        if (action === 'shoot_self') {
-            if (isLive) {
-                pub.php -= damage;
-                addLog(`Вы выстрелили в себя: БОЕВОЙ. -${damage} HP.`);
-                endTurn = true;
-            } else {
-                addLog('Вы выстрелили в себя: ХОЛОСТОЙ. Ход остаётся у вас.');
-            }
-        } else {
-            if (isLive) {
-                pub.ohp -= damage;
-                addLog(`Вы выстрелили в Ориона: БОЕВОЙ. Ориону -${damage} HP.`);
-            } else {
-                addLog('Вы выстрелили в Ориона: ХОЛОСТОЙ.');
-            }
-            endTurn = true;
-        }
+  if (action === 'item_co') {
+    if (items.co <= 0) throw new HttpsError('failed-precondition', 'Нет кулера');
+    items.co--;
+    if (isPlayer) pub.php = Math.min(pub.mhp, pub.php + 1);
+    else          pub.ohp = Math.min(pub.mhp, pub.ohp + 1);
+    pub.log = `[COOLANT] ${who} восстановил 1 HP`;
+    return true;
+  }
 
-    } else if (action === 'item') {
-        if (typeof itemIndex !== 'number' || itemIndex < 0 || itemIndex >= pub.pit.length) {
-            throw new HttpsError('invalid-argument', 'Неверный предмет');
-        }
-        const item = pub.pit[itemIndex];
-        pub.pit.splice(itemIndex, 1);
+  if (action === 'item_ad') {
+    if (items.ad <= 0) throw new HttpsError('failed-precondition', 'Нет продувки');
+    items.ad--;
+    const ejected = ammo.shift()!;
+    pub.sl   = ammo.length;
+    pub.scan = null;
+    pub.log  = `[AIR DUSTER] ${who} выбросил: ${ejected === 1 ? '⚡ БОЕВОЙ' : '○ ХОЛОСТОЙ'}`;
+    if (ammo.length === 0) reloadMagazine(pub, ammo);
+    return true;
+  }
 
-        switch(item) {
-            case 'sc':
-                pub.scan = secret.ammo[0];
-                addLog(`Сканер: Следующий патрон ${pub.scan === 'live' ? 'БОЕВОЙ' : 'ХОЛОСТОЙ'}.`);
-                break;
-            case 'co':
-                pub.php = Math.min(pub.php + 1, pub.mhp);
-                addLog('Охладитель: Восстановлено 1 HP.');
-                break;
-            case 'ad':
-                const discarded = secret.ammo.shift()!;
-                pub.sl--;
-                pub.scan = null;
-                addLog(`Выброшен патрон: ${discarded === 'live' ? 'БОЕВОЙ' : 'ХОЛОСТОЙ'}.`);
-                break;
-            case 'od':
-                pub.pdbl = true;
-                addLog('Овердрайв: Следующий выстрел нанесет двойной урон.');
-                break;
-            case 'ew':
-                pub.oskip = true;
-                addLog('ЭМИ-граната: Орион пропустит следующий ход.');
-                break;
-            case 'ps':
-                secret.ammo[0] = secret.ammo[0] === 'live' ? 'blank' : 'live';
-                pub.scan = null;
-                addLog('Инвертор: Полярность следующего патрона изменена.');
-                break;
-        }
+  if (action === 'item_od') {
+    if (items.od <= 0) throw new HttpsError('failed-precondition', 'Нет overdrive');
+    items.od--;
+    if (isPlayer) pub.pdbl = true;
+    else          pub.odbl = true;
+    pub.log = `[OVERDRIVE] ${who}: следующий выстрел ×2 урона!`;
+    return true;
+  }
+
+  if (action === 'item_ew') {
+    if (items.ew <= 0) throw new HttpsError('failed-precondition', 'Нет EMP');
+    items.ew--;
+    if (isPlayer) pub.oskip = true;
+    else          pub.pskip = true;
+    pub.log = isPlayer
+      ? '[EMP WIRE] Орион пропустит следующий ход!'
+      : '[ЭМИ ВОЛНА] Ваш ход будет пропущен!';
+    return true;
+  }
+
+  if (action === 'item_ps') {
+    if (items.ps <= 0) throw new HttpsError('failed-precondition', 'Нет переключателя');
+    items.ps--;
+    ammo[0]  = 1 - ammo[0]; // инвертируем
+    pub.scan = null;
+    pub.log  = `[POLARITY] ${who}: патрон инвертирован → ${ammo[0] === 1 ? '⚡ БОЕВОЙ' : '○ ХОЛОСТОЙ'}`;
+    return true;
+  }
+
+  /* ── ВЫСТРЕЛЫ ── */
+
+  if (action === 'shoot_self' || action === 'shoot_enemy') {
+    const shell = ammo.shift()!;
+    pub.sl   = ammo.length;
+    pub.scan = null;
+
+    const dbl    = isPlayer ? pub.pdbl : pub.odbl;
+    const damage = shell === 1 ? (dbl ? 2 : 1) : 0;
+
+    // Сбрасываем overdrive после выстрела
+    if (isPlayer) pub.pdbl = false;
+    else          pub.odbl = false;
+
+    if (action === 'shoot_self') {
+      if (isPlayer) pub.php -= damage;
+      else          pub.ohp -= damage;
+      pub.log = isPlayer
+        ? shell === 1
+          ? `[В СЕБЯ] ⚡ Боевой! -${damage} HP!`
+          : '[В СЕБЯ] ○ Холостой. Доп. ход!'
+        : shell === 1
+          ? `[ОРИОН В СЕБЯ] ⚡ Попал! -${damage} HP Ориона`
+          : '[ОРИОН В СЕБЯ] ○ Холостой. Орион ходит снова.';
     } else {
-        throw new HttpsError('invalid-argument', 'Неизвестное действие');
+      if (isPlayer) pub.ohp -= damage;
+      else          pub.php -= damage;
+      pub.log = isPlayer
+        ? shell === 1
+          ? `[ОГОНЬ] ⚡ Попал в Ориона! -${damage} HP!`
+          : '[ОГОНЬ] ○ Холостой. Орион жив.'
+        : shell === 1
+          ? `[ОРИОН СТРЕЛЯЕТ] ⚡ Попадание! -${damage} HP!`
+          : '[ОРИОН СТРЕЛЯЕТ] ○ Холостой. Пронесло!';
     }
 
-    if (await checkGameOver()) {
-        await Promise.all([
-            gameRef.update(pub),
-            secretRef.update(secret)
-        ]);
-        return { success: true };
+    // Проверка смерти
+    if (pub.php <= 0) { pub.st = 'o'; pub.php = 0; }
+    if (pub.ohp <= 0) { pub.st = 'p'; pub.ohp = 0; }
+
+    // Перезарядка если магазин пуст (и игра ещё идёт)
+    if (ammo.length === 0 && pub.st === 'a') {
+      reloadMagazine(pub, ammo);
     }
 
-    if (endTurn) {
-        pub.turn = 'orion';
+    // Холостой в себя = доп. ход
+    if (action === 'shoot_self' && shell === 0) return true;
+    return false; // ход переходит
+  }
+
+  throw new HttpsError('invalid-argument', `Неизвестное действие: ${action}`);
+}
+
+/* ══════════════════════════════════════════════════════════
+   ЗАВЕРШЕНИЕ ИГРЫ — начисляем/ничего и удаляем из RTDB
+══════════════════════════════════════════════════════════ */
+
+async function finishGame(uid: string, playerWon: boolean): Promise<void> {
+  if (!playerWon) return; // ставка уже списана при старте
+  const ref = fstore().collection('users').doc(uid);
+  await fstore().runTransaction(async (t) => {
+    const snap = await t.get(ref);
+    if (!snap.exists) return;
+    const credits: number = snap.data()!.casino_credits ?? 0;
+    t.update(ref, { casino_credits: credits + WIN_REWARD });
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   ЭКСПОРТИРУЕМЫЕ CLOUD FUNCTIONS
+══════════════════════════════════════════════════════════ */
+
+export const startRoulette = onCall(
+  { region: 'us-central1', enforceAppCheck: true },
+  async (req) => {
+    if (!req.auth) throw new HttpsError('unauthenticated', 'Требуется авторизация');
+    const uid = req.auth.uid;
+
+    // --- Списать ставку (транзакция Firestore) ---
+    const userRef = fstore().collection('users').doc(uid);
+    await fstore().runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists) throw new HttpsError('not-found', 'Пользователь не найден');
+      const credits: number = snap.data()!.casino_credits ?? 0;
+      if (credits < ENTRY_FEE) {
+        throw new HttpsError('failed-precondition', `Недостаточно PC (нужно ${ENTRY_FEE})`);
+      }
+      t.update(userRef, { casino_credits: credits - ENTRY_FEE });
+    });
+
+    // --- Уничтожить старую игру (защита от дублей) ---
+    const existing = await rtdb()
+      .ref('games')
+      .orderByChild('uid')
+      .equalTo(uid)
+      .limitToFirst(1)
+      .once('value');
+    if (existing.exists()) {
+      const oldId = Object.keys(existing.val())[0];
+      await Promise.all([
+        rtdb().ref(`games/${oldId}`).remove(),
+        rtdb().ref(`secrets/${oldId}`).remove(),
+      ]);
     }
 
-    // --- AI / Turn Handling Loop ---
-    // This loop continues until it's genuinely the player's turn to make a move,
-    // or the game ends.
-    while (pub.turn === 'orion' || (pub.turn === 'player' && pub.pskip)) {
-        if (pub.st !== 'playing') break;
+    // --- Генерация игры ---
+    const hp   = genHp();
+    const ammo = generateAmmo();
+    const gid  = rtdb().ref('games').push().key!;
 
-        if (pub.turn === 'player' && pub.pskip) {
-            pub.pskip = false;
-            addLog('Вы пропускаете ход из-за ЭМИ.');
-            pub.turn = 'orion';
-            // Continue the loop so Orion can take its turn
-        }
+    const pub: PubState = {
+      uid,
+      turn:  'p',
+      php:   hp,
+      ohp:   hp,
+      mhp:   hp,
+      pit:   distributeItems(),
+      oit:   distributeItems(),
+      sl:    ammo.length,
+      log:   '⚡ VOLT DEADLOCK инициализирован. Твой ход, оператор.',
+      st:    'a',
+      pdbl:  false,
+      odbl:  false,
+      pskip: false,
+      oskip: false,
+      scan:  null,
+    };
 
-        if (pub.turn === 'orion' && pub.oskip) {
-            pub.oskip = false;
-            addLog('Орион пропускает ход из-за ЭМИ.');
-            pub.turn = 'player';
-            continue;
-        }
-
-        // --- Orion AI Logic ---
-        if (pub.turn === 'orion') {
-            const knowsNext = pub.scan !== null || secret.ammo.length === 1;
-            const nextIsLive = knowsNext ? secret.ammo[0] === 'live' : null;
-
-            // Use item logic (70% chance if useful)
-            let usedItem = false;
-            if (pub.oit.length > 0 && Math.random() < 0.7) {
-                for (let i = 0; i < pub.oit.length; i++) {
-                    const oItem = pub.oit[i];
-                    if (oItem === 'sc' && !knowsNext) {
-                        pub.oit.splice(i, 1);
-                        pub.scan = secret.ammo[0];
-                        addLog('Орион использовал Сканер.');
-                        usedItem = true; break;
-                    }
-                    if (oItem === 'co' && pub.ohp < pub.mhp) {
-                        pub.oit.splice(i, 1);
-                        pub.ohp++;
-                        addLog('Орион использовал Охладитель.');
-                        usedItem = true; break;
-                    }
-                    if (oItem === 'od' && knowsNext && nextIsLive && !pub.odbl) {
-                        pub.oit.splice(i, 1);
-                        pub.odbl = true;
-                        addLog('Орион использовал Овердрайв.');
-                        usedItem = true; break;
-                    }
-                    if (oItem === 'ps' && knowsNext && !nextIsLive) {
-                        pub.oit.splice(i, 1);
-                        secret.ammo[0] = 'live';
-                        pub.scan = null;
-                        addLog('Орион использовал Инвертор.');
-                        usedItem = true; break;
-                    }
-                    if (oItem === 'ew' && !pub.pskip) {
-                        pub.oit.splice(i, 1);
-                        pub.pskip = true;
-                        addLog('Орион использовал ЭМИ-гранату.');
-                        usedItem = true; break;
-                    }
-                    if (oItem === 'ad' && knowsNext && !nextIsLive) {
-                        pub.oit.splice(i, 1);
-                        const discarded = secret.ammo.shift()!;
-                        pub.sl--;
-                        pub.scan = null;
-                        addLog('Орион выбросил патрон.');
-                        usedItem = true; break;
-                    }
-                }
-            }
-
-            if (usedItem) {
-                if (await checkGameOver()) break;
-                continue; // Can use another item or shoot
-            }
-
-            // Shoot
-            const bullet = secret.ammo.shift()!;
-            pub.sl--;
-            const isLive = bullet === 'live';
-            const damage = isLive ? (pub.odbl ? 2 : 1) : 0;
-            pub.odbl = false;
-            pub.scan = null;
-
-            let target = 'player';
-            if (knowsNext) {
-                target = nextIsLive ? 'player' : 'orion';
-            } else {
-                target = Math.random() < 0.5 ? 'player' : 'orion';
-            }
-
-            if (target === 'orion') {
-                if (isLive) {
-                    pub.ohp -= damage;
-                    addLog(`Орион выстрелил в себя: БОЕВОЙ. Ориону -${damage} HP.`);
-                    pub.turn = 'player';
-                } else {
-                    addLog('Орион выстрелил в себя: ХОЛОСТОЙ.');
-                    // Keeps turn
-                }
-            } else {
-                if (isLive) {
-                    pub.php -= damage;
-                    addLog(`Орион выстрелил в вас: БОЕВОЙ. Вам -${damage} HP.`);
-                } else {
-                    addLog('Орион выстрелил в вас: ХОЛОСТОЙ.');
-                }
-                pub.turn = 'player';
-            }
-
-            if (await checkGameOver()) break;
-        }
-    }
+    const secrets: Secrets = { ammo };
 
     await Promise.all([
-        gameRef.update(pub),
-        secretRef.update(secret)
+      rtdb().ref(`games/${gid}`).set(pub),
+      rtdb().ref(`secrets/${gid}`).set(secrets),
     ]);
-    return { success: true };
-});
 
-export const abandonRoulette = onCall({ region: 'us-central1' }, async (request) => {
-    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required');
-    const uid = request.auth.uid;
+    return { gameId: gid };
+  }
+);
 
-    await rtdb.ref(`games/${uid}`).remove();
-    await rtdb.ref(`secrets/${uid}`).remove();
+/* ─────────────────────────────────────────────────────── */
 
-    return { success: true };
-});
+export const makeRouletteAction = onCall(
+  { region: 'us-central1', enforceAppCheck: true },
+  async (req) => {
+    if (!req.auth) throw new HttpsError('unauthenticated', 'Требуется авторизация');
+    const uid = req.auth.uid;
+    const { gameId, action } = req.data as { gameId: string; action: string };
+
+    if (!gameId || !action) {
+      throw new HttpsError('invalid-argument', 'Отсутствует gameId или action');
+    }
+
+    const VALID_ACTIONS = new Set([
+      'shoot_self', 'shoot_enemy',
+      'item_sc', 'item_co', 'item_ad', 'item_od', 'item_ew', 'item_ps',
+    ]);
+    if (!VALID_ACTIONS.has(action)) {
+      throw new HttpsError('invalid-argument', 'Недопустимое действие');
+    }
+
+    // --- Загрузка стейта ---
+    const [pubSnap, secSnap] = await Promise.all([
+      rtdb().ref(`games/${gameId}`).once('value'),
+      rtdb().ref(`secrets/${gameId}`).once('value'),
+    ]);
+    if (!pubSnap.exists() || !secSnap.exists()) {
+      throw new HttpsError('not-found', 'Игра не найдена');
+    }
+
+    const pub: PubState  = pubSnap.val();
+    const secrets: Secrets = secSnap.val();
+    const ammo: number[] = [...secrets.ammo]; // мутируемая копия
+
+    // --- Валидация ---
+    if (pub.uid  !== uid)   throw new HttpsError('permission-denied', 'Это не ваша игра');
+    if (pub.st   !== 'a')   throw new HttpsError('failed-precondition', 'Игра уже завершена');
+    if (pub.turn !== 'p')   throw new HttpsError('failed-precondition', 'Сейчас не ваш ход');
+
+    // --- Ход игрока ---
+    const playerKeepTurn = processAction(action, true, pub, ammo);
+
+    // --- Передача хода ---
+    if (pub.st === 'a') {
+      if (!playerKeepTurn) {
+        // Передача к Ориону (учитываем oskip от EMP)
+        if (pub.oskip) {
+          pub.oskip = false;
+          pub.turn  = 'p'; // Орион пропускает → снова игрок
+        } else {
+          pub.turn = 'o';
+        }
+      }
+      // else: игрок держит ход (холостой в себя / предмет)
+
+      // --- Цикл ходов Ориона (всё в одном вызове!) ---
+      let itr = 0;
+      while (pub.st === 'a' && pub.turn === 'o' && itr < 30) {
+        itr++;
+
+        // EMP на Ориона
+        if (pub.oskip) {
+          pub.oskip = false;
+          pub.turn  = 'p';
+          break;
+        }
+
+        const orionAction    = orionDecide(pub, ammo);
+        const orionKeepTurn  = processAction(orionAction, false, pub, ammo);
+
+        if (pub.st !== 'a') break; // кто-то умер
+
+        if (!orionKeepTurn) {
+          // Передача игроку (учитываем pskip)
+          if (pub.pskip) {
+            pub.pskip = false;
+            pub.turn  = 'o'; // EMP — игрок пропускает → Орион снова
+          } else {
+            pub.turn = 'p';
+            break;
+          }
+        }
+        // else: Орион держит ход (предмет / холостой в себя)
+      }
+    }
+
+    // --- Запись результата ---
+    if (pub.st !== 'a') {
+      // Игра закончена: начисляем/нет, удаляем из RTDB
+      await finishGame(uid, pub.st === 'p');
+      await rtdb().ref().update({
+        [`games/${gameId}`]:   null,
+        [`secrets/${gameId}`]: null,
+      });
+    } else {
+      // Атомарно обновляем оба узла
+      await rtdb().ref().update({
+        [`games/${gameId}`]:   pub,
+        [`secrets/${gameId}`]: { ammo },
+      });
+    }
+
+    return { st: pub.st, log: pub.log };
+  }
+);
+
+/* ─────────────────────────────────────────────────────── */
+
+/** Вызывается фронтендом при уходе со страницы — сессия сгорает. */
+export const abandonRoulette = onCall(
+  { region: 'us-central1', enforceAppCheck: true },
+  async (req) => {
+    if (!req.auth) throw new HttpsError('unauthenticated', 'Требуется авторизация');
+    const uid = req.auth.uid;
+    const { gameId } = req.data as { gameId: string };
+    if (!gameId) throw new HttpsError('invalid-argument', 'Нет gameId');
+
+    const snap = await rtdb().ref(`games/${gameId}`).once('value');
+    if (!snap.exists()) return { ok: true };
+
+    const pub: PubState = snap.val();
+    if (pub.uid !== uid) throw new HttpsError('permission-denied', 'Не ваша игра');
+    if (pub.st  !== 'a') return { ok: true }; // уже завершена
+
+    // Орион побеждает по умолчанию (ставка уже списана, возврата нет)
+    await Promise.all([
+      rtdb().ref(`games/${gameId}`).remove(),
+      rtdb().ref(`secrets/${gameId}`).remove(),
+    ]);
+
+    return { ok: true };
+  }
+);

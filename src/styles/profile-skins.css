@@ -163,3 +163,209 @@
 
 .profile-container.bg_synthwave-theme h4 { color: #00f3ff !important; }
 .profile-container.bg_synthwave-theme .top-bar { border-color: #ff00de !important; }
+/* ==========================================================================
+   PROTOMAP PROFILE SKINS — ADDITION
+   bg_genesis — Платиново-голографический фон Ветерана
+   Добавить в конец src/styles/profile-skins.css
+   ========================================================================== */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BG_GENESIS — «Истоки». Архитектура. Первая сборка. Только для олдов.
+   Принцип: холодная платина, wireframe-глубина, ЭЛТ-изысканность.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ──── АНИМАЦИИ ────────────────────────────────────────────────────────── */
+
+/* Медленный дрейф сетки — только transform, zero reflow */
+@keyframes genesis-grid-drift {
+    0%   { background-position: 0px 0px,   40px 40px,  0% 50%; }
+    100% { background-position: 80px 80px, 120px 120px, 0% 50%; }
+}
+
+/* Проход тонкого сканлайна */
+@keyframes genesis-scan-pass {
+    0%   { transform: translateY(-5%);  opacity: 0; }
+    5%   { opacity: 1; }
+    95%  { opacity: 1; }
+    100% { transform: translateY(105%); opacity: 0; }
+}
+
+/* Мягкая голографическая виньетка */
+@keyframes genesis-vignette {
+    0%, 100% { opacity: 0.65; }
+    50%       { opacity: 1.0; }
+}
+
+/* Шиммер имени пользователя */
+@keyframes genesis-name-shimmer {
+    0%   { background-position: -250% center; }
+    100% { background-position:  250% center; }
+}
+
+/* ──── BACKDROP ────────────────────────────────────────────────────────── */
+
+.profile-backdrop.bg_genesis {
+    background-color: #050a12;
+
+    /*
+       Слои (снизу вверх):
+       1. Горизонтальная wireframe-сетка (40px)
+       2. Вертикальная wireframe-сетка (40px)
+       3. Диагональные тончайшие линии для «объёма» (80px)
+       4. Центральный радиальный туман (глубина)
+       5. Краевая виньетка (тьма по углам)
+    */
+    background-image:
+        linear-gradient(rgba(100,200,255,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,200,255,0.06) 1px, transparent 1px),
+        linear-gradient(45deg, rgba(100,200,255,0.025) 1px, transparent 1px),
+        radial-gradient(ellipse at 50% 35%, rgba(80,140,220,0.07) 0%, transparent 65%),
+        radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,5,18,0.88) 100%);
+    background-size: 40px 40px, 40px 40px, 80px 80px, 100% 100%, 100% 100%;
+    overflow: hidden;
+
+    /* Дрейф сетки */
+    animation: genesis-grid-drift 35s linear infinite;
+}
+
+/* Сканлайн */
+.profile-backdrop.bg_genesis::before {
+    content: '';
+    position: absolute;
+    left: 0; width: 100%;
+    /* Высота — тонкая полоса */
+    height: 60px;
+    background: linear-gradient(
+        to bottom,
+        transparent                0%,
+        rgba(140,200,255,0.03)    25%,
+        rgba(160,215,255,0.065)   50%,
+        rgba(140,200,255,0.03)    75%,
+        transparent               100%
+    );
+    pointer-events: none;
+    animation: genesis-scan-pass 14s linear infinite;
+}
+
+/* Голографическая виньетка-рамка */
+.profile-backdrop.bg_genesis::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* Многослойный inset-shadow: края экрана темнее, контур светлее */
+    box-shadow:
+        inset 0 0 80px  rgba(0,5,18,0.7),
+        inset 0 0 140px rgba(0,5,18,0.4),
+        /* Тонкий ореол цвета платины по краю */
+        inset 0 0 0 1px rgba(100,180,255,0.06);
+    pointer-events: none;
+    animation: genesis-vignette 8s ease-in-out infinite;
+}
+
+/* ──── КОНТЕЙНЕР ПРОФИЛЯ ──────────────────────────────────────────────── */
+
+.profile-container.bg_genesis-theme {
+    /* Почти непрозрачный тёмный стекло */
+    background: rgba(5,9,18,0.90) !important;
+    backdrop-filter: blur(18px) saturate(115%) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(115%) !important;
+
+    /* Тонкий платиновый бордер */
+    border: 1px solid rgba(170,205,240,0.25) !important;
+
+    /* Холодное внешнее свечение */
+    box-shadow:
+        0 0 40px  rgba(100,170,255,0.08),
+        0 0 100px rgba(100,170,255,0.04),
+        inset 0 0 30px rgba(100,170,255,0.03) !important;
+}
+
+/* Имя пользователя: металлический градиентный шиммер */
+.profile-container.bg_genesis-theme .profile-username {
+    /* Платина → лёд → белый → лёд → платина */
+    background: linear-gradient(
+        90deg,
+        #c8d8ea  0%,
+        #e5e4e2 20%,
+        #ffffff 40%,
+        #b8d0f0 55%,
+        #e5e4e2 70%,
+        #c8d8ea 100%
+    ) !important;
+    background-size: 280% 100% !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    color: transparent !important;
+
+    /* Мягкое drop-shadow вместо text-shadow */
+    filter: drop-shadow(0 0 8px rgba(180,220,255,0.35)) !important;
+    text-shadow: none !important;
+    font-weight: 900;
+
+    animation: genesis-name-shimmer 6s linear infinite !important;
+}
+
+/* Заголовки секций */
+.profile-container.bg_genesis-theme h4 {
+    color: rgba(170,205,240,0.75) !important;
+    letter-spacing: 0.16em;
+    text-shadow: none !important;
+}
+
+/* Разделители */
+.profile-container.bg_genesis-theme .profile-section {
+    border-bottom-color: rgba(100,170,255,0.10) !important;
+}
+
+/* Топ-бар */
+.profile-container.bg_genesis-theme .top-bar {
+    border-bottom-color: rgba(170,205,240,0.18) !important;
+    color: rgba(170,205,240,0.55);
+}
+.profile-container.bg_genesis-theme .top-bar::before {
+    background-color: #b0d4f1 !important;
+    box-shadow: 0 0 5px #b0d4f1 !important;
+}
+
+/* Угловые блики — холодно-платиновые вместо жёлтых */
+.profile-container.bg_genesis-theme .corner-bg {
+    background: radial-gradient(circle,
+        rgba(180,215,250,0.55) 0%,
+        rgba(180,215,250,0) 60%) !important;
+}
+
+/* Кнопки действий */
+.profile-container.bg_genesis-theme .profile-actions .neon-btn {
+    --primary-color: #b0d4f1 !important;
+    border-color: rgba(170,210,245,0.45) !important;
+    color: #c8ddf0 !important;
+    box-shadow:
+        0 0 8px rgba(160,210,255,0.18),
+        inset 0 0 6px rgba(160,210,255,0.05) !important;
+}
+.profile-container.bg_genesis-theme .profile-actions .neon-btn:hover {
+    box-shadow:
+        0 0 22px rgba(160,210,255,0.42),
+        inset 0 0 10px rgba(160,210,255,0.08) !important;
+    color: #fff !important;
+}
+
+/* Текст «о себе» */
+.profile-container.bg_genesis-theme .about-me-text {
+    color: rgba(200,220,240,0.82);
+}
+
+/* Социальные ссылки */
+.profile-container.bg_genesis-theme .social-link-btn {
+    border-color: rgba(160,200,240,0.22) !important;
+    color: rgba(180,210,240,0.75) !important;
+    background: rgba(8,14,28,0.55) !important;
+    transition: all 0.2s;
+}
+.profile-container.bg_genesis-theme .social-link-btn:hover {
+    border-color: rgba(180,215,255,0.65) !important;
+    color: #fff !important;
+    box-shadow: 0 0 14px rgba(160,210,255,0.25) !important;
+    transform: scale(1.07);
+}

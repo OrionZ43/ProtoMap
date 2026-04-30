@@ -746,3 +746,453 @@
 .user-avatar-marker.frame_dev img {
     border: 2px solid #ff003c !important;
 }
+/* ==========================================================================
+   PROTOMAP COSMETICS — ADDITIONS v2.1
+   frame_anniversary | frame_alpha (redesign) | frame_genesis (premium)
+   Добавить в конец src/styles/cosmetics.css
+   ========================================================================== */
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1. FRAME_ANNIVERSARY — Праздничная рамка «1 год ProtoMap»
+   Вращающийся gradient-ring + редкие мелкие искры по периметру
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes anniv-ring-spin  { to { transform: rotate(360deg); } }
+@keyframes anniv-outer-spin { to { transform: rotate(-360deg); } }
+@keyframes anniv-aura-pulse {
+    0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 4px rgba(255,215,0,0.5)); }
+    50%       { opacity: 1;   filter: drop-shadow(0 0 9px rgba(255,215,0,0.85)); }
+}
+@keyframes anniv-sparks {
+    0%   { background-position: 0px 0px,  10px 10px, 5px -5px, -5px 5px; }
+    100% { background-position: 32px 32px, 42px 42px, 37px 27px, 27px 37px; }
+}
+
+.avatar-wrapper.frame_anniversary,
+.user-avatar-marker.frame_anniversary,
+.avatar-wrapper-popup.frame_anniversary,
+.comment-avatar-wrapper.frame_anniversary {
+    position: relative;
+    overflow: visible !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    animation: anniv-aura-pulse 2.8s ease-in-out infinite;
+}
+
+.frame_anniversary img {
+    border-radius: 50% !important;
+    width: 100% !important; height: 100% !important;
+    object-fit: cover !important;
+    border: none !important;
+    position: relative; z-index: 5;
+}
+
+/* Основное кольцо — быстрое вращение conic-gradient */
+.avatar-wrapper.frame_anniversary::before,
+.user-avatar-marker.frame_anniversary::before,
+.avatar-wrapper-popup.frame_anniversary::before,
+.comment-avatar-wrapper.frame_anniversary::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    z-index: 1;
+    padding: 3px;
+    background: conic-gradient(
+        #ffd700, #ff6ec7, #ff00ff, #00f0ff,
+        #ff6ec7, #ffd700, #ff00ff, #00f0ff, #ffd700
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: anniv-ring-spin 3.5s linear infinite;
+}
+
+/* Искры — только по периметру, редкие */
+.avatar-wrapper.frame_anniversary::after,
+.user-avatar-marker.frame_anniversary::after,
+.avatar-wrapper-popup.frame_anniversary::after,
+.comment-avatar-wrapper.frame_anniversary::after {
+    content: '';
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+        radial-gradient(circle, #ffd700 1.5px, transparent 1.5px),
+        radial-gradient(circle, #ff00ff 1px,   transparent 1px),
+        radial-gradient(circle, #00f0ff 1px,   transparent 1px),
+        radial-gradient(circle, #ff6ec7 1.5px, transparent 1.5px);
+    background-size: 16px 16px, 13px 13px, 18px 18px, 14px 14px;
+    -webkit-mask: radial-gradient(transparent 54%, black 59%);
+    mask: radial-gradient(transparent 54%, black 59%);
+    opacity: 0.7;
+    animation: anniv-sparks 4s linear infinite;
+}
+
+/* Leaflet fix */
+.user-avatar-marker.frame_anniversary {
+    overflow: visible !important; background: transparent !important; box-shadow: none !important;
+}
+.user-avatar-marker.frame_anniversary img { border: none !important; border-radius: 50% !important; }
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2. FRAME_ALPHA — Альфа-тестер. Редизайн: стабильная рамка + редкие
+      яркие глитч-вспышки (хроматическая аберрация, сдвиг, разрывы).
+      Глитч срабатывает раз в ~8 секунд — неожиданно, коротко, эффектно.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ──── АНИМАЦИИ ────────────────────────────────────────────────────────── */
+
+/*
+   Главная идея: 92% времени рамка спокойна, затем за 0.6s
+   происходит серия из 4-5 резких кадров — разрыв контура,
+   хроматический сдвиг, мгновенная вспышка, возврат к норме.
+*/
+@keyframes alpha-ring-idle {
+    /* Спокойное медленное мерцание */
+    0%,  95% { opacity: 1; }
+    96%       { opacity: 0.6; }
+    97%       { opacity: 1; }
+    98%       { opacity: 0; }     /* моргание */
+    99%       { opacity: 1; }
+    100%      { opacity: 1; }
+}
+
+/*
+   Глитч-сдвиг псевдоэлемента: хроматическая аберрация.
+   Суть — один кадр красный сдвиг влево, один — синий вправо,
+   потом нормально. Весь цикл 9s, активная фаза 0.6s.
+*/
+@keyframes alpha-glitch-front {
+    /* 0–89%: ничего не происходит */
+    0%,  89.9% {
+        transform: translate(0, 0);
+        clip-path: none;
+        filter: none;
+        opacity: 1;
+    }
+    /* 90%: красный сдвиг влево — «разлёт» каналов */
+    90% {
+        transform: translate(-3px, 0);
+        filter: drop-shadow(2px 0 0 #ff003c) drop-shadow(-2px 0 0 #00f0ff);
+        clip-path: inset(0 0 60% 0);
+        opacity: 1;
+    }
+    /* 91%: синий сдвиг вправо */
+    91% {
+        transform: translate(3px, 1px);
+        filter: drop-shadow(-3px 0 0 #ff003c) drop-shadow(3px 0 0 #39ff14);
+        clip-path: inset(40% 0 0 0);
+        opacity: 1;
+    }
+    /* 92%: вспышка — всё белое */
+    92% {
+        transform: translate(0, 0);
+        filter: brightness(3) saturate(0);
+        clip-path: none;
+        opacity: 0.9;
+    }
+    /* 93%: нормально */
+    93% {
+        transform: translate(0, 0);
+        filter: none;
+        clip-path: none;
+        opacity: 1;
+    }
+    /* 94%: мелкий сдвиг второй волны */
+    94% {
+        transform: translate(2px, -1px);
+        filter: drop-shadow(-2px 0 0 #ff8c00);
+        clip-path: inset(70% 0 0 0);
+        opacity: 1;
+    }
+    /* 95%–100%: восстановление */
+    95%, 100% {
+        transform: translate(0, 0);
+        filter: none;
+        clip-path: none;
+        opacity: 1;
+    }
+}
+
+/* Сканлайн-разрыв поверх аватарки */
+@keyframes alpha-scanline-glitch {
+    0%,  89.9% { opacity: 0; transform: translateY(0); }
+    90%         { opacity: 0.7; transform: translateY(20%); }
+    91%         { opacity: 0;   transform: translateY(60%); }
+    92%         { opacity: 0.5; transform: translateY(-10%); }
+    93%, 100%   { opacity: 0;   transform: translateY(0); }
+}
+
+/* Плашка α-TEST — мерцает в момент глитча */
+@keyframes alpha-badge-glitch {
+    0%,  89.9% { opacity: 1; transform: translateX(-50%) skew(0deg); color: #39ff14; background: #39ff14; }
+    90%         { opacity: 1; transform: translateX(-47%) skew(-8deg); color: #fff; background: #ff8c00; }
+    91%         { opacity: 0; transform: translateX(-50%); }
+    92%         { opacity: 1; transform: translateX(-53%) skew(4deg); color: #fff; background: #ff003c; }
+    93%, 100%   { opacity: 1; transform: translateX(-50%) skew(0deg); color: #39ff14; background: #39ff14; }
+}
+
+/* ──── КОНТЕЙНЕРЫ ──────────────────────────────────────────────────────── */
+
+.avatar-wrapper.frame_alpha,
+.user-avatar-marker.frame_alpha,
+.avatar-wrapper-popup.frame_alpha,
+.comment-avatar-wrapper.frame_alpha {
+    position: relative;
+    overflow: visible !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Изображение: слабый токсичный тонтинг */
+.frame_alpha img {
+    border-radius: 50% !important;
+    width: 100% !important; height: 100% !important;
+    object-fit: cover !important;
+    border: none !important;
+    position: relative; z-index: 5;
+    filter: brightness(0.95) saturate(1.15) hue-rotate(-6deg);
+}
+
+/* ::before — основное кольцо + глитч-анимация */
+.avatar-wrapper.frame_alpha::before,
+.user-avatar-marker.frame_alpha::before,
+.avatar-wrapper-popup.frame_alpha::before,
+.comment-avatar-wrapper.frame_alpha::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    z-index: 10;
+    pointer-events: none;
+
+    /* Рваная пунктирная рамка с чередованием цветов */
+    border: 2px dashed #39ff14;
+    box-shadow:
+        0 0 6px #39ff14,
+        0 0 14px rgba(57,255,20,0.25),
+        inset 0 0 4px rgba(57,255,20,0.1);
+
+    /* Применяем оба: idle-мерцание и глитч-хроматику */
+    animation:
+        alpha-ring-idle       9s   steps(1, end) infinite,
+        alpha-glitch-front    9s   steps(1, end) infinite;
+}
+
+/* ::after — плашка «α-TEST» + сканлайн-разрыв через content */
+.avatar-wrapper.frame_alpha::after,
+.user-avatar-marker.frame_alpha::after,
+.avatar-wrapper-popup.frame_alpha::after,
+.comment-avatar-wrapper.frame_alpha::after {
+    content: 'α-TEST';
+    position: absolute;
+    bottom: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    background: #39ff14;
+    color: #000;
+    font-family: 'Chakra Petch', monospace;
+    font-weight: 900;
+    font-size: 9px;
+    line-height: 1.3;
+    padding: 2px 6px;
+    min-width: 34px;
+    text-align: center;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.5);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.7), 0 0 6px rgba(57,255,20,0.4);
+    z-index: 20;
+    letter-spacing: 0.1em;
+
+    animation: alpha-badge-glitch 9s steps(1, end) infinite;
+}
+
+/* Leaflet fix */
+.user-avatar-marker.frame_alpha {
+    overflow: visible !important; background: transparent !important; box-shadow: none !important;
+}
+.user-avatar-marker.frame_alpha img { border: none !important; border-radius: 50% !important; }
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3. FRAME_GENESIS — Элитная рамка Ветерана. Платина. Премиально.
+   Принцип: дорогой минимализм, холодный блеск, тихая мощь.
+   Никакого мигания, никакого нарочитого неона.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ──── АНИМАЦИИ ────────────────────────────────────────────────────────── */
+
+/* Очень медленное вращение платинового арка */
+@keyframes genesis-arc-rotate {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* Плавное холодное свечение-дыхание */
+@keyframes genesis-breathe {
+    0%, 100% {
+        filter:
+            drop-shadow(0 0 4px rgba(200,215,235,0.3))
+            drop-shadow(0 0 12px rgba(140,180,220,0.15));
+    }
+    50% {
+        filter:
+            drop-shadow(0 0 8px rgba(200,215,235,0.55))
+            drop-shadow(0 0 22px rgba(140,180,220,0.30))
+            drop-shadow(0 0 40px rgba(100,160,255,0.12));
+    }
+}
+
+/* Шиммер внутри кольца — точка яркого света, бегущая по окружности */
+@keyframes genesis-shimmer-run {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* ──── КОНТЕЙНЕРЫ ──────────────────────────────────────────────────────── */
+
+.avatar-wrapper.frame_genesis,
+.user-avatar-marker.frame_genesis,
+.avatar-wrapper-popup.frame_genesis,
+.comment-avatar-wrapper.frame_genesis {
+    position: relative;
+    overflow: visible !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    /* Дыхание — на весь аватар */
+    animation: genesis-breathe 7s ease-in-out infinite;
+}
+
+/* Фото: тонкая платиновая обводка, холодный тонтинг */
+.frame_genesis img {
+    border-radius: 50% !important;
+    width: 100% !important; height: 100% !important;
+    object-fit: cover !important;
+    /* Тонкая обводка цвета платины прямо у края фото */
+    border: 1.5px solid rgba(200,218,240,0.45) !important;
+    position: relative; z-index: 5;
+    /* Лёгкое охлаждение */
+    filter: brightness(0.97) saturate(0.88) contrast(1.03);
+    /* Тонкая нижняя тень для объёма */
+    box-shadow:
+        inset 0 -20px 20px -10px rgba(0,10,30,0.35),
+        inset 0  8px  16px -8px  rgba(160,200,255,0.06) !important;
+}
+
+/* ::before — ДВОЙНОЕ КОЛЬЦО:
+   Внешнее (медленное) платиново-голографическое кольцо
+   + внутри него бегущий шиммер-блик
+*/
+.avatar-wrapper.frame_genesis::before,
+.user-avatar-marker.frame_genesis::before,
+.avatar-wrapper-popup.frame_genesis::before,
+.comment-avatar-wrapper.frame_genesis::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    z-index: 10;
+    pointer-events: none;
+    padding: 2.5px;
+
+    /*
+       Conic-gradient: 90% прозрачного, 10% яркого платина/льда.
+       Медленное вращение создаёт эффект «бегущей искры».
+    */
+    background: conic-gradient(
+        rgba(229,228,226, 0.0)   0deg,
+        rgba(229,228,226, 0.08) 60deg,
+        rgba(200,220,255, 0.55) 100deg,   /* основной блик */
+        rgba(229,228,226, 0.85) 120deg,   /* максимум яркости */
+        rgba(200,220,255, 0.55) 140deg,
+        rgba(229,228,226, 0.08) 180deg,
+        rgba(229,228,226, 0.0)  240deg,
+        /* Второй, слабый блик напротив */
+        rgba(160,200,240, 0.20) 300deg,
+        rgba(160,200,240, 0.30) 320deg,
+        rgba(160,200,240, 0.20) 340deg,
+        rgba(229,228,226, 0.0)  360deg
+    );
+
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+
+    /* Медленно: 16 секунд оборот */
+    animation: genesis-arc-rotate 16s linear infinite;
+}
+
+/* ::after — строгая плашка V-01 */
+.avatar-wrapper.frame_genesis::after,
+.user-avatar-marker.frame_genesis::after,
+.avatar-wrapper-popup.frame_genesis::after,
+.comment-avatar-wrapper.frame_genesis::after {
+    content: 'V-01';
+    position: absolute;
+    bottom: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    /* Тёмная подложка, платиновый текст */
+    background: rgba(6,10,20,0.92);
+    color: #c8d8ea;
+    font-family: 'Chakra Petch', monospace;
+    font-weight: 900;
+    font-size: 9px;
+    line-height: 1.3;
+    padding: 2px 7px;
+    min-width: 30px;
+    text-align: center;
+    border-radius: 3px;
+
+    /* Тонкая платиновая рамка + очень мягкое свечение */
+    border: 1px solid rgba(180,210,240,0.45);
+    box-shadow:
+        0 2px 8px rgba(0,0,0,0.8),
+        0 0 6px rgba(180,210,240,0.15),
+        inset 0 0 4px rgba(180,210,240,0.05);
+
+    letter-spacing: 0.16em;
+    z-index: 20;
+    /* NO animation — плашка всегда стабильна. Это и есть премиальность. */
+}
+
+/* Дополнительный слой: «сеточный скан» поверх фото через второй ::before.
+   Поскольку у нас только 2 псевдоэлемента, реализуем через repeating-gradient
+   внутри box-shadow (только визуальный намёк, не настоящая сетка). */
+.avatar-wrapper.frame_genesis img,
+.user-avatar-marker.frame_genesis img,
+.avatar-wrapper-popup.frame_genesis img,
+.comment-avatar-wrapper.frame_genesis img {
+    /* Мягкая голографическая сетка через многократный box-shadow */
+    box-shadow:
+        /* Горизонтальные намёки на скан-линии */
+        inset 0   33% 0 -32.5% rgba(160,210,255,0.03),
+        inset 0   66% 0 -65.5% rgba(160,210,255,0.03),
+        /* Объём */
+        inset 0 -20px 20px -10px rgba(0,8,24,0.4),
+        inset 0  10px 18px -10px rgba(160,200,255,0.05) !important;
+}
+
+/* Leaflet fix */
+.user-avatar-marker.frame_genesis {
+    overflow: visible !important; background: transparent !important; box-shadow: none !important;
+}
+.user-avatar-marker.frame_genesis img {
+    border: 1.5px solid rgba(200,218,240,0.45) !important;
+    border-radius: 50% !important;
+}
