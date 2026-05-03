@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { browser } from '$app/environment';
+    import AnniversaryCountdown from '$lib/components/AnniversaryCountdown.svelte';
 
     let mapInstance: { map: any; markers: any; destroy: () => void } | null = null;
 
@@ -21,5 +22,6 @@
 </script>
 
 <div class="flex-grow w-full h-[calc(100vh-64px)] relative overflow-hidden">
+<AnniversaryCountdown />
     <div id="map-container" class="w-full h-full" style="background: #050a10;"></div>
 </div>
