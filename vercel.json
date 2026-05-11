@@ -1,0 +1,11 @@
+{
+  "routes": [
+    {
+      "src": "/api/og/(.*)",
+      "rateLimit": {
+        "requests": 20,
+        "window": "1m"
+      }
+    }
+  ]
+}

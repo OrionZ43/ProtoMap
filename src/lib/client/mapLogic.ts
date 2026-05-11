@@ -18,7 +18,7 @@ function createCyberPopup(userData: MarkerUserData, city: string, isOwner: boole
     // [ЭТАП 3] Используем uid-based URL если доступен
     const profileUrl = userData.uid
         ? `/u/${userData.uid}`
-        : `/profile/${encodeURIComponent(userData.username.trim())}`;
+        : `/u/${encodeURIComponent(userData.username.trim())}`;
     const defaultAvatar = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(userData.username.trim())}`;
 
     const frameClass = userData.equipped_frame || '';

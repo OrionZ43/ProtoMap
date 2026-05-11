@@ -158,7 +158,24 @@
 </script>
 
 <svelte:head>
-    <title>{$t('coin.title')} | The Glitch Pit</title>
+<title>{$t('coin.title')} | The Glitch Pit</title>
+<meta name="description" content="Орёл или решка — испытай удачу в классическом Coin Flip." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://proto-map.vercel.app/casino/coin-flip" />
+<meta property="og:title" content="{$t('coin.title')} | The Glitch Pit" />
+<meta property="og:description" content="Орёл или решка — испытай удачу в классическом Coin Flip." />
+<meta property="og:image" content="https://proto-map.vercel.app/api/og/casino?page=coin" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:site_name" content="ProtoMap" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="{$t('coin.title')} | The Glitch Pit" />
+<meta name="twitter:description" content="Орёл или решка — испытай удачу в классическом Coin Flip." />
+<meta name="twitter:image" content="https://proto-map.vercel.app/api/og/casino?page=coin" />
+
+<link rel="canonical" href="https://proto-map.vercel.app/casino/coin-flip" />
 </svelte:head>
 
 <!-- ⬅️ НОВОЕ: Закрываем тултип по клику на фон -->

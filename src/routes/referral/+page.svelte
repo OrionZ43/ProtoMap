@@ -146,6 +146,26 @@
 
 <svelte:head>
     <title>{$t('referral.page_title')} | ProtoMap</title>
+    <meta name="description" content="Пригласи друга на ProtoMap — оба получите награду. Следи за рейтингом в таблице лидеров." />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://proto-map.vercel.app/referral" />
+    <meta property="og:title" content="Реферальная программа | ProtoMap" />
+    <meta property="og:description" content="Пригласи друга на ProtoMap — оба получите награду. Следи за рейтингом в таблице лидеров." />
+    <meta property="og:image" content="https://proto-map.vercel.app/api/og?page=referral" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:site_name" content="ProtoMap" />
+    <meta property="og:locale" content="ru_RU" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://proto-map.vercel.app/referral" />
+    <meta name="twitter:title" content="Реферальная программа | ProtoMap" />
+    <meta name="twitter:description" content="Пригласи друга на ProtoMap — оба получите награду. Следи за рейтингом в таблице лидеров." />
+    <meta name="twitter:image" content="https://proto-map.vercel.app/api/og?page=referral" />
+
+    <link rel="canonical" href="https://proto-map.vercel.app/referral" />
 </svelte:head>
 
 <div class="page-wrap" style="opacity: {$opacity}">

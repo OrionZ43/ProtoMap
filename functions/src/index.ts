@@ -11,6 +11,7 @@ import vision from "@google-cloud/vision";
 export { getStepperStatus, stepperClaim } from './stepper';
 export { getOrCreateReferralCode, claimReferral, getReferralStatus, finishReferralCampaign } from './referralFunctions';
 export { startRoulette, makeRouletteAction, abandonRoulette } from './roulette';
+import { auth } from "firebase-functions/v1";
 
 exports.telegramWebhook = telegramWebhook;
 
@@ -1743,7 +1744,7 @@ async function checkImageSafety(imageBase64: string): Promise<{
 }
 
 export const uploadAvatar = onCall(
-    { secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"] },
+    { secrets:["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"] },
     async (request) => {
         if (request.app == undefined) {
             throw new HttpsError("failed-precondition", "The function must be called from an App Check verified app.");
@@ -1770,59 +1771,7 @@ export const uploadAvatar = onCall(
         }
 
         // ===================================================================
-        // 🔍 ШАГ 1: Cloud Vision SafeSearch
-        // ===================================================================
-        const safetyResult = await checkImageSafety(imageBase64);
-
-        if (!safetyResult.safe) {
-            await db.collection("moderation_flags").add({
-                uid,
-                reason: safetyResult.reason || "unknown",
-                type: "avatar_upload_blocked",
-                createdAt: FieldValue.serverTimestamp()
-            });
-
-            console.warn(`[VISION] Blocked avatar upload for ${uid}. Reason: ${safetyResult.reason}`);
-
-            const botToken = process.env.TELEGRAM_BOT_TOKEN;
-            const chatId = process.env.TELEGRAM_CHAT_ID;
-            if (botToken && chatId) {
-                const userDoc = await db.collection("users").doc(uid).get();
-                const username = userDoc.data()?.username || uid;
-                const adminLink = "https://proto-map.vercel.app/admin/users";
-                const msg = `⚠️ *ЗАБЛОКИРОВАНА ЗАГРУЗКА АВАТАРА*\n\n`
-                    + `👤 Пользователь: \`${escapeMarkdownV2(username)}\` \(${escapeMarkdownV2(uid)}\)\n`
-                    + `🚫 Причина: \`${escapeMarkdownV2(safetyResult.reason || "unknown")}\`\n`
-                    + `🔗 [Открыть админку](${escapeMarkdownV2(adminLink)})`;
-
-                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        text: msg,
-                        parse_mode: "MarkdownV2",
-                        disable_web_page_preview: true
-                    })
-                }).catch(e => console.error("[VISION] Telegram notify failed:", e));
-            }
-
-            throw new HttpsError("invalid-argument", "Изображение не прошло проверку безопасности.");
-        }
-
-        // Если лимит Vision исчерпан — аватар загружается, но ставится в очередь ручной модерации
-        if (safetyResult.skipped) {
-            await db.collection("moderation_queue").add({
-                uid,
-                type: "avatar_pending_review",
-                reason: "vision_limit_reached",
-                createdAt: FieldValue.serverTimestamp(),
-                status: "pending"
-            });
-        }
-
-        // ===================================================================
-        // ☁️ ШАГ 2: Загрузка в Cloudinary
+        // ☁️ ШАГ 1: Загрузка в Cloudinary (СНАЧАЛА ГРУЗИМ)
         // ===================================================================
         const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
         const apiKey = process.env.CLOUDINARY_API_KEY;
@@ -1840,22 +1789,86 @@ export const uploadAvatar = onCall(
             secure: true,
         });
 
+        let newAvatarUrl = "";
         try {
             const res = await cloudinary.uploader.upload(imageBase64, {
                 folder: "protomap_avatars",
                 public_id: uid,
                 overwrite: true,
                 format: "webp",
-                transformation: [{ width: 256, height: 256, crop: "fill", gravity: "face" }]
+                transformation:[{ width: 256, height: 256, crop: "fill", gravity: "face" }]
             });
-            await db.collection("users").doc(uid).update({ avatar_url: res.secure_url });
+            newAvatarUrl = res.secure_url;
+
+            // СРАЗУ ОБНОВЛЯЕМ ПРОФИЛЬ (Пользователь не ждет модерации)
+            await userRef.update({
+                avatar_url: newAvatarUrl,
+                last_avatar_upload: FieldValue.serverTimestamp()
+            });
             await clearMapCache();
-            await userRef.update({ last_avatar_upload: FieldValue.serverTimestamp() });
-            await clearMapCache();
-            return { avatarUrl: res.secure_url };
         } catch (e) {
             throw new HttpsError("internal", "Upload failed.");
         }
+
+        // ===================================================================
+        // 🔍 ШАГ 2: Тихая проверка Cloud Vision (ПОСТ-МОДЕРАЦИЯ)
+        // ===================================================================
+        const safetyResult = await checkImageSafety(imageBase64);
+
+        if (!safetyResult.safe) {
+            // Пишем в логи, что аватар "на проверке", а не заблокирован
+            await db.collection("moderation_flags").add({
+                uid,
+                reason: safetyResult.reason || "unknown",
+                type: "avatar_flagged_for_review",
+                url: newAvatarUrl, // Сохраняем ссылку в БД для удобства
+                createdAt: FieldValue.serverTimestamp()
+            });
+
+            console.warn(`[VISION] Flagged avatar for ${uid}. Reason: ${safetyResult.reason}`);
+
+            const botToken = process.env.TELEGRAM_BOT_TOKEN;
+            const chatId = process.env.TELEGRAM_CHAT_ID;
+
+            if (botToken && chatId) {
+                const username = userDoc.data()?.username || uid;
+                const adminLink = "https://proto-map.vercel.app/admin/users";
+
+                // Текст сообщения для ТГ
+                const caption = `⚠️ *ПОДОЗРИТЕЛЬНАЯ АВАТАРКА*\n\n`
+                    + `👤 Юзер: \`${escapeMarkdownV2(username)}\` \(${escapeMarkdownV2(uid)}\)\n`
+                    + `🚨 Гугл ругается на: \`${escapeMarkdownV2(safetyResult.reason || "unknown")}\`\n\n`
+                    + `_Аватар уже установлен, но требует твоего взгляда._\n`
+                    + `🔗[Перейти в Админку](${escapeMarkdownV2(adminLink)})`;
+
+                // 📸 ОТПРАВЛЯЕМ САМУ КАРТИНКУ (sendPhoto вместо sendMessage)
+                await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        photo: newAvatarUrl, // Ссылка на картинку из Cloudinary
+                        caption: caption,
+                        parse_mode: "MarkdownV2"
+                    })
+                }).catch(e => console.error("[VISION] Telegram notify failed:", e));
+            }
+
+            // МЫ БОЛЬШЕ НЕ ВЫКИДЫВАЕМ ОШИБКУ: throw new HttpsError(...) удален!
+        } else if (safetyResult.skipped) {
+            // Очередь ручной модерации при исчерпании лимитов Vision
+            await db.collection("moderation_queue").add({
+                uid,
+                type: "avatar_pending_review",
+                reason: "vision_limit_reached",
+                url: newAvatarUrl,
+                createdAt: FieldValue.serverTimestamp(),
+                status: "pending"
+            });
+        }
+
+        // Возвращаем успех пользователю в любом случае
+        return { avatarUrl: newAvatarUrl };
     }
 );
 
@@ -1876,6 +1889,7 @@ interface ReportData {
     reason: string;
     reportedUsername?: string;
     reporterUsername?: string;
+    reportedUserUid?: string;
     profileOwnerUsername?: string;
 }
 
@@ -1900,6 +1914,7 @@ export const reportContent = onCall(
             reason,
             reportedUsername,
             reporterUsername,
+            reportedUserUid,
             profileOwnerUsername
         } = request.data as ReportData;
 
@@ -1940,18 +1955,25 @@ export const reportContent = onCall(
             const chatId = process.env.TELEGRAM_CHAT_ID;
 
             if (botToken && chatId) {
-                const baseUrl = "https://proto-map.vercel.app/profile/";
+                const BASE = "https://proto-map.vercel.app";
 
+                // reporter — uid всегда известен из request.auth
                 const reporterLink = reporterUsername
-                    ? `[${escapeMarkdownV2(reporterUsername)}](${baseUrl}${escapeMarkdownV2(reporterUsername)})`
+                    ? `[${escapeMarkdownV2(reporterUsername)}](${BASE}/u/${reporterUid})`
                     : `\`${reporterUid}\``;
 
-                const reportedUserLink = reportedUsername
-                    ? `[${escapeMarkdownV2(reportedUsername)}](${baseUrl}${escapeMarkdownV2(reportedUsername)})`
-                    : `\`UID: ${reportedContentId}\``;
+                // reported user — uid если передан явно, для profile-репорта берём reportedContentId
+                const resolvedReportedUid = reportedUserUid
+                    ?? (type === 'profile' ? reportedContentId : null);
+                const reportedUserLink = resolvedReportedUid
+                    ? `[${escapeMarkdownV2(reportedUsername ?? resolvedReportedUid)}](${BASE}/u/${resolvedReportedUid})`
+                    : reportedUsername
+                        ? `[${escapeMarkdownV2(reportedUsername)}](${BASE}/u/${encodeURIComponent(reportedUsername)})`
+                        : `\`UID: ${reportedContentId}\``;
 
+                // profile owner — uid всегда передаётся в payload
                 const profileLink = profileOwnerUsername
-                    ? `[${escapeMarkdownV2(profileOwnerUsername)}](${baseUrl}${escapeMarkdownV2(profileOwnerUsername)})`
+                    ? `[${escapeMarkdownV2(profileOwnerUsername)}](${BASE}/u/${profileOwnerUid})`
                     : `\`${profileOwnerUid}\``;
 
                 let message = `🚨 *НОВЫЙ РЕПОРТ* 🚨\n\n`;
@@ -2209,3 +2231,112 @@ export const claimBirthdayBonus = onCall(async (request) => {
         throw new HttpsError('internal', 'Ошибка сервера при выдаче бонуса.');
     }
 });
+
+export const onUserCreated = auth.user().onCreate(async (user) => {
+    const uid   = user.uid;
+    const email = user.email || "";
+
+    // ── Шаг 1: Проверяем, существует ли документ ────────────────────
+    // Это защищает от двойной записи при гонке условий (race condition)
+    // между клиентом и триггером.
+    const userRef = db.collection("users").doc(uid);
+    const snap    = await userRef.get();
+
+    if (snap.exists) {
+        console.log(`[SafetyNet] Document already exists for uid=${uid}, skipping.`);
+        return null;
+    }
+
+    // ── Шаг 2: Генерируем username ───────────────────────────────────
+    // Приоритет: displayName → email-prefix → uid-prefix
+    const rawName = user.displayName
+        ?? email.split("@")[0]
+        ?? uid.substring(0, 12);
+
+    // Оставляем только латиницу, цифры и _
+    // Firestore rules требуют 3..20 символов
+    let base = rawName
+        .replace(/[^a-zA-Z0-9_]/g, "")
+        .substring(0, 16)                   // оставляем место для суффикса
+        || uid.substring(0, 12);            // крайний fallback
+
+    if (base.length < 3) {
+        base = `user_${uid.substring(0, 8)}`;
+    }
+
+    const username = await resolveUniqueUsername(base);
+
+    // ── Шаг 3: Собираем документ согласно Firestore Rules ────────────
+    // Поля строго соответствуют правилам allow create:
+    //   • username     string, 3..20
+    //   • email        string, len > 0
+    //   • createdAt    timestamp (serverTimestamp)
+    //   • casino_credits   == 100
+    //   • glitch_shards    == 0
+    //   • daily_streak     == 0
+    //   • isBanned         == false
+    //   • owned_items      == []
+    //   • last_daily_bonus == null
+    //   НЕТ поля 'role' (rules запрещают)
+    const newDoc = {
+        username,
+        email,
+        avatar_url:       user.photoURL || "",
+        about_me:         "",
+        status:           "",
+        social_link:      "",
+
+        casino_credits:   100,
+        glitch_shards:    0,
+        daily_streak:     0,
+        owned_items:      [],
+        last_daily_bonus: null,
+        isBanned:         false,
+
+        // Мета: помечаем, что документ создан триггером, а не клиентом.
+        // Это поможет при отладке и анализе онбординга.
+        _created_by:      "safety_net_trigger",
+        createdAt:        FieldValue.serverTimestamp(),
+    };
+
+    try {
+        // admin SDK обходит Firestore Rules — нам не нужен auth-контекст клиента
+        await userRef.set(newDoc);
+        console.log(`[SafetyNet] ✅ Profile created for uid=${uid}, username="${username}"`);
+    } catch (err) {
+        // Логируем, но не бросаем — триггер не должен крашить Auth flow
+        console.error(`[SafetyNet] ❌ Failed to create profile for uid=${uid}:`, err);
+    }
+
+    return null;
+});
+
+// ── Вспомогательная функция: уникальный username ─────────────────────
+// Пробует base, затем base_XXXX (4 цифры) до 5 раз.
+// Если все заняты — использует uid-prefix (всегда уникален).
+async function resolveUniqueUsername(base: string): Promise<string> {
+    const MAX_ATTEMPTS = 5;
+
+    // Попытка 1: имя как есть
+    const candidates: string[] = [base];
+
+    // Попытки 2-5: base + случайный 4-значный суффикс
+    for (let i = 1; i < MAX_ATTEMPTS; i++) {
+        const suffix = String(Math.floor(1000 + Math.random() * 9000));
+        candidates.push(`${base}_${suffix}`.substring(0, 20));
+    }
+
+    for (const candidate of candidates) {
+        const existing = await db
+            .collection("users")
+            .where("username", "==", candidate)
+            .limit(1)
+            .get();
+
+        if (existing.empty) return candidate;
+    }
+
+    // Абсолютный fallback: uid-prefix — коллизия невозможна
+    console.warn(`[SafetyNet] All username candidates taken for base="${base}", using uid fallback.`);
+    return `u_${db.collection("users").doc().id.substring(0, 12)}`;
+}

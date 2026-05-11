@@ -128,8 +128,26 @@
 </script>
 
 <svelte:head>
-    <title>{$t('nav.casino')} | ProtoMap</title>
+<title>{$t('nav.casino')} | The Glitch Pit</title>
+<meta name="description" content="Нестабильный сектор развлечений и аномалий" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://proto-map.vercel.app/casino" />
+<meta property="og:title" content="{$t('nav.casino')} | The Glitch Pit" />
+<meta property="og:description" content="Нестабильный сектор развлечений и аномалий" />
+<meta property="og:image" content="https://proto-map.vercel.app/api/og/casino?page=lobby" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:site_name" content="ProtoMap" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="{$t('nav.casino')} | The Glitch Pit" />
+<meta name="twitter:description" content="Нестабильный сектор развлечений и аномалий" />
+<meta name="twitter:image" content="https://proto-map.vercel.app/api/og/casino?page=lobby" />
+
+<link rel="canonical" href="https://proto-map.vercel.app/casino" />
 </svelte:head>
+
 
 <div class="page-container">
     <div class="bg-blur-1"></div>
@@ -290,7 +308,7 @@
                                         class="popup-avatar"
                                     />
                                 </div>
-                                <a href="/profile/{player.username}" class="username hover:underline">{player.username}</a>
+                                <a href="/u/{player.username}" class="username hover:underline">{player.username}</a>
                             </div>
 
                             <div class="credits font-display">

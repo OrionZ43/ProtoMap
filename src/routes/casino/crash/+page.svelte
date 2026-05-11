@@ -425,6 +425,24 @@
 
 <svelte:head>
     <title>{$t('crash.title')} | The Glitch Pit</title>
+    <meta name="description" content="Выводи вовремя — или потеряешь всё при краше. Data Uplink Crash Game." />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://proto-map.vercel.app/casino/crash" />
+    <meta property="og:title" content="{$t('crash.title')} | The Glitch Pit" />
+    <meta property="og:description" content="Выводи вовремя — или потеряешь всё при краше. Data Uplink Crash Game." />
+    <meta property="og:image" content="https://proto-map.vercel.app/api/og/casino?page=crash" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:site_name" content="ProtoMap" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{$t('crash.title')} | The Glitch Pit" />
+    <meta name="twitter:description" content="Выводи вовремя — или потеряешь всё при краше. Data Uplink Crash Game." />
+    <meta name="twitter:image" content="https://proto-map.vercel.app/api/og/casino?page=crash" />
+
+    <link rel="canonical" href="https://proto-map.vercel.app/casino/crash" />
 </svelte:head>
 
 <!-- ⬅️ НОВОЕ: Закрываем тултип по клику на фон -->

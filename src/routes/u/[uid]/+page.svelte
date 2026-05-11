@@ -334,7 +334,7 @@
         );
     }
 
-    async function handleReportComment(commentId: string, commentAuthorUsername: string) {
+    async function handleReportComment(commentId: string, commentAuthorUsername: string, commentAuthorUid: string) {
         if (!$userStore.user) {
             modal.warning(translate('ui.error'), translate('profile.login_req'));
             return;
@@ -353,7 +353,7 @@
                     const functions = getFunctions();
                     const reportContentFunc = httpsCallable(functions, 'reportContent');
                     modal.info(translate('ui.loading'), translate('profile.sending'));
-                    await reportContentFunc({ type: 'comment', reportedContentId: commentId, profileOwnerUid: data.profile.uid, reason: reasonObject.text, profileOwnerUsername: data.profile.username, reportedUsername: commentAuthorUsername, reporterUsername: $userStore.user?.username || 'unknown' });
+                    await reportContentFunc({ type: 'comment', reportedContentId: commentId, profileOwnerUid: data.profile.uid, reason: reasonObject.text, profileOwnerUsername: data.profile.username, reportedUsername: commentAuthorUsername, reportedUserUid: commentAuthorUid, reporterUsername: $userStore.user?.username || 'unknown' });
                     modal.success(translate('profile.report_success'), translate('profile.report_success_text'));
                 } catch (error: any) { modal.error(translate('ui.error'), error.message); }
             }
@@ -415,9 +415,9 @@
     <meta property="og:image" content={data.seoData.image} />
     <meta property="og:image:secure_url" content={data.seoData.image} />
     <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="1200" />
-    <meta property="og:image:alt" content={`Аватар ${data.profile.username}`} />
-    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`Карточка профиля ${data.profile.username} на ProtoMap`} />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:site_name" content="ProtoMap" />
     <meta property="og:locale" content="ru_RU" />
 
@@ -430,7 +430,7 @@
     <meta name="twitter:title" content={data.seoData.title} />
     <meta name="twitter:description" content={data.seoData.description} />
     <meta name="twitter:image" content={data.seoData.image} />
-    <meta name="twitter:image:alt" content={`Аватар ${data.profile.username}`} />
+    <meta name="twitter:image:alt" content={`Карточка профиля ${data.profile.username} на ProtoMap`} />
 
     <!-- Canonical URL -->
     <link rel="canonical" href={data.seoData.url} />
@@ -608,11 +608,11 @@
                         <!-- ШАПКА: Аватар + Имя + Дата -->
                         <div class="card-header">
                             <div class="author-info">
-                                <a href={comment.author_uid ? `/u/${comment.author_uid}` : `/profile/${comment.author_username}`} class="comment-avatar-wrapper {comment.author_equipped_frame || ''}">
+                                <a href={`/u/${comment.author_uid || comment.author_username}`} class="comment-avatar-wrapper {comment.author_equipped_frame || ''}">
                                     <img src={comment.author_uid ? getAvatarUrl($usernameCache, comment.author_uid, comment.author_avatar_url) : getOptimizedAvatar(comment.author_avatar_url)} alt="" class="comment-avatar" />
                                 </a>
                                 <div class="name-date">
-                                    <a href={comment.author_uid ? `/u/${comment.author_uid}` : `/profile/${comment.author_username}`} class="author-name">{comment.author_uid ? getUsername($usernameCache, comment.author_uid, comment.author_username) : comment.author_username}</a>
+                                    <a href={`/u/${comment.author_uid || comment.author_username}`} class="author-name">{comment.author_uid ? getUsername($usernameCache, comment.author_uid, comment.author_username) : comment.author_username}</a>
                                     <span class="time">{formatTimeAgo(comment.createdAt)}</span>
                                 </div>
                             </div>
@@ -625,7 +625,7 @@
                                             <i class="fas fa-trash"></i>
                                          </button>
                                     {/if}
-                                    <button on:click={() => handleReportComment(comment.id, comment.author_username)} class="icon-btn warn">
+                                    <button on:click={() => handleReportComment(comment.id, comment.author_username, comment.author_uid)} class="icon-btn warn">
                                         <i class="fas fa-exclamation-circle"></i>
                                     </button>
                                 </div>
@@ -660,11 +660,11 @@
                                 <div class="card-content">
                                     <div class="card-header">
                                         <div class="author-info">
-                                            <a href={reply.author_uid ? `/u/${reply.author_uid}` : `/profile/${reply.author_username}`} class="comment-avatar-wrapper small {reply.author_equipped_frame || ''}">
+                                            <a href={`/u/${reply.author_uid || reply.author_username}`} class="comment-avatar-wrapper small {reply.author_equipped_frame || ''}">
                                                 <img src={reply.author_uid ? getAvatarUrl($usernameCache, reply.author_uid, reply.author_avatar_url) : getOptimizedAvatar(reply.author_avatar_url)} alt="" class="comment-avatar" />
                                             </a>
                                             <div class="name-date">
-                                                <a href={reply.author_uid ? `/u/${reply.author_uid}` : `/profile/${reply.author_username}`} class="author-name text-sm">{reply.author_uid ? getUsername($usernameCache, reply.author_uid, reply.author_username) : reply.author_username}</a>
+                                                <a href={`/u/${reply.author_uid || reply.author_username}`} class="author-name text-sm">{reply.author_uid ? getUsername($usernameCache, reply.author_uid, reply.author_username) : reply.author_username}</a>
                                                 <span class="time">{formatTimeAgo(reply.createdAt)}</span>
                                             </div>
                                         </div>
@@ -1250,7 +1250,7 @@
     .comment-input-box {
         position: sticky;
         bottom: 2rem;
-        z-index: 50; /* Поверх остальных элементов при скролле */
+        z-index: 30; /* Поверх остальных элементов при скролле */
 
         display: flex;
         flex-direction: column;

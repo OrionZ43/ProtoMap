@@ -74,11 +74,6 @@
     afterNavigate(() => { closeAllMenus(); });
     async function handleLogout() { await signOut(auth); closeAllMenus(); }
 
-    function getEncodedUsername(username: string | undefined | null): string {
-        if (!username) return '';
-        return encodeURIComponent(username.trim());
-    }
-
     const displayedCredits = tweened(0, { duration: 500, easing: quintOut });
     $: if ($userStore.user) { displayedCredits.set($userStore.user.casino_credits); }
 
@@ -231,7 +226,7 @@
                     {#if isUserMenuOpen}
                         <div class="cyber-dropdown" transition:scale={{duration: 150, start: 0.95, opacity: 0}}>
                             <div class="dropdown-header">// {$t('menu.profile')}</div>
-                            <a href="/profile/{getEncodedUsername($userStore.user.username)}" class="dropdown-item">
+                            <a href="/u/{$userStore.user.uid}" class="dropdown-item">
                                 <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                                 {$t('menu.profile')}
                             </a>
@@ -309,7 +304,7 @@
                             <p class="text-xs text-gray-400 font-mono">ID: {$userStore.user.uid.substring(0,6)}</p>
                         </div>
                     </div>
-                    <a href="/profile/{getEncodedUsername($userStore.user.username)}" class="mobile-sub-link">{$t('menu.profile')}</a>
+                    <a href="/u/{$userStore.user.uid}" class="mobile-sub-link">{$t('menu.profile')}</a>
                     <a href="/casino/inventory" class="mobile-sub-link">{$t('menu.inventory')}</a>
                     <a href="/settings/security" class="mobile-sub-link">{$t('menu.security')}</a>
                     <button on:click={handleLogout} class="mobile-sub-link text-red-400">{$t('menu.logout')}</button>

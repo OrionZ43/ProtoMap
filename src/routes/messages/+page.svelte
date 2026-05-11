@@ -380,7 +380,29 @@
 	const QUICK = ['❤️', '🔥', '😂', '👍', '😮'];
 </script>
 
-<svelte:head><title>Сообщения | ProtoMap</title></svelte:head>
+<svelte:head>
+    <title>Сообщения | ProtoMap</title>
+    <meta name="description" content="Личные переписки с другими участниками сообщества протогенов." />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://proto-map.vercel.app/messages" />
+    <meta property="og:title" content="Сообщения | ProtoMap" />
+    <meta property="og:description" content="Личные переписки с другими участниками сообщества протогенов." />
+    <meta property="og:image" content="https://proto-map.vercel.app/api/og?page=messages" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:site_name" content="ProtoMap" />
+    <meta property="og:locale" content="ru_RU" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://proto-map.vercel.app/messages" />
+    <meta name="twitter:title" content="Сообщения | ProtoMap" />
+    <meta name="twitter:description" content="Личные переписки с другими участниками сообщества протогенов." />
+    <meta name="twitter:image" content="https://proto-map.vercel.app/api/og?page=messages" />
+
+    <link rel="canonical" href="https://proto-map.vercel.app/messages" />
+</svelte:head>
 
 <!-- FIX (баг 3): При activeTab === 'channels' рендерим ChannelsFeed на всю страницу.
      Раньше здесь была заглушка «Каналы в виджете» — компонент вообще не монтировался. -->

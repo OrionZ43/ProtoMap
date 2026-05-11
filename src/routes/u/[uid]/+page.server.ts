@@ -54,14 +54,36 @@ function getAbsoluteImageUrl(avatarUrl: string | null | undefined, username: str
     return avatarUrl;
 }
 
+
+function getOgImageUrl(uid: string): string {
+    return `https://proto-map.vercel.app/api/og/profile?uid=${uid}`;
+}
+
 export const load: PageServerLoad = async ({ params, setHeaders }) => {
-    const uid = params.uid;
+    const paramId = params.uid;
+    let uid = paramId;
+    let userDoc;
 
-    // ✅ Прямой lookup по doc ID — O(1), без поиска по полю
-    const userDoc = await firestoreAdmin.collection('users').doc(uid).get();
+    // Firebase UIDs обычно 28 символов. Никнеймы у вас строго до 20 символов.
+    // Если строка длиннее 20 символов — это 100% UID.
+    if (paramId.length > 20) {
+        // ✅ Прямой lookup по doc ID — O(1)
+        userDoc = await firestoreAdmin.collection('users').doc(paramId).get();
+    } else {
+        // 🔍 Поиск по никнейму (индекс Firestore создаст автоматически для одиночного поля)
+        const snapshot = await firestoreAdmin.collection('users')
+            .where('username', '==', paramId)
+            .limit(1)
+            .get();
 
-    if (!userDoc.exists) {
-        throw error(404, 'Профиль не найден');
+        if (!snapshot.empty) {
+            userDoc = snapshot.docs[0];
+            uid = userDoc.id; // Важно! Подменяем uid на настоящий серверный айдишник
+        }
+    }
+
+    if (!userDoc || !userDoc.exists) {
+        throw error(404, 'Профиль не найден или сигнал потерян');
     }
 
     const userProfileData = userDoc.data()!;
@@ -137,7 +159,7 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
             ? `${userProfileData.status}`
             : (userProfileData.about_me?.substring(0, 150) ||
                `Профиль пользователя ${userProfileData.username} на карте протогенов ProtoMap`),
-        image: getAbsoluteImageUrl(userProfileData.avatar_url, userProfileData.username),
+        image: getOgImageUrl(uid),
         url: `https://proto-map.vercel.app/u/${uid}`,
         type: 'profile'
     };
