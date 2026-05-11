@@ -415,9 +415,9 @@
     <meta property="og:image" content={data.seoData.image} />
     <meta property="og:image:secure_url" content={data.seoData.image} />
     <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content={`Карточка профиля ${data.profile.username} на ProtoMap`} />
-    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:height" content="1200" />
+    <meta property="og:image:alt" content={`Аватар ${data.profile.username}`} />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:site_name" content="ProtoMap" />
     <meta property="og:locale" content="ru_RU" />
 
@@ -430,7 +430,7 @@
     <meta name="twitter:title" content={data.seoData.title} />
     <meta name="twitter:description" content={data.seoData.description} />
     <meta name="twitter:image" content={data.seoData.image} />
-    <meta name="twitter:image:alt" content={`Карточка профиля ${data.profile.username} на ProtoMap`} />
+    <meta name="twitter:image:alt" content={`Аватар ${data.profile.username}`} />
 
     <!-- Canonical URL -->
     <link rel="canonical" href={data.seoData.url} />

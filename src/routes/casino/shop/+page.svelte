@@ -109,24 +109,7 @@
 </script>
 
 <svelte:head>
-<title>{$t('shop.title')} | The Glitch Pit</title>
-<meta name="description" content="Рамки для аватара и эксклюзивные фоны за ProtoCoins." />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://proto-map.vercel.app/casino/shop" />
-<meta property="og:title" content="{$t('shop.title')} | The Glitch Pit" />
-<meta property="og:description" content="Рамки для аватара и эксклюзивные фоны за ProtoCoins." />
-<meta property="og:image" content="https://proto-map.vercel.app/api/og/casino?page=shop" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:type" content="image/png" />
-<meta property="og:site_name" content="ProtoMap" />
-
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="{$t('shop.title')} | The Glitch Pit" />
-<meta name="twitter:description" content="Рамки для аватара и эксклюзивные фоны за ProtoCoins." />
-<meta name="twitter:image" content="https://proto-map.vercel.app/api/og/casino?page=shop" />
-
-<link rel="canonical" href="https://proto-map.vercel.app/casino/shop" />
+    <title>{$t('shop.title')} | The Glitch Pit</title>
 </svelte:head>
 
 <div class="page-container">

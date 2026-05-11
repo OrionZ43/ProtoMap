@@ -29,26 +29,6 @@
 
 <svelte:head>
     <title>{$t('news_page.title')} | ProtoMap</title>
-    <meta name="description" content="Обновления, анонсы и новости сообщества ProtoMap." />
-
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://proto-map.vercel.app/news" />
-    <meta property="og:title" content="Новости | ProtoMap" />
-    <meta property="og:description" content="Обновления, анонсы и новости сообщества ProtoMap." />
-    <meta property="og:image" content="https://proto-map.vercel.app/api/og?page=news" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:type" content="image/png" />
-    <meta property="og:site_name" content="ProtoMap" />
-    <meta property="og:locale" content="ru_RU" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://proto-map.vercel.app/news" />
-    <meta name="twitter:title" content="Новости | ProtoMap" />
-    <meta name="twitter:description" content="Обновления, анонсы и новости сообщества ProtoMap." />
-    <meta name="twitter:image" content="https://proto-map.vercel.app/api/og?page=news" />
-
-    <link rel="canonical" href="https://proto-map.vercel.app/news" />
 </svelte:head>
 
 <div class="page-container" style="opacity: {$opacity}">

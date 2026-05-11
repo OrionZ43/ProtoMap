@@ -262,24 +262,7 @@
 </script>
 
 <svelte:head>
-<title>{$t('slots.title')} | The Glitch Pit</title>
-<meta name="description" content="Три барабана, один джекпот. Собирай Glitch Shards и синтезируй артефакты." />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://proto-map.vercel.app/casino/slot-machine" />
-<meta property="og:title" content="{$t('slots.title')} | The Glitch Pit" />
-<meta property="og:description" content="Три барабана, один джекпот. Собирай Glitch Shards и синтезируй артефакты." />
-<meta property="og:image" content="https://proto-map.vercel.app/api/og/casino?page=slots" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:type" content="image/png" />
-<meta property="og:site_name" content="ProtoMap" />
-
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="{$t('slots.title')} | The Glitch Pit" />
-<meta name="twitter:description" content="Три барабана, один джекпот. Собирай Glitch Shards и синтезируй артефакты." />
-<meta name="twitter:image" content="https://proto-map.vercel.app/api/og/casino?page=slots" />
-
-<link rel="canonical" href="https://proto-map.vercel.app/casino/slot-machine" />
+    <title>{$t('slots.title')} | The Glitch Pit</title>
 </svelte:head>
 
 <svelte:window on:click={closeTooltips} />
