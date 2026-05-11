@@ -2,11 +2,21 @@
 //
 // Один эндпоинт для всех статичных страниц.
 // ?page=map | referral | news | messages
-// Защита от спама — rate limiting в vercel.json (20 req/min per IP).
 
 import { ImageResponse } from '@vercel/og';
 import type { RequestHandler } from '@sveltejs/kit';
-import React from 'react';
+
+// Локальный хелпер вместо React.createElement — react не нужен как зависимость
+const h = (type: any, props: any, ...children: any[]): any => {
+    const flat = children.flat(Infinity).filter((c) => c != null);
+    return {
+        type,
+        props: {
+            ...props,
+            children: flat.length === 0 ? undefined : flat.length === 1 ? flat[0] : flat,
+        },
+    };
+};
 
 const PAGES = ['map', 'referral', 'news', 'messages'] as const;
 type PageType = typeof PAGES[number];
@@ -69,12 +79,9 @@ export const GET: RequestHandler = async ({ url }) => {
         glowPurple: 'rgba(123, 47, 255, 0.25)',
     } as const;
 
-    const h = React.createElement;
-
     // ── Уникальные декоративные элементы для каждой страницы ────────────────
     const pageDecoration = () => {
         if (page === 'map') {
-            // Точки-пины на карте
             const pins = [
                 [200, 180], [420, 260], [310, 350], [560, 200],
                 [480, 380], [650, 300], [720, 160], [580, 430],
@@ -94,7 +101,6 @@ export const GET: RequestHandler = async ({ url }) => {
                         }
                     })
                 ),
-                // Линии между пинами
                 h('svg', {
                     style: { position: 'absolute', inset: 0, width: '100%', height: '100%' },
                     viewBox: '0 0 1200 630',
@@ -108,7 +114,6 @@ export const GET: RequestHandler = async ({ url }) => {
         }
 
         if (page === 'referral') {
-            // Три звезды разного размера
             const stars = [
                 { x: 120, y: 200, size: 60, opacity: 0.15 },
                 { x: 750, y: 120, size: 40, opacity: 0.12 },
@@ -131,7 +136,6 @@ export const GET: RequestHandler = async ({ url }) => {
         }
 
         if (page === 'news') {
-            // Строки терминала справа
             const lines = [
                 '> ProtoMap v2.4.1',
                 '> Карта обновлена',
@@ -157,7 +161,6 @@ export const GET: RequestHandler = async ({ url }) => {
         }
 
         if (page === 'messages') {
-            // Два пузыря чата
             return h('div', { style: { position: 'absolute', right: '90px', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: '20px', opacity: 0.1 } },
                 h('div', {
                     style: {
@@ -189,7 +192,6 @@ export const GET: RequestHandler = async ({ url }) => {
             },
         },
 
-        // Сетка
         h('svg', {
             style: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
             viewBox: '0 0 1200 630',
@@ -202,20 +204,16 @@ export const GET: RequestHandler = async ({ url }) => {
             ),
         ),
 
-        // Угловые акценты
         h('div', { style: { position: 'absolute', top: 0, left: 0, width: '3px', height: '120px', background: `linear-gradient(to bottom, ${C.cyan}, transparent)` } }),
         h('div', { style: { position: 'absolute', top: 0, left: 0, width: '120px', height: '3px', background: `linear-gradient(to right, ${C.cyan}, transparent)` } }),
         h('div', { style: { position: 'absolute', bottom: 0, right: 0, width: '3px', height: '120px', background: `linear-gradient(to top, ${C.purple}, transparent)` } }),
         h('div', { style: { position: 'absolute', bottom: 0, right: 0, width: '120px', height: '3px', background: `linear-gradient(to left, ${C.purple}, transparent)` } }),
 
-        // Свечения
         h('div', { style: { position: 'absolute', top: '-80px', left: '-80px', width: '500px', height: '500px', borderRadius: '50%', background: `radial-gradient(circle, ${C.glowCyan} 0%, transparent 65%)` } }),
         h('div', { style: { position: 'absolute', bottom: '-100px', right: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: `radial-gradient(circle, ${C.glowPurple} 0%, transparent 65%)` } }),
 
-        // Декор страницы
         pageDecoration(),
 
-        // Основной контент — слева
         h('div', {
             style: {
                 position: 'relative', display: 'flex', flexDirection: 'column',
@@ -223,7 +221,6 @@ export const GET: RequestHandler = async ({ url }) => {
                 maxWidth: page === 'map' ? '100%' : '680px',
             },
         },
-            // Иконка-символ
             h('div', {
                 style: {
                     fontSize: '52px', lineHeight: 1,
@@ -233,7 +230,6 @@ export const GET: RequestHandler = async ({ url }) => {
                 }
             }, cfg.icon),
 
-            // Заголовок
             h('div', {
                 style: {
                     fontSize: cfg.title.includes('\n') ? '64px' : '80px',
@@ -244,16 +240,13 @@ export const GET: RequestHandler = async ({ url }) => {
                 }
             }, cfg.title),
 
-            // Разделитель
             h('div', { style: { width: '80px', height: '3px', background: `linear-gradient(to right, ${C.cyan}, ${C.purple})`, borderRadius: '2px' } }),
 
-            // Подзаголовок
             h('div', {
                 style: { fontSize: '28px', fontWeight: 400, color: C.textMuted, lineHeight: 1.5 }
             }, cfg.subtitle),
         ),
 
-        // Нижняя панель
         h('div', {
             style: {
                 position: 'relative', display: 'flex', flexDirection: 'row',
@@ -275,7 +268,6 @@ export const GET: RequestHandler = async ({ url }) => {
         {
             width: 1200, height: 630, fonts,
             headers: {
-                // Статичный контент — кешируем на 7 дней
                 'Cache-Control': 'public, max-age=604800, s-maxage=604800',
                 'Content-Type':  'image/png',
             },

@@ -5,7 +5,18 @@
 
 import { ImageResponse } from '@vercel/og';
 import type { RequestHandler } from '@sveltejs/kit';
-import React from 'react';
+
+// Локальный хелпер вместо React.createElement — react не нужен как зависимость
+const h = (type: any, props: any, ...children: any[]): any => {
+    const flat = children.flat(Infinity).filter((c) => c != null);
+    return {
+        type,
+        props: {
+            ...props,
+            children: flat.length === 0 ? undefined : flat.length === 1 ? flat[0] : flat,
+        },
+    };
+};
 
 const PAGES = ['lobby', 'coin', 'crash', 'slots', 'roulette', 'shop', 'inventory'] as const;
 type PageType = typeof PAGES[number];
@@ -92,12 +103,9 @@ export const GET: RequestHandler = async ({ url }) => {
         glowAccent2: `${accent2}33`,
     } as const;
 
-    const h = React.createElement;
-
     // ── Декор для каждой страницы ────────────────────────────────────────────
     const decoration = () => {
         if (page === 'lobby') {
-            // Карты игр в правой части
             const cards = [
                 { label: 'COIN FLIP', x: 780, y: 120, rot: '-8deg' },
                 { label: 'DATA UPLINK', x: 920, y: 200, rot: '5deg' },
@@ -128,7 +136,6 @@ export const GET: RequestHandler = async ({ url }) => {
         }
 
         if (page === 'slots') {
-            // Три символа барабанов
             const syms = ['◈', '♦', '◈'];
             return h('div', {
                 style: {
@@ -154,7 +161,6 @@ export const GET: RequestHandler = async ({ url }) => {
         }
 
         if (page === 'crash') {
-            // Кривая краша
             return h('svg', {
                 style: {
                     position: 'absolute', right: 0, top: 0,
@@ -169,14 +175,12 @@ export const GET: RequestHandler = async ({ url }) => {
                     strokeLinecap: 'round',
                 }),
                 h('circle', { cx: 480, cy: 60, r: 12, fill: accent }),
-                // «взрыв»
                 h('circle', { cx: 530, cy: 40, r: 30, stroke: '#ff003c', strokeWidth: 2, fill: 'none', opacity: 0.5 }),
                 h('circle', { cx: 530, cy: 40, r: 18, stroke: '#ff003c', strokeWidth: 2, fill: 'none', opacity: 0.3 }),
             );
         }
 
         if (page === 'roulette') {
-            // HP-точки
             const dots = Array(5).fill(null);
             return h('div', {
                 style: {
@@ -216,7 +220,6 @@ export const GET: RequestHandler = async ({ url }) => {
         }
 
         if (page === 'coin') {
-            // Монета
             return h('div', {
                 style: {
                     position: 'absolute', right: '120px', top: '50%',
@@ -247,7 +250,6 @@ export const GET: RequestHandler = async ({ url }) => {
             },
         },
 
-        // Сетка (тоньше, почти невидимая)
         h('svg', {
             style: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
             viewBox: '0 0 1200 630',
@@ -260,20 +262,16 @@ export const GET: RequestHandler = async ({ url }) => {
             ),
         ),
 
-        // Угловые акценты — используем accent цвет страницы
         h('div', { style: { position: 'absolute', top: 0, left: 0, width: '3px', height: '120px', background: `linear-gradient(to bottom, ${accent}, transparent)` } }),
         h('div', { style: { position: 'absolute', top: 0, left: 0, width: '120px', height: '3px', background: `linear-gradient(to right, ${accent}, transparent)` } }),
         h('div', { style: { position: 'absolute', bottom: 0, right: 0, width: '3px', height: '120px', background: `linear-gradient(to top, ${accent2}, transparent)` } }),
         h('div', { style: { position: 'absolute', bottom: 0, right: 0, width: '120px', height: '3px', background: `linear-gradient(to left, ${accent2}, transparent)` } }),
 
-        // Свечения
         h('div', { style: { position: 'absolute', top: '-100px', left: '-100px', width: '600px', height: '600px', borderRadius: '50%', background: `radial-gradient(circle, ${C.glowAccent} 0%, transparent 65%)` } }),
         h('div', { style: { position: 'absolute', bottom: '-100px', right: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: `radial-gradient(circle, ${C.glowAccent2} 0%, transparent 65%)` } }),
 
-        // Декор
         decoration(),
 
-        // Основной контент
         h('div', {
             style: {
                 position: 'relative', display: 'flex', flexDirection: 'column',
@@ -281,7 +279,6 @@ export const GET: RequestHandler = async ({ url }) => {
                 maxWidth: '720px',
             },
         },
-            // Тег казино
             h('div', {
                 style: {
                     fontSize: '18px', fontWeight: 400, letterSpacing: '0.3em',
@@ -291,7 +288,6 @@ export const GET: RequestHandler = async ({ url }) => {
                 }
             }, '[ THE GLITCH PIT ]'),
 
-            // Иконка
             h('div', {
                 style: {
                     fontSize: '52px', lineHeight: 1,
@@ -301,7 +297,6 @@ export const GET: RequestHandler = async ({ url }) => {
                 }
             }, cfg.icon),
 
-            // Заголовок
             h('div', {
                 style: {
                     fontSize: '80px', fontWeight: 700,
@@ -311,16 +306,13 @@ export const GET: RequestHandler = async ({ url }) => {
                 }
             }, cfg.title),
 
-            // Разделитель
             h('div', { style: { width: '80px', height: '3px', background: `linear-gradient(to right, ${accent}, ${accent2})`, borderRadius: '2px' } }),
 
-            // Подзаголовок
             h('div', {
                 style: { fontSize: '28px', fontWeight: 400, color: C.textMuted, lineHeight: 1.5 }
             }, cfg.subtitle),
         ),
 
-        // Нижняя панель
         h('div', {
             style: {
                 position: 'relative', display: 'flex', flexDirection: 'row',

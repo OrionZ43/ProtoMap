@@ -1,15 +1,22 @@
 // src/routes/api/og/profile/+server.ts
 //
 // Node runtime — читает Firestore напрямую, рисует OG-карточку профиля.
-// Защита от спама — rate limiting в vercel.json (20 req/min per IP).
 
 import { ImageResponse } from '@vercel/og';
 import { firestoreAdmin } from '$lib/server/firebase.admin';
 import type { RequestHandler } from '@sveltejs/kit';
-import React from 'react';
 
-// Node runtime (по умолчанию) — позволяет использовать firebase-admin
-// export const config = { runtime: 'edge' }; // НЕ нужен
+// Локальный хелпер вместо React.createElement — react не нужен как зависимость
+const h = (type: any, props: any, ...children: any[]): any => {
+    const flat = children.flat(Infinity).filter((c) => c != null);
+    return {
+        type,
+        props: {
+            ...props,
+            children: flat.length === 0 ? undefined : flat.length === 1 ? flat[0] : flat,
+        },
+    };
+};
 
 export const GET: RequestHandler = async ({ url }) => {
     const uid = url.searchParams.get('uid');
@@ -78,7 +85,6 @@ export const GET: RequestHandler = async ({ url }) => {
         glowPurple: 'rgba(123, 47, 255, 0.25)',
     } as const;
 
-    const h = React.createElement;
     const statusText = status && status.length > 90
         ? status.substring(0, 87) + '…'
         : status;
@@ -146,7 +152,6 @@ export const GET: RequestHandler = async ({ url }) => {
             // Текстовый блок
             h('div', { style: { display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, minWidth: 0 } },
 
-                // Username с градиентом
                 h('div', {
                     style: {
                         fontSize: '72px', fontWeight: 700,
@@ -156,10 +161,8 @@ export const GET: RequestHandler = async ({ url }) => {
                     }
                 }, username),
 
-                // Разделительная линия
                 h('div', { style: { width: '80px', height: '3px', background: `linear-gradient(to right, ${C.cyan}, ${C.purple})`, borderRadius: '2px' } }),
 
-                // Статус / описание
                 statusText
                     ? h('div', {
                         style: {
@@ -179,12 +182,10 @@ export const GET: RequestHandler = async ({ url }) => {
                 padding: '0 80px 36px',
             }
         },
-            // URL профиля
             h('div', {
                 style: { fontSize: '22px', color: C.cyanDim, fontWeight: 400, letterSpacing: '0.5px' }
             }, `proto-map.vercel.app/u/${username}`),
 
-            // ProtoMap wordmark
             h('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } },
                 h('div', { style: { width: '8px', height: '8px', borderRadius: '50%', backgroundColor: C.cyan, boxShadow: `0 0 8px ${C.cyan}` } }),
                 h('div', { style: { fontSize: '26px', fontWeight: 700, color: C.text, letterSpacing: '2px' } },
@@ -196,7 +197,6 @@ export const GET: RequestHandler = async ({ url }) => {
         {
             width: 1200, height: 630, fonts,
             headers: {
-                // Кешируем на 1 час на CDN — баланс между актуальностью и нагрузкой
                 'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
                 'Content-Type':  'image/png',
             },
