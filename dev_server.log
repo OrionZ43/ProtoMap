@@ -1,0 +1,1277 @@
+
+> protomap-new@0.0.1 dev
+> vite dev
+
+
+  VITE v6.4.2  ready in 1283 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+Failed to parse PRIVATE_FIREBASE_SERVICE_ACCOUNT_KEY as JSON.
+(node:189343) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+10:00:25 PM [vite-plugin-svelte] src/lib/components/Navbar.svelte:89:4 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+10:00:25 PM [vite-plugin-svelte] src/lib/components/Navbar.svelte:89:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+10:00:25 PM [vite-plugin-svelte] src/lib/components/SettingsModal.svelte:29:0 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+10:00:25 PM [vite-plugin-svelte] src/lib/components/SettingsModal.svelte:29:0 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+10:00:25 PM [vite-plugin-svelte] src/lib/components/Modal.svelte:37:4 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+10:00:25 PM [vite-plugin-svelte] src/lib/components/Modal.svelte:37:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+10:00:25 PM [vite-plugin-svelte] src/lib/components/Modal.svelte:134:4 Unused CSS selector ".modal-container.is-error"
+https://svelte.dev/e/css_unused_selector
+10:00:26 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:541:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+10:00:26 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:561:4 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+10:00:26 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:561:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+10:00:26 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:575:16 `<div>` with a mouseenter or mouseleave handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+10:00:26 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:596:40 Screenreaders already announce `<img>` elements as an image
+https://svelte.dev/e/a11y_img_redundant_alt
+10:00:26 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:599:36 Screenreaders already announce `<img>` elements as an image
+https://svelte.dev/e/a11y_img_redundant_alt
+10:00:26 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:755:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+10:00:26 PM [vite-plugin-svelte] src/lib/components/chat/VoiceMessage.svelte:107:4 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+10:00:26 PM [vite-plugin-svelte] src/lib/components/chat/ChannelsFeed.svelte:396:2 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+10:00:26 PM [vite-plugin-svelte] src/lib/components/chat/ChannelsFeed.svelte:449:8 Screenreaders already announce `<img>` elements as an image
+https://svelte.dev/e/a11y_img_redundant_alt
+10:00:26 PM [vite-plugin-svelte] src/lib/components/SplashModal.svelte:37:4 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+10:00:26 PM [vite-plugin-svelte] src/lib/components/SplashModal.svelte:37:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+10:00:26 PM [vite-plugin-svelte] src/lib/components/CyberConfetti.svelte:138:0 Self-closing HTML tags for non-void elements are ambiguous — use `<canvas ...></canvas>` rather than `<canvas ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+10:00:29 PM [vite-plugin-svelte] src/lib/components/Navbar.svelte:89:4 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+10:00:29 PM [vite-plugin-svelte] src/lib/components/Navbar.svelte:89:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+10:00:29 PM [vite-plugin-svelte] src/lib/components/Modal.svelte:37:4 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+10:00:29 PM [vite-plugin-svelte] src/lib/components/Modal.svelte:37:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+10:00:29 PM [vite-plugin-svelte] src/lib/components/Modal.svelte:134:4 Unused CSS selector ".modal-container.is-error"
+https://svelte.dev/e/css_unused_selector
+10:00:29 PM [vite-plugin-svelte] src/lib/components/SplashModal.svelte:37:4 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+10:00:29 PM [vite-plugin-svelte] src/lib/components/SplashModal.svelte:37:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+10:00:29 PM [vite-plugin-svelte] src/lib/components/CyberConfetti.svelte:138:0 Self-closing HTML tags for non-void elements are ambiguous — use `<canvas ...></canvas>` rather than `<canvas ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+10:00:29 PM [vite-plugin-svelte] src/lib/components/SettingsModal.svelte:29:0 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+10:00:29 PM [vite-plugin-svelte] src/lib/components/SettingsModal.svelte:29:0 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+10:00:30 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:541:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+10:00:30 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:561:4 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+10:00:30 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:561:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+10:00:30 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:575:16 `<div>` with a mouseenter or mouseleave handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+10:00:30 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:596:40 Screenreaders already announce `<img>` elements as an image
+https://svelte.dev/e/a11y_img_redundant_alt
+10:00:30 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:599:36 Screenreaders already announce `<img>` elements as an image
+https://svelte.dev/e/a11y_img_redundant_alt
+10:00:30 PM [vite-plugin-svelte] src/lib/components/chat/DMInbox.svelte:755:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+10:00:30 PM [vite-plugin-svelte] src/lib/components/chat/ChannelsFeed.svelte:396:2 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+10:00:30 PM [vite-plugin-svelte] src/lib/components/chat/ChannelsFeed.svelte:449:8 Screenreaders already announce `<img>` elements as an image
+https://svelte.dev/e/a11y_img_redundant_alt
+10:00:30 PM [vite-plugin-svelte] src/lib/components/chat/VoiceMessage.svelte:107:4 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /halloween/bat.svg[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_shot_blank.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_item_scanner.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/entercasino.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_shot_live.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_reload.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_item_generic.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_item_emp.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_win.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_lose.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /halloween/bat.svg[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_reload.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_item_scanner.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_shot_live.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/entercasino.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_shot_blank.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_item_generic.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_win.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_lose.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_item_emp.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_shot_live.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/entercasino.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /halloween/bat.svg[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_reload.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_shot_blank.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_item_scanner.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_item_generic.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_win.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_item_emp.mp3[0m
+[layout] Failed to load news date: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at QueryUtil._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query-util.js:44:23)
+    at Query._getResponse (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:784:32)
+    at Query._get (/app/node_modules/@google-cloud/firestore/build/src/reference/query.js:777:35)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/query.js:745:43
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+[layout] Failed to load legal versions: Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at async GoogleAuth._GoogleAuth_determineClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/app/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GrpcClient._getCredentials (/app/node_modules/google-gax/build/src/grpc.js:145:24)
+    at async GrpcClient.createStub (/app/node_modules/google-gax/build/src/grpc.js:318:23)
+Caused by: Error
+    at /app/node_modules/@google-cloud/firestore/build/src/index.js:1040:27
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+    at NoopContextManager.with (/app/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/app/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/app/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)
+    at EnabledTraceUtil.startActiveSpan (/app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:102:28)
+    at Firestore.getAll (/app/node_modules/@google-cloud/firestore/build/src/index.js:1031:32)
+    at /app/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:182:36
+    at /app/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30
+
+[1;31m[404] GET /sounds/vd_lose.mp3[0m
