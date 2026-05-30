@@ -72,7 +72,7 @@
 			case 'item_used': {
 				if (event.actor === 'orion') {
 					currentOrionSprite.set('holding_gun');
-					await sleep(400);
+					await sleep(600); // замедлено
 				}
 
 				if (event.item === 'sc') AudioManager.play('vd_item_scanner');
@@ -90,7 +90,7 @@
 					visualScan = null;
 				}
 
-				await sleep(700);
+				await sleep(1000); // замедлено
 				if (event.actor === 'orion') currentOrionSprite.set('idle');
 				break;
 			}
@@ -113,17 +113,20 @@
 				if (event.isLive) {
 					AudioManager.play('vd_shot_live');
 					flashScreen(event.target === 'enemy' && isOrion ? 'red' : 'cyan');
-					await sleep(300);
-					animateHpChange(event.target === 'enemy' ? 'player' : 'orion', event.damage ?? 1);
+					await sleep(400); // замедлено
+					// Если стрелял Орион во врага (игрока) ИЛИ игрок в себя -> урон игроку
+					// Иначе -> урон Ориону
+					const damageToPlayer = (isOrion && event.target === 'enemy') || (!isOrion && event.target === 'self');
+					animateHpChange(damageToPlayer ? 'player' : 'orion', event.damage ?? 1);
 				} else {
 					AudioManager.play('vd_shot_blank');
-					await sleep(200);
+					await sleep(400); // замедлено
 				}
 
 				visualSl = Math.max(0, visualSl - 1);
 				visualScan = null;
 
-				await sleep(600);
+				await sleep(800); // замедлено
 				if (isOrion) currentOrionSprite.set('idle');
 				break;
 			}
@@ -131,18 +134,19 @@
 			case 'reload': {
 				AudioManager.play('vd_reload');
 				visualSl = event.shellCount ?? 0;
-				await sleep(900);
+				await sleep(1500); // замедлено
 				break;
 			}
 
 			case 'skip_turn': {
 				AudioManager.play('vd_item_emp');
-				await sleep(500);
+				await sleep(1000); // замедлено
 				break;
 			}
 
 			case 'game_over': {
-				await sleep(400);
+				await sleep(800); // замедлено
+				AudioManager.stop('vd_bgm');
 				if (event.winner === 'player') AudioManager.play('vd_win');
 				else AudioManager.play('vd_lose');
 				showResult = event.winner ?? null;
@@ -209,6 +213,7 @@
 			} catch (_) {}
 		}
 		unsubscribeFromGame();
+		AudioManager.stop('vd_bgm');
 	});
 
 	// ── Действия игрока ─────────────────────────────────
@@ -230,11 +235,13 @@
 		showResult = null;
 		isInitialized = false;
 		try {
+			AudioManager.play('vd_bgm');
 			const res = await startFn();
 			const data = res.data as { gameId: string };
 			subscribeToGame(data.gameId);
 		} catch (e) {
 			console.error('[VoltDeadlock] Ошибка старта:', e);
+			AudioManager.stop('vd_bgm');
 		} finally {
 			actionsBlocked = false;
 		}
@@ -320,9 +327,12 @@
 			<!-- Предметы Ориона -->
 			<div class="items-grid orion-items">
 				{#each Object.entries($rouletteState.oit) as [key, count]}
-					{#each Array(count) as _}
-						<div class="item-pip-orion" title="Предмет Ориона">⬡</div>
-					{/each}
+					{#if count > 0}
+						{@const meta = ITEM_META[key as keyof typeof ITEM_META]}
+						{#each Array(count) as _}
+							<div class="item-pip-orion" title={meta.desc}>{meta.icon}</div>
+						{/each}
+					{/if}
 				{/each}
 			</div>
 		</div>
@@ -428,7 +438,7 @@
 
 	#orion-sprite {
 		position: absolute;
-		bottom: 0;
+		bottom: 45%;
 		left: 50%;
 		transform: translateX(-50%);
 		width: clamp(300px, 40vw, 560px);
@@ -445,30 +455,33 @@
 
 	.side-panel {
 		position: absolute;
-		top: 0;
-		bottom: 0;
+		top: 20px;
+		bottom: 20px;
 		width: 240px;
 		padding: 20px 14px;
-		background: var(--panel-bg);
-		backdrop-filter: blur(10px);
-		border: 1px solid var(--panel-border);
+		background: transparent;
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
+		writing-mode: horizontal-tb; /* Override global .side-panel */
 	}
 	#panel-player {
-		left: 0;
-		border-right: 1px solid var(--panel-border);
+		left: 20px;
 	}
 	#panel-orion {
-		right: 0;
-		border-left: 1px solid var(--panel-border);
+		right: 20px;
+		align-items: flex-end;
+		text-align: right;
 	}
 
 	.hp-bar-wrap {
 		display: flex;
-		flex-direction: column;
-		gap: 6px;
+		flex-direction: row;
+		align-items: center;
+		gap: 12px;
+	}
+	#panel-orion .hp-bar-wrap {
+		flex-direction: row-reverse;
 	}
 	.hp-label {
 		color: var(--neon-cyan);
@@ -479,6 +492,9 @@
 	.hp-pips {
 		display: flex;
 		gap: 5px;
+	}
+	#panel-orion .hp-pips {
+		flex-direction: row-reverse;
 	}
 	.hp-pip {
 		width: 18px;
@@ -574,10 +590,12 @@
 		background: rgba(255, 255, 255, 0.3);
 	}
 	.log-text {
-		font-size: 13px;
-		color: rgba(255, 255, 255, 0.85);
+		font-size: 16px;
+		font-weight: bold;
+		color: var(--neon-cyan);
 		text-align: center;
-		max-width: 360px;
+		max-width: 480px;
+		text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px rgba(0, 240, 255, 0.5);
 		/* fade при изменении */
 		animation: logFade 0.4s ease;
 	}
