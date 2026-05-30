@@ -2356,3 +2356,4 @@ async function resolveUniqueUsername(base: string): Promise<string> {
     console.warn(`[SafetyNet] All username candidates taken for base="${base}", using uid fallback.`);
     return `u_${db.collection("users").doc().id.substring(0, 12)}`;
 }
+export { toggle2FA, send2FACode, verify2FACode } from './twoFactorAuth';
