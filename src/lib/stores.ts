@@ -104,14 +104,19 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
 					if (data.is2FAEnabled) {
 						// Используем флаг из localStorage, чтобы он сохранялся между вкладками,
 						// так как Firebase инициализируется в новой вкладке из IndexedDB
-						if (
-							browser &&
-							!localStorage.getItem(`2fa_passed_${userAuth.uid}`) &&
-							!window.location.pathname.match(/^\/(login|register)$/)
-						) {
-							await auth.signOut();
-							userStore.set({ user: null, loading: false });
-							return;
+						if (browser && !localStorage.getItem(`2fa_passed_${userAuth.uid}`)) {
+							if (!window.location.pathname.match(/^\/(login|register)$/)) {
+								// Попытка обхода 2FA
+								await auth.signOut();
+								userStore.set({ user: null, loading: false });
+								return;
+							} else {
+								// Пользователь на странице логина/регистрации, Firebase его авторизовал,
+								// но код еще не введен. Мы НЕ должны устанавливать userStore,
+								// чтобы UI не "моргал" как будто вход уже выполнен.
+								userStore.set({ user: null, loading: false });
+								return;
+							}
 						}
 					}
 
