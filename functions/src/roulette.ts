@@ -85,10 +85,10 @@ function emptyItems(): Items {
 	return { sc: 0, co: 0, ad: 0, od: 0, ew: 0, ps: 0 };
 }
 
-/** Выдаёт 2-4 случайных предмета. */
+/** Выдаёт 1-4 случайных предмета. */
 function distributeItems(): Items {
 	const it = emptyItems();
-	const count = 2 + Math.floor(Math.random() * 3);
+	const count = 1 + Math.floor(Math.random() * 4); // 1-4 items
 	for (let i = 0; i < count; i++) {
 		const k = ITEM_KEYS[Math.floor(Math.random() * ITEM_KEYS.length)];
 		it[k] = Math.min(MAX_ITEM, it[k] + 1);
@@ -96,10 +96,36 @@ function distributeItems(): Items {
 	return it;
 }
 
-/** Суммирует предметы (cap = MAX_ITEM). */
+/** Подсчитывает общее количество предметов у игрока/ориона */
+function countTotalItems(items: Items): number {
+	return Object.values(items).reduce((sum, count) => sum + count, 0);
+}
+
+/** Суммирует предметы с учётом общего лимита (cap = 8 предметов суммарно). */
 function mergeItems(target: Items, source: Items) {
+	let currentTotal = countTotalItems(target);
+	const itemsToAdd: (keyof Items)[] = [];
+
+	// Разворачиваем source в массив ключей
 	for (const k of ITEM_KEYS) {
-		target[k] = Math.min(MAX_ITEM, target[k] + source[k]);
+		for (let i = 0; i < source[k]; i++) {
+			itemsToAdd.push(k);
+		}
+	}
+
+	// Перемешиваем предметы для справедливости, если их придется обрезать
+	for (let i = itemsToAdd.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[itemsToAdd[i], itemsToAdd[j]] = [itemsToAdd[j], itemsToAdd[i]];
+	}
+
+	// Добавляем, пока не достигнем общего лимита 8 и лимита MAX_ITEM на каждый тип
+	for (const k of itemsToAdd) {
+		if (currentTotal >= 8) break;
+		if (target[k] < MAX_ITEM) {
+			target[k]++;
+			currentTotal++;
+		}
 	}
 }
 
@@ -574,12 +600,13 @@ export const makeRouletteAction = onCall(
 
 		// --- Запись результата ---
 		if (pub.st !== 'a') {
-			// Игра закончена: начисляем/нет, удаляем из RTDB
+			// Игра закончена: начисляем/нет, удаляем секреты из RTDB,
+			// но оставляем games, чтобы клиент мог доиграть анимации
 			await finishGame(uid, pub.st === 'p');
 			await rtdb()
 				.ref()
 				.update({
-					[`games/${gameId}`]: null,
+					[`games/${gameId}`]: pub,
 					[`secrets/${gameId}`]: null
 				});
 		} else {

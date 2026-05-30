@@ -19,7 +19,8 @@ export type SoundName =
 	| 'vd_item_generic'
 	| 'vd_item_emp'
 	| 'vd_win'
-	| 'vd_lose';
+	| 'vd_lose'
+	| 'vd_bgm';
 
 const soundFiles: Record<SoundName, string> = {
 	click: '/sounds/click.mp3',
@@ -37,7 +38,8 @@ const soundFiles: Record<SoundName, string> = {
 	vd_item_generic: '/sounds/vd_item_generic.mp3',
 	vd_item_emp: '/sounds/vd_item_emp.mp3',
 	vd_win: '/sounds/vd_win.mp3',
-	vd_lose: '/sounds/vd_lose.mp3'
+	vd_lose: '/sounds/vd_lose.mp3',
+	vd_bgm: '/sounds/vd_bgm.mp3'
 };
 
 let sounds: Partial<Record<SoundName, Howl>> = {};
@@ -55,7 +57,8 @@ function initialize() {
 		sounds[soundName] = new Howl({
 			src: [soundFiles[soundName]],
 			preload: true,
-			volume: 0.7
+			volume: soundName === 'vd_bgm' ? 0.3 : 0.7,
+			loop: soundName === 'vd_bgm'
 		});
 	}
 
@@ -97,7 +100,16 @@ function play(soundName: SoundName) {
 	}
 }
 
+function stop(soundName: SoundName) {
+	if (!browser) return;
+	const sound = sounds[soundName];
+	if (sound) {
+		sound.stop();
+	}
+}
+
 export const AudioManager = {
 	initialize,
-	play
+	play,
+	stop
 };
