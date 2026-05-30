@@ -1,0 +1,7 @@
+<<<<<<< SEARCH
+		} catch (e: any) {
+			console.error('❌ Ошибка входа:', e.code);
+=======
+		} catch (e: any) {
+			console.error('❌ Ошибка входа:', e.message || e);
+>>>>>>> REPLACE
