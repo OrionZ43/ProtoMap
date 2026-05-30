@@ -29,6 +29,42 @@
 	// Флаг готовности App Check токена — кнопка Google заблокирована до прогрева
 	let appCheckReady = false;
 
+	// 2FA Состояние
+	let show2FAModal = false;
+	let twoFactorCode = '';
+	let isVerifying2FA = false;
+
+	async function verify2FACode() {
+		if (!twoFactorCode || twoFactorCode.length !== 5) {
+			modal.error('Ошибка', 'Код должен состоять из 5 цифр');
+			return;
+		}
+
+		isVerifying2FA = true;
+		try {
+			const functions = getFunctions();
+			const verifyFunc = httpsCallable(functions, 'verify2FACode');
+			await verifyFunc({ code: twoFactorCode });
+
+			// Успех
+			sessionStorage.setItem('2fa_passed', 'true');
+			show2FAModal = false;
+
+			const token = await auth.currentUser!.getIdToken();
+			await fetch('/api/auth', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ idToken: token })
+			});
+			await new Promise((resolve) => setTimeout(resolve, 300));
+			goto('/');
+		} catch (e: any) {
+			modal.error('Ошибка 2FA', e.message || 'Неверный код');
+		} finally {
+			isVerifying2FA = false;
+		}
+	}
+
 	let turnstileToken = '';
 	let turnstileVerified = false;
 
@@ -356,6 +392,48 @@
 		password = '';
 	}
 </script>
+
+{#if show2FAModal}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+		transition:fade={{ duration: 200 }}
+	>
+		<div class="cyber-panel relative w-full max-w-sm p-8" transition:slide>
+			<h2 class="text-shadow-yellow mb-4 text-center font-display text-2xl text-cyber-yellow">
+				ЗАЩИТА 2FA
+			</h2>
+			<p class="mb-6 text-center text-sm text-gray-300">
+				Код отправлен в ваш Telegram. Введите его ниже.
+			</p>
+
+			<input
+				type="text"
+				bind:value={twoFactorCode}
+				placeholder="12345"
+				class="mb-6 w-full border border-gray-700 bg-gray-900 p-3 text-center font-mono text-2xl tracking-widest text-white outline-none focus:border-cyber-yellow"
+				maxlength="5"
+			/>
+
+			<NeonButton
+				text={isVerifying2FA ? 'ПРОВЕРКА...' : 'ПОДТВЕРДИТЬ'}
+				color="yellow"
+				onClick={verify2FACode}
+				disabled={isVerifying2FA || twoFactorCode.length !== 5}
+				fullWidth
+			/>
+
+			<button
+				class="mt-4 w-full text-center text-xs text-gray-500 transition-colors hover:text-white"
+				on:click={() => {
+					show2FAModal = false;
+					auth.signOut();
+				}}
+			>
+				ОТМЕНА
+			</button>
+		</div>
+	</div>
+{/if}
 
 <svelte:head>
 	<title>{isResetMode ? $t('auth.recover_title') : $t('auth.login_title')} | ProtoMap</title>
