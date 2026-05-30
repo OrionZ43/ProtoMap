@@ -47,7 +47,7 @@
 			await verifyFunc({ code: twoFactorCode });
 
 			// Успех
-			sessionStorage.setItem('2fa_passed', 'true');
+			localStorage.setItem(`2fa_passed_${auth.currentUser!.uid}`, 'true');
 			show2FAModal = false;
 
 			const token = await auth.currentUser!.getIdToken();
@@ -400,10 +400,10 @@
 	>
 		<div class="cyber-panel relative w-full max-w-sm p-8" transition:slide>
 			<h2 class="text-shadow-yellow mb-4 text-center font-display text-2xl text-cyber-yellow">
-				ЗАЩИТА 2FA
+				{$t('auth.2fa_title', { default: 'ЗАЩИТА 2FA' })}
 			</h2>
 			<p class="mb-6 text-center text-sm text-gray-300">
-				Код отправлен в ваш Telegram. Введите его ниже.
+				{$t('auth.2fa_desc', { default: 'Код отправлен в ваш Telegram. Введите его ниже.' })}
 			</p>
 
 			<input
@@ -415,21 +415,23 @@
 			/>
 
 			<NeonButton
-				text={isVerifying2FA ? 'ПРОВЕРКА...' : 'ПОДТВЕРДИТЬ'}
-				color="yellow"
-				onClick={verify2FACode}
+				extraClass="w-full"
+				on:click={verify2FACode}
 				disabled={isVerifying2FA || twoFactorCode.length !== 5}
-				fullWidth
-			/>
+			>
+				{isVerifying2FA ? $t('auth.2fa_checking', { default: 'ПРОВЕРКА...' }) : $t('auth.2fa_btn', { default: 'ПОДТВЕРДИТЬ' })}
+			</NeonButton>
 
 			<button
 				class="mt-4 w-full text-center text-xs text-gray-500 transition-colors hover:text-white"
-				on:click={() => {
+				on:click={async () => {
 					show2FAModal = false;
-					auth.signOut();
+					loading = false;
+					googleLoading = false;
+					await auth.signOut();
 				}}
 			>
-				ОТМЕНА
+				{$t('auth.2fa_cancel', { default: 'ОТМЕНА' })}
 			</button>
 		</div>
 	</div>

@@ -135,11 +135,15 @@
 			<h3 class="sec-title text-cyber-purple">{$t('security.tg_title')}</h3>
 
 			<div class="info-row" style="margin-top: 1rem; border-bottom: none;">
-				<span class="label">ДВУХФАКТОРНАЯ АУТЕНТИФИКАЦИЯ:</span>
+				<span class="label"
+					>{$t('security.2fa_label', { default: 'ДВУХФАКТОРНАЯ АУТЕНТИФИКАЦИЯ:' })}</span
+				>
 				<label
 					class="toggle-container"
 					class:disabled={!data.telegram_id}
-					title={!data.telegram_id ? 'Сначала привяжите Telegram' : ''}
+					title={!data.telegram_id
+						? $t('security.2fa_no_tg', { default: 'Сначала привяжите Telegram' })
+						: ''}
 				>
 					<input
 						type="checkbox"
@@ -152,7 +156,7 @@
 			</div>
 			{#if !data.telegram_id}
 				<p class="desc text-orange-400" style="margin-top: -0.5rem; margin-bottom: 1rem;">
-					Привяжите Telegram, чтобы включить 2FA
+					{$t('security.2fa_no_tg_desc', { default: 'Привяжите Telegram, чтобы включить 2FA' })}
 				</p>
 			{/if}
 
