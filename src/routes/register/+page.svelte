@@ -56,8 +56,9 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ idToken: token })
 			});
-			await new Promise((resolve) => setTimeout(resolve, 300));
-			goto('/');
+
+			// Жесткая перезагрузка страницы (редирект на главную)
+			window.location.href = '/';
 		} catch (e: any) {
 			modal.error('Ошибка 2FA', e.message || 'Неверный код');
 		} finally {
@@ -160,8 +161,16 @@
 				turnstileVerified: true
 			});
 
+			const token = await user.getIdToken();
+			await fetch('/api/auth', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ idToken: token })
+			});
+
 			await new Promise((resolve) => setTimeout(resolve, 500));
-			goto('/');
+			// Жесткая перезагрузка страницы
+			window.location.href = '/';
 		} catch (e: any) {
 			console.error('Ошибка регистрации:', e.code);
 			modal.error('Ошибка', e.message || 'Произошла ошибка при регистрации.');

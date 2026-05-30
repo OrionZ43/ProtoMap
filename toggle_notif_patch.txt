@@ -1,0 +1,73 @@
+<<<<<<< SEARCH
+export const toggle2FA = onCall({ region: 'us-central1' }, async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'User must be authenticated.');
+    }
+
+    const uid = request.auth.uid;
+    const userRef = db.collection('users').doc(uid);
+    const userSnap = await userRef.get();
+
+    if (!userSnap.exists) {
+        throw new HttpsError('not-found', 'User not found.');
+    }
+
+    const userData = userSnap.data();
+    if (!userData?.telegram_id) {
+        throw new HttpsError('failed-precondition', 'Нужно привязать Telegram');
+    }
+
+    const currentState = userData.is2FAEnabled || false;
+    await userRef.update({ is2FAEnabled: !currentState });
+
+    return { success: true, is2FAEnabled: !currentState };
+});
+=======
+export const toggle2FA = onCall({
+    region: 'us-central1',
+    secrets: ["TELEGRAM_BOT_TOKEN"]
+}, async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'User must be authenticated.');
+    }
+
+    const uid = request.auth.uid;
+    const userRef = db.collection('users').doc(uid);
+    const userSnap = await userRef.get();
+
+    if (!userSnap.exists) {
+        throw new HttpsError('not-found', 'User not found.');
+    }
+
+    const userData = userSnap.data();
+    if (!userData?.telegram_id) {
+        throw new HttpsError('failed-precondition', 'Нужно привязать Telegram');
+    }
+
+    const currentState = userData.is2FAEnabled || false;
+    const newState = !currentState;
+    await userRef.update({ is2FAEnabled: newState });
+
+    if (newState) {
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (botToken) {
+            const message = `🛡 <b>Двухфакторная аутентификация включена</b>\n\nТеперь коды для входа в ваш аккаунт будут приходить сюда.`;
+            try {
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: userData.telegram_id,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
+                });
+            } catch (e) {
+                console.error("Failed to send 2FA toggle notification", e);
+            }
+        }
+    }
+
+    return { success: true, is2FAEnabled: newState };
+});
+>>>>>>> REPLACE

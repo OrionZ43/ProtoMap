@@ -9,7 +9,10 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-export const toggle2FA = onCall({ region: 'us-central1' }, async (request) => {
+export const toggle2FA = onCall({
+    region: 'us-central1',
+    secrets: ["TELEGRAM_BOT_TOKEN"]
+}, async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'User must be authenticated.');
     }
@@ -28,9 +31,30 @@ export const toggle2FA = onCall({ region: 'us-central1' }, async (request) => {
     }
 
     const currentState = userData.is2FAEnabled || false;
-    await userRef.update({ is2FAEnabled: !currentState });
+    const newState = !currentState;
+    await userRef.update({ is2FAEnabled: newState });
 
-    return { success: true, is2FAEnabled: !currentState };
+    if (newState) {
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (botToken) {
+            const message = `🛡 <b>Двухфакторная аутентификация включена</b>\n\nТеперь коды для входа в ваш аккаунт будут приходить сюда.`;
+            try {
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: userData.telegram_id,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
+                });
+            } catch (e) {
+                console.error("Failed to send 2FA toggle notification", e);
+            }
+        }
+    }
+
+    return { success: true, is2FAEnabled: newState };
 });
 
 export const send2FACode = onCall({
@@ -81,7 +105,23 @@ export const send2FACode = onCall({
          throw new HttpsError('internal', 'Telegram bot token is missing.');
     }
 
-    const message = `Ваш код для входа: ${code}`;
+    const rawReq = request.rawRequest;
+    // Pытаемся достать IP и геоданные из заголовков Vercel/Cloudflare/Google
+    const ip = rawReq?.headers['x-forwarded-for']?.toString().split(',')[0] || rawReq?.headers['fastly-client-ip']?.toString() || 'Неизвестный IP';
+    const country = rawReq?.headers['x-vercel-ip-country']?.toString() || rawReq?.headers['cf-ipcountry']?.toString() || '';
+
+    let locationStr = ip;
+    if (country) locationStr += ` (${country})`;
+
+    const message = `Попытка входа в аккаунт ProtoMap.
+IP: <b>${locationStr}</b>
+
+Код для входа: <tg-spoiler><b>${code}</b></tg-spoiler>
+
+❗️ Не давайте код никому, даже если его требуют от имени администрации!
+Этот код используется для входа в Ваш аккаунт. Он не может быть использован для чего-либо ещё.
+
+Если Вы не запрашивали код для входа, проигнорируйте это сообщение.`;
 
     try {
         const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -89,7 +129,8 @@ export const send2FACode = onCall({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 chat_id: userData.telegram_id,
-                text: message
+                text: message,
+                parse_mode: 'HTML'
             })
         });
 

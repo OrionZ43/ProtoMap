@@ -56,8 +56,11 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ idToken: token })
 			});
-			await new Promise((resolve) => setTimeout(resolve, 300));
-			goto('/');
+
+			// Жесткая перезагрузка страницы (редирект на главную)
+			// Это гарантирует, что SvelteKit загрузит куку, а stores.ts
+			// инициализируется с уже установленным localStorage флагом 2FA
+			window.location.href = '/';
 		} catch (e: any) {
 			modal.error('Ошибка 2FA', e.message || 'Неверный код');
 		} finally {
