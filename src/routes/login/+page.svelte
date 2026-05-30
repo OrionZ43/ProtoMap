@@ -174,7 +174,7 @@
 			await new Promise((resolve) => setTimeout(resolve, 300));
 			goto('/');
 		} catch (e: any) {
-			console.error('❌ Ошибка входа:', e.code);
+			console.error('❌ Ошибка входа:', e.message || e.code || e);
 			if (
 				e.code === 'auth/invalid-credential' ||
 				e.code === 'auth/invalid-email' ||
@@ -184,7 +184,7 @@
 			} else if (e.code === 'auth/user-not-found') {
 				modal.error('Ошибка входа', 'Пользователь с таким email не найден.');
 			} else {
-				modal.error('Системная ошибка', 'Произошла неизвестная ошибка при входе.');
+				modal.error('Системная ошибка', e.message || 'Произошла неизвестная ошибка при входе.');
 			}
 		} finally {
 			loading = false;
