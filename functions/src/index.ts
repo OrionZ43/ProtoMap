@@ -1832,26 +1832,44 @@ export const uploadAvatar = onCall(
 
             if (botToken && chatId) {
                 const username = userDoc.data()?.username || uid;
+                // ИСПРАВЛЕНИЕ #1: URL внутри MarkdownV2-ссылки НЕ экранируется —
+                // только текстовая часть caption. escapeMarkdownV2 применяем только
+                // к пользовательским данным, а не к служебным символам разметки.
                 const adminLink = "https://proto-map.vercel.app/admin/users";
 
-                // Текст сообщения для ТГ
+                // ИСПРАВЛЕНИЕ #2: Скобки вокруг uid экранируем через \\( в JS-строке
+                // (одиночный \( в шаблоне), а НЕ через escapeMarkdownV2 — иначе будет
+                // двойное экранирование \\\\( которое Telegram отклоняет с 400.
                 const caption = `⚠️ *ПОДОЗРИТЕЛЬНАЯ АВАТАРКА*\n\n`
-                    + `👤 Юзер: \`${escapeMarkdownV2(username)}\` \(${escapeMarkdownV2(uid)}\)\n`
-                    + `🚨 Гугл ругается на: \`${escapeMarkdownV2(safetyResult.reason || "unknown")}\`\n\n`
-                    + `_Аватар уже установлен, но требует твоего взгляда._\n`
-                    + `🔗[Перейти в Админку](${escapeMarkdownV2(adminLink)})`;
+                    + `👤 Юзер: \`${escapeMarkdownV2(username)}\` \\(${escapeMarkdownV2(uid)}\\)\n`
+                    + `🚨 Причина: \`${escapeMarkdownV2(safetyResult.reason || "unknown")}\`\n\n`
+                    + `_Аватар уже установлен, но требует твоего взгляда\\._\n`
+                    + `[Перейти в Админку](${adminLink})`;
 
                 // 📸 ОТПРАВЛЯЕМ САМУ КАРТИНКУ (sendPhoto вместо sendMessage)
-                await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        photo: newAvatarUrl, // Ссылка на картинку из Cloudinary
-                        caption: caption,
-                        parse_mode: "MarkdownV2"
-                    })
-                }).catch(e => console.error("[VISION] Telegram notify failed:", e));
+                // ИСПРАВЛЕНИЕ #3: Логируем ответ Telegram — если придёт 400/403,
+                // причина будет видна в Firebase → Functions → Logs.
+                // ИСПРАВЛЕНИЕ #4: chatId.trim() — защита от пробелов в secret.
+                try {
+                    const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            chat_id: chatId.trim(),
+                            photo: newAvatarUrl,
+                            caption: caption,
+                            parse_mode: "MarkdownV2"
+                        })
+                    });
+                    if (!tgRes.ok) {
+                        const errBody = await tgRes.text();
+                        console.error(`[VISION] Telegram sendPhoto failed: HTTP ${tgRes.status}`, errBody);
+                    } else {
+                        console.log(`[VISION] Telegram sendPhoto OK for uid=${uid}`);
+                    }
+                } catch (e) {
+                    console.error("[VISION] Telegram sendPhoto network error:", e);
+                }
             }
 
             // МЫ БОЛЬШЕ НЕ ВЫКИДЫВАЕМ ОШИБКУ: throw new HttpsError(...) удален!
@@ -2317,12 +2335,10 @@ export const onUserCreated = auth.user().onCreate(async (user) => {
 async function resolveUniqueUsername(base: string): Promise<string> {
     const MAX_ATTEMPTS = 5;
 
-    // Попытка 1: имя как есть
     const candidates: string[] = [base];
 
-    // Попытки 2-5: base + случайный 4-значный суффикс
     for (let i = 1; i < MAX_ATTEMPTS; i++) {
-        const suffix = String(Math.floor(1000 + Math.random() * 9000));
+        const suffix = String(crypto.randomInt(1000, 10000));
         candidates.push(`${base}_${suffix}`.substring(0, 20));
     }
 

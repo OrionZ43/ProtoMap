@@ -100,8 +100,8 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
                     about_me: data.about_me || '',
                     status: data.status || '',
                     casino_credits: data.casino_credits ?? 100,
-                    last_daily_bonus: data.last_daily_bonus && typeof data.last_daily_bonus.toDate === 'function' 
-                        ? data.last_daily_bonus.toDate() 
+                    last_daily_bonus: data.last_daily_bonus && typeof data.last_daily_bonus.toDate === 'function'
+                        ? data.last_daily_bonus.toDate()
                         : null,
                     daily_streak: data.daily_streak || 0,
                     owned_items: data.owned_items || [],
