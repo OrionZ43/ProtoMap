@@ -54,7 +54,15 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
 		}
 
 		if (browser) {
-			sessionStorage.removeItem('2fa_passed');
+			// Очищаем ключи 2FA (для всех юзеров)
+			const keysToRemove = [];
+			for (let i = 0; i < localStorage.length; i++) {
+				const key = localStorage.key(i);
+				if (key && key.startsWith('2fa_passed_')) {
+					keysToRemove.push(key);
+				}
+			}
+			keysToRemove.forEach((key) => localStorage.removeItem(key));
 			try {
 				await fetch('/api/auth', { method: 'DELETE' });
 			} catch (e) {
@@ -94,11 +102,11 @@ onAuthStateChanged(auth, async (userAuth: User | null) => {
 
 					// 🔒 2FA CLIENT PROTECTION
 					if (data.is2FAEnabled) {
-						// Разрешаем жить только если это страница логина/регистрации
-						// или если пользователь прошел 2FA
+						// Используем флаг из localStorage, чтобы он сохранялся между вкладками,
+						// так как Firebase инициализируется в новой вкладке из IndexedDB
 						if (
 							browser &&
-							!sessionStorage.getItem('2fa_passed') &&
+							!localStorage.getItem(`2fa_passed_${userAuth.uid}`) &&
 							!window.location.pathname.match(/^\/(login|register)$/)
 						) {
 							await auth.signOut();

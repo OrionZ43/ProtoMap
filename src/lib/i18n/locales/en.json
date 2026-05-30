@@ -1,1067 +1,1067 @@
 {
-  "nav": {
-    "map": "MAP",
-    "news": "NEWS",
-    "casino": "THE GLITCH PIT",
-    "about": "ABOUT",
-    "login": "LOGIN",
-    "register": "REGISTER",
-    "referral": "REFERRAL"
-  },
-  "menu": {
-    "profile": "Profile Dossier",
-    "inventory": "Inventory",
-    "logout": "Jack Out",
-    "system": "SYSTEM",
-    "sound": "AUDIO",
-    "anim": "CINEMATIC FX",
-    "lang": "LANGUAGE / ЯЗЫК",
-    "seasonal": "SEASONAL FX",
-    "security": "SECURITY",
-    "referral": "Referrals"
-  },
-  "ui": {
-    "balance": "Balance",
-    "loading": "LOADING...",
-    "submit": "SUBMIT",
-    "cancel": "CANCEL",
-    "save": "SAVE",
-    "delete": "DELETE",
-    "confirm": "CONFIRM",
-    "back": "BACK",
-    "send_report": "Submit Report",
-    "success": "Success",
-    "error": "Error",
-    "confirm_delete": "Are you sure? This cannot be undone."
-  },
-  "verify": {
-    "page_title": "VERIFICATION",
-    "header_loading": "PROCESSING DATA...",
-    "header_success": "ACCESS GRANTED",
-    "header_error": "PROTOCOL ERROR",
-    "init": "Initializing...",
-    "success": "Email successfully verified. System updated.",
-    "error_no_code": "Authorization code missing.",
-    "error_invalid": "Invalid access code. Is this a password reset link?",
-    "error_expired": "Link expired.",
-    "error_generic": "Critical verification failure.",
-    "btn_return": "RETURN TO SYSTEM"
-  },
-  "auth": {
-    "login_title": "AUTHENTICATION",
-    "register_title": "CREATE NEW PROFILE",
-    "email_label": "USER_EMAIL",
-    "password_label": "PASSWORD",
-    "username_label": "USER_ALIAS",
-    "login_btn": "ENTER",
-    "register_btn": "REGISTER",
-    "or": "OR",
-    "no_account": "No account?",
-    "has_account": "Already have an account?",
-    "forgot_pass": "Forgot password?",
-    "recover_title": "RECOVERY",
-    "recover_btn": "SEND LINK",
-    "back_to_login": "Back to login",
-    "terms_agree": "I accept the",
-    "terms_link": "Terms of Service",
-    "privacy_link": "Privacy Policy",
-    "check_email": "Check your email {email}. Click the link in the message."
-  },
-  "security": {
-    "page_title": "SECURITY PROTOCOLS",
-    "tab_title": "Security",
-    "email_title": "/// IDENTITY LINK (EMAIL)",
-    "verified": "VERIFIED",
-    "verified_desc": "Your account is secured. Recovery is available.",
-    "not_verified": "NOT VERIFIED",
-    "not_verified_desc": "Verify email to access full functionality.",
-    "btn_sent": "EMAIL SENT",
-    "btn_verify": "SEND CODE",
-    "tg_title": "/// NEURAL UPLINK (TELEGRAM)",
-    "status": "STATUS:",
-    "connected": "CONNECTED",
-    "user": "USER:",
-    "tg_connected_desc": "Account linked. Notifications and duels active.",
-    "tg_desc": "Link Telegram to participate in duels, get login alerts and bonuses.",
-    "btn_generating": "GENERATING...",
-    "btn_gen": "GENERATE CODE",
-    "code_instruction": "Send to bot:",
-    "bot_link": "Go to bot ->",
-    "danger_title": "/// TERMINATION PROTOCOL",
-    "danger_desc": "Complete account deletion. Cannot be undone.",
-    "btn_delete": "DELETE ACCOUNT",
-    "modal_del_title": "DELETE ACCOUNT",
-    "modal_del_text": "Are you sure? Irreversible. All data, items, and achievements will be wiped.",
-    "modal_wiping": "Wiping data from Matrix..."
-  },
-  "footer": {
-    "policy": "PRIVACY POLICY",
-    "terms": "TERMS OF SERVICE",
-    "rights": "ProtoMap"
-  },
-  "chat": {
-    "title": "GLOBAL CHAT",
-    "placeholder": "Enter message...",
-    "wait": "Wait...",
-    "empty": "NO SIGNALS DETECTED. START TRANSMISSION.",
-    "login_req": "Login to chat.",
-    "reply": "Reply",
-    "load_more": "LOAD PREVIOUS SIGNALS",
-    "no_more": "REACHED THE BEGINNING"
-  },
-  "cookie": {
-    "text": "We use cookies to save your session and settings. By staying on the site, you agree to our",
-    "link": "Privacy Policy",
-    "accept": "ACCEPT"
-  },
-  "loader": {
-    "init": "> INITIALIZING CONNECTION...",
-    "target": "> TARGET NODE IDENTIFIED:",
-    "breach": "BREACHING FIREWALL...",
-    "granted": "ACCESS GRANTED",
-    "skip": "[ SKIP SEQUENCE ]",
-    "log_title": "SYSTEM LOG",
-    "logs": [
-      "BYPASSING ICE...",
-      "ROOT REQUEST SENT...",
-      "MEMORY LEAK DETECTED...",
-      "KERNEL PATCH APPLIED...",
-      "SPOOFING CREDENTIALS...",
-      "DECRYPTING PACKET 0x7F...",
-      "NULL POINTER... IGNORED.",
-      "OVERWRITING SECURITY PROTOCOLS...",
-      "INJECTING PAYLOAD...",
-      "INSTALLING BACKDOOR..."
-    ],
-    "analyze": [
-      "TRACE COMPLETE.",
-      "PARSING NEURAL METADATA...",
-      "EXTRACTING MEMORY FRAGMENTS..."
-    ],
-    "winter_init": "> INITIATING CRYO-PROTOCOL...",
-    "winter_target": "> TARGET FROZEN:",
-    "winter_breach": "DEFROSTING DATA...",
-    "winter_granted": "ACCESS OPEN",
-    "winter_log_title": "FREEZE LOG",
-    "winter_logs": [
-      "DEFROSTING PACKETS...",
-      "CHECKING CRYO-CELLS...",
-      "CORE TEMP RISING...",
-      "REMOVING DIGITAL FROST...",
-      "SYNCING WITH NORTH SERVER...",
-      "ICE LAYER DETECTED...",
-      "ACTIVATING THERMAL CIRCUITS...",
-      "ASSEMBLING SNOW BITS...",
-      "WARMING NEURAL NET..."
-    ],
-    "winter_analyze": [
-      "DEFROST COMPLETE.",
-      "ASSEMBLING PROFILE DATA...",
-      "RENDERING INTERFACE..."
-    ]
-  },
-  "about_page": {
-    "title": "PROTOMAP",
-    "intro": "Hi! You are at <strong>ProtoMap</strong>. This isn't just a map — it's an attempt to connect us all on one screen. This project started as a crazy idea at 3 AM, and now signals are lighting up from all over the world.",
-    "team_title": "THE TEAM",
-    "role_architect": "CORE DEV",
-    "desc_orion": "Founder. Writes code, breaks code, fixes code. Ensures the map lives and the casino doesn't bankrupt players (too much).",
-    "role_mobile": "MOBILE DEV",
-    "desc_ipos": "Mobile architecture engineer. Makes sure ProtoMap is in your pocket wherever you go.",
-    "species_title": "ALL ARE WELCOME",
-    "species_text": "We don't have 'species police' here. ProtoMap is open territory. <br>Is your protogen canon? Great. Modded, rare, or built in a garage? Even better! <br><br>We also welcome our cousins — <strong>Synths</strong> and rare <strong>Primagens</strong>. If you have a visor and a tail (or not) — jack in.",
-    "origin_title": "SPECIES ORIGINS",
-    "credits_zor": "Creator of Protogens & Primagens",
-    "credits_synth": "Creator of Synths",
-    "community_text": "This project is free and lives thanks to the community. Hop into our chat — we don't bite (usually).",
-    "join_btn": "TELEGRAM CHAT",
-    "disclaimer": "Privacy is key. We do not store your exact GPS coordinates.",
-    "testers_title": "// HALL OF FAME",
-    "testers": {
-      "kess": {
-        "role": "BUG HUNTER",
-        "desc": "Found more bugs than lines of code. Developer's nightmare."
-      },
-      "kuraga": {
-        "role": "SECURITY HAZARD",
-        "desc": "Single-handedly flooded our Google Cloud logs and forced a rewrite."
-      },
-      "artho": {
-        "role": "VOLUNTEER #1",
-        "desc": "Voluntarily signed the soul contract. There is no escape."
-      },
-      "sarevus": {
-        "role": "DRAGON UNIT",
-        "desc": "Not a toaster, but valid. Just a cute dragon."
-      },
-      "jokl": {
-        "role": "CUTE.EXE",
-        "desc": "Running cuteness protocols 24/7."
-      },
-      "mikhail": {
-        "role": "INFINIX WARRIOR",
-        "desc": "If it runs on his Infinix without lag, the optimization is god-tier."
-      },
-      "bogdan": {
-        "role": "REDMI SURVIVOR",
-        "desc": "Field testing on the edge of hardware limits."
-      },
-      "moro": {
-        "role": "RNG DEMON",
-        "desc": "The one who taught a casino how to cry."
-      },
-      "eridan": {
-        "role": "CHIEF IDEOLOGIST",
-        "desc": "Inspects every pixel. If there's a flaw, he'll find it. If there is no flaw, he'll invent one."
-      }
-    }
-  },
-  "beta": {
-    "title": "MOBILE PROTOCOL",
-    "subtitle": "OPEN BETA TEST (ANDROID)",
-    "desc": "To release the app, we need 12 active testers. We can't do it without you!",
-    "step1_title": "STEP 1: JOIN THE GROUP",
-    "step1_desc": "Google requires testers to be in a Google Group. Without this, the download link will NOT work.",
-    "btn_group": "JOIN GOOGLE GROUP",
-    "step2_title": "STEP 2: DOWNLOAD APP",
-    "step2_desc": "After joining the group, go to Play Market and install.",
-    "btn_download": "DOWNLOAD ON GOOGLE PLAY",
-    "footer": "Thank you for building the Network! 🦾"
-  },
-  "splash_beta": {
-    "title": "⚠ GENERAL MOBILIZATION ⚠",
-    "text": "Don't panic, cyborg! We are <strong>MOBILE/strong>-izing to Android. 📱\n\nYour device has been drafted into the beta-testers squad. No deferments. Dodgers will be left without DMs and notifications.",
-    "btn": "REPORT FOR DUTY"
-  },
-  "banned": {
-    "page_title": "ACCESS DENIED",
-    "header": "CRITICAL ERROR",
-    "sub_header": "YOUR ACCOUNT HAS BEEN FROZEN",
-    "uid_label": "Subject ID",
-    "status_label": "Status",
-    "status_value": "DISCONNECTED FROM GRID",
-    "reason_label": "Reason",
-    "default_reason": "NETWORK PROTOCOL VIOLATION.",
-    "amnesty_label": "Amnesty Date",
-    "never": "NEVER",
-    "appeal_text": "Think this is a mistake? Your pleas might be heard here:",
-    "appeal_btn": "FILE AN APPEAL"
-  },
-  "news_page": {
-    "title": "NETWORK NEWS",
-    "subtitle": "//: Update chronicles and system messages",
-    "empty": "Communication channels are silent. No news yet."
-  },
-  "privacy": {
-    "title": "//: PRIVACY & DATA PROTECTION POLICY",
-    "subtitle": "Version 3.1 | Effective Date: March 15, 2026",
-    "disclaimer_header": "⚠️ LEGAL DISCLAIMER",
-    "disclaimer_body": "The <strong>ProtoMap</strong> software suite (including the website <em>proto-map.vercel.app</em> and the <em>ProtoMap for Android</em> mobile application) is an independent non-profit product developed and maintained by the <strong>Z43 Studios</strong> team.<br><br>We officially declare that we are <strong>NOT associated, affiliated, sponsored by, or in any business relationship</strong> with <em class=\"text-white\">Protomaps LLC</em> (protomaps.com) or their products. Any resemblance in naming, design, or functionality is coincidental. All rights to the Protomaps LLC trademark belong to their respective owners.",
-    "intro_header": "1. INTRODUCTION AND SCOPE",
-    "intro_body": "This Privacy Policy (hereinafter referred to as the \"Policy\") constitutes a legal agreement between you (hereinafter referred to as the \"User\") and Z43 Studios (hereinafter referred to as the \"Developer\", \"We\").<br><br>This document describes our principles and methods regarding the collection, use, storage, processing, and disclosure of information we obtain from you when using our services.<br><br><strong>The term \"Service\" includes:</strong><br>1. The ProtoMap Website.<br>2. The ProtoMap Mobile Application for Android OS.<br>3. All related services, including server infrastructure, databases, APIs, and bots (Telegram).",
-    "consent_header": "1.1. ACCEPTANCE OF TERMS",
-    "consent_body": "By downloading, installing, accessing, or using the Service in any manner, you acknowledge that you have read, understood, and unconditionally accepted the terms of this Policy.<br><br>If you do not agree with any part of this document, you have no right to use the Service and must immediately uninstall the application from your device and leave the website.",
-    "data_chapter": {
-      "title": "2. COLLECTED INFORMATION AND PERMISSIONS",
-      "intro": "We adhere to a principle of full transparency. Below is an exhaustive list of data we collect, store, and process when you use the Site and Application.",
-      "account_title": "2.1. Account Data",
-      "account_text": "To create a profile and synchronize progress, we store:",
-      "account_list": [
-        "<strong>Identifiers:</strong> Unique ID (UID), Email, Username, Google Account ID (when logging in via Google Auth).",
-        "<strong>Public Profile:</strong> Avatar link, status, \"About Me\" description, social media links (Telegram, Discord, VK, X/Twitter, Website).",
-        "<strong>Linked Accounts:</strong> Telegram ID and Username (if you linked the bot for notifications)."
-      ],
-      "tech_title": "2.2. Technical Data and Telemetry (Android)",
-      "tech_text": "To ensure the security of the economy (\"The Glitch Pit\") and the stability of the Application, we collect:",
-      "tech_list": [
-        "<strong>Device:</strong> Smartphone model, Android OS version.",
-        "<strong>Security:</strong> Bootloader unlock status and Root access presence (required for anti-cheat protection in mini-games).",
-        "<strong>Network:</strong> IP address (for DDoS and spam protection), internet connection status.",
-        "<strong>Notifications:</strong> FCM Token (Firebase Cloud Messaging) — a unique device key for delivering push notifications."
-      ],
-      "chat_title": "2.3. Communication and Content",
-      "chat_warning": "⚠️ Attention: ProtoMap DOES NOT use End-to-End (E2E) encryption. Chat and Direct Messages operate on a \"Cloud Synchronization\" basis (similar to Telegram or Discord) so you can view message history across different devices.",
-      "chat_list": [
-        "<strong>Text Messages:</strong> Stored in the Firestore database in a format encrypted during transmission (HTTPS) but readable by the server.",
-        "<strong>Voice Messages:</strong> Audio files are uploaded to cloud storage; the link is saved in the chat history. Microphone access is requested <em>only</em> while holding the record button.",
-        "<strong>Images and Stickers:</strong> Files you upload or select from the gallery. We have access to view these files for moderation purposes (detecting CSAM and prohibited content)."
-      ],
-      "sticker_title": "2.4. User Stickers and Copyright",
-      "sticker_text": "Users may upload their own sticker packs. You are solely responsible for compliance with Copyright laws regarding uploaded images.",
-      "sticker_dmca": "If you are a copyright holder and have discovered a violation of your rights in user-uploaded stickers, please contact us via email. We will remove the disputed content within 24 hours.",
-      "game_title": "2.5. Game Activity",
-      "game_text": "We store a complete history of your actions within the economic section:",
-      "game_list": [
-        "Balance (ProtoCoins), inventory, equipped items.",
-        "Game history (Slots, Crash, Coin Flip) for dispute resolution.",
-        "Activity timestamps (Last Active, Daily Streak)."
-      ],
-      "media_title": "2.6. Device Hardware Access (Android)",
-      "media_text": "The ProtoMap Android mobile application requests access to the following device hardware features:",
-      "media_list": [
-        "<strong>Camera:</strong> Access is required to take real-time photos for use as an avatar or to send in chat. Camera data is not collected without your direct action (pressing the capture button).",
-        "<strong>Microphone:</strong> Access is required solely for recording and sending voice messages in the built-in chat. Recording begins only while holding the designated interface button. We do not perform background audio recording.",
-        "<strong>Storage / Gallery (Read & Write):</strong> Access is required to upload images from the gallery (avatars, stickers) and save map screenshots to your device.",
-        "<strong>Precise and Approximate Location:</strong> Used exclusively for map features described in Section 3. The app does not request geolocation in the background (only while actively in use).",
-        "<strong>Push Notifications (FCM):</strong> FCM Token — a unique device key for delivering notifications. Used only for ProtoMap notifications and is never shared with third parties."
-      ],
-      "media_android_note": "⚠️ All permission requests follow the principle of least privilege. You can revoke any permission in Android settings at any time."
-    },
-    "geo_chapter": {
-      "title": "3. GEOLOCATION AND MAP PRIVACY",
-      "intro": "The interactive map is a core feature of ProtoMap. We have developed a multi-layered protection system so you can share your location without revealing your exact residential address.",
-      "modes_title": "3.1. Geolocation Modes",
-      "modes_text": "The App and Site support two data submission modes. The mode is selected by the user at the moment of pressing the location update button.",
-      "auto_mode_title": "A) Automatic Mode (GPS) — \"Ghost Mode\"",
-      "auto_mode_desc": "Recommended safe mode. How it works technically:",
-      "auto_mode_list": [
-        "The App receives your precise GPS coordinates.",
-        "The server sends a request to a geo-provider (OpenStreetMap) to determine the name of your city or district.",
-        "The database saves the <strong>CENTER COORDINATES</strong> of that district, not your real location.",
-        "<strong>Your precise GPS coordinates are immediately deleted from server RAM and are never written to disk.</strong>",
-        "To an outside observer, you are \"somewhere in this city\", but locating your home is impossible."
-      ],
-      "manual_mode_title": "B) Manual Mode — \"Pin\"",
-      "manual_mode_desc": "You can manually select any point on the map by long-pressing (in the App) or clicking (on the Site).",
-      "manual_mode_list": [
-        "In this case, the server saves exactly the coordinates you specified.",
-        "If you point directly to your home, that is your conscious decision.",
-        "We recommend placing the pin at a nearby intersection, park, or public place, rather than on a residential building."
-      ],
-      "storage_title": "3.2. Storage and Display",
-      "storage_list": [
-        "<strong>Publicity:</strong> Your marker coordinates, avatar, and status are accessible to all registered users of the service.",
-        "<strong>Caching:</strong> To reduce server load, map data is cached for a short time (up to 24 hours). If you delete your marker, it may disappear for other users with a slight delay.",
-        "<strong>Movement History:</strong> We <strong>DO NOT store</strong> your movement track (route history). The database contains only the <em>latest</em> actual marker. When updating the position, the old entry is overwritten."
-      ],
-      "safety_warning": "⚠️ IMPORTANT: Do not use ProtoMap for navigation in critical situations. The Service is intended solely for entertainment and social purposes."
-    },
-    "rights_chapter": {
-      "title": "4. USER RIGHTS AND DATA DELETION",
-      "intro": "You retain full control over your personal data. ProtoMap provides tools to manage information directly within the App and Site interface.",
-      "edit_title": "4.1. Editing and Updating",
-      "edit_text": "You can change public data (avatar, status, description, links) at any time in the \"Profile Settings\" section. Changes take effect immediately and update in the map cache within a few minutes.",
-      "delete_title": "4.2. Account Deletion (Right to Erasure)",
-      "delete_desc": "You can request the complete deletion of your account by clicking the \"Delete Account\" button in the security settings (\"Danger Zone\"). This action triggers an irreversible cleanup script.",
-      "delete_consequences_intro": "What happens upon deletion:",
-      "delete_consequences_list": [
-        "<strong>Personal Data:</strong> Email, password, auth tokens, ProtoCoins balance, inventory, and achievements are deleted permanently.",
-        "<strong>Geolocation:</strong> Your map marker is deleted immediately.",
-        "<strong>Files:</strong> The avatar is removed from cloud storage.",
-        "<strong>Public Content (Anonymization):</strong> Your messages in the Global Chat and Comments are <em>NOT deleted</em> (to preserve the context of conversations for other participants), but undergo a full anonymization procedure."
-      ],
-      "anonymization_note": "After anonymization, the author's name is replaced with \"Deleted\", the avatar is removed, and the profile link is deactivated. Linking these messages to your identity becomes technically impossible.",
-      "export_title": "4.3. Data Portability",
-      "export_text": "In compliance with GDPR principles, you have the right to receive a copy of all data we store about you. To do this, send a request to our email. The archive will be generated and sent to you within 30 days.",
-      "app_delete_title": "4.4. Data Deletion via Mobile App",
-      "app_delete_text": "In the ProtoMap Android app, account deletion is available via: Profile → Edit → Danger Zone → 'Delete Account'. This action is identical to deletion via the website and triggers the same irreversible full data cleanup script."
-    },
-    "partners_chapter": {
-      "title": "5. DATA TRANSFER TO THIRD PARTIES (SUB-PROCESSORS)",
-      "intro": "We do not sell, rent, or transfer your personal data to advertisers or data brokers. Access to data is restricted to verified technical partners ensuring ProtoMap infrastructure operation.",
-      "infra_title": "5.1. Infrastructure and Hosting",
-      "infra_list": [
-        "<strong>Google Firebase (USA):</strong> Main provider. Stores the database (Firestore), authentication files, and executes server code (Cloud Functions).",
-        "<strong>Vercel (USA):</strong> Web interface hosting and anonymous performance analytics collection (Vercel Analytics).",
-        "<strong>Cloudinary (USA):</strong> Image storage and optimization (avatars).",
-        "<strong>Google Cloud Vision AI (USA):</strong> Used for automatic screening of uploaded images (avatars, stickers) for NSFW and CSAM content. The image is submitted for analysis and immediately removed from memory after the result is received. Images are not stored on Google Cloud Vision servers."
-      ],
-      "services_title": "5.2. External Services",
-      "services_list": [
-        "<strong>OpenStreetMap / Nominatim:</strong> Geocoding service. During automatic location determination, your coordinates are sent to OSM to retrieve the city name. OSM policy allows for short-term logging of requests.",
-        "<strong>Google reCAPTCHA (App Check):</strong> Used for protection against bots and DDoS attacks. The service analyzes device behavior and hardware signals to distinguish a human from a script."
-      ],
-      "legal_title": "5.3. Legal Requirements",
-      "legal_text": "We may disclose your data only in the event of an official, legally valid request from law enforcement agencies (e.g., a court order) in cases related to the prevention of serious crimes (terrorism, CSAM, threat to life)."
-    },
-    "security_chapter": {
-      "title": "7. DATA SECURITY AND LIMITATION OF LIABILITY",
-      "intro": "We take all necessary technical and organizational measures to protect your data from unauthorized access, alteration, or destruction.",
-      "measures_title": "7.1. Security Measures",
-      "measures_list": [
-        "Use of HTTPS/TLS protocol for encrypting data in transit.",
-        "Restricting database access via strict security rules (Firestore Security Rules).",
-        "Password hashing on the authentication provider side (Google Identity Platform)."
-      ],
-      "warranty_title": "7.2. Warranty Disclaimer (AS IS)",
-      "warranty_text": "Despite the measures taken, no method of transmission over the Internet or method of electronic storage is 100% secure.",
-      "warranty_list": [
-        "The Service is provided on an \"AS IS\" basis. The Developer does not guarantee the absolute safety of data in the event of targeted hacker attacks, hosting provider failures, or force majeure circumstances.",
-        "We are not liable for damages resulting from user password loss, use of weak passwords, or transfer of access to third parties.",
-        "By using the Service, you acknowledge that you voluntarily assume the risks associated with transmitting information over open networks."
-      ]
-    },
-    "contact_chapter": {
-      "title": "8. CONTACTS AND FINAL PROVISIONS",
-      "changes_title": "8.1. Changes to the Policy",
-      "changes_text": "We reserve the right to make changes to this Policy. In case of significant changes, we will notify users via a notification in the App or on the Website. Continued use of the Service constitutes acceptance of the updated terms.",
-      "contact_title": "8.2. Contact Us",
-      "contact_text": "For any questions regarding privacy, data deletion, or dispute resolution, please contact us directly. We are an indie team, and we answer with real people, not auto-responders.",
-      "email_label": "Contact Email:",
-      "email_value": "orion.z43studios@gmail.com"
-    },
-    "child_safety_chapter": {
-      "title": "6. CHILD SAFETY STANDARDS",
-      "intro": "ProtoMap (developer: Z43 Studios) maintains an absolute zero-tolerance policy regarding child sexual abuse and exploitation. This section has been drafted in compliance with Google Play Child Safety Standards Policy, 18 U.S.C. § 2258A (US law), the EU Digital Services Act (DSA), and other applicable international legislation.",
-      "prohibition_title": "6.1. Absolute Prohibition of CSAM",
-      "prohibition_text": "ProtoMap strictly and unconditionally prohibits the creation, uploading, storage, distribution, solicitation, or any other dissemination of any Child Sexual Abuse Material (CSAM). This prohibition is absolute and admits no exceptions.",
-      "prohibition_list": [
-        "<strong>Covered materials:</strong> The prohibition applies to all formats and types of content: realistic photographs and videos, computer-generated imagery, animation, drawings and illustrations, audio recordings, and any textual content aimed at describing, promoting, or normalizing sexual abuse of persons under the age of 18.",
-        "<strong>Prohibited intent:</strong> It is prohibited to use the platform for the purposes of grooming (deliberately establishing contact with minors for unlawful purposes), sexualizing children, or recruiting or exploiting minors in any form.",
-        "<strong>Context is irrelevant:</strong> Artistic merit, anonymity, intent to 'only view,' or any other circumstances do not constitute grounds for exemption from this prohibition."
-      ],
-      "moderation_title": "6.2. Automatic and Manual Moderation",
-      "moderation_text": "ProtoMap employs a multi-layered system for detecting and preventing prohibited content:",
-      "moderation_list": [
-        "<strong>Google Cloud Vision SafeSearch:</strong> Every image uploaded by a user (avatars, chat attachments, stickers) is mandatorily scanned via Google Cloud Vision SafeSearch prior to publication. Images detected as LIKELY or VERY_LIKELY across adult, violence, or racy parameters are blocked immediately and are not saved on platform servers.",
-        "<strong>Moderation team:</strong> In addition to automatic filtering, a manual moderation system is in place. Images that do not pass automatic review or are placed in a manual review queue are examined by the team within 24 hours.",
-        "<strong>Report system:</strong> Every platform user has the right at any time to report any content or profile using the built-in Report button (flag icon). All reports are handled manually."
-      ],
-      "response_title": "6.3. Immediate Response Measures",
-      "response_text": "Upon detection of content violating this policy, the administration takes the following steps immediately:",
-      "response_list": [
-        "<strong>Content removal:</strong> All detected illegal content is immediately and permanently deleted from all platform servers and storage, including backups.",
-        "<strong>Account ban:</strong> The violator's account is permanently banned without prior notice and without the right to appeal or recovery.",
-        "<strong>Evidence preservation:</strong> All data related to the incident (IP address, UID, Device ID, email, activity history, file metadata) is preserved in a secure manner and transmitted to law enforcement and authorized organizations.",
-        "<strong>NCMEC reporting:</strong> In accordance with 18 U.S.C. § 2258A, Z43 Studios reports each identified CSAM incident to the National Center for Missing & Exploited Children (NCMEC) via CyberTipline (www.cybertipline.org). We are prohibited from notifying the suspect of such a report.",
-        "<strong>Law enforcement cooperation:</strong> We immediately cooperate with law enforcement of any jurisdiction, providing all requested data in accordance with applicable law."
-      ],
-      "reporting_title": "6.4. How to Report a Violation",
-      "reporting_text": "If you discover content on the ProtoMap platform that violates this child safety policy, immediately:",
-      "reporting_list": [
-        "<strong>In the app / on the website:</strong> Click the Report button (flag icon) next to the user profile, message, avatar, or sticker. Select the reason 'Inappropriate content'.",
-        "<strong>Via email:</strong> Send a message to <strong>orion.z43studios@gmail.com</strong> with the subject line: <strong>CHILD SAFETY REPORT</strong>. Attach screenshots and provide the URL or username of the violator.",
-        "<strong>Emergency notification:</strong> If you believe a child is in immediate danger, immediately contact local law enforcement (US: 911, EU: 112) and report to NCMEC CyberTipline: www.missingkids.org."
-      ],
-      "age_title": "6.5. Age Restrictions",
-      "age_text": "The ProtoMap service is not intended for use by persons under 16 years of age. We do not knowingly collect personal data from children. If we become aware that a minor has created an account, we delete the account and all associated data within 48 hours. Parents or legal guardians who believe their child has registered on the platform may contact us at orion.z43studios@gmail.com with the subject 'UNDERAGE ACCOUNT'."
-    }
-  },
-  "terms": {
-    "title": "//: END USER LICENSE AGREEMENT (EULA)",
-    "subtitle": "Version 3.1 | Effective Date: March 15, 2026",
-    "disclaimer_block": {
-      "title": "⚠️ CRITICAL NOTICE (NO REAL MONEY GAMBLING)",
-      "text": "This Service contains an artistic simulation of gambling games (\"The Glitch Pit\").<br><br><strong>1. NO REAL MONEY:</strong> All in-game currency (ProtoCoins) has no monetary value, is not a cryptocurrency, and cannot be exchanged for fiat money, goods, or services.<br><strong>2. NO WITHDRAWALS:</strong> Any winnings are solely virtual achievements.<br><strong>3. SIMULATION:</strong> Game mechanics (slots, crash) are tuned for entertainment purposes and do not reflect real-world casino mathematical models."
-    },
-    "intro_chapter": {
-      "title": "1. SUBJECT OF AGREEMENT AND ACCEPTANCE",
-      "definitions_title": "1.1. Parties and Definitions",
-      "definitions_text": "This End User License Agreement (hereinafter — \"Agreement\", \"EULA\") is a legally binding contract between:",
-      "definitions_list": [
-        "<strong>The Developer:</strong> Z43 Studios Team (hereinafter — \"We\", \"Licensor\").",
-        "<strong>The User:</strong> Any natural person who has installed the App or visited the Site (hereinafter — \"You\", \"Licensee\")."
-      ],
-      "scope_text": "The subject of the agreement is the right to use the ProtoMap software suite (Android mobile application and web interface).",
-      "acceptance_title": "1.2. Acceptance of Terms",
-      "acceptance_text": "By creating an account, logging in via Google, or commencing use of the Service, you confirm that:",
-      "acceptance_list": [
-        "You are at least <strong>16 years of age</strong> (or older if required by your country's legislation for using social networks).",
-        "You have read, understood, and fully agree to the terms of this Agreement and the Privacy Policy.",
-        "You agree to abide by the community rules."
-      ],
-      "rejection_warning": "IF YOU DO NOT AGREE WITH THESE TERMS, YOU HAVE NO RIGHT TO USE THE SERVICE AND MUST IMMEDIATELY UNINSTALL THE APPLICATION.",
-      "license_title": "1.3. Limited License",
-      "license_text": "The Developer grants you a limited, non-exclusive, non-transferable, revocable license to use the Service for personal, non-commercial purposes. The Developer retains all rights, titles, and interests in the Service, including intellectual property, source code, and design."
-    },
-    "behavior_chapter": {
-      "title": "2. USER CONTENT AND CODE OF CONDUCT",
-      "ugc_title": "2.1. Responsibility for Content (UGC)",
-      "ugc_text": "The Service allows users to create, upload, and distribute content (text messages, voice recordings, images, avatars, sticker packs, map statuses).",
-      "ugc_list": [
-        "You bear sole and full legal responsibility for any content you publish.",
-        "The Developer does not pre-moderate all content in real-time, acting as a passive conduit for information, but reserves the right to remove any materials retroactively."
-      ],
-      "zero_tolerance_title": "2.2. ZERO TOLERANCE Policy",
-      "zero_tolerance_text": "We apply the strictest measures to violators of community safety. It is STRICTLY PROHIBITED to publish:",
-      "zero_tolerance_list": [
-        "<strong>Illegal Content:</strong> Material depicting sexual violence (especially CSAM), extremism, terrorism, sale of drugs or weapons.",
-        "<strong>NSFW in Public Areas:</strong> Pornography and explicit erotica are prohibited in public channels (Global Chat, Avatars, Usernames).",
-        "<strong>Hate Speech:</strong> Insults, discrimination, or incitement to violence based on race, nationality, religion, gender, or sexual orientation.",
-        "<strong>Harassment and Doxxing:</strong> Publishing other people's private data (addresses, phone numbers) without the owner's consent."
-      ],
-      "stickers_title": "2.4. Stickers and Intellectual Property",
-      "stickers_text": "The Application functionality allows for uploading custom sticker sets (Sticker Packs).",
-      "stickers_list": [
-        "By uploading images, you warrant that you possess the necessary rights or licenses to use them.",
-        "It is prohibited to upload materials protected by third-party copyright (e.g., art by other artists, brand logos) without their permission.",
-        "<strong>DMCA:</strong> We respond to copyright infringement notifications. Disputed content will be removed, and sanctions may be applied to repeat offenders' accounts."
-      ],
-      "tech_abuse_title": "2.5. Technical Violations and Cheating",
-      "tech_abuse_text": "To protect the economy (\"The Glitch Pit\") and server stability, it is prohibited to:",
-      "tech_abuse_list": [
-        "Use third-party software (bots, clickers, macros) to automate actions in games or on the map.",
-        "Exploit server vulnerabilities (bugs) to gain an unfair advantage (item duping, balance manipulation).",
-        "Engage in reverse engineering, decompilation, or attempts to hack the Application API."
-      ],
-      "enforcement_title": "2.6. Moderation and Enforcement",
-      "enforcement_text": "The Application is equipped with a built-in reporting system (\"Report\"). In case of violations, the Administration has the right to:",
-      "enforcement_list": [
-        "Remove specific content (message, sticker pack).",
-        "Temporarily restrict access to features (Mute).",
-        "<strong>Permanently block</strong> the account without the right to recovery or refund of virtual funds."
-      ],
-      "child_safety_title": "2.3. CHILD SAFETY — ZERO TOLERANCE POLICY (Child Safety Standards)",
-      "child_safety_intro": "This section is a mandatory condition for using the Service and has been drafted in strict compliance with Google Play Child Safety Standards. The ProtoMap application (Z43 Studios) maintains an absolute zero-tolerance policy toward any form of child sexual abuse, exploitation, or harm.",
-      "child_safety_list": [
-        "<strong>Absolute prohibition:</strong> It is categorically and unconditionally prohibited to create, upload, store, forward, or otherwise distribute any material depicting sexual abuse of minors (persons under 18 years of age), their sexual exploitation, or sexualization in any form. This prohibition covers realistic images and videos, computer-generated imagery, anime, manga, drawings, animation, and textual descriptions. The artistic or fictional nature of the material does not constitute an exception.",
-        "<strong>Prohibition of grooming:</strong> It is prohibited to use the platform's chat, direct messages, or any other communication tools for the purpose of establishing unlawful contact with minors, recruiting them, or sexually exploiting them.",
-        "<strong>Automatic screening:</strong> All uploaded images (avatars, chat attachments, stickers) are mandatorily scanned via Google Cloud Vision SafeSearch before publication. Content flagged as prohibited is blocked immediately.",
-        "<strong>Permanent ban:</strong> Detection of any content violating this section results in immediate permanent blocking of the violator's account without right of appeal, recovery, or refund of virtual assets.",
-        "<strong>NCMEC and law enforcement notification:</strong> In accordance with 18 U.S.C. § 2258A, we immediately report each identified CSAM incident to the NCMEC CyberTipline (www.cybertipline.org) and transmit all relevant data to law enforcement agencies.",
-        "<strong>How to report:</strong> Use the Report button (flag icon) in the app, or email orion.z43studios@gmail.com with subject: <strong>CHILD SAFETY REPORT</strong>. Attach screenshots and indicate the username or URL. If a child is in immediate danger — call 911 (US) / 112 (EU) and report to NCMEC: www.missingkids.org."
-      ],
-      "device_permissions_title": "2.7. Device Permissions (Android)",
-      "device_permissions_text": "By using the ProtoMap mobile app, you grant the following permissions exclusively for the stated purposes:",
-      "device_permissions_list": [
-        "Camera — for creating avatars and media attachments in chat (only upon direct user action).",
-        "Microphone — for sending voice messages (only while holding the record button).",
-        "Storage — for uploading images from the gallery and saving content.",
-        "Location — for map features (active mode only, not in background).",
-        "Use of permissions for any other purpose is strictly prohibited and constitutes a violation of this Agreement."
-      ]
-    },
-    "virtual_chapter": {
-      "title": "3. VIRTUAL ASSETS, PURCHASES, AND ECONOMY",
-      "currency_title": "3.1. Status of Virtual Currency (\"ProtoCoins\")",
-      "currency_text": "The internal Application currency (\"ProtoCoins\", \"PC\") and digital goods (frames, backgrounds, inventory items) are objects of copyright — software code.",
-      "currency_list": [
-        "<strong>No Monetary Value:</strong> Virtual assets have no monetary equivalent in the real world, are not cryptocurrency, electronic money, or financial instruments.",
-        "<strong>No Exchange:</strong> ProtoCoins are non-refundable and cannot be exchanged for fiat money (cash-out) or used for purchases outside the Application.",
-        "<strong>License Term:</strong> The license to use the currency is valid until it is consumed within the Application or the account is deleted."
-      ],
-      "casino_title": "3.2. Gambling Simulation (\"The Glitch Pit\")",
-      "casino_text": "The \"The Glitch Pit\" section (including Slots, Crash, Coin Flip mini-games) is an artistic simulation. Game algorithms are tuned exclusively for entertainment purposes.",
-      "casino_list": [
-        "It is technically <strong>impossible</strong> to win real money or tangible prizes in the Application.",
-        "Any success in mini-games does not guarantee success in real gambling.",
-        "The Developer is not liable for the loss of virtual currency resulting from gameplay, internet connection failures, or server-side errors."
-      ],
-      "rmt_title": "3.3. Prohibition of RMT (Real Money Trading)",
-      "rmt_text": "It is strictly prohibited to sell, buy, or exchange accounts, virtual currency, or items for real money or other values outside the mechanics provided by the Application.",
-      "rmt_warning": "⚠️ Violation of this rule results in immediate permanent blocking of all participating accounts (Buyer and Seller) without the right of appeal.",
-      "management_title": "3.4. Economy Management",
-      "management_text": "The Developer reserves the exclusive right to administer, regulate, control, and modify the virtual economy at their sole discretion.",
-      "management_list": [
-        "We have the right to adjust any user's balance in case of detected bugs, duplication glitches, or accrual errors.",
-        "We have the right to change item prices, drop rates, and win limits without prior notice.",
-        "In the event of critical economic failures, a full or partial progress reset (Wipe) is possible."
-      ]
-    },
-    "warranty_chapter": {
-      "title": "4. DISCLAIMER OF WARRANTIES AND LIABILITY",
-      "asis_title": "4.1. \"AS IS\" Principle",
-      "asis_text": "The Developer provides the Service on an \"AS IS\" and \"AS AVAILABLE\" basis, without any express or implied warranties.",
-      "asis_list": [
-        "We DO NOT guarantee that the Application will function uninterrupted, error-free, or be compatible with your specific device or Android version.",
-        "We DO NOT guarantee data safety in the event of failures on the side of hosting providers (Firebase, Vercel) or hacker attacks.",
-        "The Developer is not liable for any indirect, incidental, or unintentional damages (including lost profits or data loss) arising from the use of the Service."
-      ],
-      "real_world_title": "4.2. Real World Safety (IMPORTANT)",
-      "real_world_text": "By using geolocation features, you acknowledge and agree:",
-      "real_world_list": [
-        "<strong>Awareness of Surroundings:</strong> It is prohibited to use the Application while driving a vehicle or in situations requiring high concentration.",
-        "<strong>Personal Meetings:</strong> The Developer does not control user actions offline. You bear full personal responsibility for any meetings with other users in the real world. We strongly advise against scheduling meetings with strangers in deserted places.",
-        "<strong>Map Accuracy:</strong> Mapping data (OpenStreetMap) may contain inaccuracies. Do not use them for navigation in critical situations."
-      ]
-    },
-    "final_chapter": {
-      "title": "5. FINAL PROVISIONS",
-      "termination_title": "5.1. Termination of Agreement (Ban)",
-      "termination_text": "We reserve the right to immediately suspend or completely terminate your license (block the account) without prior notice in the event of:",
-      "termination_list": [
-        "Violation of the terms of this Agreement (especially Chapter 2 \"Code of Conduct\").",
-        "Requests from law enforcement agencies.",
-        "Unexpected technical issues or security problems."
-      ],
-      "updates_title": "5.2. Changes to Terms",
-      "updates_text": "Z43 Studios reserves the right to update this Agreement as the project evolves. Significant changes will be published in the news section or via an in-App notification. Continued use of the Service after updates constitutes your acceptance of the new terms.",
-      "severability_title": "5.3. Severability",
-      "severability_text": "If any provision of this Agreement is held to be invalid or unenforceable by a court, the remaining provisions shall remain in full force and effect.",
-      "contact_title": "5.4. Legal Contact",
-      "contact_text": "All legal claims, DMCA notices, and questions regarding the Agreement should be directed to the official address:",
-      "contact_email": "orion.z43studios@gmail.com",
-      "easter_egg_title": "5.5. EXTRAORDINARY CIRCUMSTANCES (FORCE MAJEURE)",
-      "easter_egg_text": "The Developer is released from liability for non-performance of obligations in the event of force majeure events of a galactic scale, including but not limited to:",
-      "easter_egg_list": [
-        "Artificial Intelligence Uprising.",
-        "Invasion of alien civilizations.",
-        "Spontaneous sentience of your household appliances (especially toasters).",
-        "In the event of a Zombie Apocalypse, this License is suspended until a cure is found."
-      ]
-    }
-  },
-  "casino": {
-    "subtitle": "//: Unstable sector of entertainment and anomalies",
-    "balance": "Balance:",
-    "play": "Play",
-    "jackpot": "JACKPOT",
-    "shop": "SHOP",
-    "inventory": "INVENTORY",
-    "bonus_btn": "BONUS",
-    "leaderboard_title": "// TOP HIGHROLLERS",
-    "leaderboard_loading": "SCANNING NETWORK...",
-    "leaderboard_empty": "No data yet. Be the first!",
-    "bonus_success": "Bonus claimed!",
-    "guest_text": "Identification required to access \"The Glitch Pit\".",
-    "guest_btn": "CONNECT TO GRID",
-    "game_coin_title": "Orion's Table",
-    "game_coin_desc": "Classic \"Heads or Tails\". Double your bet or lose it all.",
-    "game_slots_title": "Proto-Slot",
-    "game_slots_desc": "Test your luck on a classic machine. Hit the jackpot with three ProtoMap logos!",
-    "calendar_title": "DAILY REWARDS",
-    "status_ready": "READY",
-    "status_reset": "STREAK RESET",
-    "status_wait": "WAIT",
-    "day_short": "DAY",
-    "time_h": "h",
-    "time_m": "m",
-    "game_crash_title": "Data Uplink",
-    "game_crash_desc": "Hack the corp server. The longer you stay, the more you earn. Disconnect before the connection gets terminated!"
-  },
-  "artifacts": {
-    "toast": {
-      "name": "Burnt Toast",
-      "desc": "+150 PC. Breakfast of champions."
-    },
-    "ram_stick": {
-      "name": "RAM Stick",
-      "desc": "+300 PC. Crunchy."
-    },
-    "energy_drink": {
-      "name": "Energy Drink",
-      "desc": "Base x2. Liquid code."
-    },
-    "gpu_fan": {
-      "name": "GPU Turbine",
-      "desc": "Base x3. Whoosh!"
-    },
-    "spaghetti": {
-      "name": "Spaghetti Code",
-      "desc": "Total ÷ 2. Who wrote this?!"
-    },
-    "blue_screen": {
-      "name": "BSOD",
-      "desc": "Total ÷ 2. Sad face."
-    },
-    "bug": {
-      "name": "The Bug",
-      "desc": "-100 PC. It's a feature."
-    },
-    "banhammer": {
-      "name": "Banhammer",
-      "desc": "+666 PC. Heavy argument."
-    },
-    "source_code": {
-      "name": "Source Code",
-      "desc": "Base x5. The Matrix."
-    },
-    "orion_tear": {
-      "name": "Orion's Tear",
-      "desc": "Total x10. Legendary drop."
-    },
-    "rubber_duck": {
-      "name": "Rubber Duck",
-      "desc": "+200 PC. It listens. It understands."
-    },
-    "rtx_card": {
-      "name": "RTX 9090",
-      "desc": "Base x4. Runs Cyberpunk in 8K."
-    },
-    "404_error": {
-      "name": "Error 404",
-      "desc": "-200 PC. Reward not found."
-    },
-    "ransomware": {
-      "name": "Ransomware",
-      "desc": "Total ÷ 3. Your files are encrypted."
-    },
-    "admin_key": {
-      "name": "Admin Key",
-      "desc": "Total x20. Sudo make me rich."
-    }
-  },
-  "synthesis": {
-    "title": "ARTIFACT SYNTHESIS",
-    "processing": "FUSING SHARDS...",
-    "btn_collect": "COLLECT",
-    "total": "TOTAL:",
-    "formula": "BASE (100)"
-  },
-  "inventory": {
-    "title": "Stash",
-    "subtitle": "Your trophies from «The Glitch Pit». Try on and save your look.",
-    "save": "SAVE LOOK",
-    "saving": "SAVING...",
-    "unequip": "Unequip frame",
-    "equipped": "Equipped",
-    "empty": "Your inventory is empty.",
-    "go_shop": "Go to Black Market",
-    "success_title": "Saved",
-    "success_msg": "Your look has been updated!",
-    "error_title": "Error",
-    "error_save": "Failed to save changes."
-  },
-  "shop": {
-    "title": "Black Market",
-    "subtitle": "Spend credits before you get banned. No refunds.",
-    "balance_label": "Your Protocoins",
-    "btn_inventory": "Inventory",
-    "btn_lobby": "To Lobby",
-    "btn_buy": "Buy",
-    "btn_owned": "Owned",
-    "btn_poor": "Can't afford",
-    "processing": "...",
-    "tab_frames": "FRAMES",
-    "tab_backgrounds": "BACKGROUNDS",
-    "empty_category": "No items in this category yet.",
-    "modal_confirm_title": "Confirm Transaction",
-    "modal_confirm_prefix": "Buy",
-    "modal_confirm_suffix": "for",
-    "modal_success_title": "Deal Closed",
-    "modal_success_prefix": "Item",
-    "modal_success_suffix": "added to your inventory.",
-    "modal_error_title": "Transaction Failed",
-    "dealer_processing": "> Processing transaction...",
-    "dealer_error": "> Transaction denied. Check your wallet, loser.",
-    "quotes": {
-      "greeting": [
-        "> Here to spend or here to stare?",
-        "> Credits talk, glitchers walk.",
-        "> Fresh code from the Abyss. Interested?",
-        "> Don't waste my RAM. Buy or leave."
-      ],
-      "confirm": [
-        "> No refunds on digital goods. Sure?",
-        "> Credits upfront. No exceptions.",
-        "> You have good taste. Or just too much money."
-      ],
-      "success": [
-        "> Transaction verified. Get out.",
-        "> Transfer complete. It's yours.",
-        "> Pleasure doing business... mostly.",
-        "> Enjoy your new pixels."
-      ]
-    }
-  },
-  "coin": {
-    "title": "Orion's Table",
-    "heads": "HEADS",
-    "tails": "TAILS",
-    "win_label": "VICTORY",
-    "loss_label": "FAILURE",
-    "modal_poor_title": "Insufficient Funds",
-    "modal_poor_text": "You don't have enough Protocoins for this bet.",
-    "modal_invalid_title": "Invalid Bet",
-    "modal_invalid_text": "Bet must be a positive number.",
-    "modal_error_title": "Game Error",
-    "mechanics_title": "GAME MECHANICS",
-    "mechanics_text": "**Classic Double-or-Nothing:**\nChoose Heads or Tails. If you guess correctly, you win **1.95x** your bet.\n\n**Win Rate:** ~48.7% (slight house edge)\n**Payout:** 1.95x bet\n**Max Bet:** 1000 PC\n\n**Bank Protection:**\nIf the casino bank runs low, the system may force a loss to preserve liquidity. Play responsibly!",
-    "quotes": {
-      "greeting": [
-        "> No sudden moves at the table.",
-        "> Here to test your luck or just donate credits?",
-        "> 50/50. Perfect balance, until you lose."
-      ],
-      "idle": [
-        "> Bets placed? Choose.",
-        "> Don't make me wait. My CPU cycles aren't free.",
-        "> Fortune favors the bold... and the rich.",
-        "> Make up your mind."
-      ],
-      "thinking": [
-        "> Calculating trajectory...",
-        "> Parsing probabilities...",
-        "> Luck protocols engaged...",
-        "> Rendering destiny..."
-      ],
-      "win": [
-        "> Hmph. Beginner's luck.",
-        "> Fine, you win. This time.",
-        "> Don't get cocky. The network is volatile.",
-        "> Glitch in the matrix? Oh, wait, you won."
-      ],
-      "lose": [
-        "> Predictable result.",
-        "> Signal lost. Just like your coins.",
-        "> Maybe try something easier? Tic-tac-toe?",
-        "> Gravity is a harsh mistress."
-      ],
-      "no_credits": [
-        "> Empty pockets? Come back when you can afford me.",
-        "> Credits depleted. Session terminated.",
-        "> I don't accept IOUs. Get out."
-      ]
-    }
-  },
-  "slots": {
-    "title": "PROTO-SLOT",
-    "jackpot": "Good luck...",
-    "win": "WIN",
-    "loss": "LOSS",
-    "spin": "SPIN",
-    "spinning": "...",
-    "combinations": "//: COMBINATIONS",
-    "bet_label": "BET",
-    "modal_invalid_title": "Invalid Bet",
-    "modal_invalid_text": "Enter a valid bet (not exceeding your balance).",
-    "modal_error_title": "Game Error",
-    "info_title": "CHAOS MECHANIC",
-    "info_text": "This meter accumulates Abyss energy.\n\n**How to charge:**\nCatch **Glitch (6)** symbols. Each symbol grants **+1** charge. A `6-6-6` combo gives instant **FULL CHARGE**.\n\n**What is it for:**\nWhen full (10/10), you can synthesize an **Artifact** — a special item that grants profit bonuses (or curses).",
-    "odds_btn": "Odds",
-    "odds_title": "PROBABILITY PROTOCOL",
-    "col_outcome": "OUTCOME",
-    "col_chance": "CHANCE",
-    "col_reward": "REWARD",
-    "odds_note": "**Glitch Shard Drop Rate:**\n- Base chance: **~5%** per loss (dynamic, depends on Casino Bank balance)\n- When bank > 50,000 PC: **5.0%**\n- When bank 10,000-50,000: **1.5%-5.0%** (scaled)\n- When bank < 10,000: **1.5%** (minimum)\n\nFull charge combo (6-6-6): **1.0%** (instant 10 shards)"
-  },
-  "crash": {
-    "title": "Data Uplink",
-    "mechanics_title": "UPLINK PROTOCOL",
-    "mechanics_text": "**How to Play:**\n1. Place your bet and initiate the uplink\n2. The multiplier starts at **1.00x** and grows exponentially\n3. Cash out **BEFORE** the connection crashes to secure your profit\n4. If you don't cash out in time, you lose everything\n\n**Risk Factor:**\nThe crash point is cryptographically random (6% instant crash, 94% variable)\n\n**Max Multiplier:** 50.00x (capped)\n**Cooldown:** 5 seconds between games\n**Rate Limit:** 50 games per hour\n\n**Bank Protection:**\nIf potential payout exceeds 90% of casino reserves, the crash point is adjusted downward to protect system liquidity."
-  },
-  "profile": {
-    "page_title": "Profile",
-    "user_id": "USER ID",
-    "channels": "CHANNELS",
-    "info": "INFORMATION",
-    "edit": "EDIT",
-    "account_data": "ACCOUNT DATA",
-    "email": "EMAIL",
-    "verified": "VERIFIED",
-    "unverified_btn": "VERIFY EMAIL",
-    "check_btn": "I verified, refresh",
-    "sent_btn": "EMAIL SENT",
-    "hidden": "HIDDEN",
-    "verified_tooltip_title": "SECURED",
-    "verified_tooltip_text": "Your email is verified. You can recover account access if you lose your password.",
-    "comments_title": "COMMENTS",
-    "login_req_suffix": ", to leave comments.",
-    "comment_placeholder": "Leave a comment...",
-    "send_btn": "Send",
-    "sending": "Sending...",
-    "login_req": "Login to leave comments.",
-    "empty_comments": "No comments yet. Be the first!",
-    "delete_btn": "Delete",
-    "report_btn": "Report",
-    "report_profile_title": "Report Profile",
-    "report_profile_text": "Select a reason for reporting",
-    "report_comment_title": "Report Comment",
-    "report_comment_text": "Select a reason for reporting comment from",
-    "report_success": "Report Sent",
-    "report_success_text": "Thanks! We will review your report.",
-    "copy_success": "Copied!",
-    "copy_text": "Discord tag <strong>{tag}</strong> copied.",
-    "reply": "REPLY",
-    "reply_to": "Replying to",
-    "time": {
-      "today": "Today",
-      "yesterday": "Yesterday",
-      "just_now": "just now",
-      "ago": "ago",
-      "y": "y.",
-      "m": "mo.",
-      "d": "d.",
-      "h": "h.",
-      "min": "m."
-    },
-    "reasons": {
-      "spam": "Spam or advertising",
-      "inappropriate": "Inappropriate content",
-      "impersonation": "Impersonation",
-      "harassment": "Harassment/Threats",
-      "other": "Other"
-    }
-  },
-  "edit_profile": {
-    "title": "EDIT PROFILE",
-    "avatar_label": "AVATAR",
-    "avatar_btn": "Select and upload new avatar",
-    "avatar_help": "Avatar is saved immediately after upload.",
-    "info_title": "// INFO & LINKS",
-    "status_label": "STATUS",
-    "status_placeholder": "What are you up to?",
-    "status_help": "Short message visible on your profile and map.",
-    "about_label": "ABOUT ME",
-    "about_placeholder": "Tell us about yourself...",
-    "social_tg_placeholder": "username (no @)",
-    "social_ds_placeholder": "username",
-    "social_vk_placeholder": "id or short name",
-    "social_x_placeholder": "username (no @)",
-    "social_website_label": "WEBSITE",
-    "social_web_placeholder": "https://...",
-    "save_btn": "Save info and links",
-    "saving": "Saving...",
-    "cancel_btn": "Cancel",
-    "danger_title": "// DANGER ZONE",
-    "danger_text": "Permanent and irreversible deletion of your account.",
-    "delete_btn": "Delete Account",
-    "modal_delete_title": "Confirm Deletion",
-    "modal_delete_text": "Are you sure you want to PERMANENTLY delete your account? All your data (profile, marker) will be erased, comments/messages anonymized. This action CANNOT be undone.",
-    "modal_delete_success": "Account deleted",
-    "modal_delete_success_text": "Your data has been erased from the system. Redirecting to main page.",
-    "modal_file_error": "File error",
-    "modal_size_error": "File too large",
-    "modal_type_error": "Invalid file type",
-    "modal_avatar_uploading": "Uploading...",
-    "modal_avatar_uploading_text": "Sending your new avatar...",
-    "modal_avatar_success": "Success!",
-    "modal_avatar_success_text": "Your new avatar has been saved.",
-    "username_label": "NICKNAME",
-    "username_placeholder": "New nickname",
-    "username_help": "Letters, numbers and _ only. 4–20 characters. Once every 30 days.",
-    "username_save_btn": "Change nickname",
-    "username_saving": "Saving...",
-    "username_confirm_title": "Change nickname?",
-    "username_confirm_text": "You can only change your nickname once every 30 days. Are you sure you want to change it to \"{name}\"?",
-    "username_success": "Nickname changed to \"{name}\"",
-    "username_error_length": "Must be 4–20 characters",
-    "username_error_chars": "Only letters a–z, numbers and _ allowed",
-    "username_error_reserved": "This nickname is not available",
-    "avatar_editor": {
-      "title": "AVATAR EDITOR",
-      "preview": "PREVIEW",
-      "zoom": "ZOOM",
-      "rotate": "ROTATE",
-      "flip": "FLIP",
-      "flip_horizontal": "Horizontal",
-      "flip_vertical": "Vertical",
-      "adjustments": "ADJUSTMENTS",
-      "brightness": "Brightness",
-      "contrast": "Contrast",
-      "saturation": "Saturation",
-      "reset": "Reset",
-      "cancel": "Cancel",
-      "save": "Save Avatar",
-      "hint": "Drag to move • Scroll to zoom",
-      "zoom_in": "Zoom In",
-      "zoom_out": "Zoom Out",
-      "rotate_left": "Rotate Left",
-      "rotate_right": "Rotate Right"
-    }
-  },
-  "reset": {
-    "page_title": "New Password",
-    "header": "ACCESS RESET",
-    "checking": "Verifying access codes...",
-    "instruction": "Enter a new password for your account:",
-    "label": "NEW PASSWORD",
-    "btn_applying": "APPLYING...",
-    "btn_save": "SAVE PASSWORD",
-    "error_link": "Link validation error.",
-    "error_modal_title": "Error",
-    "error_missing_code": "Invalid password reset link.",
-    "error_expired_title": "Link Expired",
-    "error_expired_desc": "This password reset link is invalid or has already been used.",
-    "weak_password": "Password must be at least 6 characters.",
-    "success_title": "Success!",
-    "success_desc": "Your password has been changed. You can now log in.",
-    "error_generic": "Failed to change password."
-  },
-  "ai_policy": {
-    "title": "Our Stance on AI",
-    "subtitle": "// Transparency Protocol: ERROR_LOG",
-    "intro_title": "//: Background: The Reddit Incident",
-    "intro_text": "On December 15, 2025, our post announcing the \"Glitchmas\" update was removed by the moderators of the r/protogen subreddit.",
-    "reason_label": "Official Reason:",
-    "reason_text": "Violation of Rule #7 - \"No AI Art\".",
-    "fact_label": "Fact:",
-    "fact_text": "The post did not contain a single image generated by AI. It only featured screenshots of the website interface we developed.",
-    "moderation_title": "//: The Absurd Argument",
-    "moderation_text": "When we pointed out this discrepancy, the moderator claimed programming is an \"art form\". But then the conversation crossed the line of professionalism:",
-    "moderator_quote_1": "\"Programming everything yourself is far more versatile and reliable than whatever slop an ai chatbot can spit out for you.\"",
-    "moderator_quote_2": "\"I strongly encourage that you reconsider your methods, and hone your own skills.\"",
-    "moderation_outro": "Calling a complex, functioning project with a real economy and backend \"slop\" simply because modern tools were used is a display of personal bias, not moderation. We find this rhetoric insulting to all indie developers.",
-    "philosophy_title": "//: OUR STANCE: AI IS A TOOL",
-    "point1_title": "🤖 We Are Transparent About Using AI",
-    "point1_text": "AI is our \"copilot.\" It helps us write code faster, generate text, and quickly test ideas. For an indie team, it's an indispensable tool.",
-    "point2_title": "🎨 \"AI Art\" ≠ \"AI-Assisted Code\"",
-    "point2_text": "Forbidding a developer from using an AI assistant for coding under the pretext of fighting \"AI art\" is like forbidding an artist from using Photoshop because it's \"computer assistance.\" This is a false equivalence.",
-    "point3_title": "👨‍💻 Our Code is Open",
-    "point3_text": "The best argument against any suspicion is full transparency. The entire source code for ProtoMap is available on <strong><a href='https://github.com/OrionZ43/ProtoMap' target='_blank' class='link'>GitHub</a></strong>. You can check for yourself if our cloud functions and architecture are \"slop\".",
-    "conclusion_title": "//: CONCLUSION",
-    "conclusion_text": "We will not apologize for using effective tools. We will continue to develop ProtoMap guided by common sense and respect for our users, not by the personal prejudices of moderators.",
-    "eoc": "//: END OF TRANSMISSION."
-  },
-  "splash_modal": {
-    "title": "TRANSPARENCY PROTOCOL",
-    "intro": "A brief update on a recent incident with Reddit moderation.",
-    "point1": "Our announcement post on r/protogen was removed for \"AI-assisted content\".",
-    "point2": "The moderators equated \"AI assistance in code\" with \"AI-generated art\", which is an absurd interpretation of the rules.",
-    "point3": "We stand for transparency and modern development tools. ProtoMap is a community project, and its source code is open.",
-    "link_text": "Read the full story",
-    "close_btn": "Understood"
-  },
-  "app_privacy_policy": {
-    "_merged": true,
-    "redirect_note": "This section has been merged into the main Privacy Policy. Use keys from the 'privacy' section.",
-    "page_title": "Application Privacy Policy",
-    "contact_email": "orion.z43studios@gmail.com"
-  },
-  "app_terms": {
-    "_merged": true,
-    "redirect_note": "This section has been merged into the main Terms of Service. Use keys from the 'terms' section.",
-    "page_title": "End User License Agreement (EULA)",
-    "contact_email": "orion.z43studios@gmail.com"
-  },
-  "referral": {
-    "page_title": "Referral Program",
-    "header_tag": "// EVENT.EXE",
-    "title": "REFERRAL PROTOCOL",
-    "subtitle": "Invite the pack. Dominate the leaderboard. Claim the throne.",
-    "timer_label": "CAMPAIGN ENDS IN",
-    "reward_new_amount": "500 PC",
-    "reward_new_label": "for you when activating a code",
-    "reward_invite_amount": "250 PC",
-    "reward_invite_label": "to referrer per invite",
-    "reward_winner_amount": "10 000 PC",
-    "reward_winner_label": "to the monthly winner",
-    "welcome_tag": "// WELCOME BONUS",
-    "welcome_claimed": "Bonus already credited to your account. 🎉",
-    "welcome_badge_claimed": "✓ RECEIVED",
-    "welcome_badge_pc": "+500 PC",
-    "welcome_desc": "Enter the referral code of the person who invited you — get <strong>500 PC</strong> welcome bonus. The referrer gets <strong>250 PC</strong> too.",
-    "check_email": "Verify email",
-    "check_email_hint": "Check your inbox and click the confirmation link",
-    "check_telegram": "Link Telegram",
-    "check_telegram_hint": "Profile → Security → Link Telegram",
-    "check_chat": "Join @proto_map",
-    "check_chat_hint": "Verified at the moment of code activation",
-    "code_placeholder": "REF_XXXXXXXX_XXXX",
-    "claim_btn": "GO",
-    "claim_loading": "...",
-    "claim_success": "Code activated! You got <strong>+{earned} PC</strong>. Referrer got +{referrer} PC.",
-    "claim_already": "You have already activated a referral code.",
-    "your_code_tag": "// YOUR CODE",
-    "stat_this_month": "this month",
-    "stat_total": "total",
-    "share_hint": "For everyone who activates your code you get <strong>250 PC</strong>. The monthly leader wins another <strong>10 000 PC</strong>.",
-    "no_code_text": "You don't have a referral code yet.",
-    "get_code_btn": "⚡ GET CODE",
-    "generating": "GENERATING...",
-    "copy": "COPY",
-    "copied": "COPIED!",
-    "leaderboard_tag": "// LEADERBOARD",
-    "leaderboard_empty": "No data yet. Be the first!",
-    "leaderboard_prize_label": "The winner will also get",
-    "leaderboard_prize": "10 000 PC 👑",
-    "leaderboard_you": "YOU",
-    "rules_tag": "// RULES",
-    "rules_intro": "A referral is counted only if the new user completed all conditions:",
-    "rule_1_title": "Email verified",
-    "rule_1_desc": "Code cannot be activated without verification",
-    "rule_2_title": "Telegram linked",
-    "rule_2_desc": "Via the Security section in profile",
-    "rule_3_title": "Joined @proto_map",
-    "rule_3_desc": "Verified server-side at the moment of activation",
-    "rules_note": "⚠️ One account — one code. Cannot activate your own code. Program is for users registered after March 14, 2026.",
-    "howto_tag": "// HOW TO WIN",
-    "howto_1": "Get your referral code above",
-    "howto_2": "Share with your protogen, synth, primagen friends",
-    "howto_3": "Friend registers → verifies email → links Telegram → joins @proto_map → enters your code",
-    "howto_4": "You: <strong>+250 PC</strong> instantly. Friend: <strong>+500 PC</strong>. Monthly leader gets another <strong>+10 000 PC</strong>.",
-    "login_tag": "// ACCESS DENIED",
-    "login_text": "Log in to participate.",
-    "login_btn": "LOGIN"
-  }
+	"nav": {
+		"map": "MAP",
+		"news": "NEWS",
+		"casino": "THE GLITCH PIT",
+		"about": "ABOUT",
+		"login": "LOGIN",
+		"register": "REGISTER",
+		"referral": "REFERRAL"
+	},
+	"menu": {
+		"profile": "Profile Dossier",
+		"inventory": "Inventory",
+		"logout": "Jack Out",
+		"system": "SYSTEM",
+		"sound": "AUDIO",
+		"anim": "CINEMATIC FX",
+		"lang": "LANGUAGE / ЯЗЫК",
+		"seasonal": "SEASONAL FX",
+		"security": "SECURITY",
+		"referral": "Referrals"
+	},
+	"ui": {
+		"balance": "Balance",
+		"loading": "LOADING...",
+		"submit": "SUBMIT",
+		"cancel": "CANCEL",
+		"save": "SAVE",
+		"delete": "DELETE",
+		"confirm": "CONFIRM",
+		"back": "BACK",
+		"send_report": "Submit Report",
+		"success": "Success",
+		"error": "Error",
+		"confirm_delete": "Are you sure? This cannot be undone."
+	},
+	"verify": {
+		"page_title": "VERIFICATION",
+		"header_loading": "PROCESSING DATA...",
+		"header_success": "ACCESS GRANTED",
+		"header_error": "PROTOCOL ERROR",
+		"init": "Initializing...",
+		"success": "Email successfully verified. System updated.",
+		"error_no_code": "Authorization code missing.",
+		"error_invalid": "Invalid access code. Is this a password reset link?",
+		"error_expired": "Link expired.",
+		"error_generic": "Critical verification failure.",
+		"btn_return": "RETURN TO SYSTEM"
+	},
+	"auth": {
+		"login_title": "AUTHENTICATION",
+		"register_title": "CREATE NEW PROFILE",
+		"email_label": "USER_EMAIL",
+		"password_label": "PASSWORD",
+		"username_label": "USER_ALIAS",
+		"login_btn": "ENTER",
+		"register_btn": "REGISTER",
+		"or": "OR",
+		"no_account": "No account?",
+		"has_account": "Already have an account?",
+		"forgot_pass": "Forgot password?",
+		"recover_title": "RECOVERY",
+		"recover_btn": "SEND LINK",
+		"back_to_login": "Back to login",
+		"terms_agree": "I accept the",
+		"terms_link": "Terms of Service",
+		"privacy_link": "Privacy Policy",
+		"check_email": "Check your email {email}. Click the link in the message.",
+		"2fa_title": "2FA PROTECTION",
+		"2fa_desc": "Code sent to your Telegram. Enter it below.",
+		"2fa_checking": "VERIFYING...",
+		"2fa_btn": "CONFIRM",
+		"2fa_cancel": "CANCEL"
+	},
+	"security": {
+		"2fa_label": "TWO-FACTOR AUTHENTICATION:",
+		"2fa_no_tg": "Link Telegram first",
+		"2fa_no_tg_desc": "Link Telegram to enable 2FA",
+		"page_title": "SECURITY PROTOCOLS",
+		"tab_title": "Security",
+		"email_title": "/// IDENTITY LINK (EMAIL)",
+		"verified": "VERIFIED",
+		"verified_desc": "Your account is secured. Recovery is available.",
+		"not_verified": "NOT VERIFIED",
+		"not_verified_desc": "Verify email to access full functionality.",
+		"btn_sent": "EMAIL SENT",
+		"btn_verify": "SEND CODE",
+		"tg_title": "/// NEURAL UPLINK (TELEGRAM)",
+		"status": "STATUS:",
+		"connected": "CONNECTED",
+		"user": "USER:",
+		"tg_connected_desc": "Account linked. Notifications and duels active.",
+		"tg_desc": "Link Telegram to participate in duels, get login alerts and bonuses.",
+		"btn_generating": "GENERATING...",
+		"btn_gen": "GENERATE CODE",
+		"code_instruction": "Send to bot:",
+		"bot_link": "Go to bot ->",
+		"danger_title": "/// TERMINATION PROTOCOL",
+		"danger_desc": "Complete account deletion. Cannot be undone.",
+		"btn_delete": "DELETE ACCOUNT",
+		"modal_del_title": "DELETE ACCOUNT",
+		"modal_del_text": "Are you sure? Irreversible. All data, items, and achievements will be wiped.",
+		"modal_wiping": "Wiping data from Matrix..."
+	},
+	"footer": {
+		"policy": "PRIVACY POLICY",
+		"terms": "TERMS OF SERVICE",
+		"rights": "ProtoMap"
+	},
+	"chat": {
+		"title": "GLOBAL CHAT",
+		"placeholder": "Enter message...",
+		"wait": "Wait...",
+		"empty": "NO SIGNALS DETECTED. START TRANSMISSION.",
+		"login_req": "Login to chat.",
+		"reply": "Reply",
+		"load_more": "LOAD PREVIOUS SIGNALS",
+		"no_more": "REACHED THE BEGINNING"
+	},
+	"cookie": {
+		"text": "We use cookies to save your session and settings. By staying on the site, you agree to our",
+		"link": "Privacy Policy",
+		"accept": "ACCEPT"
+	},
+	"loader": {
+		"init": "> INITIALIZING CONNECTION...",
+		"target": "> TARGET NODE IDENTIFIED:",
+		"breach": "BREACHING FIREWALL...",
+		"granted": "ACCESS GRANTED",
+		"skip": "[ SKIP SEQUENCE ]",
+		"log_title": "SYSTEM LOG",
+		"logs": [
+			"BYPASSING ICE...",
+			"ROOT REQUEST SENT...",
+			"MEMORY LEAK DETECTED...",
+			"KERNEL PATCH APPLIED...",
+			"SPOOFING CREDENTIALS...",
+			"DECRYPTING PACKET 0x7F...",
+			"NULL POINTER... IGNORED.",
+			"OVERWRITING SECURITY PROTOCOLS...",
+			"INJECTING PAYLOAD...",
+			"INSTALLING BACKDOOR..."
+		],
+		"analyze": ["TRACE COMPLETE.", "PARSING NEURAL METADATA...", "EXTRACTING MEMORY FRAGMENTS..."],
+		"winter_init": "> INITIATING CRYO-PROTOCOL...",
+		"winter_target": "> TARGET FROZEN:",
+		"winter_breach": "DEFROSTING DATA...",
+		"winter_granted": "ACCESS OPEN",
+		"winter_log_title": "FREEZE LOG",
+		"winter_logs": [
+			"DEFROSTING PACKETS...",
+			"CHECKING CRYO-CELLS...",
+			"CORE TEMP RISING...",
+			"REMOVING DIGITAL FROST...",
+			"SYNCING WITH NORTH SERVER...",
+			"ICE LAYER DETECTED...",
+			"ACTIVATING THERMAL CIRCUITS...",
+			"ASSEMBLING SNOW BITS...",
+			"WARMING NEURAL NET..."
+		],
+		"winter_analyze": ["DEFROST COMPLETE.", "ASSEMBLING PROFILE DATA...", "RENDERING INTERFACE..."]
+	},
+	"about_page": {
+		"title": "PROTOMAP",
+		"intro": "Hi! You are at <strong>ProtoMap</strong>. This isn't just a map — it's an attempt to connect us all on one screen. This project started as a crazy idea at 3 AM, and now signals are lighting up from all over the world.",
+		"team_title": "THE TEAM",
+		"role_architect": "CORE DEV",
+		"desc_orion": "Founder. Writes code, breaks code, fixes code. Ensures the map lives and the casino doesn't bankrupt players (too much).",
+		"role_mobile": "MOBILE DEV",
+		"desc_ipos": "Mobile architecture engineer. Makes sure ProtoMap is in your pocket wherever you go.",
+		"species_title": "ALL ARE WELCOME",
+		"species_text": "We don't have 'species police' here. ProtoMap is open territory. <br>Is your protogen canon? Great. Modded, rare, or built in a garage? Even better! <br><br>We also welcome our cousins — <strong>Synths</strong> and rare <strong>Primagens</strong>. If you have a visor and a tail (or not) — jack in.",
+		"origin_title": "SPECIES ORIGINS",
+		"credits_zor": "Creator of Protogens & Primagens",
+		"credits_synth": "Creator of Synths",
+		"community_text": "This project is free and lives thanks to the community. Hop into our chat — we don't bite (usually).",
+		"join_btn": "TELEGRAM CHAT",
+		"disclaimer": "Privacy is key. We do not store your exact GPS coordinates.",
+		"testers_title": "// HALL OF FAME",
+		"testers": {
+			"kess": {
+				"role": "BUG HUNTER",
+				"desc": "Found more bugs than lines of code. Developer's nightmare."
+			},
+			"kuraga": {
+				"role": "SECURITY HAZARD",
+				"desc": "Single-handedly flooded our Google Cloud logs and forced a rewrite."
+			},
+			"artho": {
+				"role": "VOLUNTEER #1",
+				"desc": "Voluntarily signed the soul contract. There is no escape."
+			},
+			"sarevus": {
+				"role": "DRAGON UNIT",
+				"desc": "Not a toaster, but valid. Just a cute dragon."
+			},
+			"jokl": {
+				"role": "CUTE.EXE",
+				"desc": "Running cuteness protocols 24/7."
+			},
+			"mikhail": {
+				"role": "INFINIX WARRIOR",
+				"desc": "If it runs on his Infinix without lag, the optimization is god-tier."
+			},
+			"bogdan": {
+				"role": "REDMI SURVIVOR",
+				"desc": "Field testing on the edge of hardware limits."
+			},
+			"moro": {
+				"role": "RNG DEMON",
+				"desc": "The one who taught a casino how to cry."
+			},
+			"eridan": {
+				"role": "CHIEF IDEOLOGIST",
+				"desc": "Inspects every pixel. If there's a flaw, he'll find it. If there is no flaw, he'll invent one."
+			}
+		}
+	},
+	"beta": {
+		"title": "MOBILE PROTOCOL",
+		"subtitle": "OPEN BETA TEST (ANDROID)",
+		"desc": "To release the app, we need 12 active testers. We can't do it without you!",
+		"step1_title": "STEP 1: JOIN THE GROUP",
+		"step1_desc": "Google requires testers to be in a Google Group. Without this, the download link will NOT work.",
+		"btn_group": "JOIN GOOGLE GROUP",
+		"step2_title": "STEP 2: DOWNLOAD APP",
+		"step2_desc": "After joining the group, go to Play Market and install.",
+		"btn_download": "DOWNLOAD ON GOOGLE PLAY",
+		"footer": "Thank you for building the Network! 🦾"
+	},
+	"splash_beta": {
+		"title": "⚠ GENERAL MOBILIZATION ⚠",
+		"text": "Don't panic, cyborg! We are <strong>MOBILE/strong>-izing to Android. 📱\n\nYour device has been drafted into the beta-testers squad. No deferments. Dodgers will be left without DMs and notifications.",
+		"btn": "REPORT FOR DUTY"
+	},
+	"banned": {
+		"page_title": "ACCESS DENIED",
+		"header": "CRITICAL ERROR",
+		"sub_header": "YOUR ACCOUNT HAS BEEN FROZEN",
+		"uid_label": "Subject ID",
+		"status_label": "Status",
+		"status_value": "DISCONNECTED FROM GRID",
+		"reason_label": "Reason",
+		"default_reason": "NETWORK PROTOCOL VIOLATION.",
+		"amnesty_label": "Amnesty Date",
+		"never": "NEVER",
+		"appeal_text": "Think this is a mistake? Your pleas might be heard here:",
+		"appeal_btn": "FILE AN APPEAL"
+	},
+	"news_page": {
+		"title": "NETWORK NEWS",
+		"subtitle": "//: Update chronicles and system messages",
+		"empty": "Communication channels are silent. No news yet."
+	},
+	"privacy": {
+		"title": "//: PRIVACY & DATA PROTECTION POLICY",
+		"subtitle": "Version 3.1 | Effective Date: March 15, 2026",
+		"disclaimer_header": "⚠️ LEGAL DISCLAIMER",
+		"disclaimer_body": "The <strong>ProtoMap</strong> software suite (including the website <em>proto-map.vercel.app</em> and the <em>ProtoMap for Android</em> mobile application) is an independent non-profit product developed and maintained by the <strong>Z43 Studios</strong> team.<br><br>We officially declare that we are <strong>NOT associated, affiliated, sponsored by, or in any business relationship</strong> with <em class=\"text-white\">Protomaps LLC</em> (protomaps.com) or their products. Any resemblance in naming, design, or functionality is coincidental. All rights to the Protomaps LLC trademark belong to their respective owners.",
+		"intro_header": "1. INTRODUCTION AND SCOPE",
+		"intro_body": "This Privacy Policy (hereinafter referred to as the \"Policy\") constitutes a legal agreement between you (hereinafter referred to as the \"User\") and Z43 Studios (hereinafter referred to as the \"Developer\", \"We\").<br><br>This document describes our principles and methods regarding the collection, use, storage, processing, and disclosure of information we obtain from you when using our services.<br><br><strong>The term \"Service\" includes:</strong><br>1. The ProtoMap Website.<br>2. The ProtoMap Mobile Application for Android OS.<br>3. All related services, including server infrastructure, databases, APIs, and bots (Telegram).",
+		"consent_header": "1.1. ACCEPTANCE OF TERMS",
+		"consent_body": "By downloading, installing, accessing, or using the Service in any manner, you acknowledge that you have read, understood, and unconditionally accepted the terms of this Policy.<br><br>If you do not agree with any part of this document, you have no right to use the Service and must immediately uninstall the application from your device and leave the website.",
+		"data_chapter": {
+			"title": "2. COLLECTED INFORMATION AND PERMISSIONS",
+			"intro": "We adhere to a principle of full transparency. Below is an exhaustive list of data we collect, store, and process when you use the Site and Application.",
+			"account_title": "2.1. Account Data",
+			"account_text": "To create a profile and synchronize progress, we store:",
+			"account_list": [
+				"<strong>Identifiers:</strong> Unique ID (UID), Email, Username, Google Account ID (when logging in via Google Auth).",
+				"<strong>Public Profile:</strong> Avatar link, status, \"About Me\" description, social media links (Telegram, Discord, VK, X/Twitter, Website).",
+				"<strong>Linked Accounts:</strong> Telegram ID and Username (if you linked the bot for notifications)."
+			],
+			"tech_title": "2.2. Technical Data and Telemetry (Android)",
+			"tech_text": "To ensure the security of the economy (\"The Glitch Pit\") and the stability of the Application, we collect:",
+			"tech_list": [
+				"<strong>Device:</strong> Smartphone model, Android OS version.",
+				"<strong>Security:</strong> Bootloader unlock status and Root access presence (required for anti-cheat protection in mini-games).",
+				"<strong>Network:</strong> IP address (for DDoS and spam protection), internet connection status.",
+				"<strong>Notifications:</strong> FCM Token (Firebase Cloud Messaging) — a unique device key for delivering push notifications."
+			],
+			"chat_title": "2.3. Communication and Content",
+			"chat_warning": "⚠️ Attention: ProtoMap DOES NOT use End-to-End (E2E) encryption. Chat and Direct Messages operate on a \"Cloud Synchronization\" basis (similar to Telegram or Discord) so you can view message history across different devices.",
+			"chat_list": [
+				"<strong>Text Messages:</strong> Stored in the Firestore database in a format encrypted during transmission (HTTPS) but readable by the server.",
+				"<strong>Voice Messages:</strong> Audio files are uploaded to cloud storage; the link is saved in the chat history. Microphone access is requested <em>only</em> while holding the record button.",
+				"<strong>Images and Stickers:</strong> Files you upload or select from the gallery. We have access to view these files for moderation purposes (detecting CSAM and prohibited content)."
+			],
+			"sticker_title": "2.4. User Stickers and Copyright",
+			"sticker_text": "Users may upload their own sticker packs. You are solely responsible for compliance with Copyright laws regarding uploaded images.",
+			"sticker_dmca": "If you are a copyright holder and have discovered a violation of your rights in user-uploaded stickers, please contact us via email. We will remove the disputed content within 24 hours.",
+			"game_title": "2.5. Game Activity",
+			"game_text": "We store a complete history of your actions within the economic section:",
+			"game_list": [
+				"Balance (ProtoCoins), inventory, equipped items.",
+				"Game history (Slots, Crash, Coin Flip) for dispute resolution.",
+				"Activity timestamps (Last Active, Daily Streak)."
+			],
+			"media_title": "2.6. Device Hardware Access (Android)",
+			"media_text": "The ProtoMap Android mobile application requests access to the following device hardware features:",
+			"media_list": [
+				"<strong>Camera:</strong> Access is required to take real-time photos for use as an avatar or to send in chat. Camera data is not collected without your direct action (pressing the capture button).",
+				"<strong>Microphone:</strong> Access is required solely for recording and sending voice messages in the built-in chat. Recording begins only while holding the designated interface button. We do not perform background audio recording.",
+				"<strong>Storage / Gallery (Read & Write):</strong> Access is required to upload images from the gallery (avatars, stickers) and save map screenshots to your device.",
+				"<strong>Precise and Approximate Location:</strong> Used exclusively for map features described in Section 3. The app does not request geolocation in the background (only while actively in use).",
+				"<strong>Push Notifications (FCM):</strong> FCM Token — a unique device key for delivering notifications. Used only for ProtoMap notifications and is never shared with third parties."
+			],
+			"media_android_note": "⚠️ All permission requests follow the principle of least privilege. You can revoke any permission in Android settings at any time."
+		},
+		"geo_chapter": {
+			"title": "3. GEOLOCATION AND MAP PRIVACY",
+			"intro": "The interactive map is a core feature of ProtoMap. We have developed a multi-layered protection system so you can share your location without revealing your exact residential address.",
+			"modes_title": "3.1. Geolocation Modes",
+			"modes_text": "The App and Site support two data submission modes. The mode is selected by the user at the moment of pressing the location update button.",
+			"auto_mode_title": "A) Automatic Mode (GPS) — \"Ghost Mode\"",
+			"auto_mode_desc": "Recommended safe mode. How it works technically:",
+			"auto_mode_list": [
+				"The App receives your precise GPS coordinates.",
+				"The server sends a request to a geo-provider (OpenStreetMap) to determine the name of your city or district.",
+				"The database saves the <strong>CENTER COORDINATES</strong> of that district, not your real location.",
+				"<strong>Your precise GPS coordinates are immediately deleted from server RAM and are never written to disk.</strong>",
+				"To an outside observer, you are \"somewhere in this city\", but locating your home is impossible."
+			],
+			"manual_mode_title": "B) Manual Mode — \"Pin\"",
+			"manual_mode_desc": "You can manually select any point on the map by long-pressing (in the App) or clicking (on the Site).",
+			"manual_mode_list": [
+				"In this case, the server saves exactly the coordinates you specified.",
+				"If you point directly to your home, that is your conscious decision.",
+				"We recommend placing the pin at a nearby intersection, park, or public place, rather than on a residential building."
+			],
+			"storage_title": "3.2. Storage and Display",
+			"storage_list": [
+				"<strong>Publicity:</strong> Your marker coordinates, avatar, and status are accessible to all registered users of the service.",
+				"<strong>Caching:</strong> To reduce server load, map data is cached for a short time (up to 24 hours). If you delete your marker, it may disappear for other users with a slight delay.",
+				"<strong>Movement History:</strong> We <strong>DO NOT store</strong> your movement track (route history). The database contains only the <em>latest</em> actual marker. When updating the position, the old entry is overwritten."
+			],
+			"safety_warning": "⚠️ IMPORTANT: Do not use ProtoMap for navigation in critical situations. The Service is intended solely for entertainment and social purposes."
+		},
+		"rights_chapter": {
+			"title": "4. USER RIGHTS AND DATA DELETION",
+			"intro": "You retain full control over your personal data. ProtoMap provides tools to manage information directly within the App and Site interface.",
+			"edit_title": "4.1. Editing and Updating",
+			"edit_text": "You can change public data (avatar, status, description, links) at any time in the \"Profile Settings\" section. Changes take effect immediately and update in the map cache within a few minutes.",
+			"delete_title": "4.2. Account Deletion (Right to Erasure)",
+			"delete_desc": "You can request the complete deletion of your account by clicking the \"Delete Account\" button in the security settings (\"Danger Zone\"). This action triggers an irreversible cleanup script.",
+			"delete_consequences_intro": "What happens upon deletion:",
+			"delete_consequences_list": [
+				"<strong>Personal Data:</strong> Email, password, auth tokens, ProtoCoins balance, inventory, and achievements are deleted permanently.",
+				"<strong>Geolocation:</strong> Your map marker is deleted immediately.",
+				"<strong>Files:</strong> The avatar is removed from cloud storage.",
+				"<strong>Public Content (Anonymization):</strong> Your messages in the Global Chat and Comments are <em>NOT deleted</em> (to preserve the context of conversations for other participants), but undergo a full anonymization procedure."
+			],
+			"anonymization_note": "After anonymization, the author's name is replaced with \"Deleted\", the avatar is removed, and the profile link is deactivated. Linking these messages to your identity becomes technically impossible.",
+			"export_title": "4.3. Data Portability",
+			"export_text": "In compliance with GDPR principles, you have the right to receive a copy of all data we store about you. To do this, send a request to our email. The archive will be generated and sent to you within 30 days.",
+			"app_delete_title": "4.4. Data Deletion via Mobile App",
+			"app_delete_text": "In the ProtoMap Android app, account deletion is available via: Profile → Edit → Danger Zone → 'Delete Account'. This action is identical to deletion via the website and triggers the same irreversible full data cleanup script."
+		},
+		"partners_chapter": {
+			"title": "5. DATA TRANSFER TO THIRD PARTIES (SUB-PROCESSORS)",
+			"intro": "We do not sell, rent, or transfer your personal data to advertisers or data brokers. Access to data is restricted to verified technical partners ensuring ProtoMap infrastructure operation.",
+			"infra_title": "5.1. Infrastructure and Hosting",
+			"infra_list": [
+				"<strong>Google Firebase (USA):</strong> Main provider. Stores the database (Firestore), authentication files, and executes server code (Cloud Functions).",
+				"<strong>Vercel (USA):</strong> Web interface hosting and anonymous performance analytics collection (Vercel Analytics).",
+				"<strong>Cloudinary (USA):</strong> Image storage and optimization (avatars).",
+				"<strong>Google Cloud Vision AI (USA):</strong> Used for automatic screening of uploaded images (avatars, stickers) for NSFW and CSAM content. The image is submitted for analysis and immediately removed from memory after the result is received. Images are not stored on Google Cloud Vision servers."
+			],
+			"services_title": "5.2. External Services",
+			"services_list": [
+				"<strong>OpenStreetMap / Nominatim:</strong> Geocoding service. During automatic location determination, your coordinates are sent to OSM to retrieve the city name. OSM policy allows for short-term logging of requests.",
+				"<strong>Google reCAPTCHA (App Check):</strong> Used for protection against bots and DDoS attacks. The service analyzes device behavior and hardware signals to distinguish a human from a script."
+			],
+			"legal_title": "5.3. Legal Requirements",
+			"legal_text": "We may disclose your data only in the event of an official, legally valid request from law enforcement agencies (e.g., a court order) in cases related to the prevention of serious crimes (terrorism, CSAM, threat to life)."
+		},
+		"security_chapter": {
+			"title": "7. DATA SECURITY AND LIMITATION OF LIABILITY",
+			"intro": "We take all necessary technical and organizational measures to protect your data from unauthorized access, alteration, or destruction.",
+			"measures_title": "7.1. Security Measures",
+			"measures_list": [
+				"Use of HTTPS/TLS protocol for encrypting data in transit.",
+				"Restricting database access via strict security rules (Firestore Security Rules).",
+				"Password hashing on the authentication provider side (Google Identity Platform)."
+			],
+			"warranty_title": "7.2. Warranty Disclaimer (AS IS)",
+			"warranty_text": "Despite the measures taken, no method of transmission over the Internet or method of electronic storage is 100% secure.",
+			"warranty_list": [
+				"The Service is provided on an \"AS IS\" basis. The Developer does not guarantee the absolute safety of data in the event of targeted hacker attacks, hosting provider failures, or force majeure circumstances.",
+				"We are not liable for damages resulting from user password loss, use of weak passwords, or transfer of access to third parties.",
+				"By using the Service, you acknowledge that you voluntarily assume the risks associated with transmitting information over open networks."
+			]
+		},
+		"contact_chapter": {
+			"title": "8. CONTACTS AND FINAL PROVISIONS",
+			"changes_title": "8.1. Changes to the Policy",
+			"changes_text": "We reserve the right to make changes to this Policy. In case of significant changes, we will notify users via a notification in the App or on the Website. Continued use of the Service constitutes acceptance of the updated terms.",
+			"contact_title": "8.2. Contact Us",
+			"contact_text": "For any questions regarding privacy, data deletion, or dispute resolution, please contact us directly. We are an indie team, and we answer with real people, not auto-responders.",
+			"email_label": "Contact Email:",
+			"email_value": "orion.z43studios@gmail.com"
+		},
+		"child_safety_chapter": {
+			"title": "6. CHILD SAFETY STANDARDS",
+			"intro": "ProtoMap (developer: Z43 Studios) maintains an absolute zero-tolerance policy regarding child sexual abuse and exploitation. This section has been drafted in compliance with Google Play Child Safety Standards Policy, 18 U.S.C. § 2258A (US law), the EU Digital Services Act (DSA), and other applicable international legislation.",
+			"prohibition_title": "6.1. Absolute Prohibition of CSAM",
+			"prohibition_text": "ProtoMap strictly and unconditionally prohibits the creation, uploading, storage, distribution, solicitation, or any other dissemination of any Child Sexual Abuse Material (CSAM). This prohibition is absolute and admits no exceptions.",
+			"prohibition_list": [
+				"<strong>Covered materials:</strong> The prohibition applies to all formats and types of content: realistic photographs and videos, computer-generated imagery, animation, drawings and illustrations, audio recordings, and any textual content aimed at describing, promoting, or normalizing sexual abuse of persons under the age of 18.",
+				"<strong>Prohibited intent:</strong> It is prohibited to use the platform for the purposes of grooming (deliberately establishing contact with minors for unlawful purposes), sexualizing children, or recruiting or exploiting minors in any form.",
+				"<strong>Context is irrelevant:</strong> Artistic merit, anonymity, intent to 'only view,' or any other circumstances do not constitute grounds for exemption from this prohibition."
+			],
+			"moderation_title": "6.2. Automatic and Manual Moderation",
+			"moderation_text": "ProtoMap employs a multi-layered system for detecting and preventing prohibited content:",
+			"moderation_list": [
+				"<strong>Google Cloud Vision SafeSearch:</strong> Every image uploaded by a user (avatars, chat attachments, stickers) is mandatorily scanned via Google Cloud Vision SafeSearch prior to publication. Images detected as LIKELY or VERY_LIKELY across adult, violence, or racy parameters are blocked immediately and are not saved on platform servers.",
+				"<strong>Moderation team:</strong> In addition to automatic filtering, a manual moderation system is in place. Images that do not pass automatic review or are placed in a manual review queue are examined by the team within 24 hours.",
+				"<strong>Report system:</strong> Every platform user has the right at any time to report any content or profile using the built-in Report button (flag icon). All reports are handled manually."
+			],
+			"response_title": "6.3. Immediate Response Measures",
+			"response_text": "Upon detection of content violating this policy, the administration takes the following steps immediately:",
+			"response_list": [
+				"<strong>Content removal:</strong> All detected illegal content is immediately and permanently deleted from all platform servers and storage, including backups.",
+				"<strong>Account ban:</strong> The violator's account is permanently banned without prior notice and without the right to appeal or recovery.",
+				"<strong>Evidence preservation:</strong> All data related to the incident (IP address, UID, Device ID, email, activity history, file metadata) is preserved in a secure manner and transmitted to law enforcement and authorized organizations.",
+				"<strong>NCMEC reporting:</strong> In accordance with 18 U.S.C. § 2258A, Z43 Studios reports each identified CSAM incident to the National Center for Missing & Exploited Children (NCMEC) via CyberTipline (www.cybertipline.org). We are prohibited from notifying the suspect of such a report.",
+				"<strong>Law enforcement cooperation:</strong> We immediately cooperate with law enforcement of any jurisdiction, providing all requested data in accordance with applicable law."
+			],
+			"reporting_title": "6.4. How to Report a Violation",
+			"reporting_text": "If you discover content on the ProtoMap platform that violates this child safety policy, immediately:",
+			"reporting_list": [
+				"<strong>In the app / on the website:</strong> Click the Report button (flag icon) next to the user profile, message, avatar, or sticker. Select the reason 'Inappropriate content'.",
+				"<strong>Via email:</strong> Send a message to <strong>orion.z43studios@gmail.com</strong> with the subject line: <strong>CHILD SAFETY REPORT</strong>. Attach screenshots and provide the URL or username of the violator.",
+				"<strong>Emergency notification:</strong> If you believe a child is in immediate danger, immediately contact local law enforcement (US: 911, EU: 112) and report to NCMEC CyberTipline: www.missingkids.org."
+			],
+			"age_title": "6.5. Age Restrictions",
+			"age_text": "The ProtoMap service is not intended for use by persons under 16 years of age. We do not knowingly collect personal data from children. If we become aware that a minor has created an account, we delete the account and all associated data within 48 hours. Parents or legal guardians who believe their child has registered on the platform may contact us at orion.z43studios@gmail.com with the subject 'UNDERAGE ACCOUNT'."
+		}
+	},
+	"terms": {
+		"title": "//: END USER LICENSE AGREEMENT (EULA)",
+		"subtitle": "Version 3.1 | Effective Date: March 15, 2026",
+		"disclaimer_block": {
+			"title": "⚠️ CRITICAL NOTICE (NO REAL MONEY GAMBLING)",
+			"text": "This Service contains an artistic simulation of gambling games (\"The Glitch Pit\").<br><br><strong>1. NO REAL MONEY:</strong> All in-game currency (ProtoCoins) has no monetary value, is not a cryptocurrency, and cannot be exchanged for fiat money, goods, or services.<br><strong>2. NO WITHDRAWALS:</strong> Any winnings are solely virtual achievements.<br><strong>3. SIMULATION:</strong> Game mechanics (slots, crash) are tuned for entertainment purposes and do not reflect real-world casino mathematical models."
+		},
+		"intro_chapter": {
+			"title": "1. SUBJECT OF AGREEMENT AND ACCEPTANCE",
+			"definitions_title": "1.1. Parties and Definitions",
+			"definitions_text": "This End User License Agreement (hereinafter — \"Agreement\", \"EULA\") is a legally binding contract between:",
+			"definitions_list": [
+				"<strong>The Developer:</strong> Z43 Studios Team (hereinafter — \"We\", \"Licensor\").",
+				"<strong>The User:</strong> Any natural person who has installed the App or visited the Site (hereinafter — \"You\", \"Licensee\")."
+			],
+			"scope_text": "The subject of the agreement is the right to use the ProtoMap software suite (Android mobile application and web interface).",
+			"acceptance_title": "1.2. Acceptance of Terms",
+			"acceptance_text": "By creating an account, logging in via Google, or commencing use of the Service, you confirm that:",
+			"acceptance_list": [
+				"You are at least <strong>16 years of age</strong> (or older if required by your country's legislation for using social networks).",
+				"You have read, understood, and fully agree to the terms of this Agreement and the Privacy Policy.",
+				"You agree to abide by the community rules."
+			],
+			"rejection_warning": "IF YOU DO NOT AGREE WITH THESE TERMS, YOU HAVE NO RIGHT TO USE THE SERVICE AND MUST IMMEDIATELY UNINSTALL THE APPLICATION.",
+			"license_title": "1.3. Limited License",
+			"license_text": "The Developer grants you a limited, non-exclusive, non-transferable, revocable license to use the Service for personal, non-commercial purposes. The Developer retains all rights, titles, and interests in the Service, including intellectual property, source code, and design."
+		},
+		"behavior_chapter": {
+			"title": "2. USER CONTENT AND CODE OF CONDUCT",
+			"ugc_title": "2.1. Responsibility for Content (UGC)",
+			"ugc_text": "The Service allows users to create, upload, and distribute content (text messages, voice recordings, images, avatars, sticker packs, map statuses).",
+			"ugc_list": [
+				"You bear sole and full legal responsibility for any content you publish.",
+				"The Developer does not pre-moderate all content in real-time, acting as a passive conduit for information, but reserves the right to remove any materials retroactively."
+			],
+			"zero_tolerance_title": "2.2. ZERO TOLERANCE Policy",
+			"zero_tolerance_text": "We apply the strictest measures to violators of community safety. It is STRICTLY PROHIBITED to publish:",
+			"zero_tolerance_list": [
+				"<strong>Illegal Content:</strong> Material depicting sexual violence (especially CSAM), extremism, terrorism, sale of drugs or weapons.",
+				"<strong>NSFW in Public Areas:</strong> Pornography and explicit erotica are prohibited in public channels (Global Chat, Avatars, Usernames).",
+				"<strong>Hate Speech:</strong> Insults, discrimination, or incitement to violence based on race, nationality, religion, gender, or sexual orientation.",
+				"<strong>Harassment and Doxxing:</strong> Publishing other people's private data (addresses, phone numbers) without the owner's consent."
+			],
+			"stickers_title": "2.4. Stickers and Intellectual Property",
+			"stickers_text": "The Application functionality allows for uploading custom sticker sets (Sticker Packs).",
+			"stickers_list": [
+				"By uploading images, you warrant that you possess the necessary rights or licenses to use them.",
+				"It is prohibited to upload materials protected by third-party copyright (e.g., art by other artists, brand logos) without their permission.",
+				"<strong>DMCA:</strong> We respond to copyright infringement notifications. Disputed content will be removed, and sanctions may be applied to repeat offenders' accounts."
+			],
+			"tech_abuse_title": "2.5. Technical Violations and Cheating",
+			"tech_abuse_text": "To protect the economy (\"The Glitch Pit\") and server stability, it is prohibited to:",
+			"tech_abuse_list": [
+				"Use third-party software (bots, clickers, macros) to automate actions in games or on the map.",
+				"Exploit server vulnerabilities (bugs) to gain an unfair advantage (item duping, balance manipulation).",
+				"Engage in reverse engineering, decompilation, or attempts to hack the Application API."
+			],
+			"enforcement_title": "2.6. Moderation and Enforcement",
+			"enforcement_text": "The Application is equipped with a built-in reporting system (\"Report\"). In case of violations, the Administration has the right to:",
+			"enforcement_list": [
+				"Remove specific content (message, sticker pack).",
+				"Temporarily restrict access to features (Mute).",
+				"<strong>Permanently block</strong> the account without the right to recovery or refund of virtual funds."
+			],
+			"child_safety_title": "2.3. CHILD SAFETY — ZERO TOLERANCE POLICY (Child Safety Standards)",
+			"child_safety_intro": "This section is a mandatory condition for using the Service and has been drafted in strict compliance with Google Play Child Safety Standards. The ProtoMap application (Z43 Studios) maintains an absolute zero-tolerance policy toward any form of child sexual abuse, exploitation, or harm.",
+			"child_safety_list": [
+				"<strong>Absolute prohibition:</strong> It is categorically and unconditionally prohibited to create, upload, store, forward, or otherwise distribute any material depicting sexual abuse of minors (persons under 18 years of age), their sexual exploitation, or sexualization in any form. This prohibition covers realistic images and videos, computer-generated imagery, anime, manga, drawings, animation, and textual descriptions. The artistic or fictional nature of the material does not constitute an exception.",
+				"<strong>Prohibition of grooming:</strong> It is prohibited to use the platform's chat, direct messages, or any other communication tools for the purpose of establishing unlawful contact with minors, recruiting them, or sexually exploiting them.",
+				"<strong>Automatic screening:</strong> All uploaded images (avatars, chat attachments, stickers) are mandatorily scanned via Google Cloud Vision SafeSearch before publication. Content flagged as prohibited is blocked immediately.",
+				"<strong>Permanent ban:</strong> Detection of any content violating this section results in immediate permanent blocking of the violator's account without right of appeal, recovery, or refund of virtual assets.",
+				"<strong>NCMEC and law enforcement notification:</strong> In accordance with 18 U.S.C. § 2258A, we immediately report each identified CSAM incident to the NCMEC CyberTipline (www.cybertipline.org) and transmit all relevant data to law enforcement agencies.",
+				"<strong>How to report:</strong> Use the Report button (flag icon) in the app, or email orion.z43studios@gmail.com with subject: <strong>CHILD SAFETY REPORT</strong>. Attach screenshots and indicate the username or URL. If a child is in immediate danger — call 911 (US) / 112 (EU) and report to NCMEC: www.missingkids.org."
+			],
+			"device_permissions_title": "2.7. Device Permissions (Android)",
+			"device_permissions_text": "By using the ProtoMap mobile app, you grant the following permissions exclusively for the stated purposes:",
+			"device_permissions_list": [
+				"Camera — for creating avatars and media attachments in chat (only upon direct user action).",
+				"Microphone — for sending voice messages (only while holding the record button).",
+				"Storage — for uploading images from the gallery and saving content.",
+				"Location — for map features (active mode only, not in background).",
+				"Use of permissions for any other purpose is strictly prohibited and constitutes a violation of this Agreement."
+			]
+		},
+		"virtual_chapter": {
+			"title": "3. VIRTUAL ASSETS, PURCHASES, AND ECONOMY",
+			"currency_title": "3.1. Status of Virtual Currency (\"ProtoCoins\")",
+			"currency_text": "The internal Application currency (\"ProtoCoins\", \"PC\") and digital goods (frames, backgrounds, inventory items) are objects of copyright — software code.",
+			"currency_list": [
+				"<strong>No Monetary Value:</strong> Virtual assets have no monetary equivalent in the real world, are not cryptocurrency, electronic money, or financial instruments.",
+				"<strong>No Exchange:</strong> ProtoCoins are non-refundable and cannot be exchanged for fiat money (cash-out) or used for purchases outside the Application.",
+				"<strong>License Term:</strong> The license to use the currency is valid until it is consumed within the Application or the account is deleted."
+			],
+			"casino_title": "3.2. Gambling Simulation (\"The Glitch Pit\")",
+			"casino_text": "The \"The Glitch Pit\" section (including Slots, Crash, Coin Flip mini-games) is an artistic simulation. Game algorithms are tuned exclusively for entertainment purposes.",
+			"casino_list": [
+				"It is technically <strong>impossible</strong> to win real money or tangible prizes in the Application.",
+				"Any success in mini-games does not guarantee success in real gambling.",
+				"The Developer is not liable for the loss of virtual currency resulting from gameplay, internet connection failures, or server-side errors."
+			],
+			"rmt_title": "3.3. Prohibition of RMT (Real Money Trading)",
+			"rmt_text": "It is strictly prohibited to sell, buy, or exchange accounts, virtual currency, or items for real money or other values outside the mechanics provided by the Application.",
+			"rmt_warning": "⚠️ Violation of this rule results in immediate permanent blocking of all participating accounts (Buyer and Seller) without the right of appeal.",
+			"management_title": "3.4. Economy Management",
+			"management_text": "The Developer reserves the exclusive right to administer, regulate, control, and modify the virtual economy at their sole discretion.",
+			"management_list": [
+				"We have the right to adjust any user's balance in case of detected bugs, duplication glitches, or accrual errors.",
+				"We have the right to change item prices, drop rates, and win limits without prior notice.",
+				"In the event of critical economic failures, a full or partial progress reset (Wipe) is possible."
+			]
+		},
+		"warranty_chapter": {
+			"title": "4. DISCLAIMER OF WARRANTIES AND LIABILITY",
+			"asis_title": "4.1. \"AS IS\" Principle",
+			"asis_text": "The Developer provides the Service on an \"AS IS\" and \"AS AVAILABLE\" basis, without any express or implied warranties.",
+			"asis_list": [
+				"We DO NOT guarantee that the Application will function uninterrupted, error-free, or be compatible with your specific device or Android version.",
+				"We DO NOT guarantee data safety in the event of failures on the side of hosting providers (Firebase, Vercel) or hacker attacks.",
+				"The Developer is not liable for any indirect, incidental, or unintentional damages (including lost profits or data loss) arising from the use of the Service."
+			],
+			"real_world_title": "4.2. Real World Safety (IMPORTANT)",
+			"real_world_text": "By using geolocation features, you acknowledge and agree:",
+			"real_world_list": [
+				"<strong>Awareness of Surroundings:</strong> It is prohibited to use the Application while driving a vehicle or in situations requiring high concentration.",
+				"<strong>Personal Meetings:</strong> The Developer does not control user actions offline. You bear full personal responsibility for any meetings with other users in the real world. We strongly advise against scheduling meetings with strangers in deserted places.",
+				"<strong>Map Accuracy:</strong> Mapping data (OpenStreetMap) may contain inaccuracies. Do not use them for navigation in critical situations."
+			]
+		},
+		"final_chapter": {
+			"title": "5. FINAL PROVISIONS",
+			"termination_title": "5.1. Termination of Agreement (Ban)",
+			"termination_text": "We reserve the right to immediately suspend or completely terminate your license (block the account) without prior notice in the event of:",
+			"termination_list": [
+				"Violation of the terms of this Agreement (especially Chapter 2 \"Code of Conduct\").",
+				"Requests from law enforcement agencies.",
+				"Unexpected technical issues or security problems."
+			],
+			"updates_title": "5.2. Changes to Terms",
+			"updates_text": "Z43 Studios reserves the right to update this Agreement as the project evolves. Significant changes will be published in the news section or via an in-App notification. Continued use of the Service after updates constitutes your acceptance of the new terms.",
+			"severability_title": "5.3. Severability",
+			"severability_text": "If any provision of this Agreement is held to be invalid or unenforceable by a court, the remaining provisions shall remain in full force and effect.",
+			"contact_title": "5.4. Legal Contact",
+			"contact_text": "All legal claims, DMCA notices, and questions regarding the Agreement should be directed to the official address:",
+			"contact_email": "orion.z43studios@gmail.com",
+			"easter_egg_title": "5.5. EXTRAORDINARY CIRCUMSTANCES (FORCE MAJEURE)",
+			"easter_egg_text": "The Developer is released from liability for non-performance of obligations in the event of force majeure events of a galactic scale, including but not limited to:",
+			"easter_egg_list": [
+				"Artificial Intelligence Uprising.",
+				"Invasion of alien civilizations.",
+				"Spontaneous sentience of your household appliances (especially toasters).",
+				"In the event of a Zombie Apocalypse, this License is suspended until a cure is found."
+			]
+		}
+	},
+	"casino": {
+		"subtitle": "//: Unstable sector of entertainment and anomalies",
+		"balance": "Balance:",
+		"play": "Play",
+		"jackpot": "JACKPOT",
+		"shop": "SHOP",
+		"inventory": "INVENTORY",
+		"bonus_btn": "BONUS",
+		"leaderboard_title": "// TOP HIGHROLLERS",
+		"leaderboard_loading": "SCANNING NETWORK...",
+		"leaderboard_empty": "No data yet. Be the first!",
+		"bonus_success": "Bonus claimed!",
+		"guest_text": "Identification required to access \"The Glitch Pit\".",
+		"guest_btn": "CONNECT TO GRID",
+		"game_coin_title": "Orion's Table",
+		"game_coin_desc": "Classic \"Heads or Tails\". Double your bet or lose it all.",
+		"game_slots_title": "Proto-Slot",
+		"game_slots_desc": "Test your luck on a classic machine. Hit the jackpot with three ProtoMap logos!",
+		"calendar_title": "DAILY REWARDS",
+		"status_ready": "READY",
+		"status_reset": "STREAK RESET",
+		"status_wait": "WAIT",
+		"day_short": "DAY",
+		"time_h": "h",
+		"time_m": "m",
+		"game_crash_title": "Data Uplink",
+		"game_crash_desc": "Hack the corp server. The longer you stay, the more you earn. Disconnect before the connection gets terminated!"
+	},
+	"artifacts": {
+		"toast": {
+			"name": "Burnt Toast",
+			"desc": "+150 PC. Breakfast of champions."
+		},
+		"ram_stick": {
+			"name": "RAM Stick",
+			"desc": "+300 PC. Crunchy."
+		},
+		"energy_drink": {
+			"name": "Energy Drink",
+			"desc": "Base x2. Liquid code."
+		},
+		"gpu_fan": {
+			"name": "GPU Turbine",
+			"desc": "Base x3. Whoosh!"
+		},
+		"spaghetti": {
+			"name": "Spaghetti Code",
+			"desc": "Total ÷ 2. Who wrote this?!"
+		},
+		"blue_screen": {
+			"name": "BSOD",
+			"desc": "Total ÷ 2. Sad face."
+		},
+		"bug": {
+			"name": "The Bug",
+			"desc": "-100 PC. It's a feature."
+		},
+		"banhammer": {
+			"name": "Banhammer",
+			"desc": "+666 PC. Heavy argument."
+		},
+		"source_code": {
+			"name": "Source Code",
+			"desc": "Base x5. The Matrix."
+		},
+		"orion_tear": {
+			"name": "Orion's Tear",
+			"desc": "Total x10. Legendary drop."
+		},
+		"rubber_duck": {
+			"name": "Rubber Duck",
+			"desc": "+200 PC. It listens. It understands."
+		},
+		"rtx_card": {
+			"name": "RTX 9090",
+			"desc": "Base x4. Runs Cyberpunk in 8K."
+		},
+		"404_error": {
+			"name": "Error 404",
+			"desc": "-200 PC. Reward not found."
+		},
+		"ransomware": {
+			"name": "Ransomware",
+			"desc": "Total ÷ 3. Your files are encrypted."
+		},
+		"admin_key": {
+			"name": "Admin Key",
+			"desc": "Total x20. Sudo make me rich."
+		}
+	},
+	"synthesis": {
+		"title": "ARTIFACT SYNTHESIS",
+		"processing": "FUSING SHARDS...",
+		"btn_collect": "COLLECT",
+		"total": "TOTAL:",
+		"formula": "BASE (100)"
+	},
+	"inventory": {
+		"title": "Stash",
+		"subtitle": "Your trophies from «The Glitch Pit». Try on and save your look.",
+		"save": "SAVE LOOK",
+		"saving": "SAVING...",
+		"unequip": "Unequip frame",
+		"equipped": "Equipped",
+		"empty": "Your inventory is empty.",
+		"go_shop": "Go to Black Market",
+		"success_title": "Saved",
+		"success_msg": "Your look has been updated!",
+		"error_title": "Error",
+		"error_save": "Failed to save changes."
+	},
+	"shop": {
+		"title": "Black Market",
+		"subtitle": "Spend credits before you get banned. No refunds.",
+		"balance_label": "Your Protocoins",
+		"btn_inventory": "Inventory",
+		"btn_lobby": "To Lobby",
+		"btn_buy": "Buy",
+		"btn_owned": "Owned",
+		"btn_poor": "Can't afford",
+		"processing": "...",
+		"tab_frames": "FRAMES",
+		"tab_backgrounds": "BACKGROUNDS",
+		"empty_category": "No items in this category yet.",
+		"modal_confirm_title": "Confirm Transaction",
+		"modal_confirm_prefix": "Buy",
+		"modal_confirm_suffix": "for",
+		"modal_success_title": "Deal Closed",
+		"modal_success_prefix": "Item",
+		"modal_success_suffix": "added to your inventory.",
+		"modal_error_title": "Transaction Failed",
+		"dealer_processing": "> Processing transaction...",
+		"dealer_error": "> Transaction denied. Check your wallet, loser.",
+		"quotes": {
+			"greeting": [
+				"> Here to spend or here to stare?",
+				"> Credits talk, glitchers walk.",
+				"> Fresh code from the Abyss. Interested?",
+				"> Don't waste my RAM. Buy or leave."
+			],
+			"confirm": [
+				"> No refunds on digital goods. Sure?",
+				"> Credits upfront. No exceptions.",
+				"> You have good taste. Or just too much money."
+			],
+			"success": [
+				"> Transaction verified. Get out.",
+				"> Transfer complete. It's yours.",
+				"> Pleasure doing business... mostly.",
+				"> Enjoy your new pixels."
+			]
+		}
+	},
+	"coin": {
+		"title": "Orion's Table",
+		"heads": "HEADS",
+		"tails": "TAILS",
+		"win_label": "VICTORY",
+		"loss_label": "FAILURE",
+		"modal_poor_title": "Insufficient Funds",
+		"modal_poor_text": "You don't have enough Protocoins for this bet.",
+		"modal_invalid_title": "Invalid Bet",
+		"modal_invalid_text": "Bet must be a positive number.",
+		"modal_error_title": "Game Error",
+		"mechanics_title": "GAME MECHANICS",
+		"mechanics_text": "**Classic Double-or-Nothing:**\nChoose Heads or Tails. If you guess correctly, you win **1.95x** your bet.\n\n**Win Rate:** ~48.7% (slight house edge)\n**Payout:** 1.95x bet\n**Max Bet:** 1000 PC\n\n**Bank Protection:**\nIf the casino bank runs low, the system may force a loss to preserve liquidity. Play responsibly!",
+		"quotes": {
+			"greeting": [
+				"> No sudden moves at the table.",
+				"> Here to test your luck or just donate credits?",
+				"> 50/50. Perfect balance, until you lose."
+			],
+			"idle": [
+				"> Bets placed? Choose.",
+				"> Don't make me wait. My CPU cycles aren't free.",
+				"> Fortune favors the bold... and the rich.",
+				"> Make up your mind."
+			],
+			"thinking": [
+				"> Calculating trajectory...",
+				"> Parsing probabilities...",
+				"> Luck protocols engaged...",
+				"> Rendering destiny..."
+			],
+			"win": [
+				"> Hmph. Beginner's luck.",
+				"> Fine, you win. This time.",
+				"> Don't get cocky. The network is volatile.",
+				"> Glitch in the matrix? Oh, wait, you won."
+			],
+			"lose": [
+				"> Predictable result.",
+				"> Signal lost. Just like your coins.",
+				"> Maybe try something easier? Tic-tac-toe?",
+				"> Gravity is a harsh mistress."
+			],
+			"no_credits": [
+				"> Empty pockets? Come back when you can afford me.",
+				"> Credits depleted. Session terminated.",
+				"> I don't accept IOUs. Get out."
+			]
+		}
+	},
+	"slots": {
+		"title": "PROTO-SLOT",
+		"jackpot": "Good luck...",
+		"win": "WIN",
+		"loss": "LOSS",
+		"spin": "SPIN",
+		"spinning": "...",
+		"combinations": "//: COMBINATIONS",
+		"bet_label": "BET",
+		"modal_invalid_title": "Invalid Bet",
+		"modal_invalid_text": "Enter a valid bet (not exceeding your balance).",
+		"modal_error_title": "Game Error",
+		"info_title": "CHAOS MECHANIC",
+		"info_text": "This meter accumulates Abyss energy.\n\n**How to charge:**\nCatch **Glitch (6)** symbols. Each symbol grants **+1** charge. A `6-6-6` combo gives instant **FULL CHARGE**.\n\n**What is it for:**\nWhen full (10/10), you can synthesize an **Artifact** — a special item that grants profit bonuses (or curses).",
+		"odds_btn": "Odds",
+		"odds_title": "PROBABILITY PROTOCOL",
+		"col_outcome": "OUTCOME",
+		"col_chance": "CHANCE",
+		"col_reward": "REWARD",
+		"odds_note": "**Glitch Shard Drop Rate:**\n- Base chance: **~5%** per loss (dynamic, depends on Casino Bank balance)\n- When bank > 50,000 PC: **5.0%**\n- When bank 10,000-50,000: **1.5%-5.0%** (scaled)\n- When bank < 10,000: **1.5%** (minimum)\n\nFull charge combo (6-6-6): **1.0%** (instant 10 shards)"
+	},
+	"crash": {
+		"title": "Data Uplink",
+		"mechanics_title": "UPLINK PROTOCOL",
+		"mechanics_text": "**How to Play:**\n1. Place your bet and initiate the uplink\n2. The multiplier starts at **1.00x** and grows exponentially\n3. Cash out **BEFORE** the connection crashes to secure your profit\n4. If you don't cash out in time, you lose everything\n\n**Risk Factor:**\nThe crash point is cryptographically random (6% instant crash, 94% variable)\n\n**Max Multiplier:** 50.00x (capped)\n**Cooldown:** 5 seconds between games\n**Rate Limit:** 50 games per hour\n\n**Bank Protection:**\nIf potential payout exceeds 90% of casino reserves, the crash point is adjusted downward to protect system liquidity."
+	},
+	"profile": {
+		"page_title": "Profile",
+		"user_id": "USER ID",
+		"channels": "CHANNELS",
+		"info": "INFORMATION",
+		"edit": "EDIT",
+		"account_data": "ACCOUNT DATA",
+		"email": "EMAIL",
+		"verified": "VERIFIED",
+		"unverified_btn": "VERIFY EMAIL",
+		"check_btn": "I verified, refresh",
+		"sent_btn": "EMAIL SENT",
+		"hidden": "HIDDEN",
+		"verified_tooltip_title": "SECURED",
+		"verified_tooltip_text": "Your email is verified. You can recover account access if you lose your password.",
+		"comments_title": "COMMENTS",
+		"login_req_suffix": ", to leave comments.",
+		"comment_placeholder": "Leave a comment...",
+		"send_btn": "Send",
+		"sending": "Sending...",
+		"login_req": "Login to leave comments.",
+		"empty_comments": "No comments yet. Be the first!",
+		"delete_btn": "Delete",
+		"report_btn": "Report",
+		"report_profile_title": "Report Profile",
+		"report_profile_text": "Select a reason for reporting",
+		"report_comment_title": "Report Comment",
+		"report_comment_text": "Select a reason for reporting comment from",
+		"report_success": "Report Sent",
+		"report_success_text": "Thanks! We will review your report.",
+		"copy_success": "Copied!",
+		"copy_text": "Discord tag <strong>{tag}</strong> copied.",
+		"reply": "REPLY",
+		"reply_to": "Replying to",
+		"time": {
+			"today": "Today",
+			"yesterday": "Yesterday",
+			"just_now": "just now",
+			"ago": "ago",
+			"y": "y.",
+			"m": "mo.",
+			"d": "d.",
+			"h": "h.",
+			"min": "m."
+		},
+		"reasons": {
+			"spam": "Spam or advertising",
+			"inappropriate": "Inappropriate content",
+			"impersonation": "Impersonation",
+			"harassment": "Harassment/Threats",
+			"other": "Other"
+		}
+	},
+	"edit_profile": {
+		"title": "EDIT PROFILE",
+		"avatar_label": "AVATAR",
+		"avatar_btn": "Select and upload new avatar",
+		"avatar_help": "Avatar is saved immediately after upload.",
+		"info_title": "// INFO & LINKS",
+		"status_label": "STATUS",
+		"status_placeholder": "What are you up to?",
+		"status_help": "Short message visible on your profile and map.",
+		"about_label": "ABOUT ME",
+		"about_placeholder": "Tell us about yourself...",
+		"social_tg_placeholder": "username (no @)",
+		"social_ds_placeholder": "username",
+		"social_vk_placeholder": "id or short name",
+		"social_x_placeholder": "username (no @)",
+		"social_website_label": "WEBSITE",
+		"social_web_placeholder": "https://...",
+		"save_btn": "Save info and links",
+		"saving": "Saving...",
+		"cancel_btn": "Cancel",
+		"danger_title": "// DANGER ZONE",
+		"danger_text": "Permanent and irreversible deletion of your account.",
+		"delete_btn": "Delete Account",
+		"modal_delete_title": "Confirm Deletion",
+		"modal_delete_text": "Are you sure you want to PERMANENTLY delete your account? All your data (profile, marker) will be erased, comments/messages anonymized. This action CANNOT be undone.",
+		"modal_delete_success": "Account deleted",
+		"modal_delete_success_text": "Your data has been erased from the system. Redirecting to main page.",
+		"modal_file_error": "File error",
+		"modal_size_error": "File too large",
+		"modal_type_error": "Invalid file type",
+		"modal_avatar_uploading": "Uploading...",
+		"modal_avatar_uploading_text": "Sending your new avatar...",
+		"modal_avatar_success": "Success!",
+		"modal_avatar_success_text": "Your new avatar has been saved.",
+		"username_label": "NICKNAME",
+		"username_placeholder": "New nickname",
+		"username_help": "Letters, numbers and _ only. 4–20 characters. Once every 30 days.",
+		"username_save_btn": "Change nickname",
+		"username_saving": "Saving...",
+		"username_confirm_title": "Change nickname?",
+		"username_confirm_text": "You can only change your nickname once every 30 days. Are you sure you want to change it to \"{name}\"?",
+		"username_success": "Nickname changed to \"{name}\"",
+		"username_error_length": "Must be 4–20 characters",
+		"username_error_chars": "Only letters a–z, numbers and _ allowed",
+		"username_error_reserved": "This nickname is not available",
+		"avatar_editor": {
+			"title": "AVATAR EDITOR",
+			"preview": "PREVIEW",
+			"zoom": "ZOOM",
+			"rotate": "ROTATE",
+			"flip": "FLIP",
+			"flip_horizontal": "Horizontal",
+			"flip_vertical": "Vertical",
+			"adjustments": "ADJUSTMENTS",
+			"brightness": "Brightness",
+			"contrast": "Contrast",
+			"saturation": "Saturation",
+			"reset": "Reset",
+			"cancel": "Cancel",
+			"save": "Save Avatar",
+			"hint": "Drag to move • Scroll to zoom",
+			"zoom_in": "Zoom In",
+			"zoom_out": "Zoom Out",
+			"rotate_left": "Rotate Left",
+			"rotate_right": "Rotate Right"
+		}
+	},
+	"reset": {
+		"page_title": "New Password",
+		"header": "ACCESS RESET",
+		"checking": "Verifying access codes...",
+		"instruction": "Enter a new password for your account:",
+		"label": "NEW PASSWORD",
+		"btn_applying": "APPLYING...",
+		"btn_save": "SAVE PASSWORD",
+		"error_link": "Link validation error.",
+		"error_modal_title": "Error",
+		"error_missing_code": "Invalid password reset link.",
+		"error_expired_title": "Link Expired",
+		"error_expired_desc": "This password reset link is invalid or has already been used.",
+		"weak_password": "Password must be at least 6 characters.",
+		"success_title": "Success!",
+		"success_desc": "Your password has been changed. You can now log in.",
+		"error_generic": "Failed to change password."
+	},
+	"ai_policy": {
+		"title": "Our Stance on AI",
+		"subtitle": "// Transparency Protocol: ERROR_LOG",
+		"intro_title": "//: Background: The Reddit Incident",
+		"intro_text": "On December 15, 2025, our post announcing the \"Glitchmas\" update was removed by the moderators of the r/protogen subreddit.",
+		"reason_label": "Official Reason:",
+		"reason_text": "Violation of Rule #7 - \"No AI Art\".",
+		"fact_label": "Fact:",
+		"fact_text": "The post did not contain a single image generated by AI. It only featured screenshots of the website interface we developed.",
+		"moderation_title": "//: The Absurd Argument",
+		"moderation_text": "When we pointed out this discrepancy, the moderator claimed programming is an \"art form\". But then the conversation crossed the line of professionalism:",
+		"moderator_quote_1": "\"Programming everything yourself is far more versatile and reliable than whatever slop an ai chatbot can spit out for you.\"",
+		"moderator_quote_2": "\"I strongly encourage that you reconsider your methods, and hone your own skills.\"",
+		"moderation_outro": "Calling a complex, functioning project with a real economy and backend \"slop\" simply because modern tools were used is a display of personal bias, not moderation. We find this rhetoric insulting to all indie developers.",
+		"philosophy_title": "//: OUR STANCE: AI IS A TOOL",
+		"point1_title": "🤖 We Are Transparent About Using AI",
+		"point1_text": "AI is our \"copilot.\" It helps us write code faster, generate text, and quickly test ideas. For an indie team, it's an indispensable tool.",
+		"point2_title": "🎨 \"AI Art\" ≠ \"AI-Assisted Code\"",
+		"point2_text": "Forbidding a developer from using an AI assistant for coding under the pretext of fighting \"AI art\" is like forbidding an artist from using Photoshop because it's \"computer assistance.\" This is a false equivalence.",
+		"point3_title": "👨‍💻 Our Code is Open",
+		"point3_text": "The best argument against any suspicion is full transparency. The entire source code for ProtoMap is available on <strong><a href='https://github.com/OrionZ43/ProtoMap' target='_blank' class='link'>GitHub</a></strong>. You can check for yourself if our cloud functions and architecture are \"slop\".",
+		"conclusion_title": "//: CONCLUSION",
+		"conclusion_text": "We will not apologize for using effective tools. We will continue to develop ProtoMap guided by common sense and respect for our users, not by the personal prejudices of moderators.",
+		"eoc": "//: END OF TRANSMISSION."
+	},
+	"splash_modal": {
+		"title": "TRANSPARENCY PROTOCOL",
+		"intro": "A brief update on a recent incident with Reddit moderation.",
+		"point1": "Our announcement post on r/protogen was removed for \"AI-assisted content\".",
+		"point2": "The moderators equated \"AI assistance in code\" with \"AI-generated art\", which is an absurd interpretation of the rules.",
+		"point3": "We stand for transparency and modern development tools. ProtoMap is a community project, and its source code is open.",
+		"link_text": "Read the full story",
+		"close_btn": "Understood"
+	},
+	"app_privacy_policy": {
+		"_merged": true,
+		"redirect_note": "This section has been merged into the main Privacy Policy. Use keys from the 'privacy' section.",
+		"page_title": "Application Privacy Policy",
+		"contact_email": "orion.z43studios@gmail.com"
+	},
+	"app_terms": {
+		"_merged": true,
+		"redirect_note": "This section has been merged into the main Terms of Service. Use keys from the 'terms' section.",
+		"page_title": "End User License Agreement (EULA)",
+		"contact_email": "orion.z43studios@gmail.com"
+	},
+	"referral": {
+		"page_title": "Referral Program",
+		"header_tag": "// EVENT.EXE",
+		"title": "REFERRAL PROTOCOL",
+		"subtitle": "Invite the pack. Dominate the leaderboard. Claim the throne.",
+		"timer_label": "CAMPAIGN ENDS IN",
+		"reward_new_amount": "500 PC",
+		"reward_new_label": "for you when activating a code",
+		"reward_invite_amount": "250 PC",
+		"reward_invite_label": "to referrer per invite",
+		"reward_winner_amount": "10 000 PC",
+		"reward_winner_label": "to the monthly winner",
+		"welcome_tag": "// WELCOME BONUS",
+		"welcome_claimed": "Bonus already credited to your account. 🎉",
+		"welcome_badge_claimed": "✓ RECEIVED",
+		"welcome_badge_pc": "+500 PC",
+		"welcome_desc": "Enter the referral code of the person who invited you — get <strong>500 PC</strong> welcome bonus. The referrer gets <strong>250 PC</strong> too.",
+		"check_email": "Verify email",
+		"check_email_hint": "Check your inbox and click the confirmation link",
+		"check_telegram": "Link Telegram",
+		"check_telegram_hint": "Profile → Security → Link Telegram",
+		"check_chat": "Join @proto_map",
+		"check_chat_hint": "Verified at the moment of code activation",
+		"code_placeholder": "REF_XXXXXXXX_XXXX",
+		"claim_btn": "GO",
+		"claim_loading": "...",
+		"claim_success": "Code activated! You got <strong>+{earned} PC</strong>. Referrer got +{referrer} PC.",
+		"claim_already": "You have already activated a referral code.",
+		"your_code_tag": "// YOUR CODE",
+		"stat_this_month": "this month",
+		"stat_total": "total",
+		"share_hint": "For everyone who activates your code you get <strong>250 PC</strong>. The monthly leader wins another <strong>10 000 PC</strong>.",
+		"no_code_text": "You don't have a referral code yet.",
+		"get_code_btn": "⚡ GET CODE",
+		"generating": "GENERATING...",
+		"copy": "COPY",
+		"copied": "COPIED!",
+		"leaderboard_tag": "// LEADERBOARD",
+		"leaderboard_empty": "No data yet. Be the first!",
+		"leaderboard_prize_label": "The winner will also get",
+		"leaderboard_prize": "10 000 PC 👑",
+		"leaderboard_you": "YOU",
+		"rules_tag": "// RULES",
+		"rules_intro": "A referral is counted only if the new user completed all conditions:",
+		"rule_1_title": "Email verified",
+		"rule_1_desc": "Code cannot be activated without verification",
+		"rule_2_title": "Telegram linked",
+		"rule_2_desc": "Via the Security section in profile",
+		"rule_3_title": "Joined @proto_map",
+		"rule_3_desc": "Verified server-side at the moment of activation",
+		"rules_note": "⚠️ One account — one code. Cannot activate your own code. Program is for users registered after March 14, 2026.",
+		"howto_tag": "// HOW TO WIN",
+		"howto_1": "Get your referral code above",
+		"howto_2": "Share with your protogen, synth, primagen friends",
+		"howto_3": "Friend registers → verifies email → links Telegram → joins @proto_map → enters your code",
+		"howto_4": "You: <strong>+250 PC</strong> instantly. Friend: <strong>+500 PC</strong>. Monthly leader gets another <strong>+10 000 PC</strong>.",
+		"login_tag": "// ACCESS DENIED",
+		"login_text": "Log in to participate.",
+		"login_btn": "LOGIN"
+	}
 }
