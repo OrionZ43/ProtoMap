@@ -1,420 +1,576 @@
 <script lang="ts">
-    import { auth, db, appCheck } from "$lib/firebase";
-    import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-    import { getToken } from "firebase/app-check";
-    import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-    import { getFunctions, httpsCallable } from "firebase/functions";
-    import { goto } from "$app/navigation";
-    import NeonButton from '$lib/components/NeonButton.svelte';
-    import CyberTurnstile from '$lib/components/CyberTurnstile.svelte';
-    import { onMount } from 'svelte';
-    import { quintOut } from 'svelte/easing';
-    import { tweened } from 'svelte/motion';
-    import { modal } from '$lib/stores/modalStore';
-    import { userStore } from '$lib/stores';
-    import { t } from 'svelte-i18n';
+	import { auth, db, appCheck } from '$lib/firebase';
+	import {
+		createUserWithEmailAndPassword,
+		updateProfile,
+		signInWithPopup,
+		GoogleAuthProvider
+	} from 'firebase/auth';
+	import { getToken } from 'firebase/app-check';
+	import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+	import { getFunctions, httpsCallable } from 'firebase/functions';
+	import { goto } from '$app/navigation';
+	import NeonButton from '$lib/components/NeonButton.svelte';
+	import CyberTurnstile from '$lib/components/CyberTurnstile.svelte';
+	import { onMount } from 'svelte';
+	import { quintOut } from 'svelte/easing';
+	import { tweened } from 'svelte/motion';
+	import { modal } from '$lib/stores/modalStore';
+	import { userStore } from '$lib/stores';
+	import { t } from 'svelte-i18n';
 
-    let email = "";
-    let password = "";
-    let username = "";
-    let loading = false;
-    let googleLoading = false;
-    let termsAccepted = false;
+	let email = '';
+	let password = '';
+	let username = '';
+	let loading = false;
+	let googleLoading = false;
+	let termsAccepted = false;
 
-    // Флаг готовности App Check токена — кнопка Google заблокирована до прогрева
-    let appCheckReady = false;
+	// Флаг готовности App Check токена — кнопка Google заблокирована до прогрева
+	let appCheckReady = false;
 
-    let turnstileToken = '';
-    let turnstileVerified = false;
+	// 2FA Состояние
+	let show2FAModal = false;
+	let twoFactorCode = '';
+	let isVerifying2FA = false;
 
-    const TURNSTILE_SITE_KEY = "0x4AAAAAACYHm8usBkEdoF37";
+	async function verify2FACode() {
+		if (!twoFactorCode || twoFactorCode.length !== 5) {
+			modal.error('Ошибка', 'Код должен состоять из 5 цифр');
+			return;
+		}
 
-    const opacity = tweened(0, { duration: 400, easing: quintOut });
+		isVerifying2FA = true;
+		try {
+			const functions = getFunctions();
+			const verifyFunc = httpsCallable(functions, 'verify2FACode');
+			await verifyFunc({ code: twoFactorCode });
 
-    onMount(async () => {
-        opacity.set(1);
+			// Успех
+			sessionStorage.setItem('2fa_passed', 'true');
+			show2FAModal = false;
 
-        // Прогреваем App Check токен ДО того как юзер нажмёт кнопку.
-        // Без этого signInWithPopup уходит за токеном асинхронно,
-        // браузер теряет контекст пользовательского жеста и блокирует попап.
-        if (appCheck) {
-            try {
-                await getToken(appCheck, false);
-                console.log("[AppCheck] Token pre-warmed ✅");
-            } catch (e) {
-                console.warn("[AppCheck] Pre-warm failed, will retry on click:", e);
-            }
-        }
-        appCheckReady = true;
-    });
+			const token = await auth.currentUser!.getIdToken();
+			await fetch('/api/auth', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ idToken: token })
+			});
+			await new Promise((resolve) => setTimeout(resolve, 300));
+			goto('/');
+		} catch (e: any) {
+			modal.error('Ошибка 2FA', e.message || 'Неверный код');
+		} finally {
+			isVerifying2FA = false;
+		}
+	}
 
-    function handleTurnstileVerified(event: CustomEvent) {
-        turnstileToken = event.detail.token;
-        turnstileVerified = true;
-    }
+	let turnstileToken = '';
+	let turnstileVerified = false;
 
-    function handleTurnstileError() {
-        turnstileVerified = false;
-        modal.error("Ошибка капчи", "Не удалось загрузить проверку. Попробуйте обновить страницу.");
-    }
+	const TURNSTILE_SITE_KEY = '0x4AAAAAACYHm8usBkEdoF37';
 
-    async function isUsernameAvailable(name: string): Promise<boolean> {
-        const trimmedName = name.trim();
-        if (trimmedName.length < 4) return false;
-        try {
-            const functions = getFunctions();
-            const checkUsernameFunc = httpsCallable(functions, 'checkUsername');
-            const result = await checkUsernameFunc({ username: trimmedName });
-            return (result.data as { isAvailable: boolean }).isAvailable;
-        } catch (e) {
-            console.error("Ошибка проверки username:", e);
-            return false;
-        }
-    }
+	const opacity = tweened(0, { duration: 400, easing: quintOut });
 
-    async function handleRegister() {
-        if (!turnstileVerified) {
-            modal.error("Требуется проверка", "Подтвердите, что вы не робот.");
-            return;
-        }
+	onMount(async () => {
+		opacity.set(1);
 
-        if (!termsAccepted) {
-            modal.error("Требуется согласие", "Примите условия соглашения.");
-            return;
-        }
+		// Прогреваем App Check токен ДО того как юзер нажмёт кнопку.
+		// Без этого signInWithPopup уходит за токеном асинхронно,
+		// браузер теряет контекст пользовательского жеста и блокирует попап.
+		if (appCheck) {
+			try {
+				await getToken(appCheck, false);
+				console.log('[AppCheck] Token pre-warmed ✅');
+			} catch (e) {
+				console.warn('[AppCheck] Pre-warm failed, will retry on click:', e);
+			}
+		}
+		appCheckReady = true;
+	});
 
-        const finalEmail = email.trim();
-        const finalUsername = username.trim();
+	function handleTurnstileVerified(event: CustomEvent) {
+		turnstileToken = event.detail.token;
+		turnstileVerified = true;
+	}
 
-        if (!finalEmail || !password || !finalUsername) {
-            modal.error("Ошибка ввода", "Заполните все поля.");
-            return;
-        }
+	function handleTurnstileError() {
+		turnstileVerified = false;
+		modal.error('Ошибка капчи', 'Не удалось загрузить проверку. Попробуйте обновить страницу.');
+	}
 
-        loading = true;
+	async function isUsernameAvailable(name: string): Promise<boolean> {
+		const trimmedName = name.trim();
+		if (trimmedName.length < 4) return false;
+		try {
+			const functions = getFunctions();
+			const checkUsernameFunc = httpsCallable(functions, 'checkUsername');
+			const result = await checkUsernameFunc({ username: trimmedName });
+			return (result.data as { isAvailable: boolean }).isAvailable;
+		} catch (e) {
+			console.error('Ошибка проверки username:', e);
+			return false;
+		}
+	}
 
-        const usernameIsAvailable = await isUsernameAvailable(finalUsername);
-        if (!usernameIsAvailable) {
-            modal.error("Ошибка регистрации", "Username занят.");
-            loading = false;
-            return;
-        }
+	async function handleRegister() {
+		if (!turnstileVerified) {
+			modal.error('Требуется проверка', 'Подтвердите, что вы не робот.');
+			return;
+		}
 
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, finalEmail, password);
-            const user = userCredential.user;
-            await updateProfile(user, { displayName: finalUsername });
+		if (!termsAccepted) {
+			modal.error('Требуется согласие', 'Примите условия соглашения.');
+			return;
+		}
 
-            const userDocRef = doc(db, "users", user.uid);
-            await setDoc(userDocRef, {
-                username: finalUsername,
-                email: user.email,
-                about_me: "",
-                avatar_url: "",
-                social_link: "",
-                createdAt: serverTimestamp(),
-                casino_credits: 100,
-                last_daily_bonus: null,
-                owned_items: [],
-                turnstileVerified: true
-            });
+		const finalEmail = email.trim();
+		const finalUsername = username.trim();
 
-            await new Promise(resolve => setTimeout(resolve, 500));
-            goto('/');
-        } catch (e: any) {
-            console.error("Ошибка регистрации:", e.code);
-            modal.error("Ошибка", e.message || "Произошла ошибка при регистрации.");
-        } finally {
-            loading = false;
-        }
-    }
+		if (!finalEmail || !password || !finalUsername) {
+			modal.error('Ошибка ввода', 'Заполните все поля.');
+			return;
+		}
 
-    async function handleGoogleLogin() {
-        if (!turnstileVerified) {
-            modal.error("Требуется проверка", "Подтвердите, что вы не робот.");
-            return;
-        }
+		loading = true;
 
-        googleLoading = true;
+		const usernameIsAvailable = await isUsernameAvailable(finalUsername);
+		if (!usernameIsAvailable) {
+			modal.error('Ошибка регистрации', 'Username занят.');
+			loading = false;
+			return;
+		}
 
-        // Если токен ещё не прогрет (страница только открылась) — ждём ещё раз
-        if (appCheck && !appCheckReady) {
-            try {
-                await getToken(appCheck, false);
-            } catch (e) {
-                console.warn("[AppCheck] Token fetch on click failed:", e);
-            }
-        }
+		try {
+			const userCredential = await createUserWithEmailAndPassword(auth, finalEmail, password);
+			const user = userCredential.user;
+			await updateProfile(user, { displayName: finalUsername });
 
-        const provider = new GoogleAuthProvider();
+			const userDocRef = doc(db, 'users', user.uid);
+			await setDoc(userDocRef, {
+				username: finalUsername,
+				email: user.email,
+				about_me: '',
+				avatar_url: '',
+				social_link: '',
+				createdAt: serverTimestamp(),
+				casino_credits: 100,
+				last_daily_bonus: null,
+				owned_items: [],
+				turnstileVerified: true
+			});
 
-        try {
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
+			await new Promise((resolve) => setTimeout(resolve, 500));
+			goto('/');
+		} catch (e: any) {
+			console.error('Ошибка регистрации:', e.code);
+			modal.error('Ошибка', e.message || 'Произошла ошибка при регистрации.');
+		} finally {
+			loading = false;
+		}
+	}
 
-            const userDocRef = doc(db, "users", user.uid);
-            let userDocSnap = await getDoc(userDocRef);
+	async function handleGoogleLogin() {
+		if (!turnstileVerified) {
+			modal.error('Требуется проверка', 'Подтвердите, что вы не робот.');
+			return;
+		}
 
-            if (!userDocSnap.exists()) {
-                let generatedUsername = user.displayName || '';
-                generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
+		googleLoading = true;
 
-                if (generatedUsername.length < 3) generatedUsername = `user_${user.uid.substring(0, 8)}`;
-                if (generatedUsername.length > 20) generatedUsername = generatedUsername.substring(0, 20);
+		// Если токен ещё не прогрет (страница только открылась) — ждём ещё раз
+		if (appCheck && !appCheckReady) {
+			try {
+				await getToken(appCheck, false);
+			} catch (e) {
+				console.warn('[AppCheck] Token fetch on click failed:', e);
+			}
+		}
 
-                const isAvailable = await isUsernameAvailable(generatedUsername);
-                if (!isAvailable) {
-                    const randomSuffix = Math.floor(Math.random() * 9999);
-                    generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
-                }
+		const provider = new GoogleAuthProvider();
 
-                await setDoc(userDocRef, {
-                    username: generatedUsername,
-                    email: user.email || "",
-                    avatar_url: user.photoURL || "",
-                    about_me: "",
-                    social_link: "",
-                    createdAt: serverTimestamp(),
-                    casino_credits: 100,
-                    glitch_shards: 0,
-                    last_daily_bonus: null,
-                    owned_items: [],
-                    daily_streak: 0,
-                    isBanned: false,
-                    emailVerified: user.emailVerified,
-                    turnstileVerified: true
-                });
+		try {
+			const result = await signInWithPopup(auth, provider);
+			const user = result.user;
 
-                const profileData = {
-                    uid: user.uid,
-                    username: generatedUsername,
-                    email: user.email || "",
-                    emailVerified: user.emailVerified,
-                    avatar_url: user.photoURL || "",
-                    social_link: "",
-                    about_me: "",
-                    status: "",
-                    casino_credits: 100,
-                    last_daily_bonus: null,
-                    daily_streak: 0,
-                    owned_items: [],
-                    equipped_frame: null,
-                    equipped_badge: null,
-                    equipped_bg: null,
-                    blocked_uids: []
-                };
-                userStore.set({ user: profileData, loading: false });
-                await new Promise(resolve => setTimeout(resolve, 300));
-            } else {
-                const data = userDocSnap.data();
-                const profileData = {
-                    uid: user.uid,
-                    username: data.username,
-                    email: user.email || "",
-                    emailVerified: user.emailVerified,
-                    avatar_url: data.avatar_url || "",
-                    social_link: data.social_link || "",
-                    about_me: data.about_me || "",
-                    status: data.status || "",
-                    casino_credits: data.casino_credits ?? 100,
-                    last_daily_bonus: data.last_daily_bonus ? data.last_daily_bonus.toDate() : null,
-                    daily_streak: data.daily_streak || 0,
-                    owned_items: data.owned_items || [],
-                    equipped_frame: data.equipped_frame || null,
-                    equipped_badge: data.equipped_badge || null,
-                    equipped_bg: data.equipped_bg || null,
-                    blocked_uids: data.blocked_uids || []
-                };
-                userStore.set({ user: profileData, loading: false });
-            }
+			const userDocRef = doc(db, 'users', user.uid);
+			let userDocSnap = await getDoc(userDocRef);
 
-            const token = await user.getIdToken();
-            await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: token }),
-            });
-            await new Promise(resolve => setTimeout(resolve, 300));
-            goto('/');
-        } catch (e: any) {
-            console.error("❌ Google вход:", e);
-            if (e.code === 'auth/popup-blocked') {
-                modal.error("Окно заблокировано", "Разрешите всплывающие окна в настройках браузера и попробуйте снова.");
-            } else if (e.code === 'auth/cancelled-popup-request') {
-                console.log("Отменено");
-            } else {
-                modal.error("Ошибка", e.message || "Не удалось войти через Google.");
-            }
-        } finally {
-            googleLoading = false;
-        }
-    }
+			if (!userDocSnap.exists()) {
+				let generatedUsername = user.displayName || '';
+				generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
+
+				if (generatedUsername.length < 3) generatedUsername = `user_${user.uid.substring(0, 8)}`;
+				if (generatedUsername.length > 20) generatedUsername = generatedUsername.substring(0, 20);
+
+				const isAvailable = await isUsernameAvailable(generatedUsername);
+				if (!isAvailable) {
+					const randomSuffix = Math.floor(Math.random() * 9999);
+					generatedUsername = `${generatedUsername.substring(0, 15)}_${randomSuffix}`;
+				}
+
+				await setDoc(userDocRef, {
+					username: generatedUsername,
+					email: user.email || '',
+					avatar_url: user.photoURL || '',
+					about_me: '',
+					social_link: '',
+					createdAt: serverTimestamp(),
+					casino_credits: 100,
+					glitch_shards: 0,
+					last_daily_bonus: null,
+					owned_items: [],
+					daily_streak: 0,
+					isBanned: false,
+					emailVerified: user.emailVerified,
+					turnstileVerified: true
+				});
+
+				const profileData = {
+					uid: user.uid,
+					username: generatedUsername,
+					email: user.email || '',
+					emailVerified: user.emailVerified,
+					avatar_url: user.photoURL || '',
+					social_link: '',
+					about_me: '',
+					status: '',
+					casino_credits: 100,
+					last_daily_bonus: null,
+					daily_streak: 0,
+					owned_items: [],
+					equipped_frame: null,
+					equipped_badge: null,
+					equipped_bg: null,
+					blocked_uids: []
+				};
+				userStore.set({ user: profileData, loading: false });
+				await new Promise((resolve) => setTimeout(resolve, 300));
+			} else {
+				const data = userDocSnap.data();
+				if (data.is2FAEnabled) {
+					show2FAModal = true;
+					const functions = getFunctions();
+					const sendCodeFunc = httpsCallable(functions, 'send2FACode');
+					await sendCodeFunc();
+					return; // Stop normal flow and wait for 2FA verification
+				}
+				const profileData = {
+					uid: user.uid,
+					username: data.username,
+					email: user.email || '',
+					emailVerified: user.emailVerified,
+					avatar_url: data.avatar_url || '',
+					social_link: data.social_link || '',
+					about_me: data.about_me || '',
+					status: data.status || '',
+					casino_credits: data.casino_credits ?? 100,
+					last_daily_bonus: data.last_daily_bonus ? data.last_daily_bonus.toDate() : null,
+					daily_streak: data.daily_streak || 0,
+					owned_items: data.owned_items || [],
+					equipped_frame: data.equipped_frame || null,
+					equipped_badge: data.equipped_badge || null,
+					equipped_bg: data.equipped_bg || null,
+					blocked_uids: data.blocked_uids || []
+				};
+				userStore.set({ user: profileData, loading: false });
+			}
+
+			const token = await user.getIdToken();
+			await fetch('/api/auth', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ idToken: token })
+			});
+			await new Promise((resolve) => setTimeout(resolve, 300));
+			goto('/');
+		} catch (e: any) {
+			console.error('❌ Google вход:', e);
+			if (e.code === 'auth/popup-blocked') {
+				modal.error(
+					'Окно заблокировано',
+					'Разрешите всплывающие окна в настройках браузера и попробуйте снова.'
+				);
+			} else if (e.code === 'auth/cancelled-popup-request') {
+				console.log('Отменено');
+			} else {
+				modal.error('Ошибка', e.message || 'Не удалось войти через Google.');
+			}
+		} finally {
+			googleLoading = false;
+		}
+	}
 </script>
 
+{#if show2FAModal}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+		transition:fade={{ duration: 200 }}
+	>
+		<div class="cyber-panel relative w-full max-w-sm p-8" transition:slide>
+			<h2 class="text-shadow-yellow mb-4 text-center font-display text-2xl text-cyber-yellow">
+				ЗАЩИТА 2FA
+			</h2>
+			<p class="mb-6 text-center text-sm text-gray-300">
+				Код отправлен в ваш Telegram. Введите его ниже.
+			</p>
+
+			<input
+				type="text"
+				bind:value={twoFactorCode}
+				placeholder="12345"
+				class="mb-6 w-full border border-gray-700 bg-gray-900 p-3 text-center font-mono text-2xl tracking-widest text-white outline-none focus:border-cyber-yellow"
+				maxlength="5"
+			/>
+
+			<NeonButton
+				text={isVerifying2FA ? 'ПРОВЕРКА...' : 'ПОДТВЕРДИТЬ'}
+				color="yellow"
+				onClick={verify2FACode}
+				disabled={isVerifying2FA || twoFactorCode.length !== 5}
+				fullWidth
+			/>
+
+			<button
+				class="mt-4 w-full text-center text-xs text-gray-500 transition-colors hover:text-white"
+				on:click={() => {
+					show2FAModal = false;
+					auth.signOut();
+				}}
+			>
+				ОТМЕНА
+			</button>
+		</div>
+	</div>
+{/if}
+
 <svelte:head>
-    <title>{$t('auth.register_title')} | ProtoMap</title>
+	<title>{$t('auth.register_title')} | ProtoMap</title>
 </svelte:head>
 
 <div class="form-container cyber-panel pb-12" style="opacity: {$opacity}">
+	<h2 class="form-title font-display">{$t('auth.register_title')}</h2>
 
-    <h2 class="form-title font-display">{$t('auth.register_title')}</h2>
+	<form on:submit|preventDefault={handleRegister} class="space-y-8" novalidate>
+		<div class="form-group">
+			<label for="username" class="form-label font-display">{$t('auth.username_label')}</label>
+			<input bind:value={username} type="text" id="username" name="username" class="input-field" />
+		</div>
+		<div class="form-group">
+			<label for="email" class="form-label font-display">{$t('auth.email_label')}</label>
+			<input bind:value={email} type="email" id="email" name="email" class="input-field" />
+		</div>
+		<div class="form-group">
+			<label for="password" class="form-label font-display">{$t('auth.password_label')}</label>
+			<input
+				bind:value={password}
+				type="password"
+				id="password"
+				name="password"
+				class="input-field"
+			/>
+		</div>
 
-    <form on:submit|preventDefault={handleRegister} class="space-y-8" novalidate>
-        <div class="form-group">
-            <label for="username" class="form-label font-display">{$t('auth.username_label')}</label>
-            <input bind:value={username} type="text" id="username" name="username" class="input-field">
-        </div>
-        <div class="form-group">
-            <label for="email" class="form-label font-display">{$t('auth.email_label')}</label>
-            <input bind:value={email} type="email" id="email" name="email" class="input-field">
-        </div>
-        <div class="form-group">
-            <label for="password" class="form-label font-display">{$t('auth.password_label')}</label>
-            <input bind:value={password} type="password" id="password" name="password" class="input-field">
-        </div>
+		<div class="form-group flex justify-center">
+			<CyberTurnstile
+				siteKey={TURNSTILE_SITE_KEY}
+				on:verified={handleTurnstileVerified}
+				on:error={handleTurnstileError}
+			/>
+		</div>
 
-        <div class="form-group flex justify-center">
-            <CyberTurnstile
-                siteKey={TURNSTILE_SITE_KEY}
-                on:verified={handleTurnstileVerified}
-                on:error={handleTurnstileError}
-            />
-        </div>
+		<div class="form-group pt-2">
+			<label class="terms-label">
+				<input type="checkbox" bind:checked={termsAccepted} class="terms-checkbox" />
+				<span class="custom-checkbox"></span>
+				<span class="text-sm text-gray-400">
+					{$t('auth.terms_agree')}
+					<a href="/terms-of-service" target="_blank" class="link">{$t('auth.terms_link')}</a>
+					&
+					<a href="/privacy-policy" target="_blank" class="link">{$t('auth.privacy_link')}</a>
+				</span>
+			</label>
+		</div>
 
-        <div class="form-group pt-2">
-            <label class="terms-label">
-                <input type="checkbox" bind:checked={termsAccepted} class="terms-checkbox">
-                <span class="custom-checkbox"></span>
-                <span class="text-sm text-gray-400">
-                    {$t('auth.terms_agree')}
-                    <a href="/terms-of-service" target="_blank" class="link">{$t('auth.terms_link')}</a>
-                    &
-                    <a href="/privacy-policy" target="_blank" class="link">{$t('auth.privacy_link')}</a>
-                </span>
-            </label>
-        </div>
+		<div class="pt-2">
+			<NeonButton
+				type="submit"
+				disabled={loading || googleLoading || !termsAccepted || !turnstileVerified}
+				extraClass="w-full"
+			>
+				{#if loading}
+					{$t('ui.loading')}
+				{:else}
+					{$t('auth.register_btn')}
+				{/if}
+			</NeonButton>
+		</div>
+	</form>
 
-        <div class="pt-2">
-            <NeonButton
-                type="submit"
-                disabled={loading || googleLoading || !termsAccepted || !turnstileVerified}
-                extraClass="w-full"
-            >
-                {#if loading}
-                    {$t('ui.loading')}
-                {:else}
-                    {$t('auth.register_btn')}
-                {/if}
-            </NeonButton>
-        </div>
-    </form>
+	<div class="relative my-6">
+		<div class="absolute inset-0 flex items-center" aria-hidden="true">
+			<div class="w-full border-t border-gray-700/50"></div>
+		</div>
+		<div class="relative flex justify-center text-sm">
+			<span class="bg-gray-900 px-3 font-display uppercase tracking-wider text-gray-500"
+				>{$t('auth.or')}</span
+			>
+		</div>
+	</div>
 
-    <div class="relative my-6">
-        <div class="absolute inset-0 flex items-center" aria-hidden="true"><div class="w-full border-t border-gray-700/50"></div></div>
-        <div class="relative flex justify-center text-sm"><span class="px-3 bg-gray-900 text-gray-500 uppercase font-display tracking-wider">{$t('auth.or')}</span></div>
-    </div>
+	<div class="text-center">
+		<button
+			on:click={handleGoogleLogin}
+			disabled={googleLoading || loading || !turnstileVerified || !appCheckReady}
+			type="button"
+			title={appCheckReady ? 'Войти/Зарегистрироваться с Google' : 'Подготовка...'}
+			class="google-btn"
+		>
+			{#if !appCheckReady}
+				<svg class="h-5 w-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+					></circle>
+					<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+				</svg>
+			{:else}
+				<svg class="h-6 w-6" viewBox="0 0 48 48">
+					<path
+						fill="#FFC107"
+						d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
+					></path>
+					<path
+						fill="#FF3D00"
+						d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
+					></path>
+					<path
+						fill="#4CAF50"
+						d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.223,0-9.65-3.657-11.303-8l-6.571,4.819C9.656,39.663,16.318,44,24,44z"
+					></path>
+					<path
+						fill="#1976D2"
+						d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C41.38,36.435,44,30.836,44,24C44,22.659,43.862,21.35,43.611,20.083z"
+					></path>
+				</svg>
+			{/if}
+		</button>
+	</div>
 
-    <div class="text-center">
-        <button
-            on:click={handleGoogleLogin}
-            disabled={googleLoading || loading || !turnstileVerified || !appCheckReady}
-            type="button"
-            title={appCheckReady ? "Войти/Зарегистрироваться с Google" : "Подготовка..."}
-            class="google-btn"
-        >
-            {#if !appCheckReady}
-                <svg class="w-5 h-5 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                </svg>
-            {:else}
-                <svg class="w-6 h-6" viewBox="0 0 48 48">
-                    <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
-                    <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
-                    <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.223,0-9.65-3.657-11.303-8l-6.571,4.819C9.656,39.663,16.318,44,24,44z"></path>
-                    <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C41.38,36.435,44,30.836,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
-                </svg>
-            {/if}
-        </button>
-    </div>
-
-    <p class="mt-8 text-center text-sm text-gray-500">
-        {$t('auth.has_account')} <a href="/login" class="font-bold text-cyber-yellow hover:text-white">{$t('auth.login_btn')}</a>
-    </p>
+	<p class="mt-8 text-center text-sm text-gray-500">
+		{$t('auth.has_account')}
+		<a href="/login" class="font-bold text-cyber-yellow hover:text-white">{$t('auth.login_btn')}</a>
+	</p>
 </div>
 
 <style>
-    .form-container {
-        @apply max-w-lg mx-auto my-10 p-8 rounded-none shadow-2xl relative;
-        background: rgba(10, 10, 10, 0.5); backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        border: 1px solid rgba(252, 238, 10, 0.2);
-        clip-path: polygon(0 15px, 15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
-        transition: opacity 0.4s ease-in-out;
-    }
-    @media (max-width: 640px) { .form-container { @apply my-4 mx-4 p-6; } }
+	.form-container {
+		@apply relative mx-auto my-10 max-w-lg rounded-none p-8 shadow-2xl;
+		background: rgba(10, 10, 10, 0.5);
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+		border: 1px solid rgba(252, 238, 10, 0.2);
+		clip-path: polygon(
+			0 15px,
+			15px 0,
+			100% 0,
+			100% calc(100% - 15px),
+			calc(100% - 15px) 100%,
+			0 100%
+		);
+		transition: opacity 0.4s ease-in-out;
+	}
+	@media (max-width: 640px) {
+		.form-container {
+			@apply mx-4 my-4 p-6;
+		}
+	}
 
-    .form-title { @apply text-2xl lg:text-3xl font-bold text-center text-white mb-10;text-shadow: none; }
-    .form-group { }
-    .form-label { @apply block text-sm font-bold uppercase tracking-widest text-cyber-yellow mb-2; }
-    .input-field {
-        @apply block w-full p-2 bg-transparent text-gray-200;
-        border: none; border-bottom: 1px solid var(--border-color, #30363d);
-        border-radius: 0; font-family: 'Inter', sans-serif;
-        font-size: 1.1em; transition: border-color 0.3s, box-shadow 0.3s;
-    }
-    .input-field:focus { @apply outline-none; border-bottom-color: var(--cyber-yellow, #fcee0a); box-shadow: 0 1px 0 var(--cyber-yellow, #fcee0a); }
+	.form-title {
+		@apply mb-10 text-center text-2xl font-bold text-white lg:text-3xl;
+		text-shadow: none;
+	}
+	.form-group {
+	}
+	.form-label {
+		@apply mb-2 block text-sm font-bold uppercase tracking-widest text-cyber-yellow;
+	}
+	.input-field {
+		@apply block w-full bg-transparent p-2 text-gray-200;
+		border: none;
+		border-bottom: 1px solid var(--border-color, #30363d);
+		border-radius: 0;
+		font-family: 'Inter', sans-serif;
+		font-size: 1.1em;
+		transition:
+			border-color 0.3s,
+			box-shadow 0.3s;
+	}
+	.input-field:focus {
+		@apply outline-none;
+		border-bottom-color: var(--cyber-yellow, #fcee0a);
+		box-shadow: 0 1px 0 var(--cyber-yellow, #fcee0a);
+	}
 
-    .google-btn { @apply inline-flex justify-center items-center w-12 h-12 p-3 border border-gray-700 rounded-full shadow-sm; background-color: var(--input-bg-color); transition: background-color 0.2s, border-color 0.2s; }
-    .google-btn:hover:not(:disabled) { background-color: var(--secondary-bg-color); border-color: var(--border-color); }
-    .google-btn:disabled { @apply opacity-50 cursor-not-allowed; }
+	.google-btn {
+		@apply inline-flex h-12 w-12 items-center justify-center rounded-full border border-gray-700 p-3 shadow-sm;
+		background-color: var(--input-bg-color);
+		transition:
+			background-color 0.2s,
+			border-color 0.2s;
+	}
+	.google-btn:hover:not(:disabled) {
+		background-color: var(--secondary-bg-color);
+		border-color: var(--border-color);
+	}
+	.google-btn:disabled {
+		@apply cursor-not-allowed opacity-50;
+	}
 
-    .terms-label {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        user-select: none;
-    }
-    .terms-checkbox {
-        position: absolute;
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-    .custom-checkbox {
-        flex-shrink: 0;
-        position: relative;
-        width: 20px;
-        height: 20px;
-        background-color: rgba(255,255,255,0.1);
-        border: 1px solid var(--border-color, #30363d);
-        margin-right: 10px;
-        transition: all 0.2s;
-    }
-    .terms-checkbox:checked + .custom-checkbox {
-        background-color: var(--cyber-yellow);
-        border-color: var(--cyber-yellow);
-    }
-    .custom-checkbox::after {
-        content: '';
-        position: absolute;
-        display: none;
-        left: 6px;
-        top: 2px;
-        width: 6px;
-        height: 12px;
-        border: solid white;
-        border-width: 0 3px 3px 0;
-        transform: rotate(45deg);
-    }
-    .terms-checkbox:checked + .custom-checkbox::after {
-        display: block;
-    }
-    .link {
-        color: var(--cyber-yellow);
-        text-decoration: underline;
-    }
-    .link:hover {
-        color: #fff;
-    }
+	.terms-label {
+		display: flex;
+		align-items: center;
+		cursor: pointer;
+		user-select: none;
+	}
+	.terms-checkbox {
+		position: absolute;
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+	.custom-checkbox {
+		flex-shrink: 0;
+		position: relative;
+		width: 20px;
+		height: 20px;
+		background-color: rgba(255, 255, 255, 0.1);
+		border: 1px solid var(--border-color, #30363d);
+		margin-right: 10px;
+		transition: all 0.2s;
+	}
+	.terms-checkbox:checked + .custom-checkbox {
+		background-color: var(--cyber-yellow);
+		border-color: var(--cyber-yellow);
+	}
+	.custom-checkbox::after {
+		content: '';
+		position: absolute;
+		display: none;
+		left: 6px;
+		top: 2px;
+		width: 6px;
+		height: 12px;
+		border: solid white;
+		border-width: 0 3px 3px 0;
+		transform: rotate(45deg);
+	}
+	.terms-checkbox:checked + .custom-checkbox::after {
+		display: block;
+	}
+	.link {
+		color: var(--cyber-yellow);
+		text-decoration: underline;
+	}
+	.link:hover {
+		color: #fff;
+	}
 </style>
