@@ -1,858 +1,761 @@
 <script lang="ts">
-	import { onDestroy, onMount, tick } from 'svelte';
-	import { getApp } from 'firebase/app';
-	import { getFunctions, httpsCallable } from 'firebase/functions';
+	import { onMount, onDestroy, tick } from 'svelte';
+	import { get } from 'svelte/store';
+	import { AudioManager } from '$lib/client/audioManager';
 	import {
 		rouletteState,
 		rouletteLoading,
 		rouletteGameId,
+		actionQueue,
+		isPlayingQueue,
+		currentOrionSprite,
 		subscribeToGame,
 		unsubscribeFromGame,
+		type GamePublicState,
 		getCurrentGameId
 	} from '$lib/stores/rouletteStore';
-	import { userStore } from '$lib/stores';
-	import type { Items } from '$lib/types/roulette';
 	import { ITEM_META } from '$lib/types/roulette';
+	import type { GameEvent } from '$lib/types/roulette';
+	import type { OrionSprite } from '$lib/stores/rouletteStore';
+	import { getApp } from 'firebase/app';
+	import { getFunctions, httpsCallable } from 'firebase/functions';
 	import { browser } from '$app/environment';
 
-	/* ── Cloud Functions ────────────────────────────────── */
-	const fns         = getFunctions(getApp(), 'us-central1');
-	const startFn     = httpsCallable(fns, 'startRoulette');
-	const actionFn    = httpsCallable(fns, 'makeRouletteAction');
-	const abandonFn   = httpsCallable(fns, 'abandonRoulette');
+	// ── Утилиты ──────────────────────────────────────────────
+	const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-	/* ── UI state ────────────────────────────────────────── */
-	let phase: 'lobby' | 'playing' | 'result' = 'lobby';
-	let resultWon   = false;
-	let isStarting  = false;
-	let isActing    = false;
-	let errorMsg    = '';
-	let logHistory: string[] = [];
-	let logEl: HTMLElement;
+	// ── Спрайты Ориона ───────────────────────────────────────
+	const SPRITES: Record<OrionSprite, string> = {
+		idle: '/casino/orion/idle.png',
+		holding_gun: '/casino/orion/holding_gun.png',
+		aiming_viewer: '/casino/orion/aiming_viewer.png',
+		aiming_self: '/casino/orion/aiming_self.png'
+	};
 
-	/* ── Реактивные данные из RTDB store ─────────────────── */
-	$: gs        = $rouletteState;
-	$: isMyTurn  = gs?.turn === 'p' && gs?.st === 'a';
-	$: orionEmo  = gs ? getOrionEmotion(gs.ohp, gs.mhp) : null;
+	const fns = getFunctions(getApp(), 'us-central1');
+	const makeAction = httpsCallable(fns, 'makeRouletteAction');
+	const startFn = httpsCallable(fns, 'startRoulette');
+	const abandonFn = httpsCallable(fns, 'abandonRoulette');
 
-	/* ── Следим за логом и добавляем в историю ─────────── */
-	$: if (gs?.log) {
-		addLog(gs.log);
-	}
+	// ── Состояния UI ──────────────────────────────────────────
+	let actionsBlocked = false;
+	let displayedLog = '';
+	let showResult: 'player' | 'orion' | null = null;
 
-	/* ── Если стейт пропал (игра завершена на бэке) ─────── */
-	$: if (phase === 'playing' && gs === null && !$rouletteLoading) {
-		// onValue вернул null — бэкенд удалил узел
-		// Значит игра завершена внешне (например, дубль)
-		phase = 'lobby';
-	}
+	let visualPhp = 0;
+	let visualOhp = 0;
+	let visualSl = 0;
+	let visualScan: number | null | undefined = null;
 
-	/* ─────────────────────────────────────────────────────── */
+	// ── Главная функция: воспроизвести очередь событий ───────
+	async function playEventQueue(events: GameEvent[]) {
+		if (get(isPlayingQueue)) return;
+		isPlayingQueue.set(true);
+		actionsBlocked = true;
 
-	function addLog(entry: string) {
-		// Разбиваем составной лог (может содержать " | ")
-		const parts = entry.split(' | ').map(p => p.trim()).filter(Boolean);
-		logHistory = [...logHistory, ...parts].slice(-20); // хранить макс 20 записей
-		tick().then(() => {
-			if (logEl) logEl.scrollTop = logEl.scrollHeight;
-		});
-	}
-
-	function getOrionEmotion(ohp: number, mhp: number): { label: string; face: string; color: string } {
-		const pct = ohp / mhp;
-		if (pct > 0.75) return { label: 'DOMINANT',    face: '◉◉', color: '#00f0ff' };
-		if (pct > 0.50) return { label: 'CALCULATING', face: '◐◑', color: '#fcee0a' };
-		if (pct > 0.25) return { label: 'PRESSURED',   face: '◌◌', color: '#ff6a00' };
-		return                 { label: 'CRITICAL',     face: '✕✕', color: '#ff003c' };
-	}
-
-	function hpDots(current: number, max: number, color: string): string {
-		// возвращаем dots как строку для рендера
-		return ''; // используется в шаблоне напрямую
-	}
-
-	/* ── ACTIONS ─────────────────────────────────────────── */
-
-	async function startGame() {
-		if (isStarting) return;
-		isStarting = true;
-		errorMsg   = '';
-		logHistory = [];
-		try {
-			const res   = await startFn({});
-			const data  = res.data as { gameId: string };
-			subscribeToGame(data.gameId);
-			phase = 'playing';
-		} catch (e: any) {
-			errorMsg = e?.message ?? 'Неизвестная ошибка';
-		} finally {
-			isStarting = false;
+		for (const event of events) {
+			await processEvent(event);
+			await sleep(200);
 		}
+
+		currentOrionSprite.set('idle');
+		isPlayingQueue.set(false);
+		actionsBlocked = false;
+		actionQueue.set([]);
 	}
 
-	async function doAction(action: string) {
-		const gid = getCurrentGameId();
-		if (!gid || isActing || !isMyTurn) return;
-		isActing = true;
-		errorMsg = '';
-		try {
-			const res  = await actionFn({ gameId: gid, action });
-			const data = res.data as { st: string };
+	// ── Обработка одного события ──────────────────────────────
+	async function processEvent(event: GameEvent): Promise<void> {
+		displayedLog = event.log;
 
-			if (data.st !== 'a') {
-				// Игра завершена
-				resultWon = data.st === 'p';
-				phase     = 'result';
-				unsubscribeFromGame();
-				// Авто-возврат в лобби через 4 сек
-				setTimeout(() => { phase = 'lobby'; }, 4000);
+		switch (event.type) {
+			case 'item_used': {
+				if (event.actor === 'orion') {
+					currentOrionSprite.set('holding_gun');
+					await sleep(400);
+				}
+
+				if (event.item === 'sc') AudioManager.play('vd_item_scanner');
+				else if (event.item === 'ew') AudioManager.play('vd_item_emp');
+				else AudioManager.play('vd_item_generic');
+
+				if (event.item === 'co') {
+					if (event.actor === 'player')
+						visualPhp = Math.min(visualPhp + 1, $rouletteState?.mhp || 0);
+					else visualOhp = Math.min(visualOhp + 1, $rouletteState?.mhp || 0);
+				} else if (event.item === 'sc') {
+					visualScan = $rouletteState?.scan;
+				} else if (event.item === 'ad') {
+					visualSl = Math.max(0, visualSl - 1);
+					visualScan = null;
+				}
+
+				await sleep(700);
+				if (event.actor === 'orion') currentOrionSprite.set('idle');
+				break;
 			}
-		} catch (e: any) {
-			errorMsg = e?.message ?? 'Ошибка действия';
-		} finally {
-			isActing = false;
+
+			case 'shoot': {
+				const isOrion = event.actor === 'orion';
+				const aimSprite: OrionSprite = isOrion
+					? event.target === 'enemy'
+						? 'aiming_viewer'
+						: 'aiming_self'
+					: 'holding_gun';
+
+				if (isOrion) {
+					currentOrionSprite.set('holding_gun');
+					await sleep(500);
+					currentOrionSprite.set(aimSprite);
+					await sleep(800);
+				}
+
+				if (event.isLive) {
+					AudioManager.play('vd_shot_live');
+					flashScreen(event.target === 'enemy' && isOrion ? 'red' : 'cyan');
+					await sleep(300);
+					animateHpChange(event.target === 'enemy' ? 'player' : 'orion', event.damage ?? 1);
+				} else {
+					AudioManager.play('vd_shot_blank');
+					await sleep(200);
+				}
+
+				visualSl = Math.max(0, visualSl - 1);
+				visualScan = null;
+
+				await sleep(600);
+				if (isOrion) currentOrionSprite.set('idle');
+				break;
+			}
+
+			case 'reload': {
+				AudioManager.play('vd_reload');
+				visualSl = event.shellCount ?? 0;
+				await sleep(900);
+				break;
+			}
+
+			case 'skip_turn': {
+				AudioManager.play('vd_item_emp');
+				await sleep(500);
+				break;
+			}
+
+			case 'game_over': {
+				await sleep(400);
+				if (event.winner === 'player') AudioManager.play('vd_win');
+				else AudioManager.play('vd_lose');
+				showResult = event.winner ?? null;
+				break;
+			}
 		}
 	}
 
-	async function leaveGame() {
-		const gid = getCurrentGameId();
-		if (gid && gs?.st === 'a') {
-			try { await abandonFn({ gameId: gid }); } catch (_) {}
-		}
-		unsubscribeFromGame();
-		phase = 'lobby';
+	// ── Вспомогательные анимации ──────────────────────────────
+	let flashTimeout: ReturnType<typeof setTimeout>;
+	let screenFlash = '';
+
+	function flashScreen(color: 'red' | 'cyan') {
+		screenFlash = color;
+		clearTimeout(flashTimeout);
+		flashTimeout = setTimeout(() => {
+			screenFlash = '';
+		}, 400);
 	}
 
-	/* ── CLEANUP при уходе со страницы ──────────────────── */
+	function animateHpChange(target: 'player' | 'orion', damage: number) {
+		if (target === 'player') {
+			visualPhp = Math.max(0, visualPhp - damage);
+		} else {
+			visualOhp = Math.max(0, visualOhp - damage);
+		}
+	}
+
+	// ── Подписка на очередь событий ───────────────────────────
+	let queueUnsub: (() => void) | null = null;
+	let stateUnsub: (() => void) | null = null;
+	let isInitialized = false;
+
+	onMount(() => {
+		AudioManager.initialize();
+
+		stateUnsub = rouletteState.subscribe((state) => {
+			if (state && !isInitialized) {
+				visualPhp = state.php;
+				visualOhp = state.ohp;
+				visualSl = state.sl;
+				visualScan = state.scan;
+				displayedLog = state.log;
+				isInitialized = true;
+			} else if (!state) {
+				isInitialized = false;
+			}
+		});
+
+		queueUnsub = actionQueue.subscribe(async (events) => {
+			if (events.length > 0 && !get(isPlayingQueue)) {
+				await playEventQueue([...events]);
+			}
+		});
+	});
+
 	onDestroy(async () => {
+		queueUnsub?.();
+		stateUnsub?.();
 		const gid = getCurrentGameId();
 		if (gid && $rouletteState?.st === 'a') {
-			try { await abandonFn({ gameId: gid }); } catch (_) {}
+			try {
+				await abandonFn({ gameId: gid });
+			} catch (_) {}
 		}
 		unsubscribeFromGame();
 	});
+
+	// ── Действия игрока ─────────────────────────────────
+	async function sendAction(action: string) {
+		if (actionsBlocked || !get(rouletteGameId)) return;
+		const gid = get(rouletteGameId)!;
+		actionsBlocked = true;
+		try {
+			await makeAction({ gameId: gid, action });
+		} catch (e) {
+			console.error('[VoltDeadlock] Ошибка действия:', e);
+			actionsBlocked = false;
+		}
+	}
+
+	async function handleStartGame() {
+		if (actionsBlocked) return;
+		actionsBlocked = true;
+		showResult = null;
+		isInitialized = false;
+		try {
+			const res = await startFn();
+			const data = res.data as { gameId: string };
+			subscribeToGame(data.gameId);
+		} catch (e) {
+			console.error('[VoltDeadlock] Ошибка старта:', e);
+		} finally {
+			actionsBlocked = false;
+		}
+	}
+
+	function handlePlayAgain() {
+		unsubscribeFromGame();
+		handleStartGame();
+	}
 </script>
 
-<!-- ════════════════════════════════════════════════════════
-     ПОЛНОЭКРАННЫЙ ОВЕРЛЕЙ — перекрывает навбар
-════════════════════════════════════════════════════════ -->
-<div class="volt-root">
+<div id="game-root">
+	{#if $rouletteState}
+		<!-- Flash overlay -->
+		{#if screenFlash}
+			<div class="flash-overlay flash-{screenFlash}"></div>
+		{/if}
 
-	<!-- ╔══════════════════════════════════╗
-	     ║  LOBBY — экран входа             ║
-	     ╚══════════════════════════════════╝ -->
-	{#if phase === 'lobby'}
-		<div class="lobby-screen">
-			<div class="lobby-card">
-				<!-- Заголовок -->
-				<div class="title-block">
-					<span class="title-tag">[ CASINO SYSTEM v4.1 ]</span>
-					<h1 class="game-title">VOLT<br/>DEADLOCK</h1>
-					<p class="game-sub">Плазменная рулетка · Один на один с Орионом</p>
-				</div>
+		<!-- Фон -->
+		<div id="bg-layer"></div>
 
-				<!-- Правила -->
-				<div class="rules-grid">
-					<div class="rule-item">
-						<span class="rule-icon">⚡</span>
-						<div>
-							<p class="rule-label">Боевой патрон</p>
-							<p class="rule-val">−1 HP (или −2 с Overdrive)</p>
-						</div>
-					</div>
-					<div class="rule-item">
-						<span class="rule-icon" style="color:#444">○</span>
-						<div>
-							<p class="rule-label">Холостой (в себя)</p>
-							<p class="rule-val">Бесплатный доп. ход</p>
-						</div>
-					</div>
-					<div class="rule-item">
-						<span class="rule-icon">🏆</span>
-						<div>
-							<p class="rule-label">Победа</p>
-							<p class="rule-val">+1000 PC</p>
-						</div>
-					</div>
-					<div class="rule-item">
-						<span class="rule-icon">💀</span>
-						<div>
-							<p class="rule-label">Поражение / Побег</p>
-							<p class="rule-val">−500 PC (ставка сгорает)</p>
-						</div>
-					</div>
-				</div>
+		<!-- Спрайт Ориона -->
+		<img
+			id="orion-sprite"
+			src={SPRITES[$currentOrionSprite]}
+			alt="Orion"
+			class:orion-active={$rouletteState.turn === 'o'}
+		/>
 
-				<!-- Предметы -->
-				<div class="items-legend">
-					{#each Object.entries(ITEM_META) as [key, meta]}
-						<div class="item-legend-row" style="--clr:{meta.color}">
-							<span class="item-icon-lg">{meta.icon}</span>
-							<div>
-								<p class="item-lname">{meta.label}</p>
-								<p class="item-ldesc">{meta.desc}</p>
-							</div>
-						</div>
+		<!-- Панель игрока (левая) -->
+		<div class="side-panel" id="panel-player">
+			<div class="panel-title">ОПЕРАТОР</div>
+			<div class="hp-bar-wrap">
+				<div class="hp-label">HP</div>
+				<div class="hp-pips">
+					{#each Array($rouletteState.mhp) as _, i}
+						<div class="hp-pip" class:filled={i < visualPhp} class:empty={i >= visualPhp}></div>
 					{/each}
 				</div>
-
-				{#if errorMsg}
-					<p class="error-msg">{errorMsg}</p>
-				{/if}
-
-				<!-- CTA -->
-				<div class="lobby-cta">
-					<p class="entry-cost">Стоимость входа: <strong>500 PC</strong></p>
-					<p class="balance-note">
-						Баланс: <strong>{$userStore.user?.casino_credits ?? '—'} PC</strong>
-					</p>
-					<button
-						class="btn-enter"
-						disabled={isStarting || !$userStore.user}
-						on:click={startGame}
-					>
-						{isStarting ? 'ПОДКЛЮЧЕНИЕ...' : 'ВОЙТИ В СИСТЕМУ'}
-					</button>
-				</div>
+			</div>
+			{#if $rouletteState.pdbl}
+				<div class="status-badge overdrive">⚡ OVERDRIVE</div>
+			{/if}
+			{#if $rouletteState.pskip}
+				<div class="status-badge emp">⌁ EMP — ОЖИДАНИЕ</div>
+			{/if}
+			<div class="items-grid">
+				{#each Object.entries(ITEM_META) as [key, meta]}
+					{@const count = $rouletteState.pit[key as keyof typeof ITEM_META]}
+					{#if count > 0}
+						<button
+							class="item-btn"
+							disabled={actionsBlocked || $rouletteState.turn !== 'p'}
+							on:click={() => sendAction(`item_${key}`)}
+							title={meta.desc}
+						>
+							<span class="item-icon">{meta.icon}</span>
+							<span class="item-label">{meta.label}</span>
+							<span class="item-count">×{count}</span>
+						</button>
+					{/if}
+				{/each}
 			</div>
 		</div>
 
-	<!-- ╔══════════════════════════════════╗
-	     ║  PLAYING — основная игровая зона ║
-	     ╚══════════════════════════════════╝ -->
-	{:else if phase === 'playing'}
-		<div class="game-screen">
-
-			<!-- ХЕДЕР -->
-			<header class="game-header">
-				<span class="hdr-tag">VOLT DEADLOCK</span>
-				<span class="hdr-turn {isMyTurn ? 'turn-player' : 'turn-orion'}">
-					{isMyTurn ? '▶ ВАШ ХОД' : '⏳ ХОД ОРИОНА'}
-				</span>
-				<button class="btn-escape" on:click={leaveGame} title="Покинуть (ставка сгорает)">
-					⏏ ПОБЕГ
-				</button>
-			</header>
-
-			<!-- ── ЗОНА ОРИОНА ── -->
-			<section class="zone orion-zone">
-				<!-- Эмоция -->
-				{#if orionEmo}
-					<div class="orion-face" style="color:{orionEmo.color}; border-color:{orionEmo.color}40">
-						<span class="face-eyes {orionEmo.label === 'CRITICAL' ? 'blink-red' : ''}">{orionEmo.face}</span>
-						<span class="face-label" style="color:{orionEmo.color}">{orionEmo.label}</span>
-					</div>
-				{/if}
-
-				<div class="entity-info">
-					<p class="entity-name">ОРИОН <span class="entity-sub">/ AI DEALER</span></p>
-
-					<!-- HP bar -->
-					{#if gs}
-						<div class="hp-bar-wrap">
-							{#each Array(gs.mhp) as _, i}
-								<div
-									class="hp-dot {i < gs.ohp ? 'hp-dot-on' : 'hp-dot-off'}"
-									style={i < gs.ohp ? 'background:#ff003c; box-shadow:0 0 6px #ff003c' : ''}
-								/>
-							{/each}
-							<span class="hp-num">{gs.ohp}/{gs.mhp}</span>
-						</div>
-
-						<!-- Предметы Ориона (количество, не тип!) -->
-						<div class="orion-items">
-							{#each Object.entries(gs.oit) as [k, v]}
-								{#if (v as number) > 0}
-									<span
-										class="oitem-badge"
-										style="color:{ITEM_META[k as keyof Items].color}"
-									>
-										{ITEM_META[k as keyof Items].icon} ×{v}
-									</span>
-								{/if}
-							{/each}
-						</div>
-
-						<!-- Статус баффов Ориона -->
-						<div class="buff-row">
-							{#if gs.odbl}<span class="buff-tag" style="color:#fcee0a">⚡ OVERDRIVE</span>{/if}
-							{#if gs.oskip}<span class="buff-tag" style="color:#ff00c1">⌁ EMP LOCK</span>{/if}
-						</div>
-					{/if}
-				</div>
-			</section>
-
-			<!-- ── СТОЛ (центр) ── -->
-			<section class="table-zone">
-				<!-- Плазмоган -->
-				<div class="gun-block">
-					<div class="gun-icon {isMyTurn ? 'gun-player' : 'gun-orion'}">
-						⊹ ПЛАЗМОГАН ⊹
-					</div>
-					<!-- Патронник: показываем кол-во и результат сканера -->
-					<div class="shells-row">
-						{#if gs}
-							{#each Array(gs.sl) as _, i}
-								<div class="shell {i === 0 && gs.scan != null ? (gs.scan === 1 ? 'shell-live' : 'shell-blank') : 'shell-unknown'}" />
-							{/each}
-						{/if}
-					</div>
-					{#if gs}
-						<p class="shells-count">
-							Патронов в магазине: <strong>{gs.sl}</strong>
-							{#if gs.scan != null}
-								· Сканер: <span style="color:{gs.scan===1?'#ff003c':'#888'}">
-									{gs.scan === 1 ? '⚡ БОЕВОЙ' : '○ ХОЛОСТОЙ'}
-								</span>
-							{/if}
-						</p>
-					{/if}
-				</div>
-
-				<!-- Лог действий -->
-				<div class="log-panel" bind:this={logEl}>
-					{#each logHistory as entry, i}
-						<p class="log-line" style="opacity:{0.4 + (i / logHistory.length) * 0.6}">
-							<span class="log-arrow">▸</span> {entry}
-						</p>
+		<!-- Панель Ориона (правая) -->
+		<div class="side-panel" id="panel-orion">
+			<div class="panel-title">ORION</div>
+			<div class="hp-bar-wrap">
+				<div class="hp-label">HP</div>
+				<div class="hp-pips">
+					{#each Array($rouletteState.mhp) as _, i}
+						<div class="hp-pip" class:filled={i < visualOhp} class:empty={i >= visualOhp}></div>
 					{/each}
 				</div>
-			</section>
-
-			<!-- ── ЗОНА ИГРОКА ── -->
-			<section class="zone player-zone">
-				<div class="entity-info">
-					<p class="entity-name">ОПЕРАТОР <span class="entity-sub">/ YOU</span></p>
-
-					{#if gs}
-						<!-- HP bar -->
-						<div class="hp-bar-wrap">
-							{#each Array(gs.mhp) as _, i}
-								<div
-									class="hp-dot {i < gs.php ? 'hp-dot-on' : 'hp-dot-off'}"
-									style={i < gs.php ? 'background:#00f0ff; box-shadow:0 0 6px #00f0ff' : ''}
-								/>
-							{/each}
-							<span class="hp-num">{gs.php}/{gs.mhp}</span>
-						</div>
-
-						<!-- Баффы игрока -->
-						<div class="buff-row">
-							{#if gs.pdbl}<span class="buff-tag" style="color:#fcee0a">⚡ OVERDRIVE</span>{/if}
-							{#if gs.pskip}<span class="buff-tag" style="color:#ff00c1">⌁ EMP LOCK</span>{/if}
-						</div>
-
-						<!-- Предметы игрока -->
-						<div class="player-items">
-							{#each Object.entries(gs.pit) as [k, v]}
-								{#if (v as number) > 0}
-									{@const meta = ITEM_META[k as keyof Items]}
-									<button
-										class="item-btn"
-										style="--c:{meta.color}"
-										disabled={!isMyTurn || isActing}
-										on:click={() => doAction('item_' + k)}
-										title={meta.desc}
-									>
-										<span class="item-icon">{meta.icon}</span>
-										<span class="item-name">{meta.label}</span>
-										<span class="item-count">×{v}</span>
-									</button>
-								{/if}
-							{/each}
-						</div>
-					{/if}
-				</div>
-
-				<!-- Кнопки выстрела -->
-				<div class="shoot-row">
-					<button
-						class="btn-shoot btn-self"
-						disabled={!isMyTurn || isActing}
-						on:click={() => doAction('shoot_self')}
-					>
-						<span>▼</span> В СЕБЯ
-					</button>
-					<button
-						class="btn-shoot btn-enemy"
-						disabled={!isMyTurn || isActing}
-						on:click={() => doAction('shoot_enemy')}
-					>
-						<span>▲</span> В ОРИОНА
-					</button>
-				</div>
-
-				{#if errorMsg}
-					<p class="error-msg">{errorMsg}</p>
-				{/if}
-
-				{#if isActing}
-					<p class="processing">⏳ Обработка...</p>
-				{/if}
-			</section>
+			</div>
+			{#if $rouletteState.odbl}
+				<div class="status-badge overdrive">⚡ OVERDRIVE</div>
+			{/if}
+			{#if $rouletteState.oskip}
+				<div class="status-badge emp">⌁ EMP — ОЖИДАНИЕ</div>
+			{/if}
+			<!-- Предметы Ориона -->
+			<div class="items-grid orion-items">
+				{#each Object.entries($rouletteState.oit) as [key, count]}
+					{#each Array(count) as _}
+						<div class="item-pip-orion" title="Предмет Ориона">⬡</div>
+					{/each}
+				{/each}
+			</div>
 		</div>
 
-	<!-- ╔══════════════════════════════════╗
-	     ║  RESULT — экран результата       ║
-	     ╚══════════════════════════════════╝ -->
-	{:else if phase === 'result'}
-		<div class="result-screen">
-			<div class="result-card {resultWon ? 'res-win' : 'res-lose'}">
-				{#if resultWon}
-					<div class="res-icon">🏆</div>
-					<h2 class="res-title" style="color:#00f0ff">ПРОТОКОЛ ВЫПОЛНЕН</h2>
-					<p class="res-sub">Орион уничтожен. Вы получаете <strong>+1000 PC</strong>.</p>
-				{:else}
-					<div class="res-icon">💀</div>
-					<h2 class="res-title" style="color:#ff003c">СИСТЕМА ОТКАЗАЛА</h2>
-					<p class="res-sub">Орион победил. Ставка <strong>−500 PC</strong> сгорела.</p>
-				{/if}
-				<p class="res-timer">Возврат в лобби...</p>
+		<!-- HUD центр -->
+		<div id="hud-center">
+			<div class="shells-row">
+				{#each Array(visualSl) as _, i}
+					<div
+						class="shell-pip"
+						class:known-live={i === 0 && visualScan === 1}
+						class:known-blank={i === 0 && visualScan === 0}
+					></div>
+				{/each}
 			</div>
+			{#key displayedLog}
+				<div class="log-text">{displayedLog || $rouletteState.log}</div>
+			{/key}
+			<div
+				class="turn-indicator"
+				class:player-turn={$rouletteState.turn === 'p'}
+				class:orion-turn={$rouletteState.turn === 'o'}
+			>
+				{$rouletteState.turn === 'p' ? '▶ ТВОЙ ХОД' : '◀ ХОД ОРИОНА'}
+			</div>
+		</div>
+
+		<!-- Action bar -->
+		{#if $rouletteState.turn === 'p' && $rouletteState.st === 'a'}
+			<div id="action-bar">
+				<button
+					class="action-btn btn-self"
+					disabled={actionsBlocked}
+					on:click={() => sendAction('shoot_self')}>🔫 В СЕБЯ</button
+				>
+				<button
+					class="action-btn btn-enemy"
+					disabled={actionsBlocked}
+					on:click={() => sendAction('shoot_enemy')}>🎯 В ОРИОНА</button
+				>
+			</div>
+		{/if}
+
+		<!-- Экран результата -->
+		{#if showResult || $rouletteState.st !== 'a'}
+			{@const win = (showResult ?? ($rouletteState.st === 'p' ? 'player' : 'orion')) === 'player'}
+			<div class="result-overlay">
+				<div class="result-box" class:win class:lose={!win}>
+					<div class="result-title" style="color: {win ? 'var(--neon-green)' : 'var(--neon-red)'}">
+						{win ? 'СИСТЕМА СЛОМАНА' : 'НЕЙТРАЛИЗОВАН'}
+					</div>
+					<div class="result-subtitle">
+						{win ? '+1000 PC зачислено на счёт' : 'Орион победил. Ставка потеряна.'}
+					</div>
+					<button class="action-btn btn-self" on:click={handlePlayAgain}>НОВАЯ ИГРА</button>
+				</div>
+			</div>
+		{/if}
+	{:else if $rouletteLoading}
+		<div class="loading-screen">ИНИЦИАЛИЗАЦИЯ VOLT DEADLOCK...</div>
+	{:else}
+		<div class="start-screen">
+			<button class="action-btn btn-enemy" on:click={handleStartGame} disabled={actionsBlocked}
+				>НАЧАТЬ (500 PC)</button
+			>
 		</div>
 	{/if}
 </div>
 
-<!-- ════════════════════════════════════════════════════════
-     СТИЛИ
-════════════════════════════════════════════════════════ -->
 <style>
-	/* ── Root overlay ────────────────────────────────────── */
-	.volt-root {
+	/* Базовые переменные темы */
+	:root {
+		--neon-cyan: #00f0ff;
+		--neon-red: #ff0044;
+		--neon-green: #39ff14;
+		--neon-purple: #bd00ff;
+		--panel-bg: rgba(5, 10, 20, 0.75);
+		--panel-border: rgba(0, 240, 255, 0.2);
+	}
+
+	#game-root {
 		position: fixed;
 		inset: 0;
-		z-index: 9999;
-		background: #050508;
-		background-image:
-			radial-gradient(ellipse at 50% 0%, rgba(0,240,255,0.04) 0%, transparent 60%),
-			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath fill='%23ffffff' fill-opacity='0.015' d='M0 2h2v2H0zM2 0h2v2H2z'/%3E%3C/svg%3E");
-		display: flex;
-		flex-direction: column;
 		overflow: hidden;
-		font-family: 'Chakra Petch', 'Inter', monospace;
-		color: #e0e0e0;
+		font-family: 'Courier New', monospace;
+		user-select: none;
 	}
 
-	/* ── LOBBY ───────────────────────────────────────────── */
-	.lobby-screen {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		overflow-y: auto;
-		padding: 2rem 1rem;
+	#bg-layer {
+		position: absolute;
+		inset: 0;
+		background-image: url('/casino/roulette_bg.jpg');
+		background-size: cover;
+		background-position: center;
+		/* Добавь виньетку поверх */
 	}
-	.lobby-card {
-		width: 100%;
-		max-width: 560px;
-		border: 1px solid rgba(0,240,255,0.2);
-		border-radius: 12px;
-		background: rgba(10,10,20,0.9);
-		padding: 2rem;
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
+	#bg-layer::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.7) 100%);
 	}
 
-	.title-block { text-align: center; }
-	.title-tag {
-		font-size: 0.65rem;
-		letter-spacing: 0.2em;
-		color: rgba(0,240,255,0.5);
-		text-transform: uppercase;
+	#orion-sprite {
+		position: absolute;
+		bottom: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: clamp(300px, 40vw, 560px);
+		height: auto;
+		/* Плавная смена спрайтов */
+		transition: opacity 0.15s ease;
+		image-rendering: pixelated;
+		/* Эффект свечения при активном ходе Ориона */
+		filter: drop-shadow(0 0 12px rgba(189, 0, 255, 0));
 	}
-	.game-title {
-		font-family: 'Russo One', sans-serif;
-		font-size: clamp(2.5rem, 10vw, 4rem);
-		line-height: 1;
-		color: #00f0ff;
-		text-shadow: 0 0 30px rgba(0,240,255,0.5), 0 0 60px rgba(0,240,255,0.2);
-		margin: 0.25rem 0;
-		letter-spacing: 0.05em;
-	}
-	.game-sub {
-		font-size: 0.75rem;
-		color: rgba(255,255,255,0.4);
-		letter-spacing: 0.1em;
+	#orion-sprite.orion-active {
+		filter: drop-shadow(0 0 18px rgba(189, 0, 255, 0.6));
 	}
 
-	.rules-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 0.75rem;
-	}
-	.rule-item {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		background: rgba(255,255,255,0.03);
-		border: 1px solid rgba(255,255,255,0.06);
-		border-radius: 8px;
-		padding: 0.6rem 0.8rem;
-	}
-	.rule-icon { font-size: 1.2rem; flex-shrink: 0; color: #00f0ff; }
-	.rule-label { font-size: 0.7rem; color: rgba(255,255,255,0.5); margin: 0; }
-	.rule-val   { font-size: 0.8rem; font-weight: 700; margin: 0; }
-
-	.items-legend {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 0.5rem;
-	}
-	.item-legend-row {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.4rem 0.6rem;
-		border-left: 2px solid var(--clr);
-		background: rgba(255,255,255,0.02);
-		border-radius: 0 6px 6px 0;
-	}
-	.item-icon-lg { font-size: 1rem; color: var(--clr); min-width: 1.2rem; text-align: center; }
-	.item-lname { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; color: var(--clr); margin: 0; }
-	.item-ldesc { font-size: 0.6rem; color: rgba(255,255,255,0.4); margin: 0; }
-
-	.lobby-cta { text-align: center; display: flex; flex-direction: column; gap: 0.4rem; align-items: center; }
-	.entry-cost { font-size: 0.85rem; color: rgba(255,255,255,0.6); margin: 0; }
-	.balance-note { font-size: 0.8rem; color: rgba(255,255,255,0.4); margin: 0; }
-
-	.btn-enter {
-		margin-top: 0.5rem;
-		padding: 0.9rem 2.5rem;
-		background: transparent;
-		border: 1px solid #00f0ff;
-		color: #00f0ff;
-		font-family: 'Russo One', sans-serif;
-		font-size: 1rem;
-		letter-spacing: 0.15em;
-		cursor: pointer;
-		border-radius: 6px;
-		transition: all 0.2s;
-		text-shadow: 0 0 10px rgba(0,240,255,0.6);
-		box-shadow: 0 0 20px rgba(0,240,255,0.1), inset 0 0 20px rgba(0,240,255,0.03);
-	}
-	.btn-enter:hover:not(:disabled) {
-		background: rgba(0,240,255,0.1);
-		box-shadow: 0 0 40px rgba(0,240,255,0.3), inset 0 0 20px rgba(0,240,255,0.08);
-	}
-	.btn-enter:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-
-	/* ── GAME SCREEN ─────────────────────────────────────── */
-	.game-screen {
-		flex: 1;
+	.side-panel {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 240px;
+		padding: 20px 14px;
+		background: var(--panel-bg);
+		backdrop-filter: blur(10px);
+		border: 1px solid var(--panel-border);
 		display: flex;
 		flex-direction: column;
-		overflow: hidden;
+		gap: 16px;
 	}
-
-	.game-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.5rem 1rem;
-		border-bottom: 1px solid rgba(0,240,255,0.1);
-		background: rgba(0,0,0,0.5);
-		flex-shrink: 0;
+	#panel-player {
+		left: 0;
+		border-right: 1px solid var(--panel-border);
 	}
-	.hdr-tag {
-		font-size: 0.65rem;
-		letter-spacing: 0.2em;
-		color: rgba(0,240,255,0.5);
+	#panel-orion {
+		right: 0;
+		border-left: 1px solid var(--panel-border);
 	}
-	.hdr-turn {
-		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.1em;
-		padding: 0.25rem 0.75rem;
-		border-radius: 4px;
-	}
-	.turn-player { color: #00f0ff; border: 1px solid rgba(0,240,255,0.4); background: rgba(0,240,255,0.05); }
-	.turn-orion  { color: #ff003c; border: 1px solid rgba(255,0,60,0.4);  background: rgba(255,0,60,0.05); animation: pulse-red 1s infinite; }
-
-	@keyframes pulse-red {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.6; }
-	}
-
-	.btn-escape {
-		font-size: 0.65rem;
-		letter-spacing: 0.1em;
-		color: rgba(255,255,255,0.3);
-		background: transparent;
-		border: 1px solid rgba(255,255,255,0.1);
-		padding: 0.2rem 0.5rem;
-		border-radius: 4px;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-	.btn-escape:hover { color: #ff003c; border-color: rgba(255,0,60,0.4); }
-
-	/* ── ZONES ───────────────────────────────────────────── */
-	.zone {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		padding: 0.75rem 1.25rem;
-		overflow: hidden;
-	}
-	.orion-zone {
-		border-bottom: 1px solid rgba(255,0,60,0.1);
-		background: linear-gradient(to bottom, rgba(255,0,60,0.03), transparent);
-		flex: 1.2;
-	}
-	.player-zone {
-		border-top: 1px solid rgba(0,240,255,0.1);
-		background: linear-gradient(to top, rgba(0,240,255,0.03), transparent);
-		flex: 1.5;
-		flex-direction: column;
-		align-items: stretch;
-	}
-
-	/* ── ORION FACE ──────────────────────────────────────── */
-	.orion-face {
-		flex-shrink: 0;
-		width: 72px;
-		height: 72px;
-		border: 1px solid;
-		border-radius: 8px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 2px;
-		background: rgba(0,0,0,0.5);
-	}
-	.face-eyes {
-		font-size: 1.5rem;
-		letter-spacing: 4px;
-		font-family: monospace;
-	}
-	.face-label {
-		font-size: 0.45rem;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-	}
-	.blink-red { animation: blink 0.5s infinite; }
-	@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
-
-	/* ── ENTITY INFO ─────────────────────────────────────── */
-	.entity-info { flex: 1; min-width: 0; }
-	.entity-name {
-		font-size: 0.7rem;
-		letter-spacing: 0.15em;
-		font-weight: 700;
-		margin: 0 0 0.4rem;
-		color: rgba(255,255,255,0.8);
-	}
-	.entity-sub { color: rgba(255,255,255,0.3); font-weight: 400; }
 
 	.hp-bar-wrap {
 		display: flex;
-		align-items: center;
-		gap: 4px;
-		flex-wrap: wrap;
-		margin-bottom: 0.4rem;
-	}
-	.hp-dot {
-		width: 14px;
-		height: 14px;
-		border-radius: 2px;
-		transition: all 0.3s;
-	}
-	.hp-dot-on  { }
-	.hp-dot-off { background: rgba(255,255,255,0.08); }
-	.hp-num {
-		font-size: 0.7rem;
-		color: rgba(255,255,255,0.4);
-		margin-left: 4px;
-		font-family: monospace;
-	}
-
-	.buff-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.3rem; }
-	.buff-tag {
-		font-size: 0.55rem;
-		letter-spacing: 0.1em;
-		padding: 1px 6px;
-		border-radius: 3px;
-		border: 1px solid currentColor;
-		background: rgba(0,0,0,0.4);
-		animation: buff-pulse 1s infinite;
-	}
-	@keyframes buff-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-
-	.orion-items { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-	.oitem-badge { font-size: 0.65rem; opacity: 0.7; }
-
-	/* ── TABLE ZONE ──────────────────────────────────────── */
-	.table-zone {
-		flex-shrink: 0;
-		padding: 0.5rem 1.25rem;
-		border-top: 1px solid rgba(255,255,255,0.05);
-		border-bottom: 1px solid rgba(255,255,255,0.05);
-		background: rgba(255,255,255,0.01);
-		display: flex;
-		gap: 1rem;
-		align-items: flex-start;
-		max-height: 160px;
-	}
-
-	.gun-block { flex-shrink: 0; }
-	.gun-icon {
-		font-size: 0.65rem;
-		letter-spacing: 0.2em;
-		padding: 0.4rem 0.8rem;
-		border-radius: 4px;
-		font-weight: 700;
-		text-align: center;
-		margin-bottom: 0.4rem;
-	}
-	.gun-player { color: #00f0ff; border: 1px solid rgba(0,240,255,0.3); background: rgba(0,240,255,0.04); }
-	.gun-orion  { color: #ff003c; border: 1px solid rgba(255,0,60,0.3);  background: rgba(255,0,60,0.04);  }
-
-	.shells-row { display: flex; gap: 4px; flex-wrap: wrap; max-width: 160px; }
-	.shell {
-		width: 12px;
-		height: 20px;
-		border-radius: 3px;
-		transition: all 0.3s;
-	}
-	.shell-unknown { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.1); }
-	.shell-live    { background: #ff003c; box-shadow: 0 0 6px #ff003c; }
-	.shell-blank   { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
-	.shells-count { font-size: 0.6rem; color: rgba(255,255,255,0.35); margin-top: 0.3rem; }
-
-	.log-panel {
-		flex: 1;
-		overflow-y: auto;
-		max-height: 140px;
-		display: flex;
 		flex-direction: column;
-		gap: 2px;
-		scrollbar-width: none;
+		gap: 6px;
 	}
-	.log-panel::-webkit-scrollbar { display: none; }
-	.log-line {
-		font-size: 0.65rem;
-		color: rgba(255,255,255,0.7);
-		font-family: 'Chakra Petch', monospace;
-		margin: 0;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		line-height: 1.6;
-		transition: opacity 0.3s;
+	.hp-label {
+		color: var(--neon-cyan);
+		font-size: 11px;
+		letter-spacing: 2px;
+		text-transform: uppercase;
 	}
-	.log-arrow { color: rgba(0,240,255,0.4); margin-right: 4px; }
-
-	/* ── PLAYER ITEMS ────────────────────────────────────── */
-	.player-items {
+	.hp-pips {
 		display: flex;
-		gap: 0.4rem;
-		flex-wrap: wrap;
-		margin: 0.4rem 0;
+		gap: 5px;
+	}
+	.hp-pip {
+		width: 18px;
+		height: 18px;
+		border: 1px solid var(--neon-cyan);
+		border-radius: 2px;
+		background: transparent;
+		transition: background 0.3s ease;
+	}
+	.hp-pip.filled {
+		background: var(--neon-green);
+		box-shadow: 0 0 8px var(--neon-green);
+	}
+	.hp-pip.empty {
+		background: rgba(255, 255, 255, 0.05);
+		border-color: rgba(255, 255, 255, 0.2);
+	}
+
+	.items-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
 	}
 	.item-btn {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 2px;
-		padding: 0.4rem 0.5rem;
-		background: rgba(0,0,0,0.5);
-		border: 1px solid var(--c);
-		border-radius: 6px;
+		gap: 4px;
+		padding: 8px 4px;
+		background: rgba(0, 240, 255, 0.05);
+		border: 1px solid rgba(0, 240, 255, 0.2);
+		border-radius: 4px;
 		cursor: pointer;
-		transition: all 0.15s;
-		min-width: 52px;
-		color: var(--c);
-		box-shadow: 0 0 8px rgba(0,0,0,0.5);
+		transition:
+			background 0.2s,
+			border-color 0.2s,
+			box-shadow 0.2s;
+		color: white;
+		font-family: inherit;
 	}
 	.item-btn:hover:not(:disabled) {
-		background: color-mix(in srgb, var(--c) 12%, transparent);
-		box-shadow: 0 0 16px color-mix(in srgb, var(--c) 40%, transparent);
-		transform: translateY(-1px);
+		background: rgba(0, 240, 255, 0.15);
+		border-color: var(--neon-cyan);
+		box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
 	}
-	.item-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
-	.item-icon  { font-size: 1rem; }
-	.item-name  { font-size: 0.48rem; letter-spacing: 0.08em; font-weight: 700; text-transform: uppercase; }
-	.item-count { font-size: 0.6rem; opacity: 0.7; font-family: monospace; }
+	.item-btn:disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
+	}
+	.item-icon {
+		font-size: 20px;
+	}
+	.item-label {
+		font-size: 9px;
+		letter-spacing: 1px;
+		color: var(--neon-cyan);
+	}
+	.item-count {
+		font-size: 11px;
+		color: white;
+		font-weight: bold;
+	}
 
-	/* ── SHOOT BUTTONS ───────────────────────────────────── */
-	.shoot-row {
-		display: flex;
-		gap: 0.75rem;
-	}
-	.btn-shoot {
-		flex: 1;
-		padding: 0.75rem 1rem;
-		border-radius: 6px;
-		font-family: 'Russo One', sans-serif;
-		font-size: 0.85rem;
-		letter-spacing: 0.15em;
-		cursor: pointer;
-		transition: all 0.15s;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.4rem;
-	}
-	.btn-self {
-		background: rgba(0,0,0,0.5);
-		border: 1px solid rgba(255,255,255,0.2);
-		color: rgba(255,255,255,0.7);
-	}
-	.btn-self:hover:not(:disabled) {
-		background: rgba(255,255,255,0.05);
-		border-color: rgba(255,255,255,0.4);
-		box-shadow: 0 0 20px rgba(255,255,255,0.05);
-	}
-	.btn-enemy {
-		background: rgba(255,0,60,0.08);
-		border: 1px solid rgba(255,0,60,0.5);
-		color: #ff003c;
-		text-shadow: 0 0 10px rgba(255,0,60,0.5);
-	}
-	.btn-enemy:hover:not(:disabled) {
-		background: rgba(255,0,60,0.15);
-		box-shadow: 0 0 30px rgba(255,0,60,0.2);
-		transform: translateY(-1px);
-	}
-	.btn-shoot:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
-
-	/* ── RESULT ──────────────────────────────────────────── */
-	.result-screen {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	.result-card {
-		text-align: center;
-		padding: 3rem 2rem;
-		border-radius: 12px;
-		border: 1px solid;
-		background: rgba(0,0,0,0.8);
+	#hud-center {
+		position: absolute;
+		top: 20px;
+		left: 50%;
+		transform: translateX(-50%);
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 1rem;
-		animation: result-in 0.4s ease-out;
+		gap: 10px;
+		pointer-events: none;
 	}
-	@keyframes result-in {
-		from { transform: scale(0.85); opacity: 0; }
-		to   { transform: scale(1);    opacity: 1; }
+	.shells-row {
+		display: flex;
+		gap: 8px;
+		align-items: center;
 	}
-	.res-win  { border-color: rgba(0,240,255,0.5); box-shadow: 0 0 60px rgba(0,240,255,0.15); }
-	.res-lose { border-color: rgba(255,0,60,0.5);  box-shadow: 0 0 60px rgba(255,0,60,0.15); }
-	.res-icon  { font-size: 3rem; }
-	.res-title { font-family: 'Russo One', sans-serif; font-size: 2rem; margin: 0; letter-spacing: 0.05em; }
-	.res-sub   { color: rgba(255,255,255,0.6); margin: 0; font-size: 0.9rem; }
-	.res-timer { font-size: 0.65rem; color: rgba(255,255,255,0.3); letter-spacing: 0.2em; margin: 0; animation: blink 1s infinite; }
+	.shell-pip {
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		border: 1px solid rgba(255, 255, 255, 0.4);
+		background: rgba(255, 255, 255, 0.1);
+	}
+	.shell-pip.known-live {
+		background: var(--neon-red);
+		border-color: var(--neon-red);
+		box-shadow: 0 0 8px var(--neon-red);
+	}
+	.shell-pip.known-blank {
+		background: rgba(255, 255, 255, 0.3);
+	}
+	.log-text {
+		font-size: 13px;
+		color: rgba(255, 255, 255, 0.85);
+		text-align: center;
+		max-width: 360px;
+		/* fade при изменении */
+		animation: logFade 0.4s ease;
+	}
+	@keyframes logFade {
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
 
-	/* ── UTILS ───────────────────────────────────────────── */
-	.error-msg  { font-size: 0.7rem; color: #ff003c; margin: 0.25rem 0 0; }
-	.processing { font-size: 0.65rem; color: rgba(0,240,255,0.5); margin: 0.25rem 0 0; letter-spacing: 0.1em; animation: pulse-red 0.8s infinite; }
+	#action-bar {
+		position: absolute;
+		bottom: 30px;
+		left: 50%;
+		transform: translateX(-50%);
+		display: flex;
+		gap: 16px;
+	}
+	.action-btn {
+		padding: 12px 28px;
+		font-family: inherit;
+		font-size: 14px;
+		letter-spacing: 2px;
+		text-transform: uppercase;
+		border: 1px solid;
+		border-radius: 3px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+	.action-btn.btn-self {
+		color: var(--neon-cyan);
+		border-color: var(--neon-cyan);
+		background: rgba(0, 240, 255, 0.08);
+	}
+	.action-btn.btn-self:hover:not(:disabled) {
+		background: rgba(0, 240, 255, 0.2);
+		box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
+	}
+	.action-btn.btn-enemy {
+		color: var(--neon-red);
+		border-color: var(--neon-red);
+		background: rgba(255, 0, 68, 0.08);
+	}
+	.action-btn.btn-enemy:hover:not(:disabled) {
+		background: rgba(255, 0, 68, 0.2);
+		box-shadow: 0 0 16px rgba(255, 0, 68, 0.4);
+	}
+	.action-btn:disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
+	}
+
+	/* Overlay для экрана победы/поражения */
+	.result-overlay {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.75);
+		z-index: 100;
+	}
+	.result-box {
+		text-align: center;
+		padding: 40px 60px;
+		border: 1px solid;
+		backdrop-filter: blur(12px);
+	}
+	.result-box.win {
+		border-color: var(--neon-green);
+		box-shadow: 0 0 40px rgba(57, 255, 20, 0.3);
+	}
+	.result-box.lose {
+		border-color: var(--neon-red);
+		box-shadow: 0 0 40px rgba(255, 0, 68, 0.3);
+	}
+	.result-title {
+		font-size: 36px;
+		letter-spacing: 6px;
+		margin-bottom: 16px;
+	}
+	.result-subtitle {
+		font-size: 14px;
+		color: rgba(255, 255, 255, 0.6);
+		margin-bottom: 30px;
+	}
+
+	.flash-overlay {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		z-index: 50;
+		animation: flashFade 0.4s ease forwards;
+	}
+	.flash-red {
+		background: rgba(255, 0, 68, 0.35);
+	}
+	.flash-cyan {
+		background: rgba(0, 240, 255, 0.25);
+	}
+	@keyframes flashFade {
+		0% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+		}
+	}
+
+	.turn-indicator {
+		font-size: 11px;
+		letter-spacing: 3px;
+		padding: 4px 12px;
+		border: 1px solid;
+	}
+	.turn-indicator.player-turn {
+		color: var(--neon-cyan);
+		border-color: var(--neon-cyan);
+	}
+	.turn-indicator.orion-turn {
+		color: var(--neon-purple);
+		border-color: var(--neon-purple);
+	}
+
+	.status-badge {
+		font-size: 10px;
+		letter-spacing: 2px;
+		padding: 3px 8px;
+		border: 1px solid;
+	}
+	.status-badge.overdrive {
+		color: var(--neon-red);
+		border-color: var(--neon-red);
+	}
+	.status-badge.emp {
+		color: var(--neon-purple);
+		border-color: var(--neon-purple);
+	}
+
+	.panel-title {
+		font-size: 11px;
+		letter-spacing: 4px;
+		color: rgba(255, 255, 255, 0.4);
+		margin-bottom: 4px;
+	}
+
+	.orion-items {
+		opacity: 0.5;
+		pointer-events: none;
+	}
+	.item-pip-orion {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border: 1px solid rgba(189, 0, 255, 0.3);
+		border-radius: 4px;
+		color: rgba(189, 0, 255, 0.6);
+		font-size: 16px;
+	}
+
+	.loading-screen,
+	.start-screen {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 100vh;
+		font-family: 'Courier New', monospace;
+		font-size: 20px;
+		letter-spacing: 4px;
+		color: var(--neon-cyan);
+		background-color: black;
+		position: fixed;
+		inset: 0;
+	}
 </style>
