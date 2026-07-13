@@ -87,6 +87,53 @@ function isDailyResetNeeded(data: DocumentData | undefined, now: Date): boolean 
     return now.getTime() >= data.dailyResetAt.toMillis();
 }
 
+// ─── Лидерборд: пересчёт истории и агрегатов (UTC) ───────────────────────────
+
+function toUtcDateStr(d: Date): string {
+    return d.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+function daysAgoUtc(base: Date, days: number): Date {
+    return new Date(base.getTime() - days * 24 * 60 * 60 * 1000);
+}
+
+/**
+ * Пересчитывает документ лидерборда из истории по дням.
+ * Пишется ТОЛЬКО сервером из проверенных шагов (см. stepperClaim).
+ */
+function computeLeaderboardUpdate(
+    existing:  DocumentData | undefined,
+    uid:       string,
+    addedSteps: number,
+    now:       Date
+) {
+    const todayStr    = toUtcDateStr(now);
+    const weekCutoff  = toUtcDateStr(daysAgoUtc(now, 7));
+    const monthCutoff = toUtcDateStr(daysAgoUtc(now, 30));
+
+    const history: { [date: string]: number } = { ...(existing?.history ?? {}) };
+
+    // Чистим записи старше 30 дней и любые мусорные ключи
+    for (const key of Object.keys(history)) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || key < monthCutoff) {
+            delete history[key];
+        }
+    }
+
+    history[todayStr] = (history[todayStr] ?? 0) + addedSteps;
+
+    const stepsToday = history[todayStr];
+    let stepsWeek  = 0;
+    let stepsMonth = 0;
+    for (const [date, steps] of Object.entries(history)) {
+        stepsMonth += steps;
+        if (date >= weekCutoff) stepsWeek += steps;
+    }
+    const totalSteps = (existing?.totalSteps ?? 0) + addedSteps;
+
+    return { userId: uid, stepsToday, stepsWeek, stepsMonth, totalSteps, history };
+}
+
 // ─── getStepperStatus ────────────────────────────────────────────────────────
 
 export const getStepperStatus = onCall(async (request) => {
@@ -224,14 +271,16 @@ export const stepperClaim = onCall(async (request) => {
     // Дополнительная проверка ud.isBanned внутри транзакции остаётся
     const stepperRef = db.collection("stepper").doc(uid);
     const userRef    = db.collection("users").doc(uid);
+    const leaderboardRef = db.collection("stepper_leaderboard").doc(uid);
     const now        = new Date();
 
     try {
         const result = await db.runTransaction(async (t) => {
 
-            const [stepperSnap, userSnap] = await Promise.all([
+            const [stepperSnap, userSnap, leaderboardSnap] = await Promise.all([
                 t.get(stepperRef),
                 t.get(userRef),
+                t.get(leaderboardRef),
             ]);
 
             if (!stepperSnap.exists) throw new HttpsError("failed-precondition", "Шагомер не инициализирован.");
@@ -412,6 +461,18 @@ export const stepperClaim = onCall(async (request) => {
                 stepperUpdate.dailyResetAt = new Date(nextMidnightUTC(now));
             }
             t.update(stepperRef, stepperUpdate);
+
+            // ── Лидерборд (пишет ТОЛЬКО сервер, из проверенных батчей) ────────
+            const claimedStepsForBoard = (normalBatches + bonusBatches) * STEPS_PER_REWARD;
+            if (claimedStepsForBoard > 0) {
+                const boardData = computeLeaderboardUpdate(
+                    leaderboardSnap.data(), uid, claimedStepsForBoard, now
+                );
+                t.set(leaderboardRef, {
+                    ...boardData,
+                    updatedAt: FieldValue.serverTimestamp(),
+                }, { merge: true });
+            }
 
             // Аудит-лог
             t.set(

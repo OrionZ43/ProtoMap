@@ -1040,8 +1040,15 @@ console.log('[BOT] ✅ All handlers registered successfully!');
 
 // ─── Webhook ──────────────────────────────────────────────────────────────────
 export const telegramWebhook = onRequest(
-    { secrets: ["TELEGRAM_BOT_TOKEN", "TG_VERIFY_HMAC_SECRET"] },
+    { secrets: ["TELEGRAM_BOT_TOKEN", "TG_VERIFY_HMAC_SECRET", "TG_WEBHOOK_SECRET"] },
     async (request, response) => {
+        const secret = request.header('X-Telegram-Bot-Api-Secret-Token');
+        if (!process.env.TG_WEBHOOK_SECRET || secret !== process.env.TG_WEBHOOK_SECRET) {
+            console.warn('[WEBHOOK] ❌ Rejected: bad or missing secret token');
+            response.status(403).send('Forbidden');
+            return;
+        }
+
         const token = process.env.TELEGRAM_BOT_TOKEN;
         if (!token) {
             console.error('[WEBHOOK] ❌ No bot token!');
@@ -1049,9 +1056,7 @@ export const telegramWebhook = onRequest(
             return;
         }
         try {
-            console.log('[WEBHOOK] 📥 Processing update...');
             await bot.handleUpdate(request.body, response);
-            console.log('[WEBHOOK] ✅ Update processed');
         } catch (e) {
             console.error("[WEBHOOK] ❌ Error:", e);
             response.status(200).send("Error handled");

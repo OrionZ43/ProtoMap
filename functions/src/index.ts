@@ -1742,7 +1742,7 @@ async function checkImageSafety(imageBase64: string): Promise<{
 }
 
 export const uploadAvatar = onCall(
-    { secrets:["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"] },
+    { secrets:["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET", "TELEGRAM_BOT_TOKEN"] },
     async (request) => {
         if (request.app == undefined) {
             throw new HttpsError("failed-precondition", "The function must be called from an App Check verified app.");
@@ -1910,7 +1910,7 @@ interface ReportData {
 }
 
 export const reportContent = onCall(
-    { secrets: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"] },
+    { secrets: ["TELEGRAM_BOT_TOKEN"] },
     async (request) => {
         if (request.app == undefined) {
         throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');

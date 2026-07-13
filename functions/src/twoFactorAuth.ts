@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin';
 import fetch from 'node-fetch';
 import * as crypto from 'crypto';
 
-// Используем дефолтный экземпляр admin из index.ts, если он инициализирован
 if (!admin.apps.length) {
 	admin.initializeApp();
 }
@@ -84,7 +83,6 @@ export const send2FACode = onCall(
 			throw new HttpsError('failed-precondition', 'Нужно привязать Telegram');
 		}
 
-		// Check rate limit
 		const codeRef = db.collection('2fa_codes').doc(uid);
 		const codeSnap = await codeRef.get();
 
@@ -95,9 +93,8 @@ export const send2FACode = onCall(
 			}
 		}
 
-		// Generate 5-digit code using secure crypto
 		const code = crypto.randomInt(10000, 100000).toString();
-		const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes TTL
+		const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
 		await codeRef.set({
 			code: code,
@@ -112,7 +109,6 @@ export const send2FACode = onCall(
 		}
 
 		const rawReq = request.rawRequest;
-		// Пытаемся достать IP и геоданные из заголовков Vercel/Cloudflare/Google
 		const ip =
 			rawReq?.headers['x-forwarded-for']?.toString().split(',')[0] ||
 			rawReq?.headers['fastly-client-ip']?.toString() ||
@@ -187,7 +183,6 @@ export const verify2FACode = onCall({ region: 'us-central1' }, async (request) =
 
 	const codeData = codeSnap.data();
 
-	// Check expiration
 	if (codeData?.expiresAt.toMillis() < Date.now()) {
 		await codeRef.delete();
 		throw new HttpsError('deadline-exceeded', 'Код устарел');
@@ -199,11 +194,12 @@ export const verify2FACode = onCall({ region: 'us-central1' }, async (request) =
 	}
 
 	if (codeData?.code === providedCode) {
-		// Success
 		await codeRef.delete();
+		await db.collection('2fa_cleared').doc(uid).set({
+			clearedAt: admin.firestore.Timestamp.now()
+		});
 		return { success: true };
 	} else {
-		// Decrement attempts
 		await codeRef.update({ attempts: admin.firestore.FieldValue.increment(-1) });
 		throw new HttpsError('invalid-argument', 'Неверный код');
 	}

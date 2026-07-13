@@ -1,13 +1,32 @@
-import { authAdmin } from '$lib/server/firebase.admin';
+import { authAdmin, firestoreAdmin } from '$lib/server/firebase.admin';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
     const { idToken } = await request.json();
 
-    const expiresIn = 60 * 60 * 24 * 5 * 1000;
+    if (!idToken || typeof idToken !== 'string') {
+        return json({ status: 'error', message: 'No token' }, { status: 400 });
+    }
 
     try {
+        const decoded = await authAdmin.verifyIdToken(idToken, true);
+        const uid = decoded.uid;
+
+        const userSnap = await firestoreAdmin.collection('users').doc(uid).get();
+        if (userSnap.exists && userSnap.data()?.is2FAEnabled === true) {
+            const clearedRef = firestoreAdmin.collection('2fa_cleared').doc(uid);
+            const cleared = await clearedRef.get();
+            const clearedAt = cleared.exists ? (cleared.data()?.clearedAt?.toMillis?.() ?? 0) : 0;
+
+            if (Date.now() - clearedAt > 5 * 60 * 1000) {
+                return json({ status: 'error', message: '2FA required' }, { status: 403 });
+            }
+
+            await clearedRef.delete();
+        }
+
+        const expiresIn = 60 * 60 * 24 * 5 * 1000;
         const sessionCookie = await authAdmin.createSessionCookie(idToken, { expiresIn });
 
         cookies.set('__session', sessionCookie, {
@@ -19,7 +38,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
         return json({ status: 'success' });
     } catch (e) {
-        console.error("Ошибка создания сессионной куки:", e);
+        console.error('Ошибка создания сессионной куки:', e);
         return json({ status: 'error', message: 'Не удалось создать сессию' }, { status: 401 });
     }
 };
