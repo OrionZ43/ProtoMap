@@ -1,4 +1,5 @@
 import { onRequest } from "firebase-functions/v2/https";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import { Telegraf, Markup } from "telegraf";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
@@ -15,7 +16,11 @@ const bot = new Telegraf(BOT_TOKEN || "");
 const MAX_WARNS = 3;
 const SETTINGS_DOC_REF     = db.collection('system').doc('telegram_config');
 const TELEGRAM_SERVICE_IDS = [777000, 1087968824];
-const ALLOWED_CHATS        = [-1002885386686, -1002413943981];
+
+// 🆕 Рабочий чат Ориона: бот сидит тут ТОЛЬКО ради статуса Claude.
+// Никаких автомутов/дуэлей/капчи — см. middleware ниже.
+const WORK_CHAT_ID        = -5337760470;
+const ALLOWED_CHATS       = [-1002885386686, -1002413943981, WORK_CHAT_ID];
 
 console.log('[BOT] Initializing ProtoMap Guardian Bot v2.1...');
 
@@ -338,6 +343,13 @@ async function getUserByTgId(tgId: number): Promise<FirebaseFirestore.DocumentSn
 // ─── Middleware: фильтр разрешённых чатов ────────────────────────────────────
 bot.use(async (ctx, next) => {
     if (ctx.chat?.type === 'private') return next();
+
+    // 🆕 Рабочий чат: полностью игнорируем любые обычные сообщения.
+    // next() не вызывается — значит не сработают автомуты, дуэли,
+    // капча при входе, /help и весь остальной развлекательный функционал.
+    // Сюда прилетают ТОЛЬКО уведомления от monitorClaudeStatus (см. ниже).
+    if (ctx.chat && ctx.chat.id === WORK_CHAT_ID) return;
+
     if (ctx.chat && ALLOWED_CHATS.includes(ctx.chat.id)) return next();
     console.warn(`[SECURITY] Unauthorized chat ${ctx.chat?.id}. Leaving.`);
     try { await ctx.leaveChat(); } catch (e) { console.error("[SECURITY] Failed to leave:", e); }
@@ -938,6 +950,92 @@ bot.on('sticker', async (ctx) => {
 });
 
 console.log('[BOT] Sticker handler registered');
+
+// ─── 🆕 Мониторинг статуса Claude (status.claude.com) ────────────────────────
+// Раз в 5 минут проверяем статус, и если индикатор изменился с прошлой
+// проверки — шлём красивое уведомление в рабочий чат. Никак не пересекается
+// с вебхуком и обычным функционалом бота.
+
+const CLAUDE_STATUS_DOC_REF = db.collection('system').doc('claude_status');
+
+interface ClaudeStatusResponse {
+    status: {
+        indicator: string; // none | minor | major | critical
+        description: string;
+    };
+}
+
+// Экранируем спецсимволы legacy Markdown ("_", "*", "`", "["), чтобы Telegram
+// не сломался, если Anthropic напишет в description что-то вроде "API_v2".
+function escapeMarkdown(text: string): string {
+    return text.replace(/([_*`[])/g, '\\$1');
+}
+
+function formatClaudeStatusMessage(indicator: string, description: string): string {
+    const safeDescription = escapeMarkdown(description || 'Нет данных');
+
+    switch (indicator) {
+        case 'none':
+            return `✅ Claude снова в строю!\nВсе системы работают в штатном режиме. Можно возвращаться к коду!`;
+        case 'minor':
+            return `⚠️ Claude немного штормит\nНаблюдаются незначительные проблемы (Minor Outage).\n_Детали:_ ${safeDescription}`;
+        case 'major':
+        case 'critical':
+            return `🚨 Claude приуныл (Упал)\nЗафиксирован серьезный сбой!\n_Детали:_ ${safeDescription}`;
+        default:
+            return `ℹ️ Статус Claude изменился\nНовый индикатор: \`${indicator}\`\n_Детали:_ ${safeDescription}`;
+    }
+}
+
+export const monitorClaudeStatus = onSchedule(
+    { schedule: "every 5 minutes", secrets: ["TELEGRAM_BOT_TOKEN"] },
+    async () => {
+        try {
+            // Нативный fetch (Node 22 в Cloud Functions). Каст к any подстраховывает
+            // компиляцию на случай, если в проекте нет типов глобального fetch —
+            // на рантайм это никак не влияет.
+            const response = await (globalThis as any).fetch("https://status.claude.com/api/v2/status.json");
+
+            if (!response.ok) {
+                console.error(`[CLAUDE STATUS] HTTP ${response.status} от status.claude.com`);
+                return;
+            }
+
+            const data = (await response.json()) as ClaudeStatusResponse;
+            const indicator   = data?.status?.indicator ?? 'none';
+            const description = data?.status?.description ?? '';
+
+            const prevSnap     = await CLAUDE_STATUS_DOC_REF.get();
+            const isFirstRun   = !prevSnap.exists;
+            const prevIndicator = prevSnap.exists ? prevSnap.data()?.indicator : null;
+
+            if (!isFirstRun && indicator !== prevIndicator) {
+                const message = formatClaudeStatusMessage(indicator, description);
+                try {
+                    await bot.telegram.sendMessage(WORK_CHAT_ID, message, { parse_mode: "Markdown" });
+                    console.log(`[CLAUDE STATUS] ${prevIndicator} → ${indicator}: уведомление отправлено`);
+                } catch (sendError) {
+                    console.error("[CLAUDE STATUS] Не удалось отправить уведомление:", sendError);
+                }
+            } else if (isFirstRun) {
+                console.log(`[CLAUDE STATUS] Первый запуск. Базовый статус сохранён: ${indicator}`);
+            }
+
+            // Всегда синхронизируем последний известный статус — это и есть
+            // база для сравнения на следующей проверке через 5 минут.
+            await CLAUDE_STATUS_DOC_REF.set({
+                indicator,
+                description,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
+
+        } catch (e) {
+            console.error("[CLAUDE STATUS] Ошибка при проверке статуса:", e);
+        }
+    }
+);
+
+console.log('[BOT] Claude status monitor registered (every 5 min)');
 console.log('[BOT] ✅ All handlers registered successfully!');
 
 // ─── Webhook ──────────────────────────────────────────────────────────────────

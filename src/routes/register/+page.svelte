@@ -150,7 +150,6 @@
 			const userDocRef = doc(db, 'users', user.uid);
 			await setDoc(userDocRef, {
 				username: finalUsername,
-				email: user.email,
 				about_me: '',
 				avatar_url: '',
 				social_link: '',
@@ -220,7 +219,6 @@
 
 				await setDoc(userDocRef, {
 					username: generatedUsername,
-					email: user.email || '',
 					avatar_url: user.photoURL || '',
 					about_me: '',
 					social_link: '',

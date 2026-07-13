@@ -300,7 +300,6 @@
 				}
 				await setDoc(userDocRef, {
 					username: generatedUsername,
-					email: user.email || '',
 					avatar_url: user.photoURL || '',
 					about_me: '',
 					social_link: '',

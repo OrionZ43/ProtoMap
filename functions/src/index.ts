@@ -5,15 +5,13 @@ import fetch from "node-fetch";
 import { FieldValue } from "firebase-admin/firestore";
 import { v2 as cloudinary } from "cloudinary";
 import * as crypto from 'crypto';
-import { telegramWebhook } from './telegramBot';
+export { telegramWebhook, monitorClaudeStatus } from './telegramBot';
 import { getMessaging } from "firebase-admin/messaging";
 import vision from "@google-cloud/vision";
 export { getStepperStatus, stepperClaim } from './stepper';
 export { getOrCreateReferralCode, claimReferral, getReferralStatus, finishReferralCampaign } from './referralFunctions';
 export { startRoulette, makeRouletteAction, abandonRoulette } from './roulette';
 import { auth } from "firebase-functions/v1";
-
-exports.telegramWebhook = telegramWebhook;
 
 // ===================================================================
 // 🔒 SECURITY FIX #1: Безопасная проверка Google URL
@@ -2284,21 +2282,8 @@ export const onUserCreated = auth.user().onCreate(async (user) => {
 
     const username = await resolveUniqueUsername(base);
 
-    // ── Шаг 3: Собираем документ согласно Firestore Rules ────────────
-    // Поля строго соответствуют правилам allow create:
-    //   • username     string, 3..20
-    //   • email        string, len > 0
-    //   • createdAt    timestamp (serverTimestamp)
-    //   • casino_credits   == 100
-    //   • glitch_shards    == 0
-    //   • daily_streak     == 0
-    //   • isBanned         == false
-    //   • owned_items      == []
-    //   • last_daily_bonus == null
-    //   НЕТ поля 'role' (rules запрещают)
     const newDoc = {
         username,
-        email,
         avatar_url:       user.photoURL || "",
         about_me:         "",
         status:           "",
