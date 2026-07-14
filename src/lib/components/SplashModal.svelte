@@ -4,8 +4,8 @@
     import { elasticOut, quintOut } from 'svelte/easing';
     import { t } from 'svelte-i18n';
 
-    // Новый ключ — сбрасывает просмотры у всех пользователей
-    const STORAGE_KEY = 'protomap_app_release_v1';
+    // Новый ключ — сбрасывает просмотры у всех, кто видел старый (сломанный) баннер
+    const STORAGE_KEY = 'protomap_app_release_v2';
 
     let isVisible = false;
     let step: 'idle' | 'in' | 'visible' = 'idle';
@@ -53,7 +53,7 @@
             <!-- Верхняя полоска с тегом -->
             <div class="tag-bar">
                 <span class="tag-dot"></span>
-                <span class="tag-text">RELEASE · 05.05.2026</span>
+                <span class="tag-text">NETWORK · ONLINE</span>
                 <span class="tag-dot"></span>
             </div>
 
@@ -104,7 +104,7 @@
                     </button>
 
                     <button class="btn-ghost" on:click={closeModal}>
-                        {$t('splash_beta.dismiss') || 'Потом'}
+                        {$t('splash_beta.dismiss')}
                     </button>
                 </div>
             {/if}

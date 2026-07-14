@@ -5,9 +5,12 @@
     import { fade, fly } from 'svelte/transition';
 
     // ── Параллакс-состояние ──────────────────────────────────────────
-    let mouseX = 0;
-    let mouseY = 0;
-    let ready  = false;
+    let ready = false;
+
+    // Размеры кадра нужны, чтобы посчитать, откуда голова «вылетает»
+    // при взрыве (стартовая точка = центр кадра).
+    let frameW = 0;
+    let frameH = 0;
 
     // Spring для плавного слежения за курсором
     const cursor = spring({ x: 0, y: 0 }, { stiffness: 0.06, damping: 0.7 });
@@ -22,7 +25,7 @@
         });
     }
 
-    // Для тач-устройств — гироскоп-имитация через DeviceOrientation
+    // Для тач-устройств — гироскоп через DeviceOrientation
     function onDeviceOrientation(e: DeviceOrientationEvent) {
         const x = Math.max(-1, Math.min(1, (e.gamma || 0) / 30));
         const y = Math.max(-1, Math.min(1, (e.beta  || 0) / 30));
@@ -40,25 +43,57 @@
         window.removeEventListener('deviceorientation', onDeviceOrientation);
     });
 
-    // ── Конфигурация плавающих логотипов ────────────────────────────
-    // depth: коэффициент сдвига (больше = дальше от центра, больше двигается)
+    // ── Летящие головы ──────────────────────────────────────────────
+    // x/y — проценты ОТ КАДРА (.frame, до 1850px). |x| > 50 намеренно
+    // вылезает за кадр и подрезается сценой — как в промо.
+    //
+    // ВАЖНО: три зоны кадра держим ЧИСТЫМИ, иначе текст не читается:
+    //   • верх-лево  (x: -45..-4,  y: -55..-18) — слоган «Глобальная...»
+    //   • низ-право  (x:   8..47,  y:  20..55)  — слоган «на твоём экране»
+    //   • центр      (x: -12..12,  y: -40..45)  — телефон и кнопка
     const LOGOS = [
-        { id: 0,  x: -42, y: -38, size: 110, depth: 0.9, rot: -15, opacity: 0.85 },
-        { id: 1,  x:  38, y: -45, size: 90,  depth: 1.3, rot:  20, opacity: 0.70 },
-        { id: 2,  x: -52, y:  10, size: 75,  depth: 1.6, rot:  -8, opacity: 0.55 },
-        { id: 3,  x:  52, y:  20, size: 105, depth: 1.1, rot:  12, opacity: 0.80 },
-        { id: 4,  x: -28, y:  48, size: 80,  depth: 1.8, rot: -22, opacity: 0.50 },
-        { id: 5,  x:  30, y:  50, size: 65,  depth: 2.0, rot:  18, opacity: 0.40 },
-        { id: 6,  x:  55, y: -20, size: 58,  depth: 2.2, rot:  -5, opacity: 0.35 },
-        { id: 7,  x: -55, y: -15, size: 62,  depth: 1.9, rot:  25, opacity: 0.45 },
+        // ── Верх-право ──
+        { id: 0,  x:  24, y: -50, size: 290, depth: 0.7,  tilt:  18, opacity: 1.00 },
+        { id: 1,  x:  47, y: -34, size: 260, depth: 0.85, tilt: -16, opacity: 0.98 },
+        { id: 2,  x:  19, y: -26, size: 150, depth: 1.3,  tilt:  26, opacity: 0.78 },
+        { id: 3,  x:  41, y: -10, size: 185, depth: 1.05, tilt:  -8, opacity: 0.90 },
+
+        // ── Низ-лево ──
+        { id: 4,  x: -28, y:  48, size: 285, depth: 0.75, tilt:  22, opacity: 1.00 },
+        { id: 5,  x: -47, y:  30, size: 250, depth: 0.9,  tilt: -18, opacity: 0.96 },
+        { id: 6,  x: -18, y:  26, size: 145, depth: 1.35, tilt: -26, opacity: 0.76 },
+        { id: 7,  x: -39, y:   8, size: 180, depth: 1.1,  tilt:  10, opacity: 0.88 },
+
+        // ── Края по вертикали ──
+        { id: 8,  x: -49, y: -14, size: 130, depth: 1.5,  tilt:  14, opacity: 0.68 },
+        { id: 9,  x:  49, y:  22, size: 140, depth: 1.45, tilt: -22, opacity: 0.72 },
+
+        // ── Верх-центр (выше телефона) ──
+        { id: 10, x:  -3, y: -54, size: 120, depth: 1.7,  tilt: -12, opacity: 0.62 },
+        { id: 11, x:  10, y: -58, size: 100, depth: 1.9,  tilt:  20, opacity: 0.52 },
+
+        // ── Низ-центр (ниже кнопки) ──
+        { id: 12, x:   5, y:  58, size: 115, depth: 1.75, tilt:  16, opacity: 0.60 },
+        { id: 13, x: -10, y:  60, size: 95,  depth: 2.0,  tilt: -20, opacity: 0.50 },
     ];
 
-    // Вычисляем transform для каждого логотипа
+    // Центрирование делаем в transform: проценты тут считаются от размера
+    // самого элемента. (В margin проценты считались бы от ШИРИНЫ родителя —
+    // из-за этого раньше всё уезжало влево-вверх.)
     function logoTransform(logo: typeof LOGOS[0], cx: number, cy: number) {
-        const dx = cx * logo.depth * 28; // px сдвига
-        const dy = cy * logo.depth * 20;
-        const rz = cy * logo.depth * 4;  // лёгкий поворот
-        return `translate(${dx}px, ${dy}px) rotate(${logo.rot + rz}deg)`;
+        const dx = cx * logo.depth * 34; // px сдвига
+        const dy = cy * logo.depth * 26;
+        const rz = cy * logo.depth * 5;  // лёгкий доворот
+        return `translate(-50%, -50%) translate(${dx}px, ${dy}px) rotate(${logo.tilt + rz}deg)`;
+    }
+
+    // Стартовая точка взрыва: голова стоит на left/top = 50+x %, значит
+    // чтобы оказаться в центре кадра, её надо сместить на -x% ширины.
+    function burstOffset(logo: typeof LOGOS[0]) {
+        return {
+            sx: -(logo.x / 100) * frameW,
+            sy: -(logo.y / 100) * frameH,
+        };
     }
 
     // ── Локаль ───────────────────────────────────────────────────────
@@ -68,134 +103,131 @@
 
 <svelte:head>
     <title>{$t('beta.title')} | ProtoMap</title>
+    <!-- Фон — самый заметный элемент, тянем его в первую очередь -->
+    <link rel="preload" as="image" href="/mobile/bg.jpg" />
 </svelte:head>
 
 <div class="scene">
 
-    <!-- ── Фон: градиентная сетка ─────────────────────────────────── -->
+    <!-- ── Фон ────────────────────────────────────────────────────── -->
+    <!-- bg-mesh лежит ПОД фото: если картинка не загрузится, останется
+         прежний градиент, а не чёрная дыра. -->
     <div class="bg-mesh"></div>
+
+    <!-- Фото: самый дальний план, поэтому от курсора едет слабее всех
+         (10px против 24-68px у голов) — так и рождается ощущение глубины.
+         Плюс медленный дрейф с зумом (Ken Burns), чтобы фон «дышал». -->
+    <div
+        class="bg-photo"
+        style="transform: translate({$cursor.x * 10}px, {$cursor.y * 7}px);"
+    ></div>
+
+    <!-- Тонировка: сажает фото в палитру сайта и глушит его, чтобы белые
+         головы и текст читались. Крутить альфу здесь. -->
+    <div class="bg-tint"></div>
+    <div class="bg-grid"></div>
     <div class="bg-vignette"></div>
 
-    <!-- ── Плавающие логотипы (параллакс-слой) ───────────────────── -->
-    <div class="logos-layer" aria-hidden="true">
-        {#each LOGOS as logo (logo.id)}
+    <!-- ── Кадр: держит композицию плотной на любом мониторе ──────── -->
+    <div class="frame" bind:clientWidth={frameW} bind:clientHeight={frameH}>
+
+        <!-- Летящие головы (параллакс-слой) -->
+        <div class="logos-layer" aria-hidden="true">
+            {#each LOGOS as logo (logo.id)}
+                {#if ready}
+                    {@const off = burstOffset(logo)}
+                    <!-- Внешний слой: позиция + параллакс + «боб».
+                         Внутренний: анимация взрыва. Разделены, потому что
+                         оба используют transform и иначе конфликтуют. -->
+                    <div
+                        class="logo-float"
+                        style="
+                            left:    {50 + logo.x}%;
+                            top:     {50 + logo.y}%;
+                            width:   calc({logo.size}px * var(--s));
+                            height:  calc({logo.size}px * var(--s));
+                            transform: {logoTransform(logo, $cursor.x, $cursor.y)};
+                            animation-delay: {1.15 + logo.id * 0.25}s;
+                            animation-duration: {5 + (logo.id % 5) * 0.9}s;
+                        "
+                    >
+                        <!-- Взрыв одновременный: никакого animation-delay -->
+                        <div
+                            class="logo-burst"
+                            style="
+                                --sx: {off.sx}px;
+                                --sy: {off.sy}px;
+                                --op: {logo.opacity};
+                            "
+                        >
+                            <img
+                                src="/mobile/protogen_pin.svg"
+                                alt=""
+                                class="logo-img"
+                                draggable="false"
+                            />
+                        </div>
+                    </div>
+                {/if}
+            {/each}
+        </div>
+
+        <!-- Слоган сверху-слева -->
+        {#if ready}
+            <h1 class="tagline tagline-top" in:fly={{ x: -30, duration: 700, delay: 850 }}>
+                {$t('beta.tagline_top')}
+            </h1>
+        {/if}
+
+        <!-- Телефон + кнопка -->
+        <div class="stage">
             {#if ready}
                 <div
-                    class="logo-float"
-                    style="
-                        left:    {50 + logo.x}%;
-                        top:     {50 + logo.y}%;
-                        width:   {logo.size}px;
-                        height:  {logo.size}px;
-                        opacity: {logo.opacity};
-                        transform: {logoTransform(logo, $cursor.x, $cursor.y)};
-                        animation-delay: {logo.id * 0.7}s;
-                        animation-duration: {4.5 + logo.id * 0.4}s;
-                    "
-                    in:fade={{ delay: 300 + logo.id * 80, duration: 600 }}
+                    class="phone-wrap"
+                    style="transform: translate(
+                        {$cursor.x * -18}px,
+                        {$cursor.y * -12}px
+                    ) rotate(-14deg) rotateY({$cursor.x * -6}deg) rotateX({$cursor.y * 4}deg);"
+                    in:fly={{ y: 30, duration: 800, delay: 100 }}
                 >
-                    <!-- protogen_pin.svg инвертируем в белый через CSS filter -->
+                    <div class="phone-glow"></div>
                     <img
-                        src="/mobile/protogen_pin.svg"
-                        alt=""
-                        class="logo-img"
+                        src={phoneImg}
+                        alt="ProtoMap Android"
+                        class="phone-img"
                         draggable="false"
                     />
                 </div>
+
+                <div class="cta" in:fly={{ y: 16, duration: 600, delay: 1000 }}>
+                    <a
+                        href="https://play.google.com/store/apps/details?id=by.iposdev.protomap"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="btn-green"
+                    >
+                        <svg viewBox="0 0 512 512" width="20" height="20" fill="currentColor">
+                            <path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/>
+                        </svg>
+                        {$t('beta.btn_download')}
+                    </a>
+
+                    <div class="qr-wrap">
+                        <img src="/mobile/qr.svg" alt="QR" class="qr-img" />
+                        <span class="qr-hint">SCAN ME</span>
+                    </div>
+                </div>
             {/if}
-        {/each}
-    </div>
-
-    <!-- ── Центральный контент ────────────────────────────────────── -->
-    <div class="content-layer">
-
-        <!-- Левый текстовый блок -->
-        {#if ready}
-            <div class="text-left" in:fly={{ x: -40, duration: 700, delay: 200 }}>
-                <div class="tag">{$t('beta.subtitle')}</div>
-                <h1 class="headline">{$t('beta.title')}</h1>
-                <p class="desc">{$t('beta.desc')}</p>
-
-                <!-- Шаги -->
-                <div class="steps">
-                    <div class="step">
-                        <span class="step-num">01</span>
-                        <div>
-                            <div class="step-title">{$t('beta.step1_title')}</div>
-                            <div class="step-desc">{$t('beta.step1_desc')}</div>
-                            <a
-                                href="https://groups.google.com/g/protomap-android-beta/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="btn btn-cyan"
-                            >
-                                {$t('beta.btn_group')}
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="step-divider"></div>
-
-                    <div class="step">
-                        <span class="step-num accent">02</span>
-                        <div>
-                            <div class="step-title">{$t('beta.step2_title')}</div>
-                            <div class="step-desc">{$t('beta.step2_desc')}</div>
-                            <a
-                                href="https://play.google.com/store/apps/details?id=by.iposdev.protomap"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="btn btn-green"
-                            >
-                                <svg viewBox="0 0 512 512" width="18" height="18" fill="currentColor">
-                                    <path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/>
-                                </svg>
-                                {$t('beta.btn_download')}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <p class="footer-note">{$t('beta.footer')}</p>
-            </div>
-        {/if}
-
-        <!-- Телефон (параллакс, но меньше логотипов) -->
-        {#if ready}
-            <div
-                class="phone-wrap"
-                style="transform: translate(
-                    {$cursor.x * -14}px,
-                    {$cursor.y * -10}px
-                ) rotateY({$cursor.x * -4}deg) rotateX({$cursor.y * 3}deg);"
-                in:fly={{ y: 30, duration: 800, delay: 100 }}
-            >
-                <!-- Свечение под телефоном -->
-                <div class="phone-glow"></div>
-                <img
-                    src={phoneImg}
-                    alt="ProtoMap Android App"
-                    class="phone-img"
-                    draggable="false"
-                />
-
-                <!-- QR-код в углу -->
-                <div class="qr-wrap">
-                    <img src="/mobile/qr.svg" alt="QR Code" class="qr-img" />
-                    <span class="qr-hint">SCAN ME</span>
-                </div>
-            </div>
-        {/if}
-
-    </div>
-
-    <!-- ── Нижняя надпись ──────────────────────────────────────────── -->
-    {#if ready}
-        <div class="bottom-tagline" in:fade={{ delay: 900, duration: 600 }}>
-            на твоём экране
         </div>
-    {/if}
 
+        <!-- Слоган снизу-справа -->
+        {#if ready}
+            <div class="tagline tagline-bottom" in:fade={{ delay: 1150, duration: 600 }}>
+                {$t('beta.tagline_bottom')}
+            </div>
+        {/if}
+
+    </div>
 </div>
 
 <style>
@@ -204,41 +236,102 @@
         position: relative;
         min-height: calc(100vh - 64px);
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
+        /* Обрезает головы, вылезшие за кадр — это и даёт «стикеры под срез» */
         overflow: hidden;
         background: #06100e;
-        /* Запрещаем выделение текста при движении мыши */
         user-select: none;
         -webkit-user-select: none;
     }
 
     /* ── Фон ─────────────────────────────────────────────────────── */
+    /* Слои снизу вверх:                                               */
+    /*   0  bg-mesh    — градиент-фолбэк (виден, если фото не грузится) */
+    /*   0  bg-photo   — сама картинка: параллакс + дрейф               */
+    /*   1  bg-tint    — тонировка под палитру + затемнение             */
+    /*   1  bg-grid    — фирменная сетка                                */
+    /*   1  bg-vignette— виньетка                                       */
     .bg-mesh {
         position: absolute;
         inset: 0;
         background:
-            /* Основной цветовой туман */
             radial-gradient(ellipse at 30% 60%, rgba(0,180,160,0.18) 0%, transparent 55%),
             radial-gradient(ellipse at 75% 35%, rgba(0,240,200,0.10) 0%, transparent 50%),
-            radial-gradient(ellipse at 50% 100%, rgba(0,100,80,0.15) 0%, transparent 45%),
-            /* Тонкая сетка */
-            linear-gradient(rgba(0,240,200,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,240,200,0.03) 1px, transparent 1px);
-        background-size: 100% 100%, 100% 100%, 100% 100%, 50px 50px, 50px 50px;
+            radial-gradient(ellipse at 50% 100%, rgba(0,100,80,0.15) 0%, transparent 45%);
+        background-size: 100% 100%;
         z-index: 0;
+    }
+
+    .bg-photo {
+        position: absolute;
+        inset: 0;
+        background-image: url('/mobile/bg.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        z-index: 0;
+        pointer-events: none;
+        will-change: transform, scale, translate;
+        /* Параллакс приходит инлайном через transform.
+           Дрейф едет через ОТДЕЛЬНЫЕ CSS-свойства scale/translate —
+           они применяются независимо от transform, поэтому не конфликтуют.
+           scale > 1 обязателен: даёт запас, чтобы при сдвиге не показались
+           края картинки. */
+        animation: bg-drift 34s ease-in-out infinite;
+    }
+
+    /* Медленное «дыхание» фона: зум + едва заметный увод */
+    @keyframes bg-drift {
+        0%   { scale: 1.14; translate: 0% 0%; }
+        50%  { scale: 1.22; translate: -1.2% 0.9%; }
+        100% { scale: 1.14; translate: 0% 0%; }
+    }
+
+    /* Тонировка. Здесь крутить, если фон слишком яркий/тусклый:
+       первый градиент — зелёный тон, второй — общее затемнение. */
+    .bg-tint {
+        position: absolute;
+        inset: 0;
+        background:
+            linear-gradient(180deg, rgba(0,70,58,0.30) 0%, rgba(0,24,20,0.45) 100%),
+            radial-gradient(ellipse at 50% 45%, rgba(4,12,10,0.15) 0%, rgba(3,9,8,0.72) 100%);
+        z-index: 1;
+        pointer-events: none;
+    }
+
+    .bg-grid {
+        position: absolute;
+        inset: 0;
+        background:
+            linear-gradient(rgba(0,240,200,0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,240,200,0.035) 1px, transparent 1px);
+        background-size: 50px 50px;
+        z-index: 1;
+        pointer-events: none;
     }
 
     .bg-vignette {
         position: absolute;
         inset: 0;
-        background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.75) 100%);
+        background: radial-gradient(ellipse at 50% 50%, transparent 25%, rgba(0,0,0,0.8) 100%);
         z-index: 1;
         pointer-events: none;
     }
 
-    /* ── Плавающие логотипы ──────────────────────────────────────── */
+    /* ── Кадр ─────────────────────────────────────────────────────── */
+    /* 1850px: шире, чем зона голов (они позиционируются в % и поэтому  */
+    /* просто растянулись вместе с ним — координаты пересчитаны), зато   */
+    /* слоганы уезжают дальше от центра, ближе к краям монитора.        */
+    .frame {
+        position: relative;
+        z-index: 2;
+        width: min(100%, 1850px);
+        height: min(calc(100vh - 64px), 880px);
+        --s: 1; /* глобальный масштаб голов */
+    }
+
+    /* ── Летящие головы ──────────────────────────────────────────── */
     .logos-layer {
         position: absolute;
         inset: 0;
@@ -246,174 +339,133 @@
         pointer-events: none;
     }
 
+    /* Внешний слой: позиция, параллакс (inline transform) и «боб».     */
+    /* «Боб» едет через CSS-свойство translate — оно применяется         */
+    /* отдельно от transform, поэтому параллакс не ломается.            */
     .logo-float {
         position: absolute;
-        /* Центрируем сам элемент */
-        margin-left: -50%;
-        margin-top: -50%;
         will-change: transform;
         transition: transform 0.08s linear;
-        /* Боб-анимация (медленное плавание) */
-        animation: logo-bob ease-in-out infinite alternate;
+        animation: logo-bob ease-in-out infinite alternate backwards;
     }
 
+    /* Внутренний слой: только взрыв. Отдельный элемент нужен потому,   */
+    /* что transform у внешнего уже занят параллаксом.                  */
+    .logo-burst {
+        width: 100%;
+        height: 100%;
+        opacity: var(--op);
+        will-change: transform, opacity;
+        /* cubic-bezier с забросом > 1 даёт лёгкий перелёт и посадку */
+        animation: logo-burst 1.05s cubic-bezier(0.16, 0.9, 0.28, 1.28) backwards;
+    }
+
+    /* Стикер: белая заливка + чёрная обводка по контуру.               */
+    /* invert(1) красит чёрный SVG в белый, следующие drop-shadow'ы     */
+    /* с нулевым размытием рисуют контур с 4 сторон.                    */
     .logo-img {
         width: 100%;
         height: 100%;
         object-fit: contain;
-        /* Чёрный SVG → белый */
-        filter: invert(1) drop-shadow(0 4px 16px rgba(0,0,0,0.5));
+        filter:
+            invert(1)
+            drop-shadow(2px 0 0 rgba(0,0,0,0.85))
+            drop-shadow(-2px 0 0 rgba(0,0,0,0.85))
+            drop-shadow(0 2px 0 rgba(0,0,0,0.85))
+            drop-shadow(0 -2px 0 rgba(0,0,0,0.85));
         pointer-events: none;
         -webkit-user-drag: none;
     }
 
+    /* Взрыв: из центра кадра (--sx/--sy), сжатые и закрученные, */
+    /* разлетаются по местам. */
+    @keyframes logo-burst {
+        0% {
+            transform: translate(var(--sx), var(--sy)) scale(0.08) rotate(-120deg);
+            opacity: 0;
+        }
+        35% { opacity: var(--op); }
+        100% {
+            transform: translate(0, 0) scale(1) rotate(0deg);
+            opacity: var(--op);
+        }
+    }
+
     @keyframes logo-bob {
         from { translate: 0 0px; }
-        to   { translate: 0 12px; }
+        to   { translate: 0 16px; }
     }
 
-    /* ── Основной контент ─────────────────────────────────────────── */
-    .content-layer {
-        position: relative;
-        z-index: 10;
-        display: grid;
-        grid-template-columns: 1fr 420px;
-        gap: 4rem;
-        align-items: center;
-        max-width: 1100px;
-        width: 100%;
-        padding: 3rem 2rem;
-    }
-
-    /* ── Текст слева ──────────────────────────────────────────────── */
-    .text-left {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-    }
-
-    .tag {
-        font-family: 'Chakra Petch', monospace;
-        font-size: 0.65rem;
-        letter-spacing: 0.3em;
-        color: rgba(0,240,200,0.65);
-        text-transform: uppercase;
-        margin-bottom: 0.75rem;
-    }
-
-    .headline {
-        font-family: 'Chakra Petch', monospace;
-        font-size: clamp(2rem, 4vw, 3.2rem);
-        font-weight: 900;
-        color: #fff;
-        line-height: 1.05;
-        letter-spacing: 0.04em;
-        margin-bottom: 1.1rem;
-        text-shadow: 0 0 40px rgba(0,240,200,0.2);
-    }
-
-    .desc {
-        font-size: 0.9rem;
-        color: rgba(255,255,255,0.55);
-        line-height: 1.65;
-        margin-bottom: 2rem;
-        max-width: 380px;
-    }
-
-    /* ── Шаги ─────────────────────────────────────────────────────── */
-    .steps {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-        margin-bottom: 1.5rem;
-    }
-
-    .step {
-        display: flex;
-        gap: 1.1rem;
-        align-items: flex-start;
-        padding: 1.25rem 0;
-    }
-
-    .step-divider {
-        height: 1px;
-        background: rgba(255,255,255,0.07);
+    /* ── Слоганы ──────────────────────────────────────────────────── */
+    .tagline {
+        position: absolute;
+        z-index: 12;
         margin: 0;
-    }
-
-    .step-num {
-        font-family: 'Chakra Petch', monospace;
-        font-size: 2rem;
-        font-weight: 900;
-        color: rgba(255,255,255,0.1);
-        line-height: 1;
-        flex-shrink: 0;
-        width: 2.4rem;
-        text-align: right;
-    }
-    .step-num.accent { color: rgba(0,240,200,0.35); }
-
-    .step-title {
-        font-family: 'Chakra Petch', monospace;
-        font-size: 0.8rem;
-        font-weight: 700;
+        /* Russo One, а не Chakra Petch: у Chakra Petch НЕТ кириллицы
+           (subsets: latin, latin-ext, thai, vietnamese), поэтому русский
+           текст падал в fallback-monospace, а латиница рисовалась самим
+           Chakra Petch — отсюда разные шрифты в RU и EN.
+           Russo One поддерживает и кириллицу, и латиницу. */
+        font-family: 'Russo One', 'Chakra Petch', sans-serif;
+        font-size: clamp(2rem, 3.6vw, 3.8rem);
+        /* У Russo One единственный вес — 400. Ставить 900 нельзя:
+           браузер синтезирует искусственный жир и буквы плывут. */
+        font-weight: 400;
+        line-height: 1.05;
         color: #fff;
-        letter-spacing: 0.08em;
-        margin-bottom: 0.3rem;
+        letter-spacing: 0.01em;
+        /* Плотная многослойная тень: страховка, если голова заедет под текст */
+        text-shadow:
+            0 2px 10px rgba(0,0,0,0.95),
+            0 4px 30px rgba(0,0,0,0.9),
+            0 0 70px rgba(0,0,0,0.85),
+            0 0 60px rgba(0,240,200,0.25);
+        pointer-events: none;
     }
 
-    .step-desc {
-        font-size: 0.78rem;
-        color: rgba(255,255,255,0.45);
-        line-height: 1.5;
-        margin-bottom: 0.9rem;
+    /* Тёмная подложка под текстом — гарант читаемости поверх белых      */
+    /* стикеров. z-index -1 держит её за буквами, но над головами.       */
+    .tagline::before {
+        content: '';
+        position: absolute;
+        inset: -2.5rem -4rem;
+        background: radial-gradient(
+            ellipse at center,
+            rgba(2,8,6,0.92) 0%,
+            rgba(2,8,6,0.65) 45%,
+            transparent 75%
+        );
+        z-index: -1;
+        pointer-events: none;
     }
 
-    /* ── Кнопки ───────────────────────────────────────────────────── */
-    .btn {
-        display: inline-flex;
+    .tagline-top {
+        top: 2rem;
+        left: 2rem;
+        max-width: 18ch;
+    }
+
+    .tagline-bottom {
+        bottom: 2rem;
+        right: 2rem;
+        text-align: right;
+        max-width: 18ch;
+    }
+
+    /* ── Телефон + кнопка ─────────────────────────────────────────── */
+    .stage {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.6rem 1.25rem;
-        font-family: 'Chakra Petch', monospace;
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        text-decoration: none;
-        text-transform: uppercase;
-        border-radius: 4px;
-        transition: all 0.22s ease;
-        clip-path: polygon(0 6px, 6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+        justify-content: center;
+        gap: 2rem;
+        pointer-events: none;
     }
+    .stage :global(a) { pointer-events: auto; }
 
-    .btn-cyan {
-        background: transparent;
-        border: 1px solid rgba(0,240,200,0.5);
-        color: #00f0c8;
-    }
-    .btn-cyan:hover {
-        background: rgba(0,240,200,0.12);
-        border-color: #00f0c8;
-        box-shadow: 0 0 18px rgba(0,240,200,0.25);
-    }
-
-    .btn-green {
-        background: #39ff14;
-        color: #000;
-        border: none;
-    }
-    .btn-green:hover {
-        background: #fff;
-        box-shadow: 0 0 24px rgba(57,255,20,0.5);
-    }
-
-    .footer-note {
-        font-size: 0.7rem;
-        color: rgba(255,255,255,0.3);
-        letter-spacing: 0.06em;
-    }
-
-    /* ── Телефон ──────────────────────────────────────────────────── */
     .phone-wrap {
         position: relative;
         display: flex;
@@ -421,117 +473,194 @@
         align-items: center;
         will-change: transform;
         transition: transform 0.12s linear;
-        /* Перспектива для 3D-эффекта */
         transform-style: preserve-3d;
-        perspective: 800px;
+        perspective: 900px;
     }
 
     .phone-glow {
         position: absolute;
-        bottom: -60px;
+        bottom: -50px;
         left: 50%;
         transform: translateX(-50%);
-        width: 220px;
-        height: 60px;
-        background: radial-gradient(ellipse, rgba(0,240,200,0.35) 0%, transparent 70%);
-        filter: blur(20px);
+        width: 300px;
+        height: 90px;
+        background: radial-gradient(ellipse, rgba(0,240,200,0.4) 0%, transparent 70%);
+        filter: blur(24px);
         pointer-events: none;
     }
 
     .phone-img {
         width: 100%;
-        max-width: 380px;
+        max-width: 400px;
         height: auto;
         object-fit: contain;
-        /* Тень телефона */
-        filter: drop-shadow(0 30px 60px rgba(0,0,0,0.7)) drop-shadow(0 0 40px rgba(0,200,180,0.15));
+        filter: drop-shadow(0 40px 70px rgba(0,0,0,0.8)) drop-shadow(0 0 50px rgba(0,200,180,0.2));
         -webkit-user-drag: none;
     }
 
-    /* ── QR-код ───────────────────────────────────────────────────── */
+    /* ── CTA ──────────────────────────────────────────────────────── */
+    .cta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .btn-green {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 1rem 2.2rem;
+        background: #39ff14;
+        color: #000;
+        border: none;
+        /* Russo One: иначе «СКАЧАТЬ В» рисуется fallback-monospace,
+           а «GOOGLE PLAY» — Chakra Petch, и в одной строке два шрифта. */
+        font-family: 'Russo One', 'Chakra Petch', sans-serif;
+        font-size: 0.85rem;
+        font-weight: 400;
+        letter-spacing: 0.14em;
+        text-decoration: none;
+        text-transform: uppercase;
+        border-radius: 2px;
+        clip-path: polygon(0 9px, 9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%);
+        box-shadow: 0 0 34px rgba(57,255,20,0.3);
+        transition: all 0.22s ease;
+    }
+    .btn-green:hover {
+        background: #fff;
+        box-shadow: 0 0 50px rgba(57,255,20,0.6);
+        transform: translateY(-2px);
+    }
+    .btn-green:active { transform: translateY(0); }
+
+    /* ── QR ───────────────────────────────────────────────────────── */
     .qr-wrap {
-        position: absolute;
-        bottom: 2rem;
-        right: -1rem;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.3rem;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.1);
+        gap: 0.4rem;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.12);
         border-radius: 8px;
-        padding: 0.5rem;
+        padding: 0.7rem;
         backdrop-filter: blur(8px);
     }
 
     .qr-img {
-        width: 70px;
-        height: 70px;
+        width: 104px;
+        height: 104px;
         filter: invert(1);
-        opacity: 0.85;
+        opacity: 0.9;
     }
 
     .qr-hint {
-        font-family: 'Chakra Petch', monospace;
-        font-size: 0.45rem;
-        color: rgba(255,255,255,0.4);
+        font-family: 'Russo One', 'Chakra Petch', sans-serif;
+        font-size: 0.55rem;
+        color: rgba(255,255,255,0.45);
         letter-spacing: 0.2em;
     }
 
-    /* ── Нижний tagline ───────────────────────────────────────────── */
-    .bottom-tagline {
-        position: absolute;
-        bottom: 2rem;
-        right: 3rem;
-        font-family: 'Chakra Petch', monospace;
-        font-size: clamp(1rem, 2.5vw, 1.6rem);
-        font-weight: 900;
-        color: #fff;
-        opacity: 0.85;
-        letter-spacing: 0.06em;
-        pointer-events: none;
-        z-index: 10;
-    }
-
     /* ── Адаптив ──────────────────────────────────────────────────── */
+    /* На узком экране абсолютное позиционирование не работает: слоганы */
+    /* налезали на навбар, телефон и чат-виджет. Переводим всё в поток- */
+    /* колонку, головы оставляем фоном.                                 */
     @media (max-width: 900px) {
-        .content-layer {
-            grid-template-columns: 1fr;
-            grid-template-rows: auto auto;
-            gap: 2rem;
+        .scene {
+            /* min-height обязателен: без него сцена схлопывается по    */
+            /* контенту и снизу видно голый фон body.                   */
+            min-height: calc(100vh - 64px);
+            align-items: center;
             padding: 2rem 1.25rem 5rem;
+        }
+
+        .frame {
+            --s: 0.4;
+            width: 100%;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.75rem;
+        }
+
+        /* Головы уходят в фон и не спорят с контентом */
+        .logos-layer {
+            inset: -10% -12%;
+            z-index: 0;
+        }
+        .logo-burst { opacity: 0.22 !important; }
+        @keyframes logo-burst {
+            0% {
+                transform: translate(var(--sx), var(--sy)) scale(0.08) rotate(-120deg);
+                opacity: 0;
+            }
+            35%, 100% {
+                transform: translate(0, 0) scale(1) rotate(0deg);
+                opacity: 0.22;
+            }
+        }
+
+        /* Слоганы — в поток, по центру.
+           order собирает разорванную фразу обратно: на десктопе она
+           читается по диагонали (верх-лево → низ-право), а в колонке
+           «на твоём экране» оказывалось ПОСЛЕ кнопки и фраза распадалась.
+           Теперь: «Глобальная карта протогенов» + «на твоём экране»
+           идут подряд как одно предложение, а CTA замыкает экран. */
+        .tagline {
+            position: static;
             text-align: center;
+            max-width: 100%;
+            font-size: clamp(1.5rem, 7vw, 2.2rem);
+        }
+        .tagline::before { display: none; }
+
+        .tagline-top    { order: 1; }
+        .tagline-bottom {
+            order: 2;
+            /* Подтягиваем вплотную — это вторая половина одной фразы,
+               а не отдельный блок */
+            margin-top: -1.25rem;
+            color: rgba(255,255,255,0.75);
+        }
+        .stage { order: 3; }
+
+        /* Телефон и кнопка — тоже в поток */
+        .stage {
+            position: static;
+            gap: 1.5rem;
         }
 
-        .text-left { align-items: center; }
-        .desc { max-width: 100%; text-align: center; }
+        .phone-img { max-width: 220px; }
+        .phone-glow { width: 190px; bottom: -30px; }
 
-        .step { flex-direction: column; align-items: center; text-align: center; }
-        .step-num { width: auto; text-align: center; }
-
-        .phone-wrap {
-            order: -1;
-        }
-        .phone-img { max-width: 260px; }
-
-        .qr-wrap {
-            bottom: -1rem;
-            right: 0;
-        }
-
-        /* Логотипы на мобиле чуть прижимаем */
-        .logo-float { opacity: 0.4 !important; }
-
-        .bottom-tagline {
-            bottom: 1rem;
-            right: 1rem;
-            font-size: 0.9rem;
+        .cta {
+            flex-direction: column;
+            gap: 0.9rem;
         }
     }
 
     @media (max-width: 480px) {
-        .phone-img { max-width: 200px; }
-        .headline { font-size: 1.7rem; }
+        .frame { --s: 0.3; }
+        .phone-img { max-width: 190px; }
         .qr-wrap { display: none; }
+        .btn-green {
+            padding: 0.9rem 1.5rem;
+            font-size: 0.72rem;
+        }
+    }
+
+    /* Уважаем системную настройку «меньше движения».
+       Дрейфующий фон — частый триггер укачивания, гасим его тоже. */
+    @media (prefers-reduced-motion: reduce) {
+        .logo-burst {
+            animation: none;
+            opacity: var(--op);
+        }
+        .logo-float { animation: none; }
+        .bg-photo {
+            animation: none;
+            scale: 1.14;
+        }
     }
 </style>

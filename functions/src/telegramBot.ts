@@ -952,80 +952,411 @@ bot.on('sticker', async (ctx) => {
 console.log('[BOT] Sticker handler registered');
 
 // ─── 🆕 Мониторинг статуса Claude (status.claude.com) ────────────────────────
-// Раз в 5 минут проверяем статус, и если индикатор изменился с прошлой
-// проверки — шлём красивое уведомление в рабочий чат. Никак не пересекается
-// с вебхуком и обычным функционалом бота.
+// Раз в 5 минут проверяем summary.json (индикатор + список активных инцидентов).
+// Если индикатор сменился или поменялся состав активных инцидентов — шлём
+// уведомление в рабочий чат, с переводом названия/текста инцидентов на русский
+// через Gemini (пачкой, одним вызовом на все активные инциденты разом).
 
 const CLAUDE_STATUS_DOC_REF = db.collection('system').doc('claude_status');
 
-interface ClaudeStatusResponse {
+// ─── Типы статус-страницы Anthropic (Statuspage API v2, /api/v2/summary.json) ─
+interface StatusPageIncidentUpdate {
+    status: string; // investigating | identified | monitoring | resolved | ...
+    body: string;
+    created_at: string;
+}
+
+interface StatusPageIncident {
+    id: string;
+    name: string;
+    impact: string; // none | minor | major | critical
+    shortlink: string;
+    incident_updates: StatusPageIncidentUpdate[];
+}
+
+interface ClaudeSummaryResponse {
     status: {
         indicator: string; // none | minor | major | critical
         description: string;
     };
+    incidents: StatusPageIncident[];
 }
 
 // Экранируем спецсимволы legacy Markdown ("\\", "_", "*", "`", "["), чтобы Telegram
-// не сломался, если Anthropic напишет в description что-то вроде "API_v2".
+// не сломался, если в названии/тексте инцидента встретится что-то вроде "API_v2".
 function escapeMarkdown(text: string): string {
     return text.replace(/([\\_*`\[])/g, '\\$1');
 }
 
-function formatClaudeStatusMessage(indicator: string, description: string): string {
-    const safeDescription = escapeMarkdown(description || 'Нет данных');
+function truncate(text: string, maxLength: number): string {
+    if (!text || text.length <= maxLength) return text;
+    return `${text.slice(0, maxLength).trimEnd()}…`;
+}
 
-    switch (indicator) {
-        case 'none':
-            return `✅ Claude снова в строю!\nВсе системы работают в штатном режиме. Можно возвращаться к коду!`;
-        case 'minor':
-            return `⚠️ Claude немного штормит\nНаблюдаются незначительные проблемы (Minor Outage).\n_Детали:_ ${safeDescription}`;
-        case 'major':
-        case 'critical':
-            return `🚨 Claude приуныл (Упал)\nЗафиксирован серьезный сбой!\n_Детали:_ ${safeDescription}`;
-        default:
-            return `ℹ️ Статус Claude изменился\nНовый индикатор: \`${indicator}\`\n_Детали:_ ${safeDescription}`;
+function pickRandom<T>(arr: T[]): T {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function impactIcon(impact: string): string {
+    switch (impact) {
+        case 'critical': return '🔴';
+        case 'major':    return '🟠';
+        case 'minor':    return '🟡';
+        default:         return '⚪';
     }
+}
+
+const INCIDENT_STATUS_RU: Record<string, string> = {
+    investigating: '🔍 Расследуем',
+    identified:    '🎯 Причина найдена',
+    monitoring:    '👀 Наблюдаем',
+    resolved:      '✅ Исправлено',
+    postmortem:    '📋 Разбор полётов',
+    scheduled:     '🗓️ Запланировано',
+    in_progress:   '🔧 В процессе',
+    verifying:     '🧪 Проверяем',
+    completed:     '✅ Завершено',
+};
+
+// ⚠️ Этих заголовков не было ни в одном из присланных кусков кода — я добавил
+// свои дефолты в тон остального бота (см. handleAutoMute / FUN_TRIGGERS).
+// Если у тебя уже был свой HEADERS где-то раньше в файле — просто удали этот
+// блок и оставь свой, структура (индикатор → массив вариантов) не меняется.
+const HEADERS: Record<'none' | 'minor' | 'major' | 'critical' | 'unknown', string[]> = {
+    none: [
+        '✅ Claude снова в строю!\nВсе системы работают в штатном режиме.',
+        '🟢 Порядок восстановлен. Можно возвращаться к коду!',
+    ],
+    minor: [
+        '⚠️ Claude немного штормит\nНаблюдаются незначительные проблемы.',
+        '🟡 Лёгкая турбулентность на стороне Anthropic.',
+    ],
+    major: [
+        '🚨 Claude приуныл\nЗафиксирован серьёзный сбой.',
+        '🟠 Серьёзные проблемы на стороне Anthropic.',
+    ],
+    critical: [
+        '🔴 Claude упал\nКритический сбой на стороне Anthropic!',
+        '🆘 Всё горит. Claude недоступен.',
+    ],
+    unknown: [
+        'ℹ️ Статус Claude изменился.',
+    ],
+};
+
+// Добавляем в интерфейс StoredIncident поле для кэша перевода + отметку последнего
+// апдейта конкретного инцидента (чтобы ловить investigating → identified → monitoring
+// даже если top-level indicator и набор id инцидентов не поменялись).
+interface StoredIncident {
+    id: string;
+    name: string;
+    name_ru?: string | null;
+    lastUpdateAt?: string | null;
+}
+
+interface TranslatedIncident {
+    id: string;
+    name_ru: string;
+    body_ru: string;
+}
+
+// Переводим пачкой все активные инциденты за один вызов — дешевле и быстрее,
+// чем дёргать Gemini на каждый инцидент отдельно.
+async function translateIncidentsToRu(
+    incidents: { id: string; name: string; body: string }[]
+): Promise<Map<string, { name: string; body: string }>> {
+    const result = new Map<string, { name: string; body: string }>();
+    if (incidents.length === 0) return result;
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        console.warn('[CLAUDE STATUS] GEMINI_API_KEY не задан — шлём как есть, на английском');
+        return result;
+    }
+
+    const prompt = `Переведи на русский язык название и текст обновления IT-инцидента(ов) со статус-страницы Anthropic.
+Названия моделей, продуктов и протоколов (REALITY, sing-box, Claude Code и т.п.) оставляй как есть, переводи обычный текст.
+Тон — нейтрально-технический, как в официальных объявлениях.
+Верни СТРОГО JSON-массив вида [{"id": "...", "name_ru": "...", "body_ru": "..."}], без пояснений и markdown-обёртки.
+
+Данные:
+${JSON.stringify(incidents)}`;
+
+    try {
+        const response = await (globalThis as any).fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        temperature: 0.2,
+                        responseMimeType: 'application/json',
+                    },
+                }),
+            }
+        );
+
+        if (!response.ok) {
+            console.error(`[CLAUDE STATUS] Gemini HTTP ${response.status} — шлём без перевода`);
+            return result;
+        }
+
+        const data = await response.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) return result;
+
+        const parsed = JSON.parse(text) as TranslatedIncident[];
+        for (const item of parsed) {
+            result.set(item.id, { name: item.name_ru, body: item.body_ru });
+        }
+    } catch (e) {
+        console.error('[CLAUDE STATUS] Ошибка перевода через Gemini:', e);
+    }
+
+    return result;
+}
+
+// "1 д 3 ч", "2 ч 15 мин", "40 мин" — без нулевых частей, минимум 1 минута.
+function formatDuration(ms: number): string {
+    const totalMinutes = Math.max(1, Math.round(ms / 60000));
+    const days    = Math.floor(totalMinutes / 1440);
+    const hours   = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
+
+    const parts: string[] = [];
+    if (days > 0)                     parts.push(`${days} д`);
+    if (hours > 0)                    parts.push(`${hours} ч`);
+    if (minutes > 0 || parts.length === 0) parts.push(`${minutes} мин`);
+    return parts.join(' ');
+}
+
+// Telegram кидает ошибку, если редактируешь сообщение тем же текстом, каким оно
+// уже было — это не сбой, а сигнал "нечего обновлять", просто игнорируем такое.
+function isNotModifiedError(e: any): boolean {
+    const desc = e?.response?.description || e?.description || e?.message || '';
+    return typeof desc === 'string' && desc.includes('message is not modified');
+}
+
+function formatIncidentBlock(
+    incident: StatusPageIncident,
+    translations: Map<string, { name: string; body: string }>
+): string {
+    const updates = [...(incident.incident_updates ?? [])].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    const latest = updates[0];
+    const statusRu = latest ? (INCIDENT_STATUS_RU[latest.status] ?? latest.status) : '';
+
+    const translated = translations.get(incident.id);
+    const title = escapeMarkdown(translated?.name ?? incident.name);
+    const body = escapeMarkdown(truncate(translated?.body ?? latest?.body ?? '', 400));
+
+    return `${impactIcon(incident.impact)} *${title}*\n${statusRu}\n${body}\n🔗 [Подробнее](${incident.shortlink})`;
+}
+
+// "Живое" сообщение по ходу сбоя — именно его редактирует бот на каждой проверке,
+// пока indicator != 'none'. Ничего не отправляется отдельно на каждое изменение.
+function formatClaudeStatusMessage(
+    indicator: string,
+    incidents: StatusPageIncident[],
+    translations: Map<string, { name: string; body: string }>,
+): string {
+    const level = (['minor', 'major', 'critical'] as const).includes(indicator as any)
+        ? (indicator as 'minor' | 'major' | 'critical')
+        : 'unknown';
+    const header = pickRandom(HEADERS[level]);
+
+    if (incidents.length === 0) return header;
+
+    const details = incidents.map(i => formatIncidentBlock(i, translations)).join('\n\n');
+    const full = `${header}\n\n${details}`;
+
+    return full.length > 3800 ? `${full.slice(0, 3800).trimEnd()}\n\n… (обрезано)` : full;
+}
+
+// Финальная правка того же сообщения в момент выздоровления (indicator → 'none'):
+// сколько длилось, что чинили, и краткая хронология статусов.
+function formatResolvedMessage(
+    durationMs: number | null,
+    resolvedIncidentNames: string[],
+    timeline: string[],
+): string {
+    const header = pickRandom(HEADERS.none);
+    const durationLine = durationMs !== null ? `⏱ Сбой длился: ${formatDuration(durationMs)}` : '';
+
+    const list = resolvedIncidentNames.length > 0
+        ? `Что чинили:\n${resolvedIncidentNames.map(n => `• ${escapeMarkdown(n)}`).join('\n')}`
+        : '';
+
+    const timelineBlock = timeline.length > 0
+        ? `_Хронология:_\n${timeline.slice(-15).map(t => `• ${escapeMarkdown(t)}`).join('\n')}`
+        : '';
+
+    const full = [header, durationLine, list, timelineBlock].filter(Boolean).join('\n\n');
+
+    return full.length > 3800 ? `${full.slice(0, 3800).trimEnd()}\n\n… (обрезано)` : full;
 }
 
 export const monitorClaudeStatus = onSchedule(
     { schedule: "every 5 minutes", secrets: ["TELEGRAM_BOT_TOKEN"] },
     async () => {
         try {
-            // Нативный fetch (Node 22 в Cloud Functions). Каст к any подстраховывает
-            // компиляцию на случай, если в проекте нет типов глобального fetch —
-            // на рантайм это никак не влияет.
-            const response = await (globalThis as any).fetch("https://status.claude.com/api/v2/status.json");
-
+            const response = await (globalThis as any).fetch("https://status.claude.com/api/v2/summary.json");
             if (!response.ok) {
                 console.error(`[CLAUDE STATUS] HTTP ${response.status} от status.claude.com`);
                 return;
             }
 
-            const data = (await response.json()) as ClaudeStatusResponse;
-            const indicator   = data?.status?.indicator ?? 'none';
-            const description = data?.status?.description ?? '';
+            const data = (await response.json()) as ClaudeSummaryResponse;
+            const indicator = data?.status?.indicator ?? 'none';
+            const incidents = data?.incidents ?? [];
+            const currentIds = incidents.map(i => i.id);
 
-            const prevSnap     = await CLAUDE_STATUS_DOC_REF.get();
-            const isFirstRun   = !prevSnap.exists;
-            const prevIndicator = prevSnap.exists ? prevSnap.data()?.indicator : null;
+            const prevSnap = await CLAUDE_STATUS_DOC_REF.get();
+            const isFirstRun = !prevSnap.exists;
+            const prevData = isFirstRun ? {} : (prevSnap.data() ?? {});
+            const prevIndicator: string | null = isFirstRun ? null : (prevData.indicator ?? null);
+            const prevIncidents: StoredIncident[] = isFirstRun ? [] : (prevData.incidents ?? []);
+            const prevIds = prevIncidents.map(i => i.id);
+            const prevNameRuById = new Map(prevIncidents.map(i => [i.id, i.name_ru]));
+            const prevUpdateAtById = new Map(prevIncidents.map(i => [i.id, i.lastUpdateAt ?? null]));
 
-            if (!isFirstRun && indicator !== prevIndicator) {
-                const message = formatClaudeStatusMessage(indicator, description);
-                try {
-                    await bot.telegram.sendMessage(WORK_CHAT_ID, message, { parse_mode: "Markdown" });
-                    console.log(`[CLAUDE STATUS] ${prevIndicator} → ${indicator}: уведомление отправлено`);
-                } catch (sendError) {
-                    console.error("[CLAUDE STATUS] Не удалось отправить уведомление:", sendError);
+            // activeMessageId — id "живого" сообщения текущего сбоя, которое редактируем.
+            // incidentStartedAt — когда сбой начался (для подсчёта длительности).
+            // timeline — короткая хронология смен статуса для финальной сводки.
+            const activeMessageId: number | null      = isFirstRun ? null : (prevData.activeMessageId ?? null);
+            const incidentStartedAtMs: number | null  = isFirstRun ? null : (prevData.incidentStartedAtMs ?? null);
+            const prevTimeline: string[]              = isFirstRun ? [] : (prevData.timeline ?? []);
+
+            const idsChanged =
+                currentIds.length !== prevIds.length ||
+                currentIds.some(id => !prevIds.includes(id));
+            const indicatorChanged = indicator !== prevIndicator;
+            // Ловим смену статуса конкретного инцидента (investigating → identified → ...),
+            // даже если top-level indicator и набор id не поменялись.
+            const updatesChanged = incidents.some(i => {
+                if (!prevIds.includes(i.id)) return false; // новый id уже даст idsChanged
+                const updates = [...(i.incident_updates ?? [])].sort(
+                    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                );
+                return (updates[0]?.created_at ?? null) !== prevUpdateAtById.get(i.id);
+            });
+
+            let freshTranslations = new Map<string, { name: string; body: string }>();
+            let newActiveMessageId     = activeMessageId;
+            let newIncidentStartedAtMs = incidentStartedAtMs;
+            let newTimeline            = prevTimeline;
+
+            if (!isFirstRun && (indicatorChanged || idsChanged || updatesChanged)) {
+                // Переводим только когда реально собираемся что-то показать
+                const toTranslate = incidents.map(i => {
+                    const updates = [...(i.incident_updates ?? [])].sort(
+                        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    );
+                    return { id: i.id, name: i.name, body: updates[0]?.body ?? '' };
+                });
+                freshTranslations = await translateIncidentsToRu(toTranslate);
+
+                const nowMs = Date.now();
+                const timeLabel = new Date(nowMs).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Minsk' });
+                const isNewOutage = prevIndicator === 'none' || prevIndicator === null ? indicator !== 'none' : false;
+                const isRecovery  = prevIndicator !== null && prevIndicator !== 'none' && indicator === 'none';
+
+                if (isNewOutage) {
+                    newIncidentStartedAtMs = nowMs;
+                    newTimeline = [];
                 }
+
+                // Пишем в хронологию текущий статус каждого активного инцидента
+                for (const incident of incidents) {
+                    const updates = [...(incident.incident_updates ?? [])].sort(
+                        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    );
+                    const statusRu = updates[0] ? (INCIDENT_STATUS_RU[updates[0].status] ?? updates[0].status) : '';
+                    const nameRu   = freshTranslations.get(incident.id)?.name ?? prevNameRuById.get(incident.id) ?? incident.name;
+                    newTimeline = [...newTimeline, `${timeLabel} — ${statusRu}: ${nameRu}`].slice(-15);
+                }
+
+                const resolvedNames = prevIncidents
+                    .filter(p => !currentIds.includes(p.id))
+                    .map(p => p.name_ru ?? p.name);
+
+                if (isRecovery) {
+                    // Сбой закончился — редактируем то же сообщение в финальную сводку
+                    const durationMs = newIncidentStartedAtMs !== null ? nowMs - newIncidentStartedAtMs : null;
+                    const finalMessage = formatResolvedMessage(durationMs, resolvedNames, newTimeline);
+
+                    if (activeMessageId) {
+                        try {
+                            await bot.telegram.editMessageText(WORK_CHAT_ID, activeMessageId, undefined, finalMessage, { parse_mode: "Markdown" });
+                            console.log(`[CLAUDE STATUS] Сбой закрыт, сообщение ${activeMessageId} отредактировано в финал`);
+                        } catch (editError) {
+                            if (!isNotModifiedError(editError)) {
+                                console.error("[CLAUDE STATUS] Не удалось отредактировать финал, шлём новым сообщением:", editError);
+                                try { await bot.telegram.sendMessage(WORK_CHAT_ID, finalMessage, { parse_mode: "Markdown" }); }
+                                catch (e) { console.error("[CLAUDE STATUS] Не удалось отправить финал:", e); }
+                            }
+                        }
+                    } else {
+                        try { await bot.telegram.sendMessage(WORK_CHAT_ID, finalMessage, { parse_mode: "Markdown" }); }
+                        catch (e) { console.error("[CLAUDE STATUS] Не удалось отправить финал:", e); }
+                    }
+
+                    // Сбрасываем — следующий сбой начнёт новое сообщение с нуля
+                    newActiveMessageId     = null;
+                    newIncidentStartedAtMs = null;
+                    newTimeline            = [];
+                } else if (indicator !== 'none') {
+                    // Сбой всё ещё идёт (новый или продолжается) — редактируем живое
+                    // сообщение вместо отправки нового. Если редактировать нечего
+                    // (сообщения ещё не было или его не нашли) — отправляем и запоминаем id.
+                    const liveMessage = formatClaudeStatusMessage(indicator, incidents, freshTranslations);
+
+                    if (activeMessageId && !isNewOutage) {
+                        try {
+                            await bot.telegram.editMessageText(WORK_CHAT_ID, activeMessageId, undefined, liveMessage, { parse_mode: "Markdown" });
+                            console.log(`[CLAUDE STATUS] Сообщение ${activeMessageId} отредактировано (${prevIndicator} → ${indicator})`);
+                        } catch (editError) {
+                            if (!isNotModifiedError(editError)) {
+                                console.error("[CLAUDE STATUS] Не удалось отредактировать, шлём новое сообщение:", editError);
+                                try {
+                                    const sent = await bot.telegram.sendMessage(WORK_CHAT_ID, liveMessage, { parse_mode: "Markdown" });
+                                    newActiveMessageId = sent.message_id;
+                                } catch (e) { console.error("[CLAUDE STATUS] Не удалось отправить уведомление:", e); }
+                            }
+                        }
+                    } else {
+                        try {
+                            const sent = await bot.telegram.sendMessage(WORK_CHAT_ID, liveMessage, { parse_mode: "Markdown" });
+                            newActiveMessageId = sent.message_id;
+                            console.log(`[CLAUDE STATUS] Новый сбой, отправлено сообщение ${sent.message_id}`);
+                        } catch (e) { console.error("[CLAUDE STATUS] Не удалось отправить уведомление:", e); }
+                    }
+                }
+                // indicator === 'none' и isRecovery === false (т.е. до этого уже было
+                // 'none') — реального сбоя нет, писать нечего, просто синхронизируем стейт ниже.
             } else if (isFirstRun) {
                 console.log(`[CLAUDE STATUS] Первый запуск. Базовый статус сохранён: ${indicator}`);
             }
 
-            // Всегда синхронизируем последний известный статус — это и есть
-            // база для сравнения на следующей проверке через 5 минут.
             await CLAUDE_STATUS_DOC_REF.set({
                 indicator,
-                description,
+                incidents: incidents.map(i => {
+                    const updates = [...(i.incident_updates ?? [])].sort(
+                        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    );
+                    return {
+                        id: i.id,
+                        name: i.name,
+                        name_ru: freshTranslations.get(i.id)?.name ?? prevNameRuById.get(i.id) ?? null,
+                        lastUpdateAt: updates[0]?.created_at ?? null,
+                    };
+                }),
+                activeMessageId: newActiveMessageId,
+                incidentStartedAtMs: newIncidentStartedAtMs,
+                timeline: newTimeline,
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             }, { merge: true });
 
