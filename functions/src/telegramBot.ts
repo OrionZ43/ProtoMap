@@ -965,10 +965,10 @@ interface ClaudeStatusResponse {
     };
 }
 
-// Экранируем спецсимволы legacy Markdown ("_", "*", "`", "["), чтобы Telegram
+// Экранируем спецсимволы legacy Markdown ("\\", "_", "*", "`", "["), чтобы Telegram
 // не сломался, если Anthropic напишет в description что-то вроде "API_v2".
 function escapeMarkdown(text: string): string {
-    return text.replace(/([_*`[])/g, '\\$1');
+    return text.replace(/([\\_*`\[])/g, '\\$1');
 }
 
 function formatClaudeStatusMessage(indicator: string, description: string): string {
