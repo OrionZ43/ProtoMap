@@ -4,10 +4,11 @@
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { t } from 'svelte-i18n';
-    import { getFunctions, httpsCallable } from 'firebase/functions';
+    import { httpsCallable } from 'firebase/functions';
     import { getAuth, onAuthStateChanged } from 'firebase/auth';
     import { getFirestore, doc, getDoc } from 'firebase/firestore';
     import { userStore } from '$lib/stores';
+    import { functions } from '$lib/firebase';
 
     const opacity = tweened(0, { duration: 500, easing: quintOut });
 
@@ -34,7 +35,6 @@
     let timeLeft            = '';
     let timerInterval: any;
 
-    const functions               = getFunctions();
     const getOrCreateReferralCode = httpsCallable(functions, 'getOrCreateReferralCode');
     const claimReferralFn         = httpsCallable(functions, 'claimReferral');
     const getReferralStatus       = httpsCallable(functions, 'getReferralStatus');

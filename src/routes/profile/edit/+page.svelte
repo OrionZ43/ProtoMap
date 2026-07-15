@@ -1,7 +1,7 @@
 <script lang="ts">
     import NeonButton from '$lib/components/NeonButton.svelte';
     import AvatarEditor from '$lib/components/AvatarEditor.svelte';
-    import { getFunctions, httpsCallable } from 'firebase/functions';
+    import { httpsCallable } from 'firebase/functions';
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
@@ -11,6 +11,7 @@
     import { goto } from '$app/navigation';
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
+    import { functions } from '$lib/firebase';
 
     export let data: PageData;
 
@@ -80,7 +81,6 @@
         isLoadingAvatar = true;
         try {
             const { imageBase64 } = event.detail;
-            const functions = getFunctions();
             const uploadAvatarFunc = httpsCallable(functions, 'uploadAvatar');
 
             modal.info(translate('ui.loading'), 'Uploading...');
@@ -116,7 +116,6 @@
     async function saveProfileData() {
         isSavingProfile = true;
         try {
-            const functions = getFunctions();
             const updateProfileFunc = httpsCallable(functions, 'updateProfileData');
             const result = await updateProfileFunc({
                 status,
@@ -169,7 +168,6 @@
             async () => {
                 isChangingUsername = true;
                 try {
-                    const functions = getFunctions();
                     const changeUsernameFunc = httpsCallable(functions, 'changeUsername');
                     const result = await changeUsernameFunc({ newUsername: trimmed });
                     const msg = (result.data as { message: string }).message;

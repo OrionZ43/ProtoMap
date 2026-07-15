@@ -11,7 +11,6 @@ const db = admin.firestore();
 
 export const toggle2FA = onCall(
 	{
-		region: 'us-central1',
 		secrets: ['TELEGRAM_BOT_TOKEN']
 	},
 	async (request) => {
@@ -62,7 +61,6 @@ export const toggle2FA = onCall(
 
 export const send2FACode = onCall(
 	{
-		region: 'us-central1',
 		secrets: ['TELEGRAM_BOT_TOKEN']
 	},
 	async (request) => {
@@ -162,7 +160,7 @@ IP: <b>${locationStr}</b>
 	}
 );
 
-export const verify2FACode = onCall({ region: 'us-central1' }, async (request) => {
+export const verify2FACode = onCall( async (request) => {
 	if (!request.auth) {
 		throw new HttpsError('unauthenticated', 'User must be authenticated.');
 	}

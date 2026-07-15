@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { auth, db, appCheck } from '$lib/firebase';
+	import { auth, db, appCheck, functions } from '$lib/firebase';
 	import {
 		signInWithEmailAndPassword,
 		signInWithPopup,
@@ -16,7 +16,7 @@
 	import { tweened } from 'svelte/motion';
 	import { modal } from '$lib/stores/modalStore';
 	import { slide, fade } from 'svelte/transition';
-	import { getFunctions, httpsCallable } from 'firebase/functions';
+	import { httpsCallable } from 'firebase/functions';
 	import { userStore } from '$lib/stores';
 	import { t } from 'svelte-i18n';
 
@@ -42,7 +42,6 @@
 
 		isVerifying2FA = true;
 		try {
-			const functions = getFunctions();
 			const verifyFunc = httpsCallable(functions, 'verify2FACode');
 			await verifyFunc({ code: twoFactorCode });
 
@@ -148,7 +147,6 @@
 		const trimmedName = name.trim();
 		if (trimmedName.length < 4) return false;
 		try {
-			const functions = getFunctions();
 			const checkUsernameFunc = httpsCallable(functions, 'checkUsername');
 			const result = await checkUsernameFunc({ username: trimmedName });
 			return (result.data as { isAvailable: boolean }).isAvailable;
@@ -178,7 +176,6 @@
 				const data = userDocSnap.data();
 				if (data.is2FAEnabled) {
 					show2FAModal = true;
-					const functions = getFunctions();
 					const sendCodeFunc = httpsCallable(functions, 'send2FACode');
 					await sendCodeFunc();
 					return; // Stop normal flow and wait for 2FA verification
@@ -337,7 +334,6 @@
 				const data = userDocSnap.data();
 				if (data.is2FAEnabled) {
 					show2FAModal = true;
-					const functions = getFunctions();
 					const sendCodeFunc = httpsCallable(functions, 'send2FACode');
 					await sendCodeFunc();
 					return; // Stop normal flow and wait for 2FA verification

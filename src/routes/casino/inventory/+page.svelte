@@ -2,11 +2,12 @@
     import type { PageData } from './$types';
     import { userStore } from '$lib/stores';
     import { onMount } from 'svelte';
-    import { getFunctions, httpsCallable } from 'firebase/functions';
+    import { httpsCallable } from 'firebase/functions';
     import { modal } from '$lib/stores/modalStore';
     import { Howl } from 'howler';
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
+    import { functions } from '$lib/firebase';
 
     export let data: PageData;
 
@@ -61,7 +62,6 @@
         sounds.save?.play();
 
         try {
-            const functions = getFunctions();
             const updateFunc = httpsCallable(functions, 'updateEquippedItems');
             await updateFunc({
                 equipped_frame: selectedFrame,

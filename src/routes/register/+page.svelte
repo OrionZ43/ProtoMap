@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { auth, db, appCheck } from '$lib/firebase';
+	import { auth, db, appCheck, functions } from '$lib/firebase';
 	import {
 		createUserWithEmailAndPassword,
 		updateProfile,
@@ -8,7 +8,7 @@
 	} from 'firebase/auth';
 	import { getToken } from 'firebase/app-check';
 	import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-	import { getFunctions, httpsCallable } from 'firebase/functions';
+	import { httpsCallable } from 'firebase/functions';
 	import { goto } from '$app/navigation';
 	import NeonButton from '$lib/components/NeonButton.svelte';
 	import CyberTurnstile from '$lib/components/CyberTurnstile.svelte';
@@ -42,7 +42,6 @@
 
 		isVerifying2FA = true;
 		try {
-			const functions = getFunctions();
 			const verifyFunc = httpsCallable(functions, 'verify2FACode');
 			await verifyFunc({ code: twoFactorCode });
 
@@ -104,7 +103,6 @@
 		const trimmedName = name.trim();
 		if (trimmedName.length < 4) return false;
 		try {
-			const functions = getFunctions();
 			const checkUsernameFunc = httpsCallable(functions, 'checkUsername');
 			const result = await checkUsernameFunc({ username: trimmedName });
 			return (result.data as { isAvailable: boolean }).isAvailable;
@@ -257,7 +255,6 @@
 				const data = userDocSnap.data();
 				if (data.is2FAEnabled) {
 					show2FAModal = true;
-					const functions = getFunctions();
 					const sendCodeFunc = httpsCallable(functions, 'send2FACode');
 					await sendCodeFunc();
 					return; // Stop normal flow and wait for 2FA verification

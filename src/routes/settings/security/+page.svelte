@@ -3,8 +3,8 @@
 	import { fade, slide } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
 	import { tweened } from 'svelte/motion';
-	import { getFunctions, httpsCallable } from 'firebase/functions';
-	import { auth } from '$lib/firebase';
+	import { httpsCallable } from 'firebase/functions';
+	import { auth, functions } from '$lib/firebase';
 	import { sendEmailVerification } from 'firebase/auth';
 	import { modal } from '$lib/stores/modalStore';
 	import { t } from 'svelte-i18n';
@@ -25,7 +25,6 @@
 	async function generateTgCode() {
 		isGeneratingCode = true;
 		try {
-			const functions = getFunctions();
 			const getCodeFunc = httpsCallable(functions, 'getTelegramAuthCode');
 			const res = await getCodeFunc();
 			tgLinkCode = (res.data as any).code;
@@ -43,7 +42,6 @@
 		checkbox.checked = data.is2FAEnabled;
 		isToggling2FA = true;
 		try {
-			const functions = getFunctions();
 			const toggleFunc = httpsCallable(functions, 'toggle2FA');
 			const res = await toggleFunc();
 			data.is2FAEnabled = (res.data as any).is2FAEnabled;
@@ -80,7 +78,6 @@
 			async () => {
 				try {
 					modal.info(translate('ui.loading'), translate('security.modal_wiping'));
-					const functions = getFunctions();
 					const deleteAccountFunc = httpsCallable(functions, 'deleteAccount');
 					await deleteAccountFunc();
 					window.location.href = '/';

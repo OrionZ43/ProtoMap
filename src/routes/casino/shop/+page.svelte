@@ -4,12 +4,13 @@
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
-    import { getFunctions, httpsCallable } from 'firebase/functions';
+    import { httpsCallable } from 'firebase/functions';
     import { modal } from '$lib/stores/modalStore';
     import { Howl } from 'howler';
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
     import { fade } from 'svelte/transition';
+    import { functions } from '$lib/firebase';
 
     export let data: PageData;
 
@@ -79,7 +80,6 @@
             dealerMessage = translate('shop.dealer_processing');
 
             try {
-                const functions = getFunctions();
                 const purchaseFunc = httpsCallable(functions, 'purchaseShopItem');
                 await purchaseFunc({ itemId });
 

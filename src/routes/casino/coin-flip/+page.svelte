@@ -1,6 +1,6 @@
 <script lang="ts">
     import { userStore } from '$lib/stores';
-    import { getFunctions, httpsCallable } from 'firebase/functions';
+    import { httpsCallable } from 'firebase/functions';
     import { modal } from '$lib/stores/modalStore';
     import { cubicOut, quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
@@ -11,6 +11,7 @@
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
     import { renderMarkdown } from '$lib/utils/markdown';
+    import { functions } from '$lib/firebase';
 
     // Хелпер для перевода в JS
     const translate = (key: string) => get(t)(key);
@@ -119,7 +120,6 @@
         sounds.coin_flip?.play();
 
         try {
-            const functions = getFunctions();
             const playCoinFlipFunc = httpsCallable(functions, 'playCoinFlip');
 
             const response = await playCoinFlipFunc({ bet: currentBet, choice: playerChoice });

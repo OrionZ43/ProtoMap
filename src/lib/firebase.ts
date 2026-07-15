@@ -3,6 +3,8 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken, type AppCheck } from "firebase/app-check";
 import { browser, dev } from '$app/environment';
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -21,13 +23,10 @@ if (!getApps().length) {
     app = getApp();
 }
 
-import { getDatabase } from "firebase/database";
-import { getFunctions } from "firebase/functions";
-
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const rtdb = getDatabase(app);
-export const functions = getFunctions(app, 'us-central1');
+export const functions = getFunctions(app, 'europe-west1');
 
 // Экспортируем инстанс App Check, чтобы страницы могли прогреть токен заранее
 export let appCheck: AppCheck | null = null;
@@ -51,4 +50,19 @@ if (browser) {
     } catch (e) {
         console.error("[Security] App Check failed to load:", e);
     }
+}
+// ═══════════════════════════════════════════════════════════════
+// ВРЕМЕННЫЙ КОД ДЛЯ ЗАМЕРА РЕГИОНОВ — удалить после переезда.
+//
+// Добавить в КОНЕЦ src/lib/firebase.ts.
+// Работает только в dev (npm run dev), в прод-сборку не попадёт:
+// `dev` из $app/environment вырезается при билде вместе с блоком.
+// ═══════════════════════════════════════════════════════════════
+
+if (browser && dev) {
+    // Прокидываем в window то, что нужно бенчмарку из консоли.
+    // App Check и auth-токен SDK подставит сам — поэтому меряем
+    // ровно тот путь, которым ходит настоящий пользователь.
+    (window as any).__fb = { app, getFunctions, httpsCallable };
+    console.log('[DEV] window.__fb готов — можно запускать бенчмарк регионов');
 }

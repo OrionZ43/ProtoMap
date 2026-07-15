@@ -7,12 +7,12 @@
     import { tweened } from 'svelte/motion';
     import { modal } from '$lib/stores/modalStore';
     import { fade, slide } from 'svelte/transition';
-    import { getFunctions, httpsCallable } from "firebase/functions";
+    import { httpsCallable } from "firebase/functions";
     import { settingsStore } from '$lib/stores/settingsStore';
     import CinematicLoader from '$lib/components/CinematicLoader.svelte';
     import { browser } from '$app/environment';
     import { sendEmailVerification } from "firebase/auth";
-    import { auth } from "$lib/firebase";
+    import { auth, functions } from "$lib/firebase";
     import { invalidateAll } from '$app/navigation';
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
@@ -89,7 +89,6 @@
                     try {
                         // Подгружаем функции только если они нужны
                         const { getFunctions, httpsCallable } = await import('firebase/functions');
-                        const functions = getFunctions();
                         const migrateFunc = httpsCallable(functions, 'migrateExternalAvatar');
 
                         // Запускаем в фоне, не ждем ответа для отрисовки профиля
@@ -151,7 +150,6 @@
 
         isSubmitting = true;
         try {
-            const functions = getFunctions();
             const addCommentFunc = httpsCallable(functions, 'addComment');
 
             await addCommentFunc({
@@ -212,7 +210,6 @@
 
         // 3. ОТПРАВКА НА СЕРВЕР (В ФОНЕ)
         try {
-            const functions = getFunctions();
             const likeFunc = httpsCallable(functions, 'toggleCommentLike');
             // Мы не ждем await invalidateAll(), интерфейс уже обновлен
             await likeFunc({ profileUid: data.profile.uid, commentId });
@@ -229,7 +226,6 @@
             translate('ui.confirm_delete'),
             async () => {
                 try {
-                    const functions = getFunctions();
                     const deleteCommentFunc = httpsCallable(functions, 'deleteComment');
 
                     await deleteCommentFunc({
@@ -263,7 +259,6 @@
                 const reasonObject = reasons.find(r => r.id === selectedReasonId);
                 if (!reasonObject) return;
                 try {
-                    const functions = getFunctions();
                     const reportContentFunc = httpsCallable(functions, 'reportContent');
                     modal.info(translate('ui.loading'), translate('profile.sending'));
                     await reportContentFunc({ type: 'profile', reportedContentId: data.profile.uid, profileOwnerUid: data.profile.uid, reason: reasonObject.text, reportedUsername: data.profile.username, reporterUsername: $userStore.user?.username || 'unknown'});
@@ -289,7 +284,6 @@
                 const reasonObject = reasons.find(r => r.id === selectedReasonId);
                 if (!reasonObject) return;
                 try {
-                    const functions = getFunctions();
                     const reportContentFunc = httpsCallable(functions, 'reportContent');
                     modal.info(translate('ui.loading'), translate('profile.sending'));
                     await reportContentFunc({ type: 'comment', reportedContentId: commentId, profileOwnerUid: data.profile.uid, reason: reasonObject.text, profileOwnerUsername: data.profile.username, reportedUsername: commentAuthorUsername, reporterUsername: $userStore.user?.username || 'unknown' });

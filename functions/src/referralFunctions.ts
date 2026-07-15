@@ -257,7 +257,7 @@ export const claimReferral = onCall(
 
 // ─── getReferralStatus ────────────────────────────────────────────────────────
 
-export const getReferralStatus = onCall(async (request) => {
+export const getReferralStatus = onCall( async (request) => {
     if (request.app == undefined) throw new HttpsError("failed-precondition", "App Check required.");
     if (!request.auth)            throw new HttpsError("unauthenticated",      "Auth required.");
 

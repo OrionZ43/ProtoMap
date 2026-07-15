@@ -1,7 +1,7 @@
 <script lang="ts">
     import { userStore } from '$lib/stores';
     import { onMount, onDestroy } from 'svelte';
-    import { getFunctions, httpsCallable } from 'firebase/functions';
+    import { httpsCallable } from 'firebase/functions';
     import { getDatabase, ref, onValue, off } from 'firebase/database';
     import { modal } from '$lib/stores/modalStore';
     import { Howl } from 'howler';
@@ -10,6 +10,7 @@
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
     import { renderMarkdown } from '$lib/utils/markdown';
+    import { functions } from '$lib/firebase';
 
     let canvas: HTMLCanvasElement;
     let ctx: CanvasRenderingContext2D;
@@ -158,7 +159,6 @@
         sounds.click?.play();
 
         try {
-            const functions = getFunctions();
             const startFunc = httpsCallable(functions, 'startCrashGame');
             const result: any = await startFunc({ bet: betAmount });
             gameId = result.data.data.gameId;
@@ -227,7 +227,6 @@
         drawFrame(currentMult);
 
         try {
-            const functions = getFunctions();
             const cashOutFunc = httpsCallable(functions, 'cashOutCrashGame');
             await cashOutFunc({ gameId, multiplier: currentMult });
 

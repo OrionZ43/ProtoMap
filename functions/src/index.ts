@@ -10,8 +10,10 @@ import { getMessaging } from "firebase-admin/messaging";
 import vision from "@google-cloud/vision";
 export { getStepperStatus, stepperClaim } from './stepper';
 export { getOrCreateReferralCode, claimReferral, getReferralStatus, finishReferralCampaign } from './referralFunctions';
-export { startRoulette, makeRouletteAction, abandonRoulette } from './roulette';
 import { auth } from "firebase-functions/v1";
+import { setGlobalOptions } from "firebase-functions/v2";
+
+setGlobalOptions({ region: 'europe-west1' });
 
 // ===================================================================
 // 🔒 SECURITY FIX #1: Безопасная проверка Google URL
@@ -1321,7 +1323,7 @@ export const playCoinFlip = onCall(async (request) => {
     }
 });
 
-export const getLeaderboard = onCall(async (request) => {
+export const getLeaderboard = onCall( async (request) => {
     if (request.app == undefined) {
         throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
     }

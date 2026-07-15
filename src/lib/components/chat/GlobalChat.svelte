@@ -2,9 +2,9 @@
 <!-- Бывший ChatWidget.svelte — глобальный чат без изменений логики -->
 <script lang="ts">
     import { onMount, tick } from 'svelte';
-    import { db } from '$lib/firebase';
+    import { db, functions } from '$lib/firebase';
     import { collection, query, orderBy, limit, onSnapshot, where, type Unsubscribe, type Timestamp } from 'firebase/firestore';
-    import { getFunctions, httpsCallable } from 'firebase/functions';
+    import { httpsCallable } from 'firebase/functions';
     import { userStore } from '$lib/stores';
     import { modal } from '$lib/stores/modalStore';
     import { AudioManager } from '$lib/client/audioManager';
@@ -130,7 +130,6 @@
         if (!currentUser) { modal.error(get(t)('ui.error'), get(t)('chat.login_req')); return; }
         isSending = true; canSendMessage = false;
         try {
-            const functions = getFunctions();
             await httpsCallable(functions, 'sendMessage')({
                 text: messageText.trim(),
                 replyTo: replyingTo ? { author_username: replyingTo.author_username, text: replyingTo.text } : null,

@@ -1,8 +1,8 @@
 import L from 'leaflet';
 import 'leaflet.markercluster';
-import { auth } from '$lib/firebase';
+import { auth, functions } from '$lib/firebase';
 import { userStore, type UserProfile } from '$lib/stores';
-import { getFunctions, httpsCallable } from "firebase/functions";
+import { httpsCallable } from "firebase/functions";
 import { modal } from '$lib/stores/modalStore';
 import { AudioManager } from '$lib/client/audioManager';
 
@@ -265,7 +265,6 @@ export function initMap(containerId: string) {
                 return;
             }
 
-            const functions = getFunctions();
             const getLocationsFunc = httpsCallable(functions, 'getLocations');
             const result = await getLocationsFunc();
             const locations = result.data as Array<{ user: MarkerUserData, lat: number, lng: number, city: string }>;
@@ -290,7 +289,6 @@ export function initMap(containerId: string) {
             const idToken = await auth.currentUser?.getIdToken(true);
             if (!idToken) throw new Error("Не удалось получить токен пользователя.");
 
-            const functions = getFunctions();
             const addOrUpdateLocationFunc = httpsCallable(functions, 'addOrUpdateLocation');
             const result = await addOrUpdateLocationFunc({ lat, lng, isManual });
 
@@ -374,7 +372,6 @@ export function initMap(containerId: string) {
                                 this.textContent = "Удаление...";
                                 this.disabled = true;
                                 try {
-                                    const functions = getFunctions();
                                     const deleteLocationFunc = httpsCallable(functions, 'deleteLocation');
                                     const result = await deleteLocationFunc();
                                     const data = result.data as any;

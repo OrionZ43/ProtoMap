@@ -1,6 +1,6 @@
 <script lang="ts">
     import { userStore } from '$lib/stores';
-    import { getFunctions, httpsCallable } from 'firebase/functions';
+    import { httpsCallable } from 'firebase/functions';
     import { modal } from '$lib/stores/modalStore';
     import { onMount, onDestroy } from 'svelte';
     import { quintOut } from 'svelte/easing';
@@ -11,6 +11,7 @@
     import { scale, fade } from 'svelte/transition';
     import ArtifactSynthesis from '$lib/components/casino/ArtifactSynthesis.svelte';
     import { renderMarkdown } from '$lib/utils/markdown';
+    import { functions } from '$lib/firebase';
 
     const translate = (key: string) => get(t)(key);
     const MAX_BET = 1000;
@@ -147,7 +148,6 @@
         spinSoundInterval = setInterval(() => createSynthSound('reel_spin'), 150);
 
         try {
-            const functions = getFunctions();
             const playSlotMachineFunc = httpsCallable(functions, 'playSlotMachine');
 
             const response = await playSlotMachineFunc({ bet: currentBet });
@@ -234,7 +234,6 @@
         sounds.click?.play();
 
         try {
-            const functions = getFunctions();
             const synthFunc = httpsCallable(functions, 'synthesizeArtifact');
 
             const res = await synthFunc();

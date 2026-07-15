@@ -3,12 +3,13 @@
     import { onMount } from 'svelte';
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
-    import { getFunctions, httpsCallable } from 'firebase/functions';
+    import { httpsCallable } from 'firebase/functions';
     import { modal } from '$lib/stores/modalStore';
     import { fade, slide } from 'svelte/transition';
     import { Howl } from 'howler';
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
+    import { functions } from '$lib/firebase';
 
     let loadingBonus = false;
     let loadingLeaderboard = true;
@@ -81,7 +82,6 @@
     async function loadLeaderboard() {
         loadingLeaderboard = true;
         try {
-            const functions = getFunctions();
             const getLeaderboardFunc = httpsCallable(functions, 'getLeaderboard');
             const result = await getLeaderboardFunc();
             leaderboard = (result.data as any).data;
@@ -95,7 +95,6 @@
     async function claimDailyBonus() {
         loadingBonus = true;
         try {
-            const functions = getFunctions();
             const getDailyBonusFunc = httpsCallable(functions, 'getDailyBonus');
             const result = await getDailyBonusFunc();
             const data = (result.data as any).data;
