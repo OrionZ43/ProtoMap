@@ -14,10 +14,10 @@ import {
 	updateDoc,
 	serverTimestamp,
 	increment,
-	type Unsubscribe,
-	type Timestamp
+	type Unsubscribe
 } from 'firebase/firestore';
 import { getCached, setCache } from '$lib/stores/dmCache';
+import { toJsDate } from '$lib/utils/firestoreDate';
 
 export type DMChat = {
 	id: string;
@@ -42,6 +42,11 @@ export type DMMessage = {
 	replyTo: { author_username: string; text: string } | null;
 	read_by?: Record<string, boolean>;
 };
+
+/** true только для «обычного» словаря — не массив, не null, не примитив. */
+function isPlainMap(v: unknown): v is Record<string, never> {
+	return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
 
 // ── Состояние ──────────────────────────────────────────────────────────────
 export const chats = writable<DMChat[]>([]);
@@ -88,8 +93,7 @@ export function startInbox(uid: string) {
 								frameId: partnerData.frameId ?? null
 							},
 							lastMessage: data.lastMessage ?? '',
-							lastMessageTimestamp:
-								(data.lastMessageTimestamp as Timestamp)?.toDate() ?? null,
+							lastMessageTimestamp: toJsDate(data.lastMessageTimestamp),
 							unread: data.unreadCount?.[uid] ?? 0
 						};
 					})
@@ -143,15 +147,20 @@ export function openChat(dmChat: DMChat, myUid: string) {
 						text: data.text ?? '',
 						author_uid: data.author_uid ?? '',
 						author_username: data.author_username ?? 'unknown',
-						createdAt: (data.createdAt as Timestamp)?.toDate() ?? new Date(),
+						// toJsDate: createdAt может быть Timestamp | null | number | ISO-строкой
+						// (мобильный клиент пишет свои форматы). Раньше падало на TypeError
+						// и роняло весь map → сообщения не отображались вовсе.
+						createdAt: toJsDate(data.createdAt) ?? new Date(),
 						is_deleted: data.is_deleted ?? false,
 						type: data.type ?? 'TEXT',
 						media_url: data.media_url ?? null,
 						sticker_pack_id: data.sticker_pack_id ?? null,
 						sticker_id: data.sticker_id ?? null,
-						reactions: data.reactions ?? {},
+						// Только объект-словарь: массив/строка/число из чужого клиента
+						// ломали Object.keys() при рендере.
+						reactions: isPlainMap(data.reactions) ? data.reactions : {},
 						replyTo: data.replyTo ?? null,
-						read_by: data.read_by ?? {}
+						read_by: isPlainMap(data.read_by) ? data.read_by : {}
 					};
 				})
 				.reverse();

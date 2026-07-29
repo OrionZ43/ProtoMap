@@ -7,10 +7,12 @@
         collection, query, where, orderBy, limit, onSnapshot, doc,
         setDoc, updateDoc, deleteDoc, addDoc, serverTimestamp,
         increment, arrayUnion, arrayRemove,
-        type Unsubscribe, type Timestamp
+        type Unsubscribe
     } from 'firebase/firestore';
     import { userStore, chat } from '$lib/stores';
     import { getCached, setCache } from '$lib/stores/dmCache';
+    import { toJsDate } from '$lib/utils/firestoreDate';
+    import { scrollToBottom } from '$lib/utils/scroll';
     import { stickerStore, getStickerUrl } from '$lib/stores/stickerStore';
     import VoiceMessage from '$lib/components/chat/VoiceMessage.svelte';
 
@@ -106,7 +108,7 @@
 
     export function onTabActivated() {
         if (view === 'chat' && messagesWindow)
-            tick().then(() => { messagesWindow.scrollTop = messagesWindow.scrollHeight; });
+            tick().then(() => scrollToBottom(messagesWindow));
     }
 
     export function openFavorites() {
@@ -156,7 +158,7 @@
                     partner: { uid: partnerUid, username: partnerData.username ?? 'Unknown',
                                avatarUrl: partnerData.avatarUrl ?? null, frameId: partnerData.frameId ?? null },
                     lastMessage: data.lastMessage ?? '',
-                    lastMessageTimestamp: (data.lastMessageTimestamp as Timestamp)?.toDate() ?? null,
+                    lastMessageTimestamp: toJsDate(data.lastMessageTimestamp),
                     unread: data.unreadCount?.[uid] ?? 0,
                 };
             }).filter(c => c.partner.uid !== uid && c.partner.username !== 'Unknown');
@@ -190,15 +192,17 @@
                     text:            data.text ?? '',
                     author_uid:      data.author_uid ?? '',
                     author_username: data.author_username ?? 'unknown',
-                    createdAt:       (data.createdAt as Timestamp)?.toDate() ?? new Date(),
+                    // createdAt может быть Timestamp | null | number | ISO-строкой —
+                    // мобильный клиент пишет свои форматы. См. $lib/utils/firestoreDate.
+                    createdAt:       toJsDate(data.createdAt) ?? new Date(),
                     is_deleted:      data.is_deleted ?? false,
                     type:            data.type ?? 'TEXT',
                     media_url:       data.media_url ?? null,
                     sticker_pack_id: data.sticker_pack_id ?? null,
                     sticker_id:      data.sticker_id ?? null,
-                    reactions:       data.reactions ?? {},
+                    reactions:       isPlainMap(data.reactions) ? data.reactions : {},
                     replyTo:         data.replyTo ?? null,
-                    read_by:         data.read_by ?? {},
+                    read_by:         isPlainMap(data.read_by) ? data.read_by : {},
                 };
             }).reverse();
 
@@ -206,7 +210,7 @@
             messages = fresh;
 
             if (cached.length === 0) {
-                tick().then(() => { if (messagesWindow) messagesWindow.scrollTop = messagesWindow.scrollHeight; });
+                tick().then(() => scrollToBottom(messagesWindow));
             }
         });
 
@@ -376,7 +380,7 @@
         const uid = $userStore.user?.uid;
         if (!uid || !activeChat) return;
         const ref = doc(db, 'chats', activeChat.id, 'messages', msg.id);
-        if (msg.reactions[uid] === emoji) {
+        if (msg.reactions?.[uid] === emoji) {
             const updated = { ...msg.reactions };
             delete updated[uid];
             await updateDoc(ref, { reactions: updated });
@@ -426,17 +430,31 @@
     }
 
     // ── Утилиты ────────────────────────────────────────────────────────────
+    // ВАЖНО: всё, что вызывается из разметки, не должно бросать. Исключение при
+    // рендере в Svelte разрушает всё дерево компонентов — а DMInbox живёт в
+    // ChatWidget внутри корневого layout, то есть падает весь сайт, а не чат.
+    function isPlainMap(v: unknown): v is Record<string, never> {
+        return typeof v === 'object' && v !== null && !Array.isArray(v);
+    }
+
+    function isValidDate(d: unknown): d is Date {
+        return d instanceof Date && !isNaN(d.getTime());
+    }
+
     function formatTime(date: Date) {
+        if (!isValidDate(date)) return '';
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
     function isSameDay(a: Date, b: Date) {
+        if (!isValidDate(a) || !isValidDate(b)) return false;
         return a.getFullYear() === b.getFullYear() &&
                a.getMonth()    === b.getMonth()    &&
                a.getDate()     === b.getDate();
     }
 
     function formatDaySeparator(date: Date): string {
+        if (!isValidDate(date)) return '';
         const today     = new Date();
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
@@ -447,11 +465,12 @@
 
     function needsDaySeparator(msg: DMMessage, prev: DMMessage | undefined): boolean {
         if (!prev) return true;
+        if (!isValidDate(msg.createdAt) || !isValidDate(prev.createdAt)) return false;
         return !isSameDay(msg.createdAt, prev.createdAt);
     }
 
     function formatLastSeen(date: Date | null) {
-        if (!date) return '';
+        if (!isValidDate(date)) return '';
         const diff = Date.now() - date.getTime();
         if (diff < 60_000)     return 'только что';
         if (diff < 3_600_000)  return `${Math.floor(diff / 60_000)} мин`;
@@ -459,10 +478,16 @@
         return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
     }
 
-    function countReactions(r: Record<string, string>) {
+    function countReactions(r: Record<string, string> | null | undefined) {
+        if (!isPlainMap(r)) return [];
         const c: Record<string, number> = {};
-        Object.values(r).forEach(e => { c[e] = (c[e] ?? 0) + 1; });
+        Object.values(r).forEach(e => { c[e as string] = (c[e as string] ?? 0) + 1; });
         return Object.entries(c);
+    }
+
+    /** Сколько реакций у сообщения — безопасно для любого содержимого поля. */
+    function reactionCount(r: unknown): number {
+        return isPlainMap(r) ? Object.keys(r).length : 0;
     }
 
     // Обёртка getStickerUrl с текущими паками из стора
@@ -655,11 +680,11 @@
                             </div>
                         {/if}
 
-                        {#if Object.keys(msg.reactions).length > 0}
+                        {#if reactionCount(msg.reactions) > 0}
                             <div class="reactions" class:own={isOwn}>
                                 {#each countReactions(msg.reactions) as [emoji, count]}
                                     <button class="reaction-pill"
-                                            class:my-reaction={msg.reactions[$userStore.user?.uid ?? ''] === emoji}
+                                            class:my-reaction={msg.reactions?.[$userStore.user?.uid ?? ''] === emoji}
                                             on:click={() => toggleReaction(msg, emoji)}>
                                         {emoji} {count}
                                     </button>

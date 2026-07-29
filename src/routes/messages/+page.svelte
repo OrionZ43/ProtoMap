@@ -37,6 +37,7 @@
 	import VoiceMessage from '$lib/components/chat/VoiceMessage.svelte';
 	import ChannelsFeed from '$lib/components/chat/ChannelsFeed.svelte';
 	import { stickerStore, getStickerUrl } from '$lib/stores/stickerStore';
+	import { scrollToBottom } from '$lib/utils/scroll';
 
 	// ── UI state ───────────────────────────────────────────────────────────
 	let messageText = '';
@@ -129,11 +130,15 @@
 		atBottom = gap < 140;
 	}
 
+	// ⚠️ Скроллим ТОЛЬКО через scrollToBottom(). Прямая запись
+	// `messagesWindow.scrollTop = ...` здесь вешала весь сайт: см. подробности
+	// в $lib/utils/scroll.ts — коротко, `bind:this` это `mutable_source`, запись
+	// в его свойство компилируется в `$.mutate(messagesWindow)`, а эта переменная
+	// стоит в зависимостях блока → бесконечный цикл без единой ошибки в консоли.
 	$: if ($messages.length >= 0 && messagesWindow && $activeChat) {
 		tick().then(() => {
-			if (!messagesWindow) return;
 			if (forceScroll || atBottom) {
-				messagesWindow.scrollTop = messagesWindow.scrollHeight;
+				scrollToBottom(messagesWindow);
 				forceScroll = false;
 			}
 		});
@@ -359,7 +364,7 @@
 		const uid = $userStore.user.uid;
 		const ref = doc(db, 'chats', $activeChat.id, 'messages', msg.id);
 		try {
-			if (msg.reactions[uid] === emoji) {
+			if (msg.reactions?.[uid] === emoji) {
 				const r = { ...msg.reactions };
 				delete r[uid];
 				await updateDoc(ref, { reactions: r });
@@ -414,12 +419,23 @@
 		return getStickerUrl(packs, packId, filename);
 	}
 
+	// ВАЖНО: ничего из вызываемого в разметке не должно бросать. Исключение при
+	// рендере разрушает всё дерево компонентов Svelte — падает не чат, а весь сайт.
+	function isPlainMap(v: unknown): v is Record<string, never> {
+		return typeof v === 'object' && v !== null && !Array.isArray(v);
+	}
+
+	function isValidDate(d: unknown): d is Date {
+		return d instanceof Date && !isNaN(d.getTime());
+	}
+
 	function fmt(date: Date) {
+		if (!isValidDate(date)) return '';
 		return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 	}
 
 	function fmtDate(date: Date | null) {
-		if (!date) return '';
+		if (!isValidDate(date)) return '';
 		const d = Date.now() - date.getTime();
 		if (d < 60_000) return 'сейчас';
 		if (d < 3_600_000) return `${Math.floor(d / 60_000)} мин`;
@@ -428,6 +444,7 @@
 	}
 
 	function isSameDay(a: Date, b: Date) {
+		if (!isValidDate(a) || !isValidDate(b)) return false;
 		return (
 			a.getFullYear() === b.getFullYear() &&
 			a.getMonth() === b.getMonth() &&
@@ -436,6 +453,7 @@
 	}
 
 	function dayLabel(date: Date) {
+		if (!isValidDate(date)) return '';
 		const t = new Date();
 		const y = new Date(t);
 		y.setDate(y.getDate() - 1);
@@ -444,10 +462,16 @@
 		return date.toLocaleDateString('ru', { day: 'numeric', month: 'long' });
 	}
 
-	function countReactions(r: Record<string, string>) {
+	function countReactions(r: Record<string, string> | null | undefined) {
+		if (!isPlainMap(r)) return [];
 		const c: Record<string, number> = {};
-		Object.values(r).forEach((e) => (c[e] = (c[e] ?? 0) + 1));
+		Object.values(r).forEach((e) => (c[e as string] = (c[e as string] ?? 0) + 1));
 		return Object.entries(c);
+	}
+
+	/** Сколько реакций у сообщения — безопасно для любого содержимого поля. */
+	function reactionCount(r: unknown): number {
+		return isPlainMap(r) ? Object.keys(r).length : 0;
 	}
 
 	const QUICK = ['❤️', '🔥', '😂', '👍', '😮'];
@@ -690,12 +714,12 @@
 								</div>
 							{/if}
 
-							{#if Object.keys(msg.reactions).length > 0}
+							{#if reactionCount(msg.reactions) > 0}
 								<div class="reactions" class:own={isOwn}>
 									{#each countReactions(msg.reactions) as [e, n]}
 										<button
 											class="rpill"
-											class:mine={msg.reactions[$userStore.user?.uid ?? ''] === e}
+											class:mine={msg.reactions?.[$userStore.user?.uid ?? ''] === e}
 											on:click={() => toggleReaction(msg, e)}
 										>{e} {n}</button>
 									{/each}

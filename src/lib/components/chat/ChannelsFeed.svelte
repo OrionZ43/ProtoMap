@@ -23,6 +23,7 @@
 	} from 'firebase/firestore';
 	import { userStore } from '$lib/stores';
 	import VoiceMessage from '$lib/components/chat/VoiceMessage.svelte';
+	import { scrollToBottom } from '$lib/utils/scroll';
 
 	// ── Константы ──────────────────────────────────────────────────────────
 	const MAX_POST_LENGTH = 4000;
@@ -68,9 +69,7 @@
 
 	export function onTabActivated() {
 		if (view === 'channel' && postsContainer) {
-			tick().then(() => {
-				postsContainer.scrollTop = postsContainer.scrollHeight;
-			});
+			tick().then(() => scrollToBottom(postsContainer));
 		}
 	}
 
@@ -165,10 +164,7 @@
 					.reverse();
 
 				// Скролл вниз после загрузки постов
-				tick().then(() => {
-					if (postsContainer)
-						postsContainer.scrollTop = postsContainer.scrollHeight;
-				});
+				tick().then(() => scrollToBottom(postsContainer));
 			},
 			(err) => {
 				console.error('[ChannelsFeed] posts error:', err);
@@ -294,10 +290,7 @@
 			});
 
 			// Скролл вниз после публикации
-			tick().then(() => {
-				if (postsContainer)
-					postsContainer.scrollTop = postsContainer.scrollHeight;
-			});
+			tick().then(() => scrollToBottom(postsContainer));
 		} catch (e) {
 			console.error('[ChannelsFeed] publish post:', e);
 			newPostText = newPostText || text; // Возвращаем текст при ошибке

@@ -11,6 +11,7 @@
     import { t, locale } from 'svelte-i18n';
     import { get } from 'svelte/store';
     import { usernameCache, getUsername, getAvatarUrl } from '$lib/stores/usernameCache';
+    import { scrollToBottom } from '$lib/utils/scroll';
     import { chat } from '$lib/stores';
 
     type ReplyInfo = { author_username: string; text: string; };
@@ -121,7 +122,7 @@
         if (!messagesWindow) return;
         const unreadMarker = document.getElementById('unread-marker');
         if (unreadMarker) unreadMarker.scrollIntoView({ block: 'center', behavior: 'auto' });
-        else messagesWindow.scrollTop = messagesWindow.scrollHeight;
+        else scrollToBottom(messagesWindow);
     }
 
     async function sendMessage() {
@@ -141,7 +142,7 @@
             localStorage.setItem('protomap_last_read_chat', lastReadTime.toString());
             setTimeout(() => { canSendMessage = true; }, cooldownSeconds * 1000);
             await tick();
-            if (messagesWindow) messagesWindow.scrollTop = messagesWindow.scrollHeight;
+            scrollToBottom(messagesWindow);
         } catch (e) { canSendMessage = true; } finally { isSending = false; }
     }
 
@@ -166,7 +167,10 @@
         const today = new Date(); const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
         if (isSameDay(date, today)) return get(t)('profile.time.today');
         if (isSameDay(date, yesterday)) return get(t)('profile.time.yesterday');
-        return date.toLocaleDateString(get(locale), { day: 'numeric', month: 'long' });
+        // get(locale) — null, пока svelte-i18n не инициализировался.
+        // toLocaleDateString(null) бросает TypeError, undefined же безопасен
+        // (берётся локаль по умолчанию). Падение здесь роняло весь layout.
+        return date.toLocaleDateString(get(locale) ?? undefined, { day: 'numeric', month: 'long' });
     }
 </script>
 
