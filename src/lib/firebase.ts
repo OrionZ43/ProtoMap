@@ -50,8 +50,21 @@ if (browser) {
         //
         // Только dev: в прод-сборке `dev` вычисляется в false и весь блок
         // вырезается, там работает настоящий ReCaptcha Enterprise.
-        (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN =
-            import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true;
+        const debugToken = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN;
+        (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = debugToken || true;
+
+        // При фиксированном токене SDK ничего не печатает (он печатает только
+        // тот, что сгенерировал сам). Без этой подсказки непонятно, что именно
+        // регистрировать в консоли, когда прилетает 403.
+        if (debugToken) {
+            console.info(
+                `[AppCheck] Debug-токен: ${debugToken}
+` +
+                'Если App Check отвечает 403 — токен не зарегистрирован: ' +
+                'Firebase Console -> App Check -> вкладка Apps -> веб-приложение -> ' +
+                'меню (три точки) -> Manage debug tokens -> Add debug token.'
+            );
+        }
     }
 
     try {
