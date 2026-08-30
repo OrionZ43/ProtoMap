@@ -33,7 +33,25 @@ export let appCheck: AppCheck | null = null;
 
 if (browser) {
     if (dev) {
-        (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+        // Debug-токен App Check для локальной разработки.
+        //
+        // `true` заставляет SDK сгенерировать СЛУЧАЙНЫЙ токен, положить его в
+        // IndexedDB и напечатать в консоль — его нужно вручную зарегистрировать
+        // в Firebase Console (App Check → Apps → Manage debug tokens).
+        // Проблема в том, что при любой чистке хранилища токен пересоздаётся,
+        // и регистрировать его приходится заново. В браузерах со строгими
+        // настройками приватности (Firefox с защитой от отпечатков и
+        // разделением хранилища) это происходит постоянно, и App Check
+        // отвечает 403 на каждый запрос токена.
+        //
+        // Поэтому: если задан VITE_APPCHECK_DEBUG_TOKEN — берём его. Он
+        // фиксированный, регистрируется в консоли один раз и переживает
+        // очистку хранилища. Если не задан — прежнее поведение.
+        //
+        // Только dev: в прод-сборке `dev` вычисляется в false и весь блок
+        // вырезается, там работает настоящий ReCaptcha Enterprise.
+        (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN =
+            import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true;
     }
 
     try {

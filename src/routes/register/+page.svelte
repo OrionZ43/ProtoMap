@@ -4,6 +4,7 @@
 		createUserWithEmailAndPassword,
 		updateProfile,
 		signInWithPopup,
+		getRedirectResult,
 		GoogleAuthProvider
 	} from 'firebase/auth';
 	import { getToken } from 'firebase/app-check';
@@ -74,6 +75,22 @@
 
 	onMount(async () => {
 		opacity.set(1);
+
+		// Прогреваем резолвер попапа ПАРАЛЛЕЛЬНО с App Check — не дожидаясь его.
+		//
+		// Firebase грузит gapi и cross-origin iframe с authDomain только в момент
+		// вызова signInWithPopup, то есть уже внутри обработчика клика. Это
+		// сетевая работа ДО window.open, и на холодном браузере она не
+		// укладывается в окно «пользовательского жеста»: Firefox и Яндекс
+		// блокируют попап (auth/popup-blocked). На localhost не воспроизводится,
+		// потому что у разработчика gapi давно в кэше и грузится мгновенно —
+		// поэтому баг месяцами виден только на проде.
+		//
+		// getRedirectResult — публичный способ инициализировать тот же резолвер
+		// заранее. Вход через редирект мы не используем, поэтому он всегда
+		// возвращает null; если когда-нибудь появится signInWithRedirect,
+		// результат отсюда придётся обрабатывать, а не игнорировать.
+		getRedirectResult(auth).catch(() => {});
 
 		// Прогреваем App Check токен ДО того как юзер нажмёт кнопку.
 		// Без этого signInWithPopup уходит за токеном асинхронно,
@@ -184,14 +201,11 @@
 
 		googleLoading = true;
 
-		// Если токен ещё не прогрет (страница только открылась) — ждём ещё раз
-		if (appCheck && !appCheckReady) {
-			try {
-				await getToken(appCheck, false);
-			} catch (e) {
-				console.warn('[AppCheck] Token fetch on click failed:', e);
-			}
-		}
+		// ⚠️ НИЧЕГО не await'им до signInWithPopup. Раньше здесь стоял
+		// повторный getToken(appCheck) — он был недостижим (кнопка disabled,
+		// пока !appCheckReady), но если условие disabled когда-нибудь изменят,
+		// этот await снова начнёт рвать цепочку пользовательского жеста
+		// и попап опять заблокируется.
 
 		const provider = new GoogleAuthProvider();
 
