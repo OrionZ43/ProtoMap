@@ -113,11 +113,36 @@ export function initMap(containerId: string) {
         map.attributionControl.setPrefix(false);
     }
 
+    // Атрибуция — это лицензионное обязательство, а не украшение: ODbL требует
+    // указывать OpenStreetMap, а условия бесплатного ключа CARTO — ещё и CARTO.
+    const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+    const CARTO_ATTR = `${OSM_ATTR}, &copy; <a href="https://carto.com/attributions">CARTO</a>`;
+
+    // Ключ базовых карт CARTO. С марта 2026 растровые тайлы
+    // basemaps.cartocdn.com без ключа отдаются с водяным знаком
+    // «API KEY REQUIRED» поверх карты. Ключ публичный по природе — он уходит
+    // в URL тайла и виден в браузере, поэтому VITE_, а не PRIVATE_.
+    // Если ключа нет — не дёргаем CARTO вообще и рисуем тёмную тему
+    // из OSM через CSS-фильтр (.map-dark в app.css). Хуже по качеству,
+    // но без водяного знака и без падения сборки без секретов.
+    const cartoKey = import.meta.env.VITE_CARTO_BASEMAP_KEY;
+
+    const darkLayer = cartoKey
+        ? L.tileLayer(
+              `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${cartoKey}`,
+              { maxZoom: 20, subdomains: 'abcd', attribution: CARTO_ATTR }
+          )
+        : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              maxZoom: 19,
+              attribution: OSM_ATTR,
+              className: 'map-dark'
+          });
+
     const baseLayers: { [key: string]: L.TileLayer } = {
-        "Стандартная": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OSM' }),
-        "Полночь": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OSM', className: 'map-black' }),
-        "Тёмная": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 20, attribution: '© CARTO' }),
-        "Синий неон": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OSM', className: 'matrix-tiles' }),
+        "Стандартная": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: OSM_ATTR }),
+        "Полночь": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: OSM_ATTR, className: 'map-black' }),
+        "Тёмная": darkLayer,
+        "Синий неон": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: OSM_ATTR, className: 'matrix-tiles' }),
     };
     const storageKey = 'protomap-selected-theme';
     let savedLayerName = "Тёмная";
