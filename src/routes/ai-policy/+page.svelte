@@ -68,6 +68,8 @@
         <h3 class="section-title">{$t('ai_policy.conclusion_title')}</h3>
         <p>{$t('ai_policy.conclusion_text')}</p>
 
+        <p class="disclaimer">{$t('ai_policy.disclaimer')}</p>
+
         <p class="mt-12 text-center text-gray-500">{$t('ai_policy.eoc')}</p>
     </div>
 </div>
@@ -95,7 +97,9 @@
         text-align: center;
         color: var(--text-muted-color, #909dab);
         margin-bottom: 3rem;
-        font-family: 'Chakra Petch', monospace;
+        /* Не Chakra Petch: подзаголовок теперь русский, а кириллицы у него нет —
+           текст падал бы в системный моноширинный. */
+        font-family: var(--font-display);
     }
     .content-text {
         font-size: 1rem;
@@ -104,10 +108,23 @@
     }
     .content-text p { margin-bottom: 1.5rem; }
 
+    /* Оформлено как официальная плашка — сухой канцелярский тон и есть шутка */
+    .disclaimer {
+        margin-top: 3rem;
+        padding: 1rem 1.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-left: 3px solid var(--cyber-yellow, #fcee0a);
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--text-muted-color, #909dab);
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+
     .section-title {
-        font-family: 'Chakra Petch', monospace;
+        /* Заголовки разделов на русском — см. комментарий у .subtitle.
+           Вес не задаём: у Russo One только 400, синтетический жир поплывёт. */
+        font-family: var(--font-display);
         font-size: 1.4rem;
-        font-weight: 700;
         color: var(--cyber-yellow, #fcee0a);
         margin-top: 3rem;
         margin-bottom: 1.5rem;

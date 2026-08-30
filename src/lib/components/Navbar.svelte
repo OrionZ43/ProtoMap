@@ -145,7 +145,7 @@
             <div class="nav-divider"></div>
 
             <a href="/ai-policy" class="nav-tab text-red-500 hover:text-red-400" class:active={isActive('/ai-policy')}>
-                Censored by r/protogen
+                {$t('nav.ai_policy')}
                 <div class="tab-line red"></div>
             </a>
         </div>
@@ -290,7 +290,8 @@
                 <a href="/about" class="mobile-link" class:active={isActive('/about')}>{$t('nav.about')}</a>
 
                 <a href="/ai-policy" class="mobile-link text-red-400" class:active={isActive('/ai-policy')}>
-                    Censored by r/protogen
+                    <svg class="ml-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1H7a3 3 0 0 0-3 3v2H3a1 1 0 0 0 0 2h1v2a3 3 0 0 0 3 3h2v1a3 3 0 0 0 6 0v-1h2a3 3 0 0 0 3-3v-2h1a1 1 0 0 0 0-2h-1V9a3 3 0 0 0-3-3h-2V5a3 3 0 0 0-3-3z"/><circle cx="9.5" cy="11" r="1" fill="currentColor"/><circle cx="14.5" cy="11" r="1" fill="currentColor"/></svg>
+                    {$t('nav.ai_policy')}
                 </a>
 
                 <div class="border-t border-white/10 my-2"></div>
