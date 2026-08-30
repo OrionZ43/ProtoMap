@@ -68,6 +68,65 @@ Two separate stores — a name existing in one says nothing about the other.
 | `ADMIN_UIDS` | comma-separated, `+layout.server.ts` and `admin/+layout.server.ts` |
 | `PRIVATE_TURNSTILE_SECRET_KEY`, `PRIVATE_TG_VERIFY_HMAC_SECRET` | `api/verify-chat/+server.ts` |
 | `TELEGRAM_BOT_TOKEN` | server routes |
+| `VITE_CARTO_BASEMAP_KEY` | `src/lib/client/mapLogic.ts` — ключ базовых карт CARTO (public by design) |
+
+### authDomain и вход через Google
+
+`authDomain` задаётся переменной `VITE_FIREBASE_AUTH_DOMAIN`, в коде он не
+захардкожен. Значения РАЗНЫЕ по окружениям, и это сделано намеренно:
+
+| Окружение | Значение | Почему |
+| --- | --- | --- |
+| Vercel (прод) | `proto-map.vercel.app` | iframe становится same-origin |
+| Локально | `protomap-1e1db.firebaseapp.com` | см. ниже |
+
+**Зачем свой домен.** Firebase вставляет в страницу невидимый iframe с
+`<authDomain>/__/auth/iframe` и через него передаёт результат входа из попапа.
+Пока authDomain чужой, браузеры со строгой приватностью (Firefox с Total Cookie
+Protection, Safari с ITP) выдают этому iframe **разделённое** хранилище: попап
+пишет результат в одну «банку», iframe читает из другой, вход падает с
+`auth/internal-error`. Когда authDomain совпадает с доменом сайта, делить нечего.
+
+Физически обработчик по-прежнему у Firebase — в `vercel.json` стоит rewrite
+`/__/auth/:path*` → `https://protomap-1e1db.firebaseapp.com/__/auth/:path*`.
+Это проксирование на стороне Vercel, браузер видит только наш домен.
+
+**Почему локально остаётся старый домен.** Firebase строит адрес обработчика как
+`https://<authDomain>/__/auth/handler` — схема `https` захардкожена. Для
+`localhost:5173` по http это даёт нерабочий `https://localhost:5173/...`,
+поэтому same-origin схема локально не собирается. В деве продолжаем ходить на
+`firebaseapp.com`, а если Firefox рвёт вход — выключить щит для localhost.
+
+**Что нельзя забыть при смене домена.** В Google Cloud Console у OAuth-клиента,
+которым пользуется Firebase, в Authorized redirect URIs должен быть
+`https://proto-map.vercel.app/__/auth/handler`. Без этой строки вход ляжет
+у ВСЕХ, а не только в Firefox.
+
+**Как проверить прокси, не трогая вход.** Открыть
+`https://proto-map.vercel.app/__/auth/iframe` в браузере. Если отдаётся страница
+Firebase, а не 404 — rewrite работает, и только после этого можно менять
+`authDomain`. Откат — вернуть переменную и передеплоить.
+
+### CARTO basemaps
+
+Слой «Тёмная» (он же слой по умолчанию) берёт тайлы с `basemaps.cartocdn.com`. С 2026 года
+CARTO требует API-ключ: без него тайлы отдаются с водяным знаком «API KEY REQUIRED»
+поверх всей карты. Ключ бесплатный, без очереди на одобрение:
+<https://carto.com/basemaps/apikey/>.
+
+- Лимит — 5 млн запросов тайлов в календарный месяц, растр и вектор считаются вместе.
+- Атрибуция CARTO **и** OpenStreetMap обязательна — это условие бесплатного тарифа.
+  Не убирать из `attribution` в `mapLogic.ts`.
+- Ключ уходит в URL тайла, то есть публичен по природе — отсюда префикс `VITE_`.
+  Прятать его бессмысленно, но условия запрещают шарить его между несвязанными проектами.
+- Без переменной сборка НЕ падает: `mapLogic.ts` переключается на OSM с CSS-фильтром
+  `.map-dark`, и CARTO в бандл вообще не попадает (ветка сворачивается на сборке).
+- Растровые тайлы CARTO объявлены устаревающими в пользу векторных; обновления данных
+  для растра могут остановить. Переезд на вектор — это уход с растрового Leaflet
+  на MapLibre, отдельная задача.
+- **Мобильное приложение свой базовый слой держит у себя.** Если оно тоже тянет CARTO,
+  то водяной знак там тоже, и починить его можно только релизом через Google Play.
+  Координировать с Денисом.
 
 `$env/static/private` imports are resolved **at build time**. A missing var is a hard build
 failure, not a runtime warning:
