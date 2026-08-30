@@ -259,7 +259,8 @@
 			const task = uploadBytesResumable(
 				storageRef(storage, `chat_media/${$activeChat.id}/image/${msgRef.id}.${ext}`),
 				file,
-				{ contentType: file.type }
+				// см. комментарий про cacheControl ниже, в отправке голосового
+				{ contentType: file.type, cacheControl: 'public, max-age=31536000, immutable' }
 			);
 			await new Promise<void>((res, rej) => {
 				task.on(
@@ -290,7 +291,12 @@
 			const task = uploadBytesResumable(
 				storageRef(storage, `chat_media/${$activeChat.id}/voice/${msgRef.id}.webm`),
 				blob,
-				{ contentType: 'audio/webm' }
+				// cacheControl обязателен: Firebase Storage по умолчанию НЕ ставит
+				// заголовок, и файл отдаётся как private, max-age=0 — браузер
+				// перепроверяет его при каждом показе (304 на каждый запрос).
+				// Медиа чата неизменяемо: в пути лежит уникальный id сообщения,
+				// один URL всегда отдаёт один и тот же файл.
+				{ contentType: 'audio/webm', cacheControl: 'public, max-age=31536000, immutable' }
 			);
 			await task;
 			await write(
@@ -449,7 +455,15 @@
 		{:else}
 			<div class="side-note">
 				<div class="side-note-icon">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" width="30" height="30">
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.6"
+						stroke-linecap="round"
+						width="30"
+						height="30"
+					>
 						<path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16" />
 						<circle cx="5" cy="19" r="1.4" fill="currentColor" stroke="none" />
 					</svg>
@@ -480,7 +494,16 @@
 		{:else if !$activeChat}
 			<div class="placeholder">
 				<div class="ph-icon">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" width="46" height="46">
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.4"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						width="46"
+						height="46"
+					>
 						<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
 					</svg>
 				</div>

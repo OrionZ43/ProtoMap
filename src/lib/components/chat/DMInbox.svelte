@@ -266,7 +266,13 @@
             const msgRef  = doc(collection(db, 'chats', activeChat.id, 'messages'));
             const path    = `chat_media/${activeChat.id}/image/${msgRef.id}.${ext}`;
             const sRef    = storageRef(storage, path);
-            const task    = uploadBytesResumable(sRef, file, { contentType: file.type });
+            // cacheControl обязателен: без него Storage отдаёт private, max-age=0,
+            // и браузер перепроверяет файл при каждом показе. Медиа чата
+            // неизменяемо — в пути уникальный id сообщения.
+            const task    = uploadBytesResumable(sRef, file, {
+                contentType: file.type,
+                cacheControl: 'public, max-age=31536000, immutable'
+            });
 
             await new Promise<void>((resolve, reject) => {
                 task.on('state_changed',
@@ -296,7 +302,10 @@
             const storage = getStorage();
             const msgRef  = doc(collection(db, 'chats', activeChat.id, 'messages'));
             const sRef    = storageRef(storage, `chat_media/${activeChat.id}/voice/${msgRef.id}.webm`);
-            const task    = uploadBytesResumable(sRef, blob, { contentType: 'audio/webm' });
+            const task    = uploadBytesResumable(sRef, blob, {
+                contentType: 'audio/webm',
+                cacheControl: 'public, max-age=31536000, immutable'
+            });
             await task;
             const url = await getDownloadURL(task.snapshot.ref);
             await _writeMessage({ type: 'VOICE', text: '', media_url: url }, msgRef);
