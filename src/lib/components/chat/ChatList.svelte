@@ -13,7 +13,7 @@
 	раздувается на всю строку.
 -->
 <script lang="ts">
-	import { avatarFor, fmtRelative } from '$lib/utils/chatFormat';
+	import { avatarFor, fmtRelative, previewKind } from '$lib/utils/chatFormat';
 	import type { DMChat } from '$lib/stores/dmStore';
 
 	export let chats: DMChat[] = [];
@@ -52,6 +52,7 @@
 	{/if}
 
 	{#each chats as c (c.id)}
+		{@const pv = previewKind(c.lastMessage)}
 		<button class="row" class:active={activeChatId === c.id} on:click={() => onOpen(c)}>
 			<div class="avatar-wrap {c.partner.frameId || ''}">
 				<img src={avatarFor(c.partner.username, c.partner.avatarUrl)} alt="" class="avatar" />
@@ -67,14 +68,73 @@
 					<span class="name" class:has-unread={c.unread > 0}>{c.partner.username}</span>
 					<span class="time">{fmtRelative(c.lastMessageTimestamp)}</span>
 				</div>
-				<span class="preview" class:has-unread={c.unread > 0}>{c.lastMessage || '...'}</span>
+				<span class="preview" class:has-unread={c.unread > 0}>
+					{#if pv.kind === 'image'}
+						<svg
+							class="pv-icon"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							><rect x="3" y="3" width="18" height="18" rx="2" /><circle
+								cx="8.5"
+								cy="8.5"
+								r="1.5"
+							/><polyline points="21 15 16 10 5 21" /></svg
+						>
+					{:else if pv.kind === 'voice'}
+						<svg
+							class="pv-icon"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path
+								d="M19 10v2a7 7 0 0 1-14 0v-2"
+							/><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg
+						>
+					{:else if pv.kind === 'sticker'}
+						<svg
+							class="pv-icon"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							><circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /><line
+								x1="9"
+								y1="9"
+								x2="9.01"
+								y2="9"
+							/><line x1="15" y1="9" x2="15.01" y2="9" /></svg
+						>
+					{/if}{pv.text || '...'}
+				</span>
 			</div>
 		</button>
 	{/each}
 
 	{#if chats.length === 0}
 		<div class="empty">
-			<div class="empty-icon">💬</div>
+			<div class="empty-icon">
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.6"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					width="34"
+					height="34"
+				>
+					<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+				</svg>
+			</div>
 			<p class="empty-title">{emptyTitle}</p>
 			<p class="empty-hint">{emptyHint}</p>
 		</div>
@@ -219,7 +279,9 @@
 		color: #475569;
 	}
 	.preview {
-		display: block;
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
 		font-size: 0.75rem;
 		color: #64748b;
 		white-space: nowrap;
@@ -228,6 +290,13 @@
 	}
 	.preview.has-unread {
 		color: #94a3b8;
+	}
+	/* Иконка типа вложения вместо эмодзи-маркера из lastMessage */
+	.pv-icon {
+		width: 12px;
+		height: 12px;
+		flex-shrink: 0;
+		opacity: 0.75;
 	}
 
 	.empty {

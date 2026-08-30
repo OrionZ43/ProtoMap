@@ -10,6 +10,7 @@
 -->
 <script lang="ts">
 	import VoiceMessage from '$lib/components/chat/VoiceMessage.svelte';
+	import ImageLightbox from '$lib/components/chat/ImageLightbox.svelte';
 	import { getStickerUrl, type StickerPack } from '$lib/stores/stickerStore';
 	import {
 		mtype,
@@ -37,6 +38,7 @@
 
 	let hovered = false;
 	let panelOpen = false;
+	let lightboxOpen = false;
 	let voiceVisible = false;
 	let copied = false;
 
@@ -122,16 +124,19 @@
 					loading="lazy"
 				/>
 			{:else if T === 'IMAGE'}
-				{#if msg.media_url}
-					<a href={msg.media_url} target="_blank" rel="noopener noreferrer">
-						<img src={msg.media_url} alt="Изображение" class="chat-img" loading="lazy" />
-					</a>
-				{:else if msg.text}
-					<img
-						src="data:image/jpeg;base64,{msg.text}"
-						alt="Изображение"
-						class="chat-img"
-						loading="lazy"
+				{@const imageSrc = msg.media_url || (msg.text ? `data:image/jpeg;base64,${msg.text}` : '')}
+				{#if imageSrc}
+					<button
+						class="img-btn"
+						on:click={() => (lightboxOpen = true)}
+						aria-label="Открыть изображение"
+					>
+						<img src={imageSrc} alt="Изображение" class="chat-img" loading="lazy" />
+					</button>
+					<ImageLightbox
+						src={imageSrc}
+						open={lightboxOpen}
+						onClose={() => (lightboxOpen = false)}
 					/>
 				{:else}
 					<span class="muted">Изображение недоступно</span>
@@ -177,6 +182,8 @@
 						fill="none"
 						stroke="currentColor"
 						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
 						width="13"
 						height="13"
 					>
@@ -311,8 +318,36 @@
 		border: none;
 		padding: 0;
 	}
+	/* Раньше под картинкой была пустая полоса высотой со строку времени —
+	   выглядело как поломанная вёрстка. Теперь время лежит поверх снимка
+	   на затемнении, как принято в мессенджерах. */
 	.bubble.media {
-		padding: 4px 4px 1.35rem;
+		padding: 4px;
+	}
+	.bubble.media .time {
+		bottom: 10px;
+		right: 10px;
+		padding: 2px 6px;
+		border-radius: 8px;
+		background: rgba(3, 6, 10, 0.72);
+		color: #cbd5e1;
+		backdrop-filter: blur(2px);
+		-webkit-backdrop-filter: blur(2px);
+	}
+	.bubble.media .ticks {
+		color: rgba(255, 255, 255, 0.55);
+	}
+	.bubble.media .ticks.read {
+		color: var(--cyber-cyan, #00f0ff);
+	}
+
+	.img-btn {
+		display: block;
+		padding: 0;
+		border: none;
+		background: none;
+		line-height: 0;
+		cursor: zoom-in;
 	}
 	.bubble.voice {
 		padding: 0.3rem 0.45rem 1.35rem;
@@ -347,6 +382,22 @@
 		gap: 3px;
 		font-size: 0.6rem;
 		color: #64748b;
+		/* Без этого «01:01» у короткого сообщения ломалось на «01:0» и «1» */
+		white-space: nowrap;
+	}
+
+	/* Резервируем место под время в конце последней строки текста.
+	   Иначе у короткого сообщения пузырь уже, чем время, и оно наезжает
+	   на текст. Приём стандартный для мессенджеров: невидимая вставка
+	   растягивает последнюю строку ровно настолько, сколько нужно. */
+	.text::after {
+		content: '';
+		display: inline-block;
+		width: 2.6rem;
+	}
+	.bubble.own .text::after {
+		/* у своих сообщений добавляются галочки прочтения */
+		width: 3.5rem;
 	}
 	.ticks {
 		font-size: 0.55rem;

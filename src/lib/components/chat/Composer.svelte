@@ -43,7 +43,7 @@
 
 	const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
-	$: fieldPlaceholder = isRecording ? `🔴 Запись... ${fmtRec(recordSeconds)}` : placeholder;
+	$: fieldPlaceholder = isRecording ? `Запись... ${fmtRec(recordSeconds)}` : placeholder;
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' && !e.shiftKey) {
@@ -196,6 +196,8 @@
 				fill="none"
 				stroke="currentColor"
 				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
 				width="18"
 				height="18"
 			>

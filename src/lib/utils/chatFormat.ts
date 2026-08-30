@@ -92,6 +92,39 @@ export function reactionCount(r: unknown): number {
 	return isPlainMap(r) ? Object.keys(r).length : 0;
 }
 
+export type PreviewKind = 'image' | 'voice' | 'sticker' | 'text';
+
+// Маркеры типа во превью последнего сообщения.
+//
+// ВАЖНО: эмодзи здесь — это не оформление, а машинный маркер в данных.
+// Поле chats/{id}.lastMessage пишут ОБА клиента, и Android пишет ровно такие
+// же строки. Если веб перестанет их писать, список диалогов не сможет отличить
+// картинку от текста — в документе чата типа сообщения нет, есть только эта
+// строка. Поэтому пишем как писали, а наружу эмодзи не показываем никогда:
+// previewKind() разбирает строку на тип и текст, а иконку рисует ChatList.
+const PREVIEW_MARKERS: [string, PreviewKind, string][] = [
+	['📷', 'image', 'Изображение'],
+	['🎙', 'voice', 'Голосовое'],
+	['🌟', 'sticker', 'Стикер']
+];
+
+/**
+ * Разбирает сохранённое превью на тип и чистый текст.
+ * Понимает и то, что пишет веб, и то, что пишет Android.
+ */
+export function previewKind(lastMessage: string | null | undefined): {
+	kind: PreviewKind;
+	text: string;
+} {
+	const raw = (lastMessage ?? '').trim();
+	for (const [marker, kind, label] of PREVIEW_MARKERS) {
+		if (raw.startsWith(marker)) {
+			return { kind, text: raw.slice(marker.length).trim() || label };
+		}
+	}
+	return { kind: 'text', text: raw };
+}
+
 /** Превью последнего сообщения для списка диалогов. */
 export function previewFor(type: string, text: string): string {
 	switch (mtype(type)) {

@@ -356,7 +356,12 @@
 	<div class="channel-list">
 		{#if channels.length === 0}
 			<div class="empty-state">
-				<div class="empty-icon">📡</div>
+				<div class="empty-icon">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" width="34" height="34">
+						<path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16" />
+						<circle cx="5" cy="19" r="1.4" fill="currentColor" stroke="none" />
+					</svg>
+				</div>
 				<p class="empty-title">Каналов пока нет</p>
 				<p class="empty-hint">Каналы появятся здесь когда их создадут пользователи</p>
 			</div>
@@ -374,7 +379,14 @@
 					<div class="ch-info">
 						<div class="ch-header-row">
 							<span class="ch-name">{ch.name}</span>
-							<span class="ch-sub-count">{ch.subscriberCount} 👥</span>
+							<span class="ch-sub-count">
+								{ch.subscriberCount}
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11">
+									<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+									<circle cx="9" cy="7" r="4" />
+									<path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+								</svg>
+							</span>
 						</div>
 						<span class="ch-preview">{ch.lastPostText || ch.description || '...'}</span>
 					</div>
@@ -475,7 +487,21 @@
 										}}
 										title="Добавить реакцию"
 									>
-										😊
+										<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						width="16"
+						height="16"
+					>
+						<circle cx="12" cy="12" r="10" />
+						<path d="M8 14s1.5 2 4 2 4-2 4-2" />
+						<line x1="9" y1="9" x2="9.01" y2="9" />
+						<line x1="15" y1="9" x2="15.01" y2="9" />
+					</svg>
 									</button>
 									{#if openReactPanel === post.id}
 										<div class="react-panel-ch">

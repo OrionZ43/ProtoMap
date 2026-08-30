@@ -448,7 +448,12 @@
 			/>
 		{:else}
 			<div class="side-note">
-				<div class="side-note-icon">📡</div>
+				<div class="side-note-icon">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" width="30" height="30">
+						<path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16" />
+						<circle cx="5" cy="19" r="1.4" fill="currentColor" stroke="none" />
+					</svg>
+				</div>
 				<p class="side-note-title">Режим каналов</p>
 				<p class="side-note-hint">Выбери канал справа</p>
 			</div>
@@ -474,7 +479,11 @@
 			<ChannelsFeed />
 		{:else if !$activeChat}
 			<div class="placeholder">
-				<div class="ph-icon">💬</div>
+				<div class="ph-icon">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" width="46" height="46">
+						<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+					</svg>
+				</div>
 				<p class="ph-title">Диалог не выбран</p>
 				<p class="ph-hint">Выбери переписку слева или начни новую через профиль на карте</p>
 			</div>
