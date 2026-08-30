@@ -3,9 +3,11 @@
 	import {
 		signInWithEmailAndPassword,
 		signInWithPopup,
+		signInWithRedirect,
 		getRedirectResult,
 		GoogleAuthProvider,
-		sendPasswordResetEmail
+		sendPasswordResetEmail,
+		type User
 	} from 'firebase/auth';
 	import { getToken } from 'firebase/app-check';
 	import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -78,21 +80,29 @@
 	onMount(async () => {
 		opacity.set(1);
 
-		// Прогреваем резолвер попапа ПАРАЛЛЕЛЬНО с App Check — не дожидаясь его.
+		// Возврат с редирект-входа — и одновременно прогрев резолвера.
 		//
-		// Firebase грузит gapi и cross-origin iframe с authDomain только в момент
-		// вызова signInWithPopup, то есть уже внутри обработчика клика. Это
-		// сетевая работа ДО window.open, и на холодном браузере она не
-		// укладывается в окно «пользовательского жеста»: Firefox и Яндекс
-		// блокируют попап (auth/popup-blocked). На localhost не воспроизводится,
-		// потому что у разработчика gapi давно в кэше и грузится мгновенно —
-		// поэтому баг месяцами виден только на проде.
+		// Firebase грузит gapi и iframe с authDomain только при первом обращении.
+		// Если это случается уже внутри обработчика клика, попап не успевает
+		// открыться в окне «пользовательского жеста» и браузер его блокирует.
+		// Этот вызов поднимает резолвер заранее.
 		//
-		// getRedirectResult — публичный способ инициализировать тот же резолвер
-		// заранее. Вход через редирект мы не используем, поэтому он всегда
-		// возвращает null; если когда-нибудь появится signInWithRedirect,
-		// результат отсюда придётся обрабатывать, а не игнорировать.
-		getRedirectResult(auth).catch(() => {});
+		// Он же забирает результат входа, если пользователь вернулся с редиректа
+		// (запасной путь, когда попап заблокирован). Раньше результат здесь
+		// осознанно выбрасывался — теперь его нельзя терять.
+		//
+		// Не await'им намеренно: пусть App Check прогревается параллельно,
+		// иначе кнопка дольше остаётся заблокированной.
+		getRedirectResult(auth)
+			.then(async (redirectResult) => {
+				if (!redirectResult?.user) return;
+				console.log('[Auth] Возврат с редирект-входа');
+				await handleGoogleLogin(redirectResult.user);
+			})
+			.catch((e) => {
+				console.error('[Auth] Не удалось завершить вход после редиректа:', e);
+				modal.error('Ошибка', 'Не удалось завершить вход через Google. Попробуйте ещё раз.');
+			});
 
 		// Прогреваем App Check токен ДО того как юзер нажмёт кнопку.
 		// Без этого signInWithPopup уходит за токеном асинхронно,
@@ -275,8 +285,15 @@
 		}
 	}
 
-	async function handleGoogleLogin() {
-		if (!turnstileVerified) {
+	/**
+	 * Вход через Google. Вызывается из двух мест:
+	 *   - клик по кнопке (preAuthedUser не задан) — открывается попап;
+	 *   - возврат с редирект-входа (preAuthedUser задан) — попап не нужен.
+	 * Капчу проверяем только в первом случае: на возврате с редиректа
+	 * пользователь её уже прошёл до ухода со страницы.
+	 */
+	async function handleGoogleLogin(preAuthedUser?: User) {
+		if (!preAuthedUser && !turnstileVerified) {
 			modal.error('Требуется проверка', 'Пожалуйста, подтвердите, что вы не робот.');
 			return;
 		}
@@ -291,8 +308,9 @@
 
 		const provider = new GoogleAuthProvider();
 		try {
-			const result = await signInWithPopup(auth, provider);
-			const user = result.user;
+			// preAuthedUser приходит при возврате с редирект-входа: пользователь
+			// уже аутентифицирован, попап открывать не нужно.
+			const user = preAuthedUser ?? (await signInWithPopup(auth, provider)).user;
 			console.log('✅ Google Auth:', user.uid);
 			await user.getIdToken(true);
 			const userDocRef = doc(db, 'users', user.uid);
@@ -384,10 +402,25 @@
 			if (e.code === 'permission-denied' || e.message.includes('insufficient permissions')) {
 				modal.error('Ошибка создания профиля', 'Не удалось создать профиль. Попробуйте снова.');
 			} else if (e.code === 'auth/popup-blocked') {
-				modal.error(
-					'Окно заблокировано',
-					'Разрешите всплывающие окна в настройках браузера и попробуйте снова.'
-				);
+				// Не ругаемся на пользователя за настройки браузера, а входим
+				// тем же способом, но редиректом: это навигация верхнего уровня,
+				// блокировщик попапов на неё не действует.
+				//
+				// Работает корректно только потому, что authDomain теперь наш
+				// собственный домен (rewrite /__/auth/* в vercel.json). С чужим
+				// authDomain результат редиректа терялся бы в разделённом
+				// хранилище у Firefox и Safari.
+				console.warn('[Auth] Попап заблокирован — уходим на редирект');
+				try {
+					await signInWithRedirect(auth, provider);
+					return;
+				} catch (redirectError) {
+					console.error('[Auth] Редирект тоже не удался:', redirectError);
+					modal.error(
+						'Не удалось войти',
+						'Браузер заблокировал и всплывающее окно, и переход. Разрешите всплывающие окна для сайта и попробуйте снова.'
+					);
+				}
 			} else if (e.code === 'auth/cancelled-popup-request') {
 				console.log('Отменено');
 			} else {
@@ -672,7 +705,7 @@
 
 		<div class="text-center" transition:slide>
 			<button
-				on:click={handleGoogleLogin}
+				on:click={() => handleGoogleLogin()}
 				disabled={googleLoading || loading || !turnstileVerified || !appCheckReady}
 				type="button"
 				title={appCheckReady ? 'Войти с помощью Google' : 'Подготовка...'}
