@@ -23,6 +23,20 @@
     --cyber-green: #39ff14;
     --cyber-red: #ff003c;
     /* --- КОНЕЦ НОВОГО БЛОКА --- */
+
+    /* --- ШРИФТЫ ---
+       У Chakra Petch НЕТ кириллицы (subsets: latin, latin-ext, thai,
+       vietnamese). Любой русский текст в нём молча падает в системный
+       моноширинный фолбэк — отсюда «Courier» посреди интерфейса.
+       Поэтому разделяем:
+         --font-display — заголовки и ЛЮБЫЕ русские подписи (Russo One,
+                          кириллица есть; вес только 400 — 700/900 браузер
+                          синтезирует, и буквы плывут);
+         --font-tech    — ТОЛЬКО латиница и цифры: время, частоты, UID;
+         --font-body    — основной текст. */
+    --font-display: 'Russo One', 'Chakra Petch', sans-serif;
+    --font-tech: 'Chakra Petch', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    --font-body: 'Inter', sans-serif;
 }
 
 @keyframes gradient-flow {
@@ -729,6 +743,16 @@ html {
 }
 .map-black {
     filter: invert(100%) hue-rotate(200deg) grayscale(70%) brightness(90%) contrast(90%) !important;
+}
+/* Слой «Тёмная». Раньше это были готовые тёмные тайлы CARTO
+   (basemaps.cartocdn.com/dark_all), но CARTO закрыл анонимный доступ и стал
+   отдавать тайлы с водяным знаком «API KEY REQUIRED» прямо поверх карты.
+   Ключа у нас нет, поэтому делаем тёмную тему тем же приёмом, что и остальные
+   слои: обычный OSM + фильтр. Без hue-rotate — получается нейтрально-серый
+   тёмный фон, близкий к бывшему dark_all и отличимый от «Полночи»,
+   у которой синеватый сдвиг. */
+.map-dark {
+    filter: invert(100%) grayscale(100%) brightness(95%) contrast(105%) !important;
 }
 .popup-inverted .leaflet-popup-tip-container {
     top: -19px; /* Поднимаем контейнер стрелки наверх */
