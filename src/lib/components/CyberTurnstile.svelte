@@ -24,7 +24,6 @@
         script.defer = true;
 
         script.onload = () => {
-            console.log('✅ Turnstile загружен');
             renderWidget();
         };
 
@@ -49,7 +48,6 @@
             sitekey: siteKey,
             theme: 'dark',
             callback: (token: string) => {
-                console.log('✅ Turnstile пройден');
                 dispatch('verified', { token });
             },
             'error-callback': () => {

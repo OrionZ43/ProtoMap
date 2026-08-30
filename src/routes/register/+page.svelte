@@ -94,7 +94,6 @@
 		getRedirectResult(auth)
 			.then(async (redirectResult) => {
 				if (!redirectResult?.user) return;
-				console.log('[Auth] Возврат с редирект-входа');
 				await handleGoogleLogin(redirectResult.user);
 			})
 			.catch((e) => {
@@ -108,7 +107,6 @@
 		if (appCheck) {
 			try {
 				await getToken(appCheck, false);
-				console.log('[AppCheck] Token pre-warmed ✅');
 			} catch (e) {
 				console.warn('[AppCheck] Pre-warm failed, will retry on click:', e);
 			}
@@ -343,7 +341,7 @@
 					);
 				}
 			} else if (e.code === 'auth/cancelled-popup-request') {
-				console.log('Отменено');
+				// Пользователь закрыл окно или нажал второй раз — это не ошибка.
 			} else {
 				modal.error('Ошибка', e.message || 'Не удалось войти через Google.');
 			}

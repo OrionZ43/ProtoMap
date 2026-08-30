@@ -96,7 +96,6 @@
 		getRedirectResult(auth)
 			.then(async (redirectResult) => {
 				if (!redirectResult?.user) return;
-				console.log('[Auth] Возврат с редирект-входа');
 				await handleGoogleLogin(redirectResult.user);
 			})
 			.catch((e) => {
@@ -110,7 +109,6 @@
 		if (appCheck) {
 			try {
 				await getToken(appCheck, false);
-				console.log('[AppCheck] Token pre-warmed ✅');
 			} catch (e) {
 				// Не критично — пробуем войти в любом случае
 				console.warn('[AppCheck] Pre-warm failed, will retry on click:', e);
@@ -162,7 +160,6 @@
 	function handleTurnstileVerified(event: CustomEvent) {
 		turnstileToken = event.detail.token;
 		turnstileVerified = true;
-		console.log('✅ Капча пройдена');
 	}
 
 	function handleTurnstileError() {
@@ -196,7 +193,6 @@
 		try {
 			const userCredential = await signInWithEmailAndPassword(auth, email, password);
 			const user = userCredential.user;
-			console.log('✅ Вход выполнен:', user.uid);
 			const userDocRef = doc(db, 'users', user.uid);
 			const userDocSnap = await getDoc(userDocRef);
 			if (userDocSnap.exists()) {
@@ -311,12 +307,10 @@
 			// preAuthedUser приходит при возврате с редирект-входа: пользователь
 			// уже аутентифицирован, попап открывать не нужно.
 			const user = preAuthedUser ?? (await signInWithPopup(auth, provider)).user;
-			console.log('✅ Google Auth:', user.uid);
 			await user.getIdToken(true);
 			const userDocRef = doc(db, 'users', user.uid);
 			let userDocSnap = await getDoc(userDocRef);
 			if (!userDocSnap.exists()) {
-				console.log('📝 Новый Google юзер, создаём профиль...');
 				let generatedUsername = user.displayName || '';
 				generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
 				if (generatedUsername.length < 3) generatedUsername = `user_${user.uid.substring(0, 8)}`;
@@ -422,7 +416,7 @@
 					);
 				}
 			} else if (e.code === 'auth/cancelled-popup-request') {
-				console.log('Отменено');
+				// Пользователь закрыл окно или нажал второй раз — это не ошибка.
 			} else {
 				modal.error('Ошибка', `Не удалось войти: ${e.message}`);
 			}

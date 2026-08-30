@@ -50,7 +50,6 @@ function initialize() {
 		return;
 	}
 
-	console.log('[AudioManager] Инициализация и предзагрузка звуков...');
 
 	for (const key in soundFiles) {
 		const soundName = key as SoundName;
@@ -74,7 +73,6 @@ function initialize() {
 	Howler.mute(!audioEnabled);
 
 	isInitialized = true;
-	console.log('[AudioManager] Звуки загружены. Слушатели установлены.');
 }
 
 function handleVisibilityChange() {

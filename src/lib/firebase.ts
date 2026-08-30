@@ -72,7 +72,6 @@ if (browser) {
             provider: new ReCaptchaEnterpriseProvider('6LdUABssAAAAAPr3oiK3j525Wsb5_EjYvxFex13-'),
             isTokenAutoRefreshEnabled: true
         });
-        console.log("[Security] App Check shield activated (Enterprise).");
 
         // Сразу прогреваем токен в фоне — чтобы при первом клике он уже был закэширован
         getToken(appCheck, false).catch(() => {

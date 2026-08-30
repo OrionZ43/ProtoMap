@@ -145,7 +145,6 @@
                 const avatarUrl = data.profile.avatar_url;
 
                 if (avatarUrl && avatarUrl.includes('googleusercontent.com')) {
-                    console.log("[System] External proxy avatar detected. Initializing migration protocol...");
 
                     try {
                         // Подгружаем функции только если они нужны
@@ -155,7 +154,6 @@
                         // Запускаем в фоне, не ждем ответа для отрисовки профиля
                         migrateFunc({ url: avatarUrl }).then((res: any) => {
                             if (res.data.status === 'success') {
-                                console.log("[System] Avatar successfully migrated to Cloudinary storage.");
                                 // Обновляем локальный стор, чтобы аватарка поменялась сразу
                                 userStore.update(s => {
                                     if (s.user) s.user.avatar_url = res.data.newUrl;
