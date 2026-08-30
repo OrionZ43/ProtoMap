@@ -179,7 +179,9 @@
     .tab {
         position: relative; display: flex; align-items: center; gap: 0.3rem;
         padding: 0 0.65rem; height: 42px;
-        font-family: 'Chakra Petch', monospace; font-size: 0.62rem;
+        /* Не Chakra Petch: подписи вкладок кириллические (ЧАТ/ЛИЧКИ/КАНАЛЫ),
+           а у Chakra Petch нет кириллицы — текст падал в системный моноширинный */
+        font-family: var(--font-display); font-size: 0.62rem;
         font-weight: 700; letter-spacing: 0.08em; color: #475569;
         border-bottom: 2px solid transparent;
         transition: color 0.2s, border-color 0.2s; white-space: nowrap;

@@ -568,8 +568,9 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-family: 'Chakra Petch', monospace;
-		font-weight: 900;
+		/* Первая буква названия канала бывает кириллической — Chakra Petch её
+		   не содержит и буква рисовалась системным моноширинным */
+		font-family: var(--font-display);
 		color: var(--cyber-yellow);
 		font-size: 1.1rem;
 	}

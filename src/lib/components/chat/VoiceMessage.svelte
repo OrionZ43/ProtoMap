@@ -4,6 +4,9 @@
 
     export let src: string;
     export let isOwn: boolean = false;
+    /** Во всю ширину пузыря — режим страницы /messages, где голосовое
+        сделано герой-контентом. В узком виджете остаётся компактным. */
+    export let wide: boolean = false;
 
     let audio: HTMLAudioElement;
     let isPlaying   = false;
@@ -49,7 +52,9 @@
 
     $: displayBars = waveform;
     $: progress    = duration > 0 ? currentTime / duration : 0;
-    $: color       = isOwn ? '#00f0ff' : '#fcee0a';
+    // Свои — жёлтые (передача), чужие — циановые (приём). Тот же код цвета,
+    // что у пузырей в MessageBubble; раньше здесь было наоборот.
+    $: color       = isOwn ? '#fcee0a' : '#00f0ff';
 
     async function togglePlay() {
         if (!audio) return;
@@ -90,7 +95,7 @@
     on:loadedmetadata={onMeta}
 ></audio>
 
-<div class="vc" class:own={isOwn}>
+<div class="vc" class:own={isOwn} class:wide>
     <button class="play-btn" on:click={togglePlay} aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}>
         {#if isPlaying}
             <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17">
@@ -135,26 +140,30 @@
 
 <style>
     .vc { display:flex; align-items:center; gap:0.5rem; padding:0.4rem 0.55rem; min-width:185px; max-width:245px; }
+    /* Режим страницы: волна тянется во всю доступную ширину пузыря */
+    .vc.wide { min-width:240px; max-width:none; width:100%; gap:0.65rem; }
 
     .play-btn {
         flex-shrink:0; width:36px; height:36px; border-radius:50%;
-        background:rgba(252,238,10,.12); border:1.5px solid rgba(252,238,10,.45); color:#fcee0a;
+        background:rgba(0,240,255,.1); border:1.5px solid rgba(0,240,255,.4); color:#00f0ff;
         display:flex; align-items:center; justify-content:center;
         transition:background .2s, box-shadow .2s;
     }
-    .play-btn:hover { background:rgba(252,238,10,.22); box-shadow:0 0 10px rgba(252,238,10,.3); }
-    .own .play-btn { background:rgba(0,240,255,.1); border-color:rgba(0,240,255,.4); color:#00f0ff; }
-    .own .play-btn:hover { background:rgba(0,240,255,.2); box-shadow:0 0 10px rgba(0,240,255,.3); }
+    .play-btn:hover { background:rgba(0,240,255,.2); box-shadow:0 0 10px rgba(0,240,255,.3); }
+    .own .play-btn { background:rgba(252,238,10,.12); border-color:rgba(252,238,10,.45); color:#fcee0a; }
+    .own .play-btn:hover { background:rgba(252,238,10,.22); box-shadow:0 0 10px rgba(252,238,10,.3); }
+    .wide .play-btn { width:42px; height:42px; }
 
-    .wave { flex:1; cursor:pointer; display:flex; flex-direction:column; gap:3px; }
+    .wave { flex:1; cursor:pointer; display:flex; flex-direction:column; gap:3px; min-width:0; }
 
     .bars { display:flex; align-items:center; gap:2px; height:36px; }
+    .wide .bars { height:44px; gap:3px; }
     .bar { flex:1; border-radius:2px; min-height:3px; transition:height .04s ease; }
 
     .skeleton .bar { animation: skel 1.2s ease-in-out infinite; }
     @keyframes skel { 0%,100%{opacity:.3} 50%{opacity:.7} }
 
     .times { display:flex; justify-content:space-between; }
-    .times span { font-family:'Chakra Petch',monospace; font-size:.58rem; color:rgba(255,255,255,.35); }
+    .times span { font-family:var(--font-tech); font-size:.58rem; color:rgba(255,255,255,.35); }
     .times .dur { color:rgba(255,255,255,.2); }
 </style>

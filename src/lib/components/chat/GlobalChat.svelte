@@ -307,7 +307,9 @@
     .send-button:disabled { background: #4b5563; color: #9ca3af; opacity: 0.5; cursor: not-allowed; }
     .date-separator { display: flex; justify-content: center; align-items: center; margin: 1rem 0; }
     .date-separator span { font-size: 0.65rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; color: #6b7280; background: rgba(31,41,55,0.5); padding: 0.25rem 0.75rem; border-radius: 9999px; }
-    .mobile-exclusive { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: rgba(0,0,0,0.3); border: 1px dashed rgba(255,255,255,0.2); border-radius: 6px; font-family: 'Chakra Petch', monospace; min-width: 180px; }
+    /* var(--font-display), а не Chakra Petch: внутри «ИЗОБРАЖЕНИЕ» и
+       «Доступно в приложении» — кириллицы у Chakra Petch нет */
+    .mobile-exclusive { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: rgba(0,0,0,0.3); border: 1px dashed rgba(255,255,255,0.2); border-radius: 6px; font-family: var(--font-display); min-width: 180px; }
     .mobile-exclusive.image { border-color: var(--cyber-cyan); background: rgba(0,240,255,0.05); }
     .mobile-exclusive.voice { border-color: var(--cyber-yellow); background: rgba(252,238,10,0.05); }
     .mobile-exclusive .icon { font-size: 1rem; }
