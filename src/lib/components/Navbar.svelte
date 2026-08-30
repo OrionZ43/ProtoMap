@@ -1,5 +1,6 @@
 <script lang="ts">
     import { userStore } from '$lib/stores';
+    import { totalUnread } from '$lib/stores/dmStore';
     import { auth } from '$lib/firebase';
     import { signOut } from 'firebase/auth';
     import { afterNavigate } from '$app/navigation';
@@ -195,14 +196,14 @@
                     </div>
                 {/if}
             </div>
-            <!-- Реферальная программа -->
-            <a href="/referral" class="icon-btn referral-btn" title={$t('menu.referral')}>
+            <!-- Сообщения -->
+            <a href="/messages" class="icon-btn messages-btn" title="Сообщения">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
+                {#if $totalUnread > 0}
+                    <span class="msg-badge">{$totalUnread > 99 ? '99+' : $totalUnread}</span>
+                {/if}
             </a>
             <!-- Android App -->
             <a href="/mobile-beta" class="icon-btn android-btn" title="Download App">
@@ -315,15 +316,25 @@
 
                 {#if isAdmin}
                     <a href="/admin" class="mobile-link text-red-500 border-l-red-500">
-                        💀 GOD MODE
+                        <svg class="ml-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                        GOD MODE
                     </a>
                 {/if}
 
+                <a href="/messages" class="mobile-link text-cyber-cyan border-l-cyan-400">
+                    <svg class="ml-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Сообщения
+                    {#if $totalUnread > 0}
+                        <span class="ml-badge">{$totalUnread > 99 ? '99+' : $totalUnread}</span>
+                    {/if}
+                </a>
                 <a href="/referral" class="mobile-link text-cyber-yellow border-l-cyber-yellow">
-                    🎯 {$t('menu.referral')}
+                    <svg class="ml-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    {$t('menu.referral')}
                 </a>
                 <a href="/mobile-beta" class="mobile-link text-green-400 border-l-green-400">
-                    📱 ANDROID APP (BETA)
+                    <svg class="ml-icon" viewBox="0 0 512 512" fill="currentColor"><path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/></svg>
+                    ANDROID APP (BETA)
                 </a>
 
                 <div class="border-t border-white/10 my-2"></div>
@@ -506,7 +517,12 @@
     .cyber-switch:checked { background: rgba(0, 240, 255, 0.2); border-color: var(--cyber-yellow); }
     .cyber-switch:checked::after { left: 18px; background: var(--cyber-yellow); box-shadow: 0 0 10px var(--cyber-yellow); }
 
-    .mobile-link { display: block; padding: 0.75rem 1rem; font-family: 'Chakra Petch', monospace; font-weight: bold; color: #9ca3af; border-left: 2px solid transparent; }
+    /* flex — чтобы иконки вставали вровень с текстом.
+       Шрифт: не Chakra Petch. У него нет кириллицы, и «Сообщения» с
+       «Реферальная программа» рисовались системным моноширинным, а латиница
+       рядом — самим Chakra Petch. Inter поддерживает оба алфавита и имеет
+       настоящий вес 700 (у Russo One только 400, браузер синтезировал бы жир). */
+    .mobile-link { display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem 1rem; font-family: var(--font-body); font-weight: 700; color: #9ca3af; border-left: 2px solid transparent; }
     .mobile-link:hover { color: #fff; }
     .mobile-link.active { color: var(--cyber-yellow); border-left-color: var(--cyber-yellow); background: linear-gradient(to right, rgba(255,255,255,0.05), transparent); }
     .mobile-sub-link { display: block; padding: 0.75rem 1rem 0.75rem 3rem; font-size: 0.95rem; color: #cbd5e1; border-left: 2px solid transparent; }
@@ -564,6 +580,55 @@
         box-shadow: 0 0 15px #39ff14;
         transform: scale(1.05);
         color: #fff;
+    }
+
+    /* Мобильное меню: иконки вместо эмодзи */
+    .ml-icon {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+    }
+    .ml-badge {
+        margin-left: auto;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        background: var(--cyber-red, #ff003c);
+        color: #fff;
+        font-family: var(--font-tech);
+        font-size: 0.6rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .messages-btn {
+        position: relative;
+    }
+    .messages-btn:hover {
+        color: var(--cyber-yellow);
+    }
+    .msg-badge {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: var(--cyber-red, #ff003c);
+        color: #fff;
+        font-family: var(--font-tech);
+        font-size: 0.55rem;
+        font-weight: 900;
+        line-height: 1;
+        box-shadow: 0 0 6px rgba(255, 0, 60, 0.6);
     }
 
     .referral-btn {

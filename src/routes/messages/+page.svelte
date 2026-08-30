@@ -11,11 +11,9 @@
 		messages,
 		partnerTyping,
 		totalUnread,
-		startInbox,
 		openChat,
 		closeChat,
 		setTyping,
-		destroyDM,
 		type DMChat,
 		type DMMessage
 	} from '$lib/stores/dmStore';
@@ -61,13 +59,9 @@
 		? $chats.filter((c) => c.partner.username.toLowerCase().includes(query))
 		: $chats;
 
-	// ── Запуск inbox ────────────────────────────────────────────────────────
-	let inboxStarted = false;
-	$: if (!$userStore.loading && $userStore.user && !inboxStarted) {
-		inboxStarted = true;
-		startInbox($userStore.user.uid);
-	}
-	$: if (!$userStore.user) inboxStarted = false;
+	// Подписку на список диалогов держит корневой layout — она нужна на всех
+	// страницах, чтобы счётчик непрочитанных в навбаре работал без открытия
+	// виджета. Здесь только читаем $chats.
 
 	// ── Присутствие собеседников ────────────────────────────────────────────
 	// Подписки держим здесь, а не в ChatList: список перерисовывается на каждое
@@ -140,19 +134,20 @@
 			}
 		});
 
-		const unsubUnread = totalUnread.subscribe((n) => chat.setDmUnread(n > 0));
-
 		return () => {
 			unsubPending();
-			unsubUnread();
 			document.body.style.overflow = prevOverflow;
 		};
 	});
 
 	onDestroy(() => {
 		dropPresence();
+		// Закрываем только открытую переписку. destroyDM здесь звать нельзя:
+		// он снимает и подписку на список диалогов, которой владеет layout,
+		// и счётчик непрочитанных перестал бы обновляться после ухода
+		// со страницы.
 		const uid = $userStore.user?.uid;
-		if (uid) destroyDM(uid, $activeChat?.id);
+		if (uid && $activeChat) closeChat(uid, $activeChat.id);
 	});
 
 	// ── Автоскролл ──────────────────────────────────────────────────────────

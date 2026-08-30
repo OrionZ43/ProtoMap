@@ -6,7 +6,8 @@
     import Navbar from "$lib/components/Navbar.svelte";
     import Modal from '$lib/components/Modal.svelte';
     import ChatWidget from '$lib/components/ChatWidget.svelte';
-    import { chat } from '$lib/stores';
+    import { chat, userStore } from '$lib/stores';
+    import { startInbox, destroyDM, totalUnread } from '$lib/stores/dmStore';
     import 'leaflet/dist/leaflet.css';
     import 'leaflet.markercluster/dist/MarkerCluster.css';
     import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
@@ -32,6 +33,26 @@
     let sideTextRight = 'МОЩНОСТЬ СЕТИ: 99%';
     let isReady = false;
     let seasonActiveInSession = false;
+
+    // Подписка на список диалогов живёт здесь, а не на странице личек:
+    // счётчик непрочитанных нужен на всех страницах — ещё до того, как
+    // пользователь откроет виджет или зайдёт в /messages.
+    //
+    // Раньше /messages звала startInbox сама, а в onDestroy делала destroyDM —
+    // то есть уносила подписку с собой. Теперь владелец один: этот layout.
+    let inboxUid: string | null = null;
+    $: syncInbox($userStore.user?.uid ?? null);
+
+    function syncInbox(uid: string | null) {
+        if (uid === inboxUid) return;
+        if (inboxUid) destroyDM(inboxUid);
+        inboxUid = uid;
+        if (uid) startInbox(uid);
+    }
+
+    // Единственный владелец флага: считаем от серверного unreadCount,
+    // а не от локальных догадок.
+    $: chat.setDmUnread($totalUnread > 0);
 
     $: user = $page.data.user;
     $: isBanned = user?.isBanned === true;
@@ -220,8 +241,8 @@
                     {#if $chat.hasUnread}
                         <div class="unread-dot global"></div>
                     {/if}
-                    {#if $chat.dmUnread}
-                        <div class="unread-dot dm">!</div>
+                    {#if $totalUnread > 0}
+                        <div class="unread-dot dm">{$totalUnread > 99 ? '99+' : $totalUnread}</div>
                     {/if}
                 </button>
             {/if}
@@ -270,7 +291,8 @@
     }
     .unread-dot.dm {
         top: 0; left: 0;
-        width: 16px; height: 16px;
+        min-width: 18px; height: 18px;
+        padding: 0 4px;
         background: #ff003c;
         box-shadow: 0 0 6px #ff003c;
         font-size: 0.55rem;

@@ -59,10 +59,30 @@
         return () => { if (unsubscribe) unsubscribe(); unsubscribeLocale(); };
     });
 
+    // Отметить общий чат прочитанным.
+    //
+    // БАГ, который это чинит: раньше onTabActivated звал только setUnread(false).
+    // Флаг гас в памяти, но время последнего прочтения сохранялось ТОЛЬКО при
+    // отправке своего сообщения. После перезагрузки из localStorage приходило
+    // старое время, последнее сообщение снова оказывалось «новее» — и точка
+    // загоралась опять, хотя всё прочитано.
+    //
+    // lastReadTime намеренно НЕ трогаем: по нему рисуется разделитель
+    // «новые сообщения», и он должен остаться на месте, пока вкладка открыта.
+    // В localStorage при этом уже лежит актуальное время.
+    function markGlobalRead() {
+        try {
+            localStorage.setItem('protomap_last_read_chat', Date.now().toString());
+        } catch (e) {
+            console.warn('[GlobalChat] не удалось сохранить время прочтения:', e);
+        }
+        chat.setUnread(false);
+    }
+
     // Скролл при открытии вкладки
     export function onTabActivated() {
         tick().then(() => scrollToTarget());
-        chat.setUnread(false);
+        markGlobalRead();
     }
 
     function switchChatLang(lang: string) {
@@ -109,6 +129,12 @@
                 if (!$chat.isOpen && lastMsg.createdAt.getTime() > lastReadTime) {
                     chat.setUnread(true);
                     AudioManager.play('message');
+                } else if ($chat.isOpen) {
+                    // Виджет открыт — считаем, что пользователь видит сообщение.
+                    // Условие зеркалит ветку выше: там открытый виджет уже
+                    // означает «не непрочитанное», значит и сохранять время
+                    // прочтения нужно по тому же признаку.
+                    markGlobalRead();
                 }
             }
             const wasLoading = isLoading;
@@ -139,7 +165,7 @@
             AudioManager.play('message');
             messageText = ''; replyingTo = null;
             lastReadTime = Date.now();
-            localStorage.setItem('protomap_last_read_chat', lastReadTime.toString());
+            markGlobalRead();
             setTimeout(() => { canSendMessage = true; }, cooldownSeconds * 1000);
             await tick();
             scrollToBottom(messagesWindow);
