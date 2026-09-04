@@ -1,3 +1,7 @@
+// ⚠️ ПЕРВЫМ импортом и не переставлять. Задаёт регион (europe-west1) до того,
+// как подмодули объявят свои функции. Подробности — в options.ts.
+import './options';
+
 import { onRequest } from "firebase-functions/v2/https";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
@@ -5,15 +9,16 @@ import fetch from "node-fetch";
 import { FieldValue } from "firebase-admin/firestore";
 import { v2 as cloudinary } from "cloudinary";
 import * as crypto from 'crypto';
-export { telegramWebhook, monitorClaudeStatus } from './telegramBot';
+export { telegramWebhook } from './telegram';
 import { getMessaging } from "firebase-admin/messaging";
 import vision from "@google-cloud/vision";
 export { getStepperStatus, stepperClaim } from './stepper';
+export { recordConsents, revokeConsent, getMyConsents } from './consents';
+export { enforceRetention } from './retention';
+import { anonymizeConsentsOnDelete } from './consents';
 export { getOrCreateReferralCode, claimReferral, getReferralStatus, finishReferralCampaign } from './referralFunctions';
 import { auth } from "firebase-functions/v1";
-import { setGlobalOptions } from "firebase-functions/v2";
 
-setGlobalOptions({ region: 'europe-west1' });
 
 // ===================================================================
 // 🔒 SECURITY FIX #1: Безопасная проверка Google URL
@@ -314,7 +319,14 @@ async function clearMapCache() {
     }
 }
 
-async function assertNotBanned(request: any) {
+// ⚠️ Тип НЕ `any` намеренно. Раньше он был `any`, и в пяти местах сюда по ошибке
+// передавали `uid` вместо `request`. На строке `request.auth?.token` и
+// `request.auth?.uid` дают undefined — то есть обе проверки молча пропускались,
+// и гард превращался в пустышку. Компилятор этого не видел именно из-за `any`.
+// Структурный тип ниже делает такую передачу ошибкой сборки.
+type BanCheckable = { auth?: { uid?: string; token?: Record<string, unknown> } };
+
+async function assertNotBanned(request: BanCheckable) {
     if (request.auth?.token?.banned === true) {
         console.warn(`Block by Token Claim: ${request.auth.uid}`);
         throw new HttpsError('permission-denied', 'Account banned (Token).');
@@ -488,7 +500,7 @@ export const toggleCommentLike = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
 
     const { profileUid, commentId } = request.data;
     const commentRef = db.collection('users').doc(profileUid).collection('comments').doc(commentId);
@@ -720,7 +732,7 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
     assertEmailVerified(request.auth);
 
     // ✅ НОВОЕ: Глобальный лимит (50 игр в час)
@@ -901,7 +913,7 @@ export const synthesizeArtifact = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
     assertEmailVerified(request.auth);
 
     const userRef = db.collection('users').doc(uid);
@@ -1011,7 +1023,7 @@ export const playSlotMachine = onCall(
         if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
         const uid = request.auth.uid;
-        await assertNotBanned(uid);
+        await assertNotBanned(request);
 
         // Глобальный лимит (100 игр в час)
         await checkGlobalRateLimit(uid, 'slots', 100, 60 * 60 * 1000);
@@ -1253,7 +1265,7 @@ export const playCoinFlip = onCall(async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
     const uid = request.auth.uid;
-    await assertNotBanned(uid);
+    await assertNotBanned(request);
     assertEmailVerified(request.auth);
 
     // ✅ НОВОЕ: Глобальный лимит (200 флипов в час)
@@ -1674,7 +1686,32 @@ export const updateProfileData = onCall(async (request) => {
 // ===================================================================
 // 🔍 CLOUD VISION: SafeSearch Helper
 // ===================================================================
-const visionClient = new vision.ImageAnnotatorClient();
+/**
+ * Клиент Cloud Vision создаётся лениво, при первом обращении.
+ *
+ * Раньше он создавался на верхнем уровне модуля — и это ломало деплой.
+ * Конструктор `ImageAnnotatorClient` запускает поиск учётных данных и стучится
+ * на metadata-сервер GCP. При сборке (`firebase deploy`) кода нет ни на какой
+ * машине с этим сервером, попытки отваливаются по таймауту, и анализ исходников
+ * не укладывается в отведённые 10 секунд:
+ *
+ *   Error: User code failed to load. Cannot determine backend specification.
+ *   Timeout after 10000.
+ *
+ * Из-за этого часть функций (telegramWebhook, шагомер, рефералка) годами
+ * оставалась в старом регионе us-central1 — деплой до них просто не доходил.
+ *
+ * Правило общее: в модулях Cloud Functions не создавать на верхнем уровне
+ * ничего, что ходит в сеть или ищет credentials. Только внутри обработчика.
+ */
+let visionClientInstance: InstanceType<typeof vision.ImageAnnotatorClient> | null = null;
+
+function getVisionClient() {
+    if (!visionClientInstance) {
+        visionClientInstance = new vision.ImageAnnotatorClient();
+    }
+    return visionClientInstance;
+}
 
 async function checkImageSafety(imageBase64: string): Promise<{
     safe: boolean;
@@ -1713,7 +1750,7 @@ async function checkImageSafety(imageBase64: string): Promise<{
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
     try {
-        const [result] = await visionClient.safeSearchDetection({
+        const [result] = await getVisionClient().safeSearchDetection({
             image: { content: base64Data }
         });
 
@@ -2163,6 +2200,16 @@ export const deleteAccount = onCall(async (request) => {
         // Финальный commit если остались незакоммиченные операции
         if (opCount > 0) {
             await batch.commit();
+        }
+
+        // Журнал согласий НЕ удаляем: Политика заявляет срок хранения 3 года,
+        // а пункт 7 статьи 5 требует уметь доказать наличие согласия — в том
+        // числе после того, как аккаунт удалён. Записи обезличиваются: из них
+        // убирается IP и способ входа, остаются uid, вид согласия, версия
+        // документа и даты. Чистит их по сроку enforceRetention.
+        const anonymized = await anonymizeConsentsOnDelete(uid);
+        if (anonymized > 0) {
+            console.log(`Обезличено записей согласий: ${anonymized}`);
         }
 
         // Удаляем документ пользователя
