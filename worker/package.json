@@ -1,0 +1,22 @@
+{
+  "name": "protomap-dl",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Скачивание медиа по ссылкам из Telegram-чатов ProtoMap",
+  "main": "lib/index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node lib/index.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}

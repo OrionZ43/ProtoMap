@@ -1,0 +1,9 @@
+# Сборка TypeScript. В образ попадает из multi-stage build, в репозитории не нужна.
+lib/
+
+node_modules/
+
+# Настройки конкретной установки: токен бота и путь к ключу.
+# .env.example коммитится, .env — никогда.
+.env
+local-data/
