@@ -18,6 +18,9 @@
 	import { onMount } from 'svelte';
 	import { quintOut } from 'svelte/easing';
 	import { tweened } from 'svelte/motion';
+	// Используются в разметке модалки 2FA (transition:fade / transition:slide).
+	// Без этого импорта страница падала с ReferenceError при открытии модалки.
+	import { fade, slide } from 'svelte/transition';
 	import { modal } from '$lib/stores/modalStore';
 	import { userStore } from '$lib/stores';
 	import { t } from 'svelte-i18n';
@@ -27,7 +30,87 @@
 	let username = '';
 	let loading = false;
 	let googleLoading = false;
-	let termsAccepted = false;
+
+	// ─── Согласия ────────────────────────────────────────────────────────────
+	//
+	// Раздельные, а не одна галочка «принимаю всё». По пункту 1 статьи 5 Закона
+	// № 99-З согласие должно быть свободным и однозначным — одно связанное
+	// согласие сразу на аккаунт, карту, чаты и трансграничную передачу этому
+	// требованию не отвечает.
+	//
+	// Ни один флаг не предзаполнен: предзаполненная галочка не является
+	// выражением воли.
+	//
+	// Согласия `activity_data` (шагомер) здесь нет намеренно: на вебе шагомера
+	// не существует, его спрашивает Android в своём разделе «Шагомер».
+	let consentAgeMinimum = false;
+	let consentCoreProcessing = false;
+	let consentCrossBorder = false;
+	let consentTos = false;
+
+	$: allConsentsGiven =
+		consentAgeMinimum && consentCoreProcessing && consentCrossBorder && consentTos;
+
+	/** Виды согласий в том порядке, в котором их ждёт Cloud Function. */
+	const GRANTED_CONSENTS = ['age_minimum', 'core_processing', 'cross_border', 'tos'];
+
+	// Вход через Google в Firefox и Яндексе уходит на signInWithRedirect —
+	// страница перезагружается, и отмеченные галочки теряются. Без переноса
+	// через sessionStorage регистрация по редиректу упиралась бы в проверку
+	// согласий, которую физически невозможно пройти.
+	const PENDING_CONSENTS_KEY = 'protomap_pending_consents';
+
+	function stashConsents() {
+		try {
+			sessionStorage.setItem(
+				PENDING_CONSENTS_KEY,
+				JSON.stringify({
+					ageMinimum: consentAgeMinimum,
+					core: consentCoreProcessing,
+					cross: consentCrossBorder,
+					tos: consentTos
+				})
+			);
+		} catch {
+			// Приватный режим или заблокированное хранилище — не критично,
+			// пользователь просто отметит галочки заново.
+		}
+	}
+
+	function restoreConsents() {
+		try {
+			const raw = sessionStorage.getItem(PENDING_CONSENTS_KEY);
+			if (!raw) return;
+			sessionStorage.removeItem(PENDING_CONSENTS_KEY);
+			const saved = JSON.parse(raw);
+			consentAgeMinimum = saved.ageMinimum === true;
+			consentCoreProcessing = saved.core === true;
+			consentCrossBorder = saved.cross === true;
+			consentTos = saved.tos === true;
+		} catch {
+			// Битое значение — оставляем галочки снятыми.
+		}
+	}
+
+	/**
+	 * Пишет согласия в серверный журнал.
+	 *
+	 * Журнал ведётся только на сервере (коллекция `consents`, запись клиенту
+	 * запрещена правилами): пункт 7 статьи 5 возлагает доказывание согласия на
+	 * оператора, а клиентская запись доказательством не является.
+	 *
+	 * Ошибку здесь не показываем пользователю и не откатываем регистрацию:
+	 * аккаунт уже создан, и ронять флоу из-за журнала неправильно. Но в консоль
+	 * пишем — расхождение между аккаунтом и журналом надо уметь заметить.
+	 */
+	async function recordConsents(method: 'web' = 'web') {
+		try {
+			const fn = httpsCallable(functions, 'recordConsents');
+			await fn({ granted: GRANTED_CONSENTS, method });
+		} catch (e) {
+			console.error('Не удалось записать согласия:', e);
+		}
+	}
 
 	// Флаг готовности App Check токена — кнопка Google заблокирована до прогрева
 	let appCheckReady = false;
@@ -94,6 +177,9 @@
 		getRedirectResult(auth)
 			.then(async (redirectResult) => {
 				if (!redirectResult?.user) return;
+				// Галочки согласия были отмечены ДО ухода на редирект —
+				// поднимаем их обратно, иначе проверка ниже не пройдёт.
+				restoreConsents();
 				await handleGoogleLogin(redirectResult.user);
 			})
 			.catch((e) => {
@@ -143,8 +229,8 @@
 			return;
 		}
 
-		if (!termsAccepted) {
-			modal.error('Требуется согласие', 'Примите условия соглашения.');
+		if (!allConsentsGiven) {
+			modal.error('Требуется согласие', 'Отметьте все обязательные пункты согласия.');
 			return;
 		}
 
@@ -183,6 +269,8 @@
 				turnstileVerified: true
 			});
 
+			await recordConsents();
+
 			const token = await user.getIdToken();
 			await fetch('/api/auth', {
 				method: 'POST',
@@ -211,6 +299,14 @@
 	async function handleGoogleLogin(preAuthedUser?: User) {
 		if (!preAuthedUser && !turnstileVerified) {
 			modal.error('Требуется проверка', 'Подтвердите, что вы не робот.');
+			return;
+		}
+
+		// Через Google тоже создаётся аккаунт, значит согласия нужны и здесь.
+		// Проверяем и на возврате с редиректа — там они восстановлены из
+		// sessionStorage в onMount.
+		if (!allConsentsGiven) {
+			modal.error('Требуется согласие', 'Отметьте все обязательные пункты согласия.');
 			return;
 		}
 
@@ -260,6 +356,8 @@
 					emailVerified: user.emailVerified,
 					turnstileVerified: true
 				});
+
+				await recordConsents();
 
 				const profileData = {
 					uid: user.uid,
@@ -331,6 +429,8 @@
 				// хранилище у Firefox и Safari.
 				console.warn('[Auth] Попап заблокирован — уходим на редирект');
 				try {
+					// Страница сейчас перезагрузится — сохраняем отмеченные согласия.
+					stashConsents();
 					await signInWithRedirect(auth, provider);
 					return;
 				} catch (redirectError) {
@@ -432,23 +532,71 @@
 			/>
 		</div>
 
+		<!--
+			Разъяснение прав ДО получения согласия. По части второй пункта 5
+			статьи 5 Закона № 99-З права субъекта разъясняются отдельным блоком,
+			а не ссылкой на документ, — поэтому текст показан целиком и не
+			сворачивается в аккордеон.
+		-->
 		<div class="form-group pt-2">
-			<label class="terms-label">
-				<input type="checkbox" bind:checked={termsAccepted} class="terms-checkbox" />
-				<span class="custom-checkbox"></span>
-				<span class="text-sm text-gray-400">
-					{$t('auth.terms_agree')}
-					<a href="/terms-of-service" target="_blank" class="link">{$t('auth.terms_link')}</a>
-					&
-					<a href="/privacy-policy" target="_blank" class="link">{$t('auth.privacy_link')}</a>
-				</span>
-			</label>
+			<section class="consent-notice" aria-labelledby="consent-notice-title">
+				<h2 id="consent-notice-title" class="consent-notice__title font-display">
+					{$t('auth.consent.notice_title')}
+				</h2>
+
+				<p class="consent-notice__p">{$t('auth.consent.operator')}</p>
+				<p class="consent-notice__p">{$t('auth.consent.purposes')}</p>
+
+				<p class="consent-notice__p">
+					<strong>{$t('auth.consent.rights_title')}</strong>
+					{$t('auth.consent.rights')}
+				</p>
+				<p class="consent-notice__p">
+					<strong>{$t('auth.consent.howto_title')}</strong>
+					{$t('auth.consent.howto')}
+				</p>
+				<p class="consent-notice__p">
+					<strong>{$t('auth.consent.consequences_title')}</strong>
+					{$t('auth.consent.consequences')}
+				</p>
+			</section>
+
+			<div class="consent-list">
+				<label class="terms-label">
+					<input type="checkbox" bind:checked={consentAgeMinimum} class="terms-checkbox" />
+					<span class="custom-checkbox"></span>
+					<span class="text-sm text-gray-400">{$t('auth.consent.cb_age_minimum')}</span>
+				</label>
+
+				<label class="terms-label">
+					<input type="checkbox" bind:checked={consentCoreProcessing} class="terms-checkbox" />
+					<span class="custom-checkbox"></span>
+					<span class="text-sm text-gray-400">{$t('auth.consent.cb_core')}</span>
+				</label>
+
+				<label class="terms-label">
+					<input type="checkbox" bind:checked={consentCrossBorder} class="terms-checkbox" />
+					<span class="custom-checkbox"></span>
+					<span class="text-sm text-gray-400">{$t('auth.consent.cb_cross_border')}</span>
+				</label>
+
+				<label class="terms-label">
+					<input type="checkbox" bind:checked={consentTos} class="terms-checkbox" />
+					<span class="custom-checkbox"></span>
+					<span class="text-sm text-gray-400">
+						{$t('auth.terms_agree')}
+						<a href="/terms-of-service" target="_blank" class="link">{$t('auth.terms_link')}</a>
+						&
+						<a href="/privacy-policy" target="_blank" class="link">{$t('auth.privacy_link')}</a>
+					</span>
+				</label>
+			</div>
 		</div>
 
 		<div class="pt-2">
 			<NeonButton
 				type="submit"
-				disabled={loading || googleLoading || !termsAccepted || !turnstileVerified}
+				disabled={loading || googleLoading || !allConsentsGiven || !turnstileVerified}
 				extraClass="w-full"
 			>
 				{#if loading}
@@ -474,7 +622,7 @@
 	<div class="text-center">
 		<button
 			on:click={() => handleGoogleLogin()}
-			disabled={googleLoading || loading || !turnstileVerified || !appCheckReady}
+			disabled={googleLoading || loading || !allConsentsGiven || !turnstileVerified || !appCheckReady}
 			type="button"
 			title={appCheckReady ? 'Войти/Зарегистрироваться с Google' : 'Подготовка...'}
 			class="google-btn"
@@ -578,9 +726,46 @@
 		@apply cursor-not-allowed opacity-50;
 	}
 
+	/* Разъяснение прав перед согласием. Показывается целиком — сворачивать
+	   его в аккордеон нельзя, см. комментарий в разметке. */
+	.consent-notice {
+		border: 1px solid rgba(0, 243, 255, 0.25);
+		border-left: 2px solid #00f3ff;
+		background: rgba(0, 20, 30, 0.45);
+		padding: 0.9rem 1rem;
+		margin-bottom: 1rem;
+		max-height: 13rem;
+		overflow-y: auto;
+	}
+	.consent-notice__title {
+		font-size: 0.8rem;
+		letter-spacing: 0.08em;
+		color: #00f3ff;
+		margin: 0 0 0.6rem;
+		text-transform: uppercase;
+	}
+	.consent-notice__p {
+		font-size: 0.72rem;
+		line-height: 1.55;
+		color: #9fb3c8;
+		margin: 0 0 0.55rem;
+	}
+	.consent-notice__p:last-child {
+		margin-bottom: 0;
+	}
+	.consent-notice__p strong {
+		color: #d5e4f0;
+	}
+
+	.consent-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.65rem;
+	}
+
 	.terms-label {
 		display: flex;
-		align-items: center;
+		align-items: flex-start;
 		cursor: pointer;
 		user-select: none;
 	}
