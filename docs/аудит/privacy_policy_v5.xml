@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document id="privacy_policy" version="v5.0 | [ДАТА]">
+<document id="privacy_policy" version="v5.0 | 14.09.2026">
 
     <title>
         <ru>ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ И ЗАЩИТЫ ДАННЫХ</ru>
@@ -8,8 +8,8 @@
 
     <alert severity="info" icon="info">
         <title>
-            <ru>Версия 5.0 | Вступает в силу: [ДАТА]</ru>
-            <en>Version 5.0 | Effective date: [DATE]</en>
+            <ru>Версия 5.0 | Вступает в силу: 14.09.2026</ru>
+            <en>Version 5.0 | Effective date: 14 September 2026</en>
         </title>
         <text>
             <ru>Настоящая Политика распространяется на оба компонента Сервиса: веб-сайт proto-map.vercel.app и мобильное приложение ProtoMap для Android. Политика приведена в соответствие с Законом Республики Беларусь от 7 мая 2021 г. № 99-З «О защите персональных данных».</ru>
@@ -39,13 +39,13 @@
     </subsection>
 
     <paragraph>
-        <ru>Оператором персональных данных является [ФАМИЛИЯ ИМЯ ОТЧЕСТВО] — физическое лицо, гражданин Республики Беларусь, действующее под творческим наименованием Z43 Studios (далее — «Оператор», «Разработчик», «Мы»). Z43 Studios не является юридическим лицом; наименование используется для обозначения проектов автора. Оператор не является индивидуальным предпринимателем и не осуществляет предпринимательскую деятельность с использованием Сервиса. Сервис предоставляется безвозмездно.</ru>
-        <en>The personal data operator is [FULL NAME], an individual and citizen of the Republic of Belarus, acting under the creative name Z43 Studios (the "Operator", "Developer", "We"). Z43 Studios is not a legal entity; the name is used to identify the author's projects. The Operator is not a registered sole trader and does not conduct commercial activity through the Service. The Service is provided free of charge.</en>
+        <ru>Оператором персональных данных является Ковалёв Денис Дмитриевич — физическое лицо, гражданин Республики Беларусь, действующее под творческим наименованием Z43 Studios (далее — «Оператор», «Разработчик», «Мы»). Z43 Studios не является юридическим лицом; наименование используется для обозначения проектов автора. Оператор не является индивидуальным предпринимателем и не осуществляет предпринимательскую деятельность с использованием Сервиса. Сервис предоставляется безвозмездно.</ru>
+        <en>The personal data operator is Kovalev Denis Dmitrievich, an individual and citizen of the Republic of Belarus, acting under the creative name Z43 Studios (the "Operator", "Developer", "We"). Z43 Studios is not a legal entity; the name is used to identify the author's projects. The Operator is not a registered sole trader and does not conduct commercial activity through the Service. The Service is provided free of charge.</en>
     </paragraph>
 
     <paragraph>
-        <ru>Адрес места жительства Оператора: [ГОРОД], Республика Беларусь. Полный адрес для направления юридически значимых сообщений и заявлений в порядке статьи 14 Закона № 99-З предоставляется по запросу, направленному на адрес электронной почты, указанный в разделе «Контакты». Контактный адрес электронной почты: orion.z43studios@gmail.com.</ru>
-        <en>The Operator's place of residence: [CITY], Republic of Belarus. The full postal address for legally significant notices and for applications under Article 14 of Law No. 99-Z is provided on request sent to the e-mail address in the Contacts section. Contact e-mail: orion.z43studios@gmail.com.</en>
+        <ru>Адрес места жительства Оператора: г. Минск, Республика Беларусь. Полный адрес для направления юридически значимых сообщений и заявлений в порядке статьи 14 Закона № 99-З предоставляется по запросу, направленному на адрес электронной почты, указанный в разделе «Контакты». Контактный адрес электронной почты: orion.z43studios@gmail.com.</ru>
+        <en>The Operator's place of residence: Minsk, Republic of Belarus. The full postal address for legally significant notices and for applications under Article 14 of Law No. 99-Z is provided on request sent to the e-mail address in the Contacts section. Contact e-mail: orion.z43studios@gmail.com.</en>
     </paragraph>
 
     <subsection>
@@ -256,8 +256,8 @@
     </alert>
 
     <paragraph>
-        <ru>Если вы активируете функцию «Шагомер», приложение получает количество пройденных вами шагов от аппаратного датчика вашего устройства (TYPE_STEP_COUNTER) и от платформы Health Connect. Разрешения запрашиваются только в момент, когда вы самостоятельно открываете раздел «Шагомер», и никогда при первом запуске приложения.</ru>
-        <en>If you activate the Step Counter feature, the application obtains your step count from your device's hardware sensor (TYPE_STEP_COUNTER) and from the Health Connect platform. Permissions are requested only when you open the Step Counter section yourself, never on first launch.</en>
+        <ru>Если вы активируете функцию «Шагомер», приложение получает количество пройденных вами шагов от аппаратного датчика вашего устройства (TYPE_STEP_COUNTER). Разрешение запрашивается только в момент, когда вы самостоятельно открываете раздел «Шагомер», и никогда при первом запуске приложения.</ru>
+        <en>If you activate the Step Counter feature, the application obtains your step count from your device's hardware sensor (TYPE_STEP_COUNTER). The permission is requested only when you open the Step Counter section yourself, never on first launch.</en>
     </paragraph>
 
     <subsection>
@@ -274,18 +274,26 @@
     </highlight>
 
     <highlight>
-        <title>android.permission.health.READ_STEPS (Health Connect)</title>
+        <title>FOREGROUND_SERVICE + FOREGROUND_SERVICE_LOCATION</title>
         <description>
-            <ru>Разрешение на чтение количества шагов из платформы Health Connect. Мы читаем исключительно показатель количества шагов. Никакие иные категории данных Health Connect — пульс, сон, вес, питание, показатели здоровья — не запрашиваются, не читаются и не обрабатываются. Данные Health Connect не записываются нами обратно в платформу.</ru>
-            <en>Permission to read step counts from the Health Connect platform. We read the step count only. No other Health Connect data categories — heart rate, sleep, weight, nutrition, or health metrics — are requested, read, or processed. We do not write any data back into the platform.</en>
+            <ru>Служба учёта прогулки (WalkSessionService) работает как foreground service типа «location» с постоянным уведомлением в статусной строке, чтобы Android не завершал её во время прогулки. Уведомление видно всё время работы службы — скрытого отслеживания не происходит. Служба запускается только после того, как вы сами начали прогулку, и останавливается по её завершении.</ru>
+            <en>The walk session service (WalkSessionService) runs as a foreground service of type "location" with a persistent notification in the status bar so that Android does not terminate it during a walk. The notification is visible for the entire time the service runs — no hidden tracking occurs. The service starts only after you begin a walk yourself and stops when the walk ends.</en>
         </description>
     </highlight>
 
     <highlight>
-        <title>FOREGROUND_SERVICE_HEALTH + RECEIVE_BOOT_COMPLETED</title>
+        <title>REQUEST_IGNORE_BATTERY_OPTIMIZATIONS</title>
         <description>
-            <ru>Служба шагомера (StepCounterService) работает как foreground service с постоянным уведомлением, чтобы Android не завершал её в фоне во время прогулки. Разрешение RECEIVE_BOOT_COMPLETED позволяет автоматически перезапустить службу после перезагрузки устройства — только если функция шагомера была активна до перезагрузки.</ru>
-            <en>The stepper service (StepCounterService) runs as a foreground service with a persistent notification so Android does not terminate it in the background during a walk. The RECEIVE_BOOT_COMPLETED permission allows the service to restart automatically after a device reboot — only if the stepper feature was active before the reboot.</en>
+            <ru>Разрешение позволяет предложить вам исключить приложение из системной оптимизации расхода батареи, чтобы Android не останавливал учёт прогулки в фоне. Запрос показывается только при включении функции прогулок, является необязательным, и отказ не влияет на остальные возможности Сервиса.</ru>
+            <en>This permission allows the app to offer to exempt itself from system battery optimisation so that Android does not stop walk tracking in the background. The prompt is shown only when you enable walk tracking, is optional, and declining does not affect any other features of the Service.</en>
+        </description>
+    </highlight>
+
+    <highlight>
+        <title>POST_NOTIFICATIONS + POST_PROMOTED_NOTIFICATIONS</title>
+        <description>
+            <ru>Доставка уведомлений о новых личных сообщениях, ответах на комментарии и системных событиях через Firebase Cloud Messaging, а также отображение уведомления работающей прогулки в развёрнутом виде на поддерживающих это версиях Android. Уведомления можно отключить в настройках операционной системы.</ru>
+            <en>Delivery of notifications about new private messages, comment replies, and system events via Firebase Cloud Messaging, plus display of the active walk notification in expanded form on Android versions that support it. Notifications can be disabled in your operating system settings.</en>
         </description>
     </highlight>
 
@@ -737,12 +745,12 @@
 
     <alert severity="error" icon="warning">
         <title>
-            <ru>Сервис предназначен для лиц, достигших 16 лет</ru>
-            <en>The Service is intended for persons aged 16 and over</en>
+            <ru>Сервис предназначен для лиц, достигших 17 лет</ru>
+            <en>The Service is intended for persons aged 17 and over</en>
         </title>
         <text>
-            <ru>Возрастной ценз установлен в соответствии с пунктом 9 статьи 5 Закона № 99-З: до достижения шестнадцати лет согласие на обработку персональных данных даёт один из законных представителей. Мы сознательно не собираем персональные данные лиц младше 16 лет. Если вам стало известно, что такое лицо зарегистрировалось в Сервисе, немедленно свяжитесь с нами — учётная запись будет удалена. Доступ к разделу мини-игр «The Glitch Pit» предоставляется пользователям, достигшим 18 лет.</ru>
-            <en>The age threshold follows Article 5(9) of Law No. 99-Z: below the age of sixteen, consent to the processing of personal data is given by a legal representative. We do not knowingly collect personal data from persons under 16. If you become aware that such a person has registered, contact us immediately — the account will be deleted. Access to The Glitch Pit mini-games section is available to users aged 18 and over.</en>
+            <ru>Возрастной ценз соответствует рейтингу, присвоенному приложению в Google Play, — ESRB Mature 17+. Он распространяется на Сервис целиком, включая раздел мини-игр «The Glitch Pit»; отдельного ограничения у этого раздела нет. Независимо от этого пункт 9 статьи 5 Закона № 99-З устанавливает, что до достижения шестнадцати лет согласие на обработку персональных данных даёт один из законных представителей. Мы сознательно не собираем персональные данные лиц, не достигших указанного возраста. Если вам стало известно, что такое лицо зарегистрировалось в Сервисе, немедленно свяжитесь с нами — учётная запись будет удалена.</ru>
+            <en>The age threshold matches the rating assigned to the application on Google Play — ESRB Mature 17+. It applies to the Service as a whole, including The Glitch Pit mini-games section, which has no separate restriction. Independently of this, Article 5(9) of Law No. 99-Z provides that below the age of sixteen, consent to the processing of personal data is given by a legal representative. We do not knowingly collect personal data from persons below that age. If you become aware that such a person has registered, contact us immediately — the account will be deleted.</en>
         </text>
     </alert>
 

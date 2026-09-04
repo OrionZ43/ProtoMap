@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document id="terms_of_service" version="v5.0 | [ДАТА]">
+<document id="terms_of_service" version="v5.0 | 14.09.2026">
 
     <title>
         <ru>ПОЛЬЗОВАТЕЛЬСКОЕ СОГЛАШЕНИЕ</ru>
@@ -12,15 +12,15 @@
             <en>CRITICAL NOTICE: NO REAL MONEY IN THE SERVICE</en>
         </title>
         <text>
-            <ru>Данный Сервис содержит художественную симуляцию азартных игр («The Glitch Pit»). 1. НЕТ РЕАЛЬНЫХ ДЕНЕГ: вся игровая валюта (ProtoCoins) не имеет денежной стоимости, не является криптовалютой и не может быть обменяна на фиатные деньги, товары или услуги. 2. НЕТ ВВОДА И ВЫВОДА СРЕДСТВ: ProtoCoins невозможно приобрести за деньги, любой выигрыш является исключительно виртуальным достижением. 3. СИМУЛЯЦИЯ: механики игр настроены в развлекательных целях и не отражают реальные математические модели настоящих казино. 4. ВОЗРАСТ: доступ к разделу «The Glitch Pit» предоставляется пользователям, достигшим 18 лет.</ru>
-            <en>This Service contains an artistic simulation of gambling ("The Glitch Pit"). 1. NO REAL MONEY: all in-game currency (ProtoCoins) has no monetary value, is not cryptocurrency, and cannot be exchanged for fiat money, goods, or services. 2. NO DEPOSITS OR WITHDRAWALS: ProtoCoins cannot be purchased with money, and any winnings are purely virtual achievements. 3. SIMULATION: game mechanics are designed for entertainment and do not reflect the real mathematical models of actual casinos. 4. AGE: access to The Glitch Pit is available to users aged 18 and over.</en>
+            <ru>Данный Сервис содержит художественную симуляцию азартных игр («The Glitch Pit»). 1. НЕТ РЕАЛЬНЫХ ДЕНЕГ: вся игровая валюта (ProtoCoins) не имеет денежной стоимости, не является криптовалютой и не может быть обменяна на фиатные деньги, товары или услуги. 2. НЕТ ВВОДА И ВЫВОДА СРЕДСТВ: ProtoCoins невозможно приобрести за деньги, любой выигрыш является исключительно виртуальным достижением. 3. СИМУЛЯЦИЯ: механики игр настроены в развлекательных целях и не отражают реальные математические модели настоящих казино. 4. ВОЗРАСТ: приложению присвоен возрастной рейтинг ESRB Mature 17+; Сервис предназначен для лиц, достигших 17 лет.</ru>
+            <en>This Service contains an artistic simulation of gambling ("The Glitch Pit"). 1. NO REAL MONEY: all in-game currency (ProtoCoins) has no monetary value, is not cryptocurrency, and cannot be exchanged for fiat money, goods, or services. 2. NO DEPOSITS OR WITHDRAWALS: ProtoCoins cannot be purchased with money, and any winnings are purely virtual achievements. 3. SIMULATION: game mechanics are designed for entertainment and do not reflect the real mathematical models of actual casinos. 4. AGE: the application carries an ESRB Mature 17+ content rating; the Service is intended for persons aged 17 and over.</en>
         </text>
     </alert>
 
     <alert severity="warning" icon="warning">
         <title>
-            <ru>Версия 5.0 | Вступает в силу: [ДАТА]</ru>
-            <en>Version 5.0 | Effective date: [DATE]</en>
+            <ru>Версия 5.0 | Вступает в силу: 14.09.2026</ru>
+            <en>Version 5.0 | Effective date: 14 September 2026</en>
         </title>
         <text>
             <ru>Программный комплекс ProtoMap является независимым некоммерческим продуктом Z43 Studios и не связан с компанией Protomaps LLC (protomaps.com) ни юридически, ни коммерчески. Любое сходство в наименованиях случайно.</ru>
@@ -39,8 +39,8 @@
     </subsection>
 
     <paragraph>
-        <ru>Настоящее Пользовательское соглашение (далее — «Соглашение») является публичной офертой и договором присоединения по законодательству Республики Беларусь. Стороной Соглашения со стороны правообладателя выступает [ФАМИЛИЯ ИМЯ ОТЧЕСТВО] — физическое лицо, гражданин Республики Беларусь, действующее под творческим наименованием Z43 Studios (далее — «Разработчик», «Мы»). Z43 Studios не является юридическим лицом; наименование используется для обозначения проектов автора. Разработчик не является индивидуальным предпринимателем.</ru>
-        <en>These Terms of Service (the "Agreement") constitute a public offer and a contract of adhesion under the law of the Republic of Belarus. The rightholder party is [FULL NAME], an individual and citizen of the Republic of Belarus acting under the creative name Z43 Studios (the "Developer", "We"). Z43 Studios is not a legal entity; the name is used to identify the author's projects. The Developer is not a registered sole trader.</en>
+        <ru>Настоящее Пользовательское соглашение (далее — «Соглашение») является публичной офертой и договором присоединения по законодательству Республики Беларусь. Стороной Соглашения со стороны правообладателя выступает Ковалёв Денис Дмитриевич — физическое лицо, гражданин Республики Беларусь, действующее под творческим наименованием Z43 Studios (далее — «Разработчик», «Мы»). Z43 Studios не является юридическим лицом; наименование используется для обозначения проектов автора. Разработчик не является индивидуальным предпринимателем.</ru>
+        <en>These Terms of Service (the "Agreement") constitute a public offer and a contract of adhesion under the law of the Republic of Belarus. The rightholder party is Kovalev Denis Dmitrievich, an individual and citizen of the Republic of Belarus acting under the creative name Z43 Studios (the "Developer", "We"). Z43 Studios is not a legal entity; the name is used to identify the author's projects. The Developer is not a registered sole trader.</en>
     </paragraph>
 
     <paragraph>
@@ -69,8 +69,8 @@
     </paragraph>
 
     <bullet>
-        <ru>Вам исполнилось полных 16 лет (или больше, если того требует законодательство вашей страны).</ru>
-        <en>You are at least 16 years old (or older if required by the law of your country).</en>
+        <ru>Вам исполнилось полных 17 лет — в соответствии с возрастным рейтингом приложения (ESRB Mature 17+) — или больше, если того требует законодательство вашей страны.</ru>
+        <en>You are at least 17 years old, in line with the application's content rating (ESRB Mature 17+), or older if required by the law of your country.</en>
     </bullet>
     <bullet>
         <ru>Вы прочитали, поняли и полностью согласны с условиями настоящего Соглашения и Политикой конфиденциальности.</ru>
@@ -290,20 +290,20 @@
         <en>READ_MEDIA_IMAGES / READ_EXTERNAL_STORAGE — media files: selecting images from the gallery to send in chat or set as an avatar. The system Photo Picker is used — the app does not gain access to the entire gallery.</en>
     </bullet>
     <bullet>
-        <ru>ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION / FOREGROUND_SERVICE_LOCATION — геолокация: определение текущего местоположения для размещения метки на карте и учёта маршрутов прогулок (WalkTrackingService). Отслеживание местоположения в фоне без ведома пользователя не производится.</ru>
-        <en>ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION / FOREGROUND_SERVICE_LOCATION — location: determining your current position to place a marker on the map and track walk routes (WalkTrackingService). Background location tracking without the user's knowledge does not occur.</en>
+        <ru>ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION / FOREGROUND_SERVICE_LOCATION — геолокация: определение текущего местоположения для размещения метки на карте и учёта маршрутов прогулок (WalkSessionService). Отслеживание местоположения в фоне без ведома пользователя не производится.</ru>
+        <en>ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION / FOREGROUND_SERVICE_LOCATION — location: determining your current position to place a marker on the map and track walk routes (WalkSessionService). Background location tracking without the user's knowledge does not occur.</en>
     </bullet>
     <bullet>
-        <ru>ACTIVITY_RECOGNITION / android.permission.health.READ_STEPS / FOREGROUND_SERVICE_HEALTH — шагомер: чтение количества шагов через аппаратный сенсор устройства и платформу Health Connect для конвертации в ProtoCoins (StepCounterService, WalkTrackingService). Читается исключительно показатель количества шагов; иные категории данных Health Connect не запрашиваются и не обрабатываются. Функция включается только по вашей инициативе и требует отдельного согласия на обработку специальных персональных данных.</ru>
-        <en>ACTIVITY_RECOGNITION / android.permission.health.READ_STEPS / FOREGROUND_SERVICE_HEALTH — step counter: reading step counts from the device's hardware sensor and the Health Connect platform for conversion into ProtoCoins (StepCounterService, WalkTrackingService). Only the step count is read; no other Health Connect data categories are requested or processed. The feature is enabled only at your initiative and requires separate consent to the processing of special categories of personal data.</en>
+        <ru>ACTIVITY_RECOGNITION — шагомер: чтение количества шагов с аппаратного датчика устройства (TYPE_STEP_COUNTER) для конвертации в ProtoCoins. Читается исключительно показатель количества шагов. Функция включается только по вашей инициативе и требует отдельного согласия на обработку специальных персональных данных.</ru>
+        <en>ACTIVITY_RECOGNITION — step counter: reading step counts from the device's hardware sensor (TYPE_STEP_COUNTER) for conversion into ProtoCoins. Only the step count is read. The feature is enabled only at your initiative and requires separate consent to the processing of special categories of personal data.</en>
     </bullet>
     <bullet>
-        <ru>POST_NOTIFICATIONS — уведомления: доставка push-уведомлений о новых личных сообщениях, ответах на комментарии и системных событиях через Firebase Cloud Messaging (protomap_chat_channel).</ru>
-        <en>POST_NOTIFICATIONS — notifications: delivering push notifications about new private messages, comment replies, and system events via Firebase Cloud Messaging (protomap_chat_channel).</en>
+        <ru>POST_NOTIFICATIONS / POST_PROMOTED_NOTIFICATIONS — уведомления: доставка push-уведомлений о новых личных сообщениях, ответах на комментарии и системных событиях через Firebase Cloud Messaging (protomap_chat_channel).</ru>
+        <en>POST_NOTIFICATIONS / POST_PROMOTED_NOTIFICATIONS — notifications: delivering push notifications about new private messages, comment replies, and system events via Firebase Cloud Messaging (protomap_chat_channel).</en>
     </bullet>
     <bullet>
-        <ru>RECEIVE_BOOT_COMPLETED — автозапуск: перезапуск службы шагомера (StepCounterBootReceiver) после перезагрузки устройства — только если функция шагомера была активна до перезагрузки.</ru>
-        <en>RECEIVE_BOOT_COMPLETED — autostart: restarting the stepper service (StepCounterBootReceiver) after a device reboot — only if the stepper feature was active before the reboot.</en>
+        <ru>REQUEST_IGNORE_BATTERY_OPTIMIZATIONS — фоновая работа: предложение исключить приложение из системной оптимизации расхода батареи, чтобы Android не останавливал учёт прогулки в фоне. Запрос необязателен, отказ не влияет на остальные функции.</ru>
+        <en>REQUEST_IGNORE_BATTERY_OPTIMIZATIONS — background operation: offering to exempt the app from system battery optimisation so that Android does not stop walk tracking in the background. The prompt is optional and declining does not affect other features.</en>
     </bullet>
     <bullet>
         <ru>INTERNET / ACCESS_NETWORK_STATE — сеть: подключение к серверам Firebase и получение данных карты.</ru>
@@ -406,12 +406,12 @@
 
     <alert severity="warning" icon="warning">
         <title>
-            <ru>Возрастное ограничение раздела: 18+</ru>
-            <en>Age restriction for this section: 18+</en>
+            <ru>Возрастное ограничение Сервиса: 17+</ru>
+            <en>Age restriction for the Service: 17+</en>
         </title>
         <text>
-            <ru>Доступ к разделу «The Glitch Pit» предоставляется пользователям, достигшим 18 лет, независимо от общего возрастного ценза Сервиса (16+). Подтверждение возраста запрашивается при первом входе в раздел. Сообщение недостоверных сведений о возрасте является нарушением настоящего Соглашения.</ru>
-            <en>Access to The Glitch Pit is available to users aged 18 and over, regardless of the Service's general age requirement (16+). Age confirmation is requested on first entry to the section. Providing false age information is a breach of this Agreement.</en>
+            <ru>Приложению присвоен возрастной рейтинг ESRB Mature 17+, распространяющийся на Сервис целиком, включая раздел «The Glitch Pit». Отдельного возрастного ограничения у этого раздела нет. Сообщение недостоверных сведений о возрасте является нарушением настоящего Соглашения.</ru>
+            <en>The application carries an ESRB Mature 17+ content rating, which applies to the Service as a whole, including The Glitch Pit. This section has no separate age restriction. Providing false age information is a breach of this Agreement.</en>
         </text>
     </alert>
 
