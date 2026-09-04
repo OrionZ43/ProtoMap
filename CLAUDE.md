@@ -68,7 +68,9 @@ The repo does **not** pass its own lint or check gates: `npm run check` reports 
 ### Two backends, both privileged
 
 1. **SvelteKit server** (`src/lib/server/firebase.admin.ts`) — `firebase-admin` initialized from the `PRIVATE_FIREBASE_SERVICE_ACCOUNT_KEY` env var. Falls back to a dummy app so builds don't crash without secrets. Used by `hooks.server.ts`, `+page.server.ts` loads, and `src/routes/api/*`.
-2. **Firebase Cloud Functions** (`functions/src/`) — all game/economy/moderation logic. `setGlobalOptions({ region: 'europe-west1' })` in `index.ts`; sub-modules are re-exported from there (`telegramBot`, `stepper`, `referralFunctions`, `twoFactorAuth`).
+2. **Firebase Cloud Functions** (`functions/src/`) — all game/economy/moderation logic. Sub-modules are re-exported from `index.ts` (`telegram`, `stepper`, `referralFunctions`, `twoFactorAuth`, `consents`, `retention`).
+
+   **The region is set in `functions/src/options.ts`, imported as the very first line of `index.ts`.** It must stay first: ES module imports are evaluated before the importing module's body, so a `setGlobalOptions` call placed among the re-exports runs *after* the sub-modules have already declared their functions — and they silently land in `us-central1`. That is exactly what happened here for years; see the 2026-09-03 entry in `.jules/bolt.md`.
 
 Client code must import the shared, region-pinned instance: `import { functions } from '$lib/firebase'`. A local `getFunctions()` defaults to us-central1 and silently breaks calls — `codemod.mjs` exists to strip such declarations (`node codemod.mjs --dry` to preview).
 
@@ -141,7 +143,13 @@ For animations driven by an RTDB event queue, keep a local "visual state" that o
 
 ### Other subsystems
 
-- **Telegram bot** (`functions/src/telegramBot.ts`, ~70KB) — Telegraf webhook for community moderation, account linking, and captcha. Webhook authenticity via `TG_WEBHOOK_SECRET`; verification deep links HMAC-signed with `TG_VERIFY_HMAC_SECRET`. Also hosts `monitorClaudeStatus` (scheduled). Chat allowlist is hardcoded (`ALLOWED_CHATS`).
+- **Telegram bot** (`functions/src/telegram/`) — Telegraf webhook for community moderation, account linking, captcha, voice transcription and channel promotion. Webhook authenticity via `TG_WEBHOOK_SECRET`; verification deep links HMAC-signed with `TG_VERIFY_HMAC_SECRET`.
+
+  Layout: `core/` holds the Telegraf instance, chat constants, the chat→feature registry and the allowlist guard; each file in `features/` exports `register(bot)`; `index.ts` calls them **in an order that matters** and exports the webhook.
+
+  Two rules that are load-bearing:
+  - **Registration order is behaviour.** Telegraf runs handlers in registration order, and a handler that doesn't call `next()` ends the chain. `bot.on('text')` in `features/triggers.ts` therefore registers last. Registration is done by explicit calls in `index.ts` rather than as an import side effect, so that sorting imports cannot silently change what the bot does.
+  - **What runs where comes from `core/registry.ts`**, not from chat-id checks scattered through handlers. Adding a chat means adding it to `ALLOWED_CHATS` *and* `CHAT_FEATURES` — a chat missing from the allowlist is left silently, seconds after the bot is added.
 - **Legal docs** — XML sources parsed server-side by `src/lib/server/legalLoader.ts` into typed nodes, rendered by `LegalDocRenderer.svelte`; versions live in `system/licenses` and drive `LegalUpdateBanner`.
 - **Avatars** — uploaded through the `uploadAvatar` function to Cloudinary, moderated with Google Cloud Vision; Google profile pictures are migrated by `migrateExternalAvatar` after validating the host against an exact `*.googleusercontent.com` allowlist.
 - **Markdown** — `src/lib/utils/markdown.ts` (marked + DOMPurify). Register `DOMPurify.addHook` at module scope only; calling it inside the render function duplicates hooks and leaks memory.

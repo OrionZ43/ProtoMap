@@ -3,7 +3,7 @@
 Active, verified defects. Each entry: what, where, how it was verified, what to do.
 Remove an entry when it's fixed — this file is only useful if it's true.
 
-Last verified: **2026-07-30** (against the working tree, not against prod).
+Last verified: **2026-09-03** (against the working tree, not against prod).
 
 ---
 
@@ -31,45 +31,7 @@ also a legitimate resolution.
 
 ---
 
-## 2. `/banned` page throws on load — missing `get` / `t` imports
-
-**Where:** `src/routes/banned/+page.svelte:8`
-
-```ts
-const fullReason = data.reason || get(t)('banned.default_reason');
-```
-
-Neither `get` (from `svelte/store`) nor `t` (from `svelte-i18n`) is imported. This runs during
-component initialization, so it's an immediate `ReferenceError` — the page is completely
-broken, not degraded.
-
-**Verified:** `svelte-check` → `banned/+page.svelte 8:39 Cannot find name 'get'` and
-`8:43 Cannot find name 't'`.
-
-**Why it matters more than it looks:** this is the page banned users are *forcibly redirected
-to* by `hooks.server.ts`. A banned user hits a redirect to a page that throws. The fix is two
-import lines, but note the page is server-rendered too, so `get(t)` must be safe during SSR —
-prefer resolving the fallback string in `+page.server.ts`, or use the `$t` store in markup
-instead of `get(t)` in the instance script.
-
----
-
-## 3. `register` page uses `fade` / `slide` without importing them
-
-**Where:** `src/routes/register/+page.svelte:312` (`transition:fade`) and `:314`
-(`transition:slide`). The script imports `quintOut` from `svelte/easing` and `tweened` from
-`svelte/motion`, but nothing from `svelte/transition`.
-
-**Verified:** `svelte-check` → `register/+page.svelte 312:14 Cannot find name 'fade'`,
-`314:68 Cannot find name 'slide'`.
-
-**Do:** add `import { fade, slide } from 'svelte/transition';`. Check what the transition is
-attached to before assuming it's cosmetic — lines 312–314 wrap a modal overlay, so a throw
-here can take out the registration flow rather than just skipping an animation.
-
----
-
-## 4. `mobileapp/*` read rules — NEEDS VERIFICATION, do not change blind
+## 2. `mobileapp/*` read rules — NEEDS VERIFICATION, do not change blind
 
 **Status: the originally reported problem is not present in the current file.** Recorded here
 because the *verification* is still outstanding and the conclusion was reached unsoundly.
@@ -115,7 +77,7 @@ CLAUDE.md.
 
 ---
 
-## 5. Uncommitted `firestore.rules` — the deployed state is unknown
+## 3. Uncommitted `firestore.rules` — the deployed state is unknown
 
 `git diff` shows **+560 / −2** on `firestore.rules`: `HEAD` contains only a stub
 (`users` with `allow read: if true`), while the entire ~570-line ruleset — every deny rule the
