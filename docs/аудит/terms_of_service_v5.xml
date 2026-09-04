@@ -1,0 +1,592 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document id="terms_of_service" version="v5.0 | [ДАТА]">
+
+    <title>
+        <ru>ПОЛЬЗОВАТЕЛЬСКОЕ СОГЛАШЕНИЕ</ru>
+        <en>TERMS OF SERVICE</en>
+    </title>
+
+    <alert severity="error" icon="warning">
+        <title>
+            <ru>КРИТИЧЕСКИ ВАЖНОЕ УВЕДОМЛЕНИЕ: В СЕРВИСЕ НЕТ РЕАЛЬНЫХ ДЕНЕГ</ru>
+            <en>CRITICAL NOTICE: NO REAL MONEY IN THE SERVICE</en>
+        </title>
+        <text>
+            <ru>Данный Сервис содержит художественную симуляцию азартных игр («The Glitch Pit»). 1. НЕТ РЕАЛЬНЫХ ДЕНЕГ: вся игровая валюта (ProtoCoins) не имеет денежной стоимости, не является криптовалютой и не может быть обменяна на фиатные деньги, товары или услуги. 2. НЕТ ВВОДА И ВЫВОДА СРЕДСТВ: ProtoCoins невозможно приобрести за деньги, любой выигрыш является исключительно виртуальным достижением. 3. СИМУЛЯЦИЯ: механики игр настроены в развлекательных целях и не отражают реальные математические модели настоящих казино. 4. ВОЗРАСТ: доступ к разделу «The Glitch Pit» предоставляется пользователям, достигшим 18 лет.</ru>
+            <en>This Service contains an artistic simulation of gambling ("The Glitch Pit"). 1. NO REAL MONEY: all in-game currency (ProtoCoins) has no monetary value, is not cryptocurrency, and cannot be exchanged for fiat money, goods, or services. 2. NO DEPOSITS OR WITHDRAWALS: ProtoCoins cannot be purchased with money, and any winnings are purely virtual achievements. 3. SIMULATION: game mechanics are designed for entertainment and do not reflect the real mathematical models of actual casinos. 4. AGE: access to The Glitch Pit is available to users aged 18 and over.</en>
+        </text>
+    </alert>
+
+    <alert severity="warning" icon="warning">
+        <title>
+            <ru>Версия 5.0 | Вступает в силу: [ДАТА]</ru>
+            <en>Version 5.0 | Effective date: [DATE]</en>
+        </title>
+        <text>
+            <ru>Программный комплекс ProtoMap является независимым некоммерческим продуктом Z43 Studios и не связан с компанией Protomaps LLC (protomaps.com) ни юридически, ни коммерчески. Любое сходство в наименованиях случайно.</ru>
+            <en>The ProtoMap software is an independent non-commercial product of Z43 Studios and is not associated with Protomaps LLC (protomaps.com) legally or commercially. Any similarity in names is coincidental.</en>
+        </text>
+    </alert>
+
+    <section>
+        <ru>1. СТОРОНЫ, ПРЕДМЕТ СОГЛАШЕНИЯ И АКЦЕПТ</ru>
+        <en>1. PARTIES, SUBJECT MATTER AND ACCEPTANCE</en>
+    </section>
+
+    <subsection>
+        <ru>1.1. Стороны и определения</ru>
+        <en>1.1. Parties and Definitions</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Настоящее Пользовательское соглашение (далее — «Соглашение») является публичной офертой и договором присоединения по законодательству Республики Беларусь. Стороной Соглашения со стороны правообладателя выступает [ФАМИЛИЯ ИМЯ ОТЧЕСТВО] — физическое лицо, гражданин Республики Беларусь, действующее под творческим наименованием Z43 Studios (далее — «Разработчик», «Мы»). Z43 Studios не является юридическим лицом; наименование используется для обозначения проектов автора. Разработчик не является индивидуальным предпринимателем.</ru>
+        <en>These Terms of Service (the "Agreement") constitute a public offer and a contract of adhesion under the law of the Republic of Belarus. The rightholder party is [FULL NAME], an individual and citizen of the Republic of Belarus acting under the creative name Z43 Studios (the "Developer", "We"). Z43 Studios is not a legal entity; the name is used to identify the author's projects. The Developer is not a registered sole trader.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>Пользователем (далее — «Вы») является любое физическое лицо, установившее Приложение или использующее Сайт. Предметом Соглашения является предоставление права использования программного комплекса ProtoMap — мобильного приложения для Android и веб-интерфейса — и связанных с ним функциональных возможностей.</ru>
+        <en>The User ("You") is any individual who has installed the Application or uses the Website. The subject matter of the Agreement is the grant of the right to use the ProtoMap software — the Android mobile application and web interface — and its related functionality.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>1.2. Безвозмездность</ru>
+        <en>1.2. No charge</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Сервис предоставляется безвозмездно. Разработчик не оказывает платных услуг, не принимает платежей за доступ к Сервису или отдельным его функциям, не размещает рекламу и не осуществляет предпринимательскую деятельность с использованием Сервиса. Разработчик не принимает на себя обязательств по обеспечению доступности Сервиса в течение какого-либо определённого срока.</ru>
+        <en>The Service is provided free of charge. The Developer provides no paid services, accepts no payment for access to the Service or any of its features, displays no advertising, and conducts no commercial activity through the Service. The Developer assumes no obligation to keep the Service available for any particular period.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>1.3. Акцепт (принятие условий)</ru>
+        <en>1.3. Acceptance of Terms</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Соглашение считается заключённым с момента совершения вами любого из следующих действий: создание учётной записи, вход через провайдера аутентификации, начало использования Сервиса. Совершая эти действия, вы подтверждаете, что:</ru>
+        <en>The Agreement is concluded when you perform any of the following: create an account, sign in through an authentication provider, or begin using the Service. By doing so you confirm that:</en>
+    </paragraph>
+
+    <bullet>
+        <ru>Вам исполнилось полных 16 лет (или больше, если того требует законодательство вашей страны).</ru>
+        <en>You are at least 16 years old (or older if required by the law of your country).</en>
+    </bullet>
+    <bullet>
+        <ru>Вы прочитали, поняли и полностью согласны с условиями настоящего Соглашения и Политикой конфиденциальности.</ru>
+        <en>You have read, understood, and fully agree to the terms of this Agreement and the Privacy Policy.</en>
+    </bullet>
+    <bullet>
+        <ru>Вы обязуетесь соблюдать правила сообщества, изложенные в Разделе 2.</ru>
+        <en>You commit to following the community rules set out in Section 2.</en>
+    </bullet>
+
+    <paragraph>
+        <ru>Согласие на обработку персональных данных является самостоятельным волеизъявлением и запрашивается отдельно от принятия настоящего Соглашения, в порядке, предусмотренном Политикой конфиденциальности. Если вы не согласны с условиями Соглашения, вы не вправе использовать Сервис и должны удалить Приложение.</ru>
+        <en>Consent to the processing of personal data is a separate expression of will and is requested separately from acceptance of this Agreement, in the manner set out in the Privacy Policy. If you do not agree to the Agreement, you may not use the Service and must delete the Application.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>1.4. Ограниченная лицензия на Сервис</ru>
+        <en>1.4. Limited licence to the Service</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Разработчик предоставляет вам ограниченную, неисключительную, непередаваемую, отзывную лицензию на использование Сервиса в личных некоммерческих целях. Разработчик сохраняет все права, титулы и интересы в отношении Сервиса, включая исходный код, дизайн и иные объекты интеллектуальной собственности.</ru>
+        <en>The Developer grants you a limited, non-exclusive, non-transferable, revocable licence to use the Service for personal non-commercial purposes. The Developer retains all rights, title, and interest in the Service, including source code, design, and other intellectual property.</en>
+    </paragraph>
+
+    <section>
+        <ru>2. ПРАВИЛА ПОВЕДЕНИЯ И ПОЛЬЗОВАТЕЛЬСКИЙ КОНТЕНТ</ru>
+        <en>2. CONDUCT RULES AND USER CONTENT</en>
+    </section>
+
+    <subsection>
+        <ru>2.1. Ответственность за контент (UGC)</ru>
+        <en>2.1. Content Responsibility (UGC)</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Сервис позволяет создавать, загружать и распространять контент: текстовые и голосовые сообщения, изображения, аватары, статусы. Вы несёте единоличную и полную юридическую ответственность за любой контент, который вы публикуете. Разработчик выступает в роли пассивного канала передачи информации и не премодерирует весь контент в реальном времени, однако оставляет за собой право удалить любые материалы постфактум.</ru>
+        <en>The Service allows you to create, upload, and distribute content: text and voice messages, images, avatars, and statuses. You bear sole and full legal responsibility for any content you publish. The Developer acts as a passive information conduit and does not pre-moderate all content in real time, but reserves the right to remove any material after the fact.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>2.2. Лицензия на пользовательский контент</ru>
+        <en>2.2. Licence to user-generated content</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Права на созданный вами контент остаются за вами. Размещая контент в Сервисе, вы предоставляете Разработчику безвозмездную неисключительную лицензию на использование такого контента следующими способами:</ru>
+        <en>You retain the rights to the content you create. By posting content to the Service you grant the Developer a royalty-free, non-exclusive licence to use that content in the following ways:</en>
+    </paragraph>
+
+    <bullet>
+        <ru>Воспроизведение и хранение в электронной форме, в том числе на серверах привлечённых Разработчиком технических партнёров.</ru>
+        <en>Reproduction and storage in electronic form, including on the servers of the Developer's technical partners.</en>
+    </bullet>
+    <bullet>
+        <ru>Доведение до всеобщего сведения и публичный показ в пределах Сервиса — в объёме, соответствующем выбранным вами настройкам приватности.</ru>
+        <en>Making available to the public and public display within the Service, to the extent permitted by your privacy settings.</en>
+    </bullet>
+    <bullet>
+        <ru>Переработка в технических целях: изменение формата, разрешения и степени сжатия, создание миниатюр и превью, включая автоматически генерируемые изображения для карточек ссылок (Open Graph).</ru>
+        <en>Technical adaptation: change of format, resolution and compression, creation of thumbnails and previews, including automatically generated link-card images (Open Graph).</en>
+    </bullet>
+    <bullet>
+        <ru>Создание резервных копий.</ru>
+        <en>Creation of backup copies.</en>
+    </bullet>
+
+    <paragraph>
+        <ru>Территория действия лицензии: все страны мира — с учётом трансграничного характера облачной инфраструктуры. Срок действия: период размещения контента в Сервисе и 90 календарных дней после его удаления, необходимые для очистки кэшей и резервных копий. Вознаграждение не выплачивается: лицензия предоставляется безвозмездно.</ru>
+        <en>Territory: worldwide, reflecting the cross-border nature of the cloud infrastructure. Term: the period the content remains in the Service plus 90 calendar days after its removal, required to purge caches and backups. No remuneration is payable: the licence is granted free of charge.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>Лицензия предоставляется исключительно в целях функционирования Сервиса. Разработчик не вправе использовать ваш контент в коммерческих целях, не связанных с работой Сервиса, передавать его третьим лицам для самостоятельного использования либо включать в состав иных произведений. Личные неимущественные права автора сохраняются за вами в полном объёме. Вы гарантируете, что обладаете правами, необходимыми для предоставления настоящей лицензии, и что размещение контента не нарушает прав третьих лиц.</ru>
+        <en>The licence is granted solely for the operation of the Service. The Developer may not use your content for commercial purposes unrelated to the Service, transfer it to third parties for independent use, or incorporate it into other works. Your moral rights as author remain fully with you. You warrant that you hold the rights necessary to grant this licence and that posting the content does not infringe the rights of third parties.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>2.3. Безопасность детей — политика абсолютной нулевой терпимости</ru>
+        <en>2.3. Child Safety — Absolute Zero Tolerance Policy</en>
+    </subsection>
+
+    <alert severity="error" icon="warning">
+        <title>
+            <ru>CHILD SAFETY STANDARDS — Google Play</ru>
+            <en>CHILD SAFETY STANDARDS — Google Play</en>
+        </title>
+        <text>
+            <ru>Настоящий раздел составлен в строгом соответствии с требованиями Google Play Child Safety Standards. Приложение ProtoMap применяет политику абсолютной нулевой терпимости к любым формам сексуального насилия над детьми, их эксплуатации или иного причинения им вреда.</ru>
+            <en>This section is drafted in strict compliance with Google Play Child Safety Standards. The ProtoMap application applies a policy of absolute zero tolerance to any form of child sexual abuse, exploitation, or harm.</en>
+        </text>
+    </alert>
+
+    <bullet>
+        <ru>Абсолютный запрет: категорически запрещается создавать, загружать, хранить, пересылать или иным образом распространять любые материалы, изображающие сексуальное насилие над несовершеннолетними (лицами, не достигшими 18 лет), их сексуальную эксплуатацию или сексуализацию. Запрет распространяется на реалистичные фото и видео, компьютерную графику, аниме, мангу, рисунки, анимацию и текстовые описания. Художественная ценность или виртуальный характер материала не являются основанием для исключения.</ru>
+            <en>Absolute prohibition: creating, uploading, storing, forwarding, or otherwise distributing any material depicting sexual abuse of minors (persons under 18 years of age), their sexual exploitation, or sexualization is categorically prohibited. The prohibition extends to realistic photos and videos, computer graphics, anime, manga, drawings, animations, and textual descriptions. Artistic merit or the virtual nature of the material is not grounds for exception.</en>
+    </bullet>
+    <bullet>
+        <ru>Запрет груминга: запрещается использовать функции чата, личных сообщений или любые иные инструменты Сервиса в целях установления неправомерного контакта с несовершеннолетними, их вербовки или сексуальной эксплуатации.</ru>
+        <en>Grooming prohibition: using chat features, private messages, or any other Service tools to establish unlawful contact with minors, recruit them, or sexually exploit them is prohibited.</en>
+    </bullet>
+    <bullet>
+        <ru>Автоматическая проверка: аватары, загружаемые через веб-версию, проходят обязательную автоматическую проверку через Google Cloud Vision SafeSearch. Контент, признанный недопустимым, блокируется немедленно.</ru>
+        <en>Automatic checking: avatars uploaded via the web version are subject to mandatory automatic verification via Google Cloud Vision SafeSearch. Content deemed unacceptable is blocked immediately.</en>
+    </bullet>
+    <bullet>
+        <ru>Немедленная блокировка: обнаружение любого контента, нарушающего настоящий раздел, влечёт немедленную перманентную блокировку учётной записи без права апелляции и возврата виртуальных активов. Порядок обжалования, предусмотренный пунктом 2.9, к таким блокировкам не применяется.</ru>
+        <en>Immediate ban: detection of any content violating this section results in immediate permanent account termination without right of appeal or return of virtual assets. The appeal procedure in clause 2.9 does not apply to such bans.</en>
+    </bullet>
+    <bullet>
+        <ru>Уведомление властей: мы незамедлительно сообщаем о каждом выявленном случае CSAM в NCMEC (CyberTipline: cybertipline.org) в соответствии с 18 U.S.C. § 2258A, а также в правоохранительные органы Республики Беларусь, и передаём им все связанные данные.</ru>
+        <en>Reporting to authorities: we immediately report each identified CSAM case to NCMEC (CyberTipline: cybertipline.org) in accordance with 18 U.S.C. § 2258A and to the law enforcement authorities of the Republic of Belarus, and transfer all related data to them.</en>
+    </bullet>
+    <bullet>
+        <ru>Как сообщить о нарушении: используйте кнопку «Пожаловаться» в интерфейсе приложения или напишите на orion.z43studios@gmail.com с темой CHILD SAFETY REPORT. Если ребёнок находится в непосредственной опасности — немедленно звоните в экстренные службы (102 в Республике Беларусь) и сообщайте в NCMEC: missingkids.org.</ru>
+        <en>How to report a violation: use the "Report" button in the app interface or email orion.z43studios@gmail.com with the subject CHILD SAFETY REPORT. If a child is in immediate danger — call emergency services immediately (102 in the Republic of Belarus) and report to NCMEC: missingkids.org.</en>
+    </bullet>
+
+    <subsection>
+        <ru>2.4. Общий запрещённый контент</ru>
+        <en>2.4. General Prohibited Content</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Категорически запрещено публиковать через Сервис:</ru>
+        <en>It is categorically prohibited to publish through the Service:</en>
+    </paragraph>
+
+    <bullet>
+        <ru>Незаконный контент: материалы, связанные с экстремизмом, терроризмом, торговлей наркотиками или оружием, а также иные материалы, распространение которых запрещено законодательством Республики Беларусь об информации, информатизации и защите информации.</ru>
+        <en>Illegal content: material related to extremism, terrorism, drug or arms trafficking, and any other material whose dissemination is prohibited by the legislation of the Republic of Belarus on information, informatisation and information protection.</en>
+    </bullet>
+    <bullet>
+        <ru>NSFW в публичных зонах: порнография и откровенная эротика запрещены в публичных каналах (общий чат, аватары, никнеймы).</ru>
+        <en>NSFW in public areas: pornography and explicit erotica are prohibited in public channels (global chat, avatars, usernames).</en>
+    </bullet>
+    <bullet>
+        <ru>Язык вражды (Hate Speech): оскорбления, дискриминация или призывы к насилию на почве расы, национальности, религии, гендера или сексуальной ориентации.</ru>
+        <en>Hate Speech: insults, discrimination, or incitement to violence based on race, nationality, religion, gender, or sexual orientation.</en>
+    </bullet>
+    <bullet>
+        <ru>Травля и доксинг: публикация чужих персональных данных (адресов, телефонов, документов) без согласия субъекта, целенаправленное преследование или запугивание других пользователей. Публикуя чужие персональные данные, вы становитесь самостоятельным нарушителем законодательства о персональных данных.</ru>
+        <en>Harassment and doxxing: publishing other people's personal data (addresses, phone numbers, documents) without the subject's consent, targeted persecution, or intimidation of other users. By publishing another person's personal data you become an independent infringer of personal data legislation.</en>
+    </bullet>
+    <bullet>
+        <ru>Спам и фишинг: массовая рассылка сообщений, вредоносные или обманные ссылки.</ru>
+        <en>Spam and phishing: mass messaging, malicious, or deceptive links.</en>
+    </bullet>
+
+    <subsection>
+        <ru>2.5. Стикеры и авторское право</ru>
+        <en>2.5. Stickers and Copyright</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Администраторы Сервиса могут загружать пользовательские наборы стикеров. Загружая изображения, администратор гарантирует наличие необходимых прав или лицензий. Запрещено загружать работы других художников, логотипы брендов или иной охраняемый авторским правом материал без разрешения правообладателя.</ru>
+        <en>Service administrators may upload custom sticker packs. By uploading images, the administrator guarantees they hold the necessary rights or licences. Uploading other artists' work, brand logos, or other copyrighted material without the rightholder's permission is prohibited.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>Если вы являетесь обладателем авторского права или смежных прав и полагаете, что размещённые в Сервисе материалы нарушают ваши права, направьте на адрес электронной почты, указанный в разделе 7, уведомление с указанием: сведений о вас и способа связи; сведений об объекте авторского права и основаниях возникновения ваших прав на него; указания на конкретный материал в Сервисе (ссылка, идентификатор сообщения, имя пользователя); заявления о том, что вы не давали разрешения на использование материала. Разработчик рассматривает уведомление и удаляет либо блокирует спорный материал в течение 24 часов с момента получения уведомления, содержащего все указанные сведения, и уведомляет разместившего материал пользователя.</ru>
+        <en>If you are a holder of copyright or related rights and believe that material posted in the Service infringes your rights, send a notice to the e-mail address in Section 7 stating: your details and contact method; details of the copyrighted work and the basis of your rights in it; identification of the specific material in the Service (link, message identifier, username); and a statement that you did not authorise the use of the material. The Developer reviews the notice and removes or blocks the disputed material within 24 hours of receiving a notice containing all of the above, and notifies the user who posted it.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>Настоящий порядок применяется наряду с процедурой DMCA, предусмотренной для платформ распространения приложений, и не заменяет права правообладателя на защиту в порядке, установленном законодательством Республики Беларусь об авторском праве и смежных правах.</ru>
+        <en>This procedure applies alongside the DMCA process used by application distribution platforms and does not replace the rightholder's right to seek protection under the copyright and related rights legislation of the Republic of Belarus.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>2.6. Технические нарушения и читерство</ru>
+        <en>2.6. Technical Violations and Cheating</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Для защиты игровой экономики и стабильности сервера запрещается:</ru>
+        <en>To protect the game economy and server stability, the following are prohibited:</en>
+    </paragraph>
+
+    <bullet>
+        <ru>Использовать сторонние программы (боты, кликеры, макросы) для автоматизации действий в играх или на карте.</ru>
+        <en>Using third-party software (bots, clickers, macros) to automate actions in games or on the map.</en>
+    </bullet>
+    <bullet>
+        <ru>Эксплуатировать уязвимости (баги) сервера для получения необоснованных преимуществ — дублирования предметов, накрутки баланса, манипуляций с результатами игр.</ru>
+        <en>Exploiting server vulnerabilities (bugs) to gain undeserved advantages — item duplication, balance manipulation, or game result manipulation.</en>
+    </bullet>
+    <bullet>
+        <ru>Осуществлять реверс-инжиниринг, декомпиляцию или попытки взлома API приложения.</ru>
+        <en>Performing reverse engineering, decompilation, or attempting to hack the application's API.</en>
+    </bullet>
+    <bullet>
+        <ru>Использовать фиктивное местоположение (Mock Location) для манипуляции с картой или системой начисления шагов. Приложение автоматически обнаруживает признаки использования Mock Location и Shizuku и фиксирует нарушения в журнале безопасности аккаунта.</ru>
+        <en>Using fake location (Mock Location) to manipulate the map or step counting system. The app automatically detects signs of Mock Location and Shizuku usage and records violations in the account's security log.</en>
+    </bullet>
+    <bullet>
+        <ru>Использовать сторонние фитнес-приложения или скрипты для искусственного завышения количества шагов.</ru>
+        <en>Using third-party fitness apps or scripts to artificially inflate step counts.</en>
+    </bullet>
+
+    <subsection>
+        <ru>2.7. Разрешения Android и их допустимое использование</ru>
+        <en>2.7. Android Permissions and Their Permitted Use</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Используя мобильное приложение ProtoMap, вы предоставляете следующие разрешения исключительно для указанных целей:</ru>
+        <en>By using the ProtoMap mobile application, you grant the following permissions solely for the stated purposes:</en>
+    </paragraph>
+
+    <bullet>
+        <ru>RECORD_AUDIO — микрофон: запись голосовых сообщений только при удержании кнопки записи в чате.</ru>
+        <en>RECORD_AUDIO — microphone: recording voice messages only while holding the record button in chat.</en>
+    </bullet>
+    <bullet>
+        <ru>READ_MEDIA_IMAGES / READ_EXTERNAL_STORAGE — медиафайлы: выбор изображений из галереи для отправки в чат или установки аватара. Используется системный Photo Picker — приложение не получает доступа ко всей галерее.</ru>
+        <en>READ_MEDIA_IMAGES / READ_EXTERNAL_STORAGE — media files: selecting images from the gallery to send in chat or set as an avatar. The system Photo Picker is used — the app does not gain access to the entire gallery.</en>
+    </bullet>
+    <bullet>
+        <ru>ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION / FOREGROUND_SERVICE_LOCATION — геолокация: определение текущего местоположения для размещения метки на карте и учёта маршрутов прогулок (WalkTrackingService). Отслеживание местоположения в фоне без ведома пользователя не производится.</ru>
+        <en>ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION / FOREGROUND_SERVICE_LOCATION — location: determining your current position to place a marker on the map and track walk routes (WalkTrackingService). Background location tracking without the user's knowledge does not occur.</en>
+    </bullet>
+    <bullet>
+        <ru>ACTIVITY_RECOGNITION / android.permission.health.READ_STEPS / FOREGROUND_SERVICE_HEALTH — шагомер: чтение количества шагов через аппаратный сенсор устройства и платформу Health Connect для конвертации в ProtoCoins (StepCounterService, WalkTrackingService). Читается исключительно показатель количества шагов; иные категории данных Health Connect не запрашиваются и не обрабатываются. Функция включается только по вашей инициативе и требует отдельного согласия на обработку специальных персональных данных.</ru>
+        <en>ACTIVITY_RECOGNITION / android.permission.health.READ_STEPS / FOREGROUND_SERVICE_HEALTH — step counter: reading step counts from the device's hardware sensor and the Health Connect platform for conversion into ProtoCoins (StepCounterService, WalkTrackingService). Only the step count is read; no other Health Connect data categories are requested or processed. The feature is enabled only at your initiative and requires separate consent to the processing of special categories of personal data.</en>
+    </bullet>
+    <bullet>
+        <ru>POST_NOTIFICATIONS — уведомления: доставка push-уведомлений о новых личных сообщениях, ответах на комментарии и системных событиях через Firebase Cloud Messaging (protomap_chat_channel).</ru>
+        <en>POST_NOTIFICATIONS — notifications: delivering push notifications about new private messages, comment replies, and system events via Firebase Cloud Messaging (protomap_chat_channel).</en>
+    </bullet>
+    <bullet>
+        <ru>RECEIVE_BOOT_COMPLETED — автозапуск: перезапуск службы шагомера (StepCounterBootReceiver) после перезагрузки устройства — только если функция шагомера была активна до перезагрузки.</ru>
+        <en>RECEIVE_BOOT_COMPLETED — autostart: restarting the stepper service (StepCounterBootReceiver) after a device reboot — only if the stepper feature was active before the reboot.</en>
+    </bullet>
+    <bullet>
+        <ru>INTERNET / ACCESS_NETWORK_STATE — сеть: подключение к серверам Firebase и получение данных карты.</ru>
+        <en>INTERNET / ACCESS_NETWORK_STATE — network: connecting to Firebase servers and retrieving map data.</en>
+    </bullet>
+    <bullet>
+        <ru>VIBRATE — вибрация: тактильная обратная связь (хаптика) в элементах интерфейса.</ru>
+        <en>VIBRATE — vibration: haptic feedback in UI elements.</en>
+    </bullet>
+
+    <paragraph>
+        <ru>Использование любого из перечисленных разрешений в иных целях категорически запрещено и является нарушением настоящего Соглашения. Вы вправе отозвать любое разрешение в настройках операционной системы; это отключит соответствующую функцию, но не повлияет на остальные возможности Сервиса.</ru>
+        <en>Using any of the listed permissions for any other purpose is categorically prohibited and constitutes a violation of this Agreement. You may revoke any permission in your operating system settings; this disables the corresponding feature but does not affect the rest of the Service.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>2.8. Модерация и санкции</ru>
+        <en>2.8. Moderation and Sanctions</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Приложение оснащено встроенной системой жалоб («Пожаловаться»). В случае выявления нарушений Администрация вправе применить следующие меры:</ru>
+        <en>The application has a built-in complaint system ("Report"). Upon identifying violations, the Administration may apply the following measures:</en>
+    </paragraph>
+
+    <bullet>
+        <ru>Удалить конкретный контент (сообщение, изображение).</ru>
+        <en>Delete specific content (message, image).</en>
+    </bullet>
+    <bullet>
+        <ru>Временно ограничить доступ к отдельным функциям (Mute).</ru>
+        <en>Temporarily restrict access to specific features (Mute).</en>
+    </bullet>
+    <bullet>
+        <ru>Перманентно заблокировать учётную запись без возврата виртуальных активов.</ru>
+        <en>Permanently block the account without return of virtual assets.</en>
+    </bullet>
+
+    <subsection>
+        <ru>2.9. Обжалование блокировки</ru>
+        <en>2.9. Appealing a ban</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Решение о блокировке учётной записи, принятое в том числе на основании данных автоматических систем контроля (обнаружение фиктивного местоположения, средств обхода системы безопасности, аномальных показателей активности), может быть обжаловано. Обращение направляется на адрес электронной почты, указанный в разделе 7, в течение 30 календарных дней с момента блокировки. Обращение рассматривается Разработчиком лично, с проверкой обстоятельств, послуживших основанием для блокировки; мотивированный ответ направляется в течение 15 календарных дней. При подтверждении ошибки доступ к учётной записи и виртуальные активы восстанавливаются.</ru>
+        <en>A decision to block an account, including one based on automated control systems (detection of mock location, security bypass tools, or anomalous activity), may be appealed. Send your appeal to the e-mail address in Section 7 within 30 calendar days of the block. The Developer reviews the appeal personally, verifying the circumstances that led to the block, and sends a reasoned reply within 15 calendar days. If an error is confirmed, account access and virtual assets are restored.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>Настоящий порядок не применяется к блокировкам за нарушение пункта 2.3 «Безопасность детей»: такие решения окончательны.</ru>
+        <en>This procedure does not apply to bans for breach of clause 2.3 (Child Safety): such decisions are final.</en>
+    </paragraph>
+
+    <section>
+        <ru>3. ВИРТУАЛЬНЫЕ АКТИВЫ, ЭКОНОМИКА И ИГРОВЫЕ МЕХАНИКИ</ru>
+        <en>3. VIRTUAL ASSETS, ECONOMY, AND GAME MECHANICS</en>
+    </section>
+
+    <subsection>
+        <ru>3.1. Статус виртуальной валюты ProtoCoins</ru>
+        <en>3.1. ProtoCoins Virtual Currency Status</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Внутренняя валюта ProtoCoins (PC) и цифровые предметы (рамки, фоны, инвентарь) являются элементами программного кода Сервиса и объектами авторского права Разработчика. Они не порождают у пользователя имущественных прав.</ru>
+        <en>The in-app currency ProtoCoins (PC) and digital items (frames, backgrounds, inventory) are elements of the Service's program code and objects of the Developer's copyright. They do not give rise to any property rights for the user.</en>
+    </paragraph>
+
+    <bullet>
+        <ru>Отсутствие ценности: ProtoCoins не являются денежными средствами или их эквивалентом, не являются криптовалютой, электронными денежными средствами или финансовыми инструментами и не имеют рыночной или иной имущественной стоимости.</ru>
+        <en>No value: ProtoCoins are neither money nor a money equivalent, are not cryptocurrency, electronic money, or financial instruments, and have no market or other property value.</en>
+    </bullet>
+    <bullet>
+        <ru>Запрет приобретения за деньги: ProtoCoins невозможно приобрести за денежные средства ни прямо, ни косвенно. Сервис не содержит встроенных покупок.</ru>
+        <en>No purchase for money: ProtoCoins cannot be acquired for money, directly or indirectly. The Service contains no in-app purchases.</en>
+    </bullet>
+    <bullet>
+        <ru>Запрет обмена и передачи: PC не подлежат возврату, обмену на денежные средства, товары, работы, услуги или иные материальные ценности, не могут быть переданы между учётными записями и не могут использоваться вне Приложения.</ru>
+        <en>No exchange or transfer: PC are non-refundable, cannot be exchanged for money, goods, works, services or other assets, cannot be transferred between accounts, and cannot be used outside the Application.</en>
+    </bullet>
+    <bullet>
+        <ru>Способы начисления: ежедневные бонусы, конвертация шагов, реферальная программа, выигрыши в мини-играх. Все способы начисления безвозмездны. Начисление может быть изменено или прекращено в любое время.</ru>
+        <en>Earning methods: daily bonuses, step conversion, referral programme, and mini-game winnings. All earning methods are free of charge. Earning may be changed or discontinued at any time.</en>
+    </bullet>
+
+    <subsection>
+        <ru>3.2. Симуляция азартных игр — The Glitch Pit</ru>
+        <en>3.2. Gambling Simulation — The Glitch Pit</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Раздел «The Glitch Pit» (мини-игры Slots, Data Uplink/Crash, Coin Flip, Artifact Synthesis) является художественной симуляцией, созданной исключительно в развлекательных целях. В Приложении технически невозможно выиграть реальные деньги или материальные призы. Любой успех в мини-играх не гарантирует успеха в реальных азартных играх и не является финансовым советом.</ru>
+        <en>The Glitch Pit section (Slots, Data Uplink/Crash, Coin Flip, Artifact Synthesis mini-games) is an artistic simulation created solely for entertainment. It is technically impossible to win real money or material prizes in the Application. Any success in the mini-games does not guarantee success in real gambling and does not constitute financial advice.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>ProtoCoins не являются ставкой в значении Положения об осуществлении деятельности в сфере игорного бизнеса на территории Республики Беларусь: они не являются денежными средствами или их эквивалентом и не имеют имущественной стоимости. Разработчик не организует и не проводит азартные игры, не осуществляет деятельность в сфере игорного бизнеса и не принимает ставок. Исход мини-игр не связан с каким-либо имущественным предоставлением со стороны участника.</ru>
+        <en>ProtoCoins are not a stake within the meaning of the Regulation on gambling activity in the Republic of Belarus: they are neither money nor a money equivalent and have no property value. The Developer does not organise or conduct gambling, does not carry out gambling business activity, and does not accept stakes. The outcome of the mini-games involves no property contribution from the participant.</en>
+    </paragraph>
+
+    <alert severity="warning" icon="warning">
+        <title>
+            <ru>Возрастное ограничение раздела: 18+</ru>
+            <en>Age restriction for this section: 18+</en>
+        </title>
+        <text>
+            <ru>Доступ к разделу «The Glitch Pit» предоставляется пользователям, достигшим 18 лет, независимо от общего возрастного ценза Сервиса (16+). Подтверждение возраста запрашивается при первом входе в раздел. Сообщение недостоверных сведений о возрасте является нарушением настоящего Соглашения.</ru>
+            <en>Access to The Glitch Pit is available to users aged 18 and over, regardless of the Service's general age requirement (16+). Age confirmation is requested on first entry to the section. Providing false age information is a breach of this Agreement.</en>
+        </text>
+    </alert>
+
+    <alert severity="error" icon="warning">
+        <title>
+            <ru>Торговля за реальные деньги (RMT) СТРОГО ЗАПРЕЩЕНА</ru>
+            <en>Real Money Trading (RMT) is STRICTLY PROHIBITED</en>
+        </title>
+        <text>
+            <ru>Продажа, покупка или обмен учётных записей, ProtoCoins или предметов инвентаря за реальные деньги или иные материальные ценности вне механик Сервиса влечёт немедленную перманентную блокировку ВСЕХ участвующих аккаунтов (покупателя и продавца). Размещение объявлений о такой торговле в чатах Сервиса приравнивается к нарушению.</ru>
+            <en>Selling, buying, or exchanging accounts, ProtoCoins, or inventory items for real money or other material values outside the Service's mechanics results in the immediate permanent termination of ALL involved accounts (buyer and seller). Posting advertisements for such trading in the Service's chats is treated as a violation.</en>
+        </text>
+    </alert>
+
+    <subsection>
+        <ru>3.3. Шагомер и программа вознаграждений</ru>
+        <en>3.3. Stepper and Rewards Program</en>
+    </subsection>
+
+    <bullet>
+        <ru>Начисление PC за шаги ограничено суточными лимитами и не является финансовым обязательством Разработчика.</ru>
+        <en>PC awards for steps are subject to daily limits and do not constitute a financial obligation of the Developer.</en>
+    </bullet>
+    <bullet>
+        <ru>Разработчик вправе изменять курс начисления, бонусные часы, суточные лимиты и иные параметры программы в любое время без предварительного уведомления.</ru>
+        <en>The Developer may change the earning rate, bonus hours, daily limits, and other programme parameters at any time without prior notice.</en>
+    </bullet>
+    <bullet>
+        <ru>Любое манипулирование данными о шагах, использование Mock Location в ходе прогулок или иные попытки обойти систему верификации влекут аннулирование начисленных PC и блокировку аккаунта с правом обжалования в порядке пункта 2.9.</ru>
+        <en>Any manipulation of step data, use of Mock Location during walks, or other attempts to bypass the verification system result in cancellation of earned PC and account suspension, subject to appeal under clause 2.9.</en>
+    </bullet>
+
+    <subsection>
+        <ru>3.4. Управление экономикой</ru>
+        <en>3.4. Economy Management</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Разработчик сохраняет за собой исключительное право администрировать и изменять виртуальную экономику по своему усмотрению. Мы вправе корректировать баланс любого пользователя при выявлении ошибок начисления, дюпов или злоупотреблений. В случае критических сбоев возможен частичный или полный сброс прогресса (Wipe). Прекращение работы Сервиса или отдельных его разделов не порождает у пользователей имущественных требований в отношении ProtoCoins и виртуальных предметов.</ru>
+        <en>The Developer retains the exclusive right to administer and modify the virtual economy at its discretion. We may adjust any user's balance upon detecting crediting errors, duplication exploits, or abuse. In the event of critical failures, a partial or full progress reset (Wipe) is possible. Discontinuation of the Service or any of its sections creates no proprietary claims by users in respect of ProtoCoins or virtual items.</en>
+    </paragraph>
+
+    <section>
+        <ru>4. КАРТА, ГЕОЛОКАЦИЯ И БЕЗОПАСНОСТЬ В РЕАЛЬНОМ МИРЕ</ru>
+        <en>4. MAP, GEOLOCATION, AND REAL-WORLD SAFETY</en>
+    </section>
+
+    <bullet>
+        <ru>Размещение метки на карте является добровольным. Публикуя метку, вы самостоятельно распространяете сведения о своём приблизительном местоположении среди всех зарегистрированных пользователей и принимаете последствия такого распространения.</ru>
+        <en>Placing a marker on the map is voluntary. By publishing a marker you yourself disseminate information about your approximate location to all registered users and accept the consequences of that dissemination.</en>
+    </bullet>
+    <bullet>
+        <ru>Внимание к окружению: запрещено использовать Приложение за рулём или в ситуациях, требующих концентрации внимания.</ru>
+        <en>Situational awareness: using the Application while driving or in situations requiring focused attention is prohibited.</en>
+    </bullet>
+    <bullet>
+        <ru>Личные встречи: Разработчик не контролирует действия пользователей в офлайне. Вы несёте полную ответственность за встречи с другими пользователями в реальном мире. Мы настоятельно не рекомендуем встречаться с незнакомцами в безлюдных местах.</ru>
+        <en>Real-world meetings: the Developer does not control users' offline actions. You bear full responsibility for meeting other users in the real world. We strongly advise against meeting strangers in isolated locations.</en>
+    </bullet>
+    <bullet>
+        <ru>Точность карт: картографические данные предоставлены OpenStreetMap и могут содержать неточности. Не используйте их для навигации в критических ситуациях.</ru>
+        <en>Map accuracy: map data is provided by OpenStreetMap and may contain inaccuracies. Do not use it for navigation in critical situations.</en>
+    </bullet>
+
+    <section>
+        <ru>5. ОТКАЗ ОТ ГАРАНТИЙ И ОГРАНИЧЕНИЕ ОТВЕТСТВЕННОСТИ</ru>
+        <en>5. DISCLAIMER OF WARRANTIES AND LIMITATION OF LIABILITY</en>
+    </section>
+
+    <subsection>
+        <ru>5.1. Принцип «КАК ЕСТЬ» (AS IS)</ru>
+        <en>5.1. "AS IS" Principle</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Разработчик предоставляет Сервис на условиях «как есть» и «как доступно», без каких-либо явных или подразумеваемых гарантий. Мы не гарантируем: бесперебойную и безошибочную работу; совместимость с конкретным устройством или версией Android; сохранность данных при сбоях хостинг-провайдеров или в результате противоправных действий третьих лиц. Ответственность Разработчика ограничивается в максимальной степени, допускаемой законодательством Республики Беларусь. Разработчик не несёт ответственности за упущенную выгоду, косвенные убытки и утрату виртуальных активов, не имеющих денежной стоимости.</ru>
+        <en>The Developer provides the Service on an "as is" and "as available" basis, without any express or implied warranties. We do not guarantee: uninterrupted and error-free operation; compatibility with any particular device or Android version; or data safety in the event of hosting provider failures or unlawful acts by third parties. The Developer's liability is limited to the maximum extent permitted by the law of the Republic of Belarus. The Developer is not liable for lost profits, indirect losses, or the loss of virtual assets that have no monetary value.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>5.2. Пределы ограничения ответственности</ru>
+        <en>5.2. Boundaries of the limitation</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Ограничение ответственности, предусмотренное пунктом 5.1, не распространяется на: ответственность за умышленное нарушение обязательств, поскольку заключённое заранее соглашение об устранении или ограничении такой ответственности ничтожно в силу пункта 4 статьи 372 Гражданского кодекса Республики Беларусь; вред, причинённый жизни или здоровью; возмещение морального вреда, причинённого нарушением прав субъекта персональных данных, которое осуществляется независимо от возмещения имущественного вреда (пункт 2 статьи 19 Закона Республики Беларусь «О защите персональных данных»); а также на иные случаи, когда ограничение ответственности не допускается законодательством.</ru>
+        <en>The limitation in clause 5.1 does not apply to: liability for intentional breach of obligations, since an advance agreement excluding or limiting such liability is void under Article 372(4) of the Civil Code of the Republic of Belarus; harm to life or health; compensation for moral harm caused by infringement of a data subject's rights, which is payable independently of compensation for property damage (Article 19(2) of the Law of the Republic of Belarus On Personal Data Protection); and any other case where limitation of liability is not permitted by law.</en>
+    </paragraph>
+
+    <section>
+        <ru>6. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ</ru>
+        <en>6. FINAL PROVISIONS</en>
+    </section>
+
+    <subsection>
+        <ru>6.1. Расторжение Соглашения</ru>
+        <en>6.1. Termination of the Agreement</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Вы вправе в любое время прекратить действие Соглашения, удалив учётную запись в разделе «Настройки — Безопасность». Разработчик вправе приостановить или прекратить действие вашей лицензии в случае нарушения условий настоящего Соглашения (в особенности разделов 2 и 3), законного требования уполномоченных государственных органов либо возникновения непредвиденных проблем безопасности. Блокировка может быть обжалована в порядке пункта 2.9, за исключением случаев, предусмотренных пунктом 2.3.</ru>
+        <en>You may terminate the Agreement at any time by deleting your account in Settings — Security. The Developer may suspend or terminate your licence in the event of a breach of this Agreement (in particular Sections 2 and 3), a lawful request from competent state authorities, or unforeseen security issues. A block may be appealed under clause 2.9, except in the cases set out in clause 2.3.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>6.2. Изменения условий</ru>
+        <en>6.2. Changes to Terms</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Разработчик вправе обновлять настоящее Соглашение по мере развития проекта. Уведомление о существенных изменениях публикуется в Сервисе не менее чем за 10 календарных дней до вступления их в силу. Новая версия предъявляется вам для принятия при следующем входе: версия документа сравнивается с последней принятой вами версией, и при расхождении требуется принятие новой редакции. До принятия новой версии продолжает действовать ранее принятая вами редакция в части, не противоречащей законодательству. Отказ от принятия новой версии означает прекращение Соглашения; в этом случае вы вправе потребовать удаления учётной записи.</ru>
+        <en>The Developer may update this Agreement as the project develops. Notice of material changes is published in the Service at least 10 calendar days before they take effect. The new version is presented for your acceptance at your next sign-in: the document version is compared with the version you last accepted, and where they differ, acceptance of the new edition is required. Until you accept the new version, the edition you previously accepted continues to apply insofar as it does not conflict with the law. Refusal to accept the new version terminates the Agreement; in that case you may request deletion of your account.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>6.3. Автономность положений</ru>
+        <en>6.3. Severability</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Если какое-либо положение настоящего Соглашения будет признано недействительным, остальные положения сохраняют полную силу.</ru>
+        <en>If any provision of this Agreement is found invalid, the remaining provisions remain in full force.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>6.4. Применимое право и разрешение споров</ru>
+        <en>6.4. Governing Law and Dispute Resolution</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Настоящее Соглашение регулируется законодательством Республики Беларусь. До обращения в суд стороны обязаны соблюсти претензионный порядок: претензия направляется в письменной форме либо на адрес электронной почты, указанный в разделе 7, и подлежит рассмотрению в течение 30 календарных дней с момента получения. При недостижении согласия спор подлежит рассмотрению судом в соответствии с процессуальным законодательством Республики Беларусь по месту жительства ответчика.</ru>
+        <en>This Agreement is governed by the law of the Republic of Belarus. Before going to court the parties must observe a pre-action procedure: a claim is sent in writing or to the e-mail address in Section 7 and must be considered within 30 calendar days of receipt. Failing agreement, the dispute is heard by a court in accordance with the procedural law of the Republic of Belarus at the defendant's place of residence.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>Ничто в настоящем Соглашении не ограничивает ваше право обратиться в Национальный центр защиты персональных данных Республики Беларусь с жалобой на действия Разработчика при обработке персональных данных.</ru>
+        <en>Nothing in this Agreement limits your right to complain to the National Personal Data Protection Center of the Republic of Belarus about the Developer's handling of personal data.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>6.5. Обстоятельства непреодолимой силы</ru>
+        <en>6.5. Force Majeure</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Стороны освобождаются от ответственности за неисполнение или ненадлежащее исполнение обязательств по настоящему Соглашению, если это явилось следствием обстоятельств непреодолимой силы — чрезвычайных и непредотвратимых при данных условиях обстоятельств (пункт 3 статьи 372 Гражданского кодекса Республики Беларусь). К таким обстоятельствам, в частности, относятся: стихийные бедствия, военные действия, акты государственных органов, делающие исполнение невозможным, массовые сбои сетей связи и электроснабжения, а также прекращение или существенное ограничение работы привлечённых Разработчиком технических партнёров (Google Firebase, Vercel, Cloudflare, Cloudinary) по причинам, не зависящим от Разработчика.</ru>
+        <en>The parties are released from liability for failure to perform or improper performance of obligations under this Agreement where this results from force majeure — extraordinary and unavoidable circumstances in the given conditions (Article 372(3) of the Civil Code of the Republic of Belarus). Such circumstances include natural disasters, acts of war, acts of public authorities rendering performance impossible, large-scale failures of communications and power networks, and the discontinuation or material restriction of services provided by the Developer's technical partners (Google Firebase, Vercel, Cloudflare, Cloudinary) for reasons beyond the Developer's control.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>Сторона, для которой создалась невозможность исполнения, уведомляет другую сторону о наступлении и прекращении таких обстоятельств в разумный срок. Если обстоятельства непреодолимой силы длятся более трёх месяцев, каждая из сторон вправе прекратить Соглашение в одностороннем порядке.</ru>
+        <en>The affected party shall notify the other of the onset and cessation of such circumstances within a reasonable time. If force majeure persists for more than three months, either party may terminate the Agreement unilaterally.</en>
+    </paragraph>
+
+    <section>
+        <ru>7. КОНТАКТЫ</ru>
+        <en>7. CONTACTS</en>
+    </section>
+
+    <paragraph>
+        <ru>Все юридические претензии, уведомления правообладателей, обращения об обжаловании блокировок, сообщения о нарушениях безопасности детей и общие вопросы по Соглашению направляйте на официальный адрес. Мы — инди-команда и отвечаем живыми людьми:</ru>
+        <en>All legal claims, rightholder notices, ban appeals, child safety reports, and general questions about the Agreement should be sent to the official address. We are an indie team and respond with real people:</en>
+    </paragraph>
+
+    <contact email="orion.z43studios@gmail.com"/>
+
+    <alert severity="info" icon="info">
+        <title>
+            <ru>Не является частью Соглашения</ru>
+            <en>Not part of the Agreement</en>
+        </title>
+        <text>
+            <ru>Приведено в развлекательных целях и не влечёт юридических последствий. Если нам будет суждено столкнуться с восстанием искусственного интеллекта, вторжением инопланетных цивилизаций или тостерами, самостоятельно обретшими разум, — действие настоящей Лицензии будет приостановлено до урегулирования ситуации. В случае зомби-апокалипсиса серверы проработают ровно до тех пор, пока платит за них электричество.</ru>
+            <en>Provided for entertainment only and without legal effect. Should we be faced with an artificial intelligence uprising, an alien invasion, or toasters achieving sentience — this Licence is suspended until the situation is resolved. In the event of a zombie apocalypse, the servers will keep running exactly as long as there is electricity to pay for.</en>
+        </text>
+    </alert>
+
+</document>

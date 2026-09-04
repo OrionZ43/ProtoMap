@@ -1,0 +1,771 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document id="privacy_policy" version="v5.0 | [ДАТА]">
+
+    <title>
+        <ru>ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ И ЗАЩИТЫ ДАННЫХ</ru>
+        <en>PRIVACY POLICY AND DATA PROTECTION</en>
+    </title>
+
+    <alert severity="info" icon="info">
+        <title>
+            <ru>Версия 5.0 | Вступает в силу: [ДАТА]</ru>
+            <en>Version 5.0 | Effective date: [DATE]</en>
+        </title>
+        <text>
+            <ru>Настоящая Политика распространяется на оба компонента Сервиса: веб-сайт proto-map.vercel.app и мобильное приложение ProtoMap для Android. Политика приведена в соответствие с Законом Республики Беларусь от 7 мая 2021 г. № 99-З «О защите персональных данных».</ru>
+            <en>This Policy applies to both components of the Service: the website proto-map.vercel.app and the ProtoMap mobile application for Android. The Policy has been aligned with the Law of the Republic of Belarus of 7 May 2021 No. 99-Z On Personal Data Protection.</en>
+        </text>
+    </alert>
+
+    <alert severity="warning" icon="warning">
+        <title>
+            <ru>ЮРИДИЧЕСКИЙ ОТКАЗ ОТ ОТВЕТСТВЕННОСТИ (DISCLAIMER)</ru>
+            <en>LEGAL DISCLAIMER</en>
+        </title>
+        <text>
+            <ru>Программный комплекс ProtoMap является независимым некоммерческим продуктом, разработанным командой Z43 Studios. Мы официально заявляем, что не связаны, не аффилированы, не спонсируемся и не имеем никаких деловых отношений с компанией Protomaps LLC (protomaps.com) или их продуктами. Любое сходство в наименованиях является случайным. Все права на торговую марку Protomaps LLC принадлежат их законным владельцам.</ru>
+            <en>The ProtoMap software is an independent non-commercial product developed by the Z43 Studios team. We officially state that we are not connected, affiliated, sponsored, or have any business relationship with Protomaps LLC (protomaps.com) or their products. Any similarity in names is coincidental. All rights to the Protomaps LLC trademark belong to their rightful owners.</en>
+        </text>
+    </alert>
+
+    <section>
+        <ru>1. ОБЩИЕ ПОЛОЖЕНИЯ И СВЕДЕНИЯ ОБ ОПЕРАТОРЕ</ru>
+        <en>1. GENERAL PROVISIONS AND OPERATOR DETAILS</en>
+    </section>
+
+    <subsection>
+        <ru>1.1. Кто является оператором ваших данных</ru>
+        <en>1.1. Who processes your data</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Оператором персональных данных является [ФАМИЛИЯ ИМЯ ОТЧЕСТВО] — физическое лицо, гражданин Республики Беларусь, действующее под творческим наименованием Z43 Studios (далее — «Оператор», «Разработчик», «Мы»). Z43 Studios не является юридическим лицом; наименование используется для обозначения проектов автора. Оператор не является индивидуальным предпринимателем и не осуществляет предпринимательскую деятельность с использованием Сервиса. Сервис предоставляется безвозмездно.</ru>
+        <en>The personal data operator is [FULL NAME], an individual and citizen of the Republic of Belarus, acting under the creative name Z43 Studios (the "Operator", "Developer", "We"). Z43 Studios is not a legal entity; the name is used to identify the author's projects. The Operator is not a registered sole trader and does not conduct commercial activity through the Service. The Service is provided free of charge.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>Адрес места жительства Оператора: [ГОРОД], Республика Беларусь. Полный адрес для направления юридически значимых сообщений и заявлений в порядке статьи 14 Закона № 99-З предоставляется по запросу, направленному на адрес электронной почты, указанный в разделе «Контакты». Контактный адрес электронной почты: orion.z43studios@gmail.com.</ru>
+        <en>The Operator's place of residence: [CITY], Republic of Belarus. The full postal address for legally significant notices and for applications under Article 14 of Law No. 99-Z is provided on request sent to the e-mail address in the Contacts section. Contact e-mail: orion.z43studios@gmail.com.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>1.2. Область применения</ru>
+        <en>1.2. Scope</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Понятие «Сервис» включает в себя: веб-сайт ProtoMap, мобильное приложение ProtoMap для Android, все связанные серверные функции (Firebase Cloud Functions), базы данных, API и Telegram-боты. Категории субъектов персональных данных: зарегистрированные пользователи Сервиса, а также лица, сведения о которых пользователи размещают в пользовательском контенте.</ru>
+        <en>The term "Service" includes: the ProtoMap website, the ProtoMap mobile app for Android, all related server functions (Firebase Cloud Functions), databases, APIs, and Telegram bots. Categories of data subjects: registered users of the Service, and individuals whose data users include in user-generated content.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>Настоящая Политика является документом, определяющим политику Оператора в отношении обработки персональных данных, и одновременно информирует вас об условиях обработки в порядке пункта 6 статьи 4 Закона № 99-З (принцип прозрачности). Использование Сервиса без ознакомления с настоящей Политикой невозможно: согласие на обработку данных запрашивается отдельно при регистрации.</ru>
+        <en>This Policy is the document defining the Operator's personal data processing policy and at the same time informs you of the processing conditions under Article 4(6) of Law No. 99-Z (transparency principle). Use of the Service without reviewing this Policy is not possible: consent to processing is requested separately at registration.</en>
+    </paragraph>
+
+    <section>
+        <ru>2. ЦЕЛИ И ПРАВОВЫЕ ОСНОВАНИЯ ОБРАБОТКИ</ru>
+        <en>2. PURPOSES AND LEGAL GROUNDS FOR PROCESSING</en>
+    </section>
+
+    <paragraph>
+        <ru>Мы обрабатываем персональные данные только для заранее заявленных целей и в объёме, не избыточном по отношению к этим целям (пункты 4 и 5 статьи 4 Закона № 99-З). Обработка ведётся автоматизированным способом с использованием облачных сервисов. С данными совершаются следующие действия: сбор, систематизация, хранение, изменение, использование, обезличивание, блокирование, предоставление, распространение (только в отношении данных, которые вы публикуете самостоятельно) и удаление.</ru>
+        <en>We process personal data only for purposes declared in advance and in a scope not excessive relative to those purposes (Article 4(4) and 4(5) of Law No. 99-Z). Processing is automated and uses cloud services. The following operations are performed: collection, organisation, storage, modification, use, anonymisation, blocking, disclosure, dissemination (only for data you publish yourself), and deletion.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>2.1. Цели обработки</ru>
+        <en>2.1. Purposes of processing</en>
+    </subsection>
+
+    <bullet>
+        <ru>Создание и ведение учётной записи, аутентификация, восстановление доступа.</ru>
+        <en>Creating and maintaining your account, authentication, and access recovery.</en>
+    </bullet>
+    <bullet>
+        <ru>Отображение вашего профиля и метки на интерактивной карте для других зарегистрированных пользователей.</ru>
+        <en>Displaying your profile and map marker to other registered users.</en>
+    </bullet>
+    <bullet>
+        <ru>Обмен сообщениями (текст, голос, медиафайлы) и доставка уведомлений.</ru>
+        <en>Messaging (text, voice, media) and delivery of notifications.</en>
+    </bullet>
+    <bullet>
+        <ru>Начисление внутренней валюты ProtoCoins, включая начисление за физическую активность.</ru>
+        <en>Awarding the in-app ProtoCoins currency, including rewards for physical activity.</en>
+    </bullet>
+    <bullet>
+        <ru>Защита Сервиса и пользователей: модерация, рассмотрение жалоб, противодействие автоматизированным злоупотреблениям, спаму и манипуляциям с игровой экономикой.</ru>
+        <en>Protecting the Service and its users: moderation, handling reports, and countering automated abuse, spam, and manipulation of the game economy.</en>
+    </bullet>
+    <bullet>
+        <ru>Исполнение обязанностей, предусмотренных законодательством, включая ответы на законные требования уполномоченных органов.</ru>
+        <en>Complying with statutory obligations, including responses to lawful requests from competent authorities.</en>
+    </bullet>
+
+    <subsection>
+        <ru>2.2. Правовые основания</ru>
+        <en>2.2. Legal grounds</en>
+    </subsection>
+
+    <bullet>
+        <ru>Согласие субъекта персональных данных (пункт 3 статьи 4, статья 5 Закона № 99-З) — для создания и ведения учётной записи, публикации метки на карте, обмена сообщениями, а также для трансграничной передачи данных в государства, не включённые в перечень государств с надлежащим уровнем защиты.</ru>
+        <en>Consent of the data subject (Articles 4(3) and 5 of Law No. 99-Z) — for creating and maintaining an account, publishing a map marker, messaging, and for cross-border transfers to states not listed as providing an adequate level of protection.</en>
+    </bullet>
+    <bullet>
+        <ru>Отдельное согласие на обработку специальных персональных данных (статья 8 Закона № 99-З) — для функции «Шагомер» и начисления ProtoCoins за физическую активность. Это согласие является необязательным и запрашивается отдельно.</ru>
+        <en>Separate consent to processing of special categories of personal data (Article 8 of Law No. 99-Z) — for the Step Counter feature and ProtoCoins activity rewards. This consent is optional and is requested separately.</en>
+    </bullet>
+    <bullet>
+        <ru>Получение персональных данных на основании договора, заключаемого с субъектом (статья 6 Закона № 99-З) — для проверки того, что регистрацию совершает человек, а не автоматизированная программа (Cloudflare Turnstile), и для технических действий, необходимых для заключения и исполнения Пользовательского соглашения.</ru>
+        <en>Personal data obtained under a contract concluded with the data subject (Article 6 of Law No. 99-Z) — to verify that registration is performed by a human rather than an automated program (Cloudflare Turnstile), and for technical steps required to conclude and perform the Terms of Service.</en>
+    </bullet>
+    <bullet>
+        <ru>Защита жизни, здоровья или иных жизненно важных интересов субъекта или иных лиц, если получение согласия невозможно (статья 6, абзац пятый пункта 1 статьи 9 Закона № 99-З) — для передачи сведений о материалах, связанных с сексуальной эксплуатацией детей, в специализированные организации и правоохранительные органы.</ru>
+        <en>Protection of life, health or other vital interests of the subject or others where obtaining consent is impossible (Article 6; Article 9(1) of Law No. 99-Z) — for reporting child sexual exploitation material to specialised organisations and law enforcement.</en>
+    </bullet>
+
+    <paragraph>
+        <ru>При даче согласия мы не запрашиваем и не обрабатываем вашу фамилию, собственное имя, отчество, дату рождения и идентификационный номер: цели обработки этого не требуют (часть вторая пункта 6 статьи 5 Закона № 99-З). Факт и параметры данного вами согласия (идентификатор учётной записи, вид согласия, версия документа, дата и способ выражения) фиксируются в журнале согласий — это необходимо для исполнения обязанности доказывания согласия, возложенной на Оператора пунктом 7 статьи 5 Закона № 99-З.</ru>
+        <en>When obtaining consent we do not request or process your full name, date of birth or national identification number: the purposes of processing do not require it (Article 5(6), second paragraph, of Law No. 99-Z). The fact and parameters of your consent (account identifier, type of consent, document version, date and method) are recorded in a consent log — this is required to discharge the Operator's burden of proving consent under Article 5(7) of Law No. 99-Z.</en>
+    </paragraph>
+
+    <section>
+        <ru>3. СОБИРАЕМЫЕ ДАННЫЕ И РАЗРЕШЕНИЯ</ru>
+        <en>3. COLLECTED DATA AND PERMISSIONS</en>
+    </section>
+
+    <paragraph>
+        <ru>Мы придерживаемся принципа полной прозрачности. Ниже приведён исчерпывающий список данных, которые мы собираем и обрабатываем при использовании Сайта и Приложения.</ru>
+        <en>We adhere to the principle of full transparency. Below is an exhaustive list of data we collect and process when you use the Website and Application.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>3.1. Данные учётной записи</ru>
+        <en>3.1. Account Data</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Для создания профиля и синхронизации прогресса мы храним:</ru>
+        <en>To create a profile and synchronize progress we store:</en>
+    </paragraph>
+
+    <bullet>
+        <ru>Идентификаторы: уникальный UID, Email-адрес, имя пользователя (никнейм), ID аккаунта Google при входе через Google OAuth.</ru>
+        <en>Identifiers: unique UID, email address, username (nickname), Google account ID when signing in via Google OAuth.</en>
+    </bullet>
+    <bullet>
+        <ru>Публичный профиль: ссылка на аватар, статус, описание «О себе», ссылки на социальные сети (Telegram, Discord, VK, X/Twitter, личный сайт).</ru>
+        <en>Public profile: avatar link, status, "About Me" description, links to social networks (Telegram, Discord, VK, X/Twitter, personal website).</en>
+    </bullet>
+    <bullet>
+        <ru>Связанные аккаунты: Telegram ID и имя пользователя Telegram, если вы добровольно привязали аккаунт через раздел «Безопасность».</ru>
+        <en>Linked accounts: Telegram ID and Telegram username, if you voluntarily linked your account via the "Security" section.</en>
+    </bullet>
+    <bullet>
+        <ru>Игровые данные: баланс ProtoCoins (PC), инвентарь, экипированные предметы, история ежедневных бонусов, серия входов (Daily Streak).</ru>
+        <en>Game data: ProtoCoins (PC) balance, inventory, equipped items, daily bonus history, login streak (Daily Streak).</en>
+    </bullet>
+    <bullet>
+        <ru>Журнал согласий: идентификатор учётной записи, вид данного согласия, версия принятого документа, дата и способ выражения согласия, IP-адрес на момент его выражения.</ru>
+        <en>Consent log: account identifier, type of consent given, version of the accepted document, date and method of consent, and the IP address at the time of consent.</en>
+    </bullet>
+
+    <subsection>
+        <ru>3.2. Технические данные и телеметрия безопасности (Android)</ru>
+        <en>3.2. Technical Data and Security Telemetry (Android)</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Для обеспечения стабильности работы приложения и защиты игровой экономики («The Glitch Pit») мы собираем ограниченный набор технических сведений об устройстве:</ru>
+        <en>To ensure application stability and protect the game economy ("The Glitch Pit"), we collect a limited set of technical device information:</en>
+    </paragraph>
+
+    <bullet>
+        <ru>Устройство: модель смартфона и версия операционной системы Android.</ru>
+        <en>Device: smartphone model and Android OS version.</en>
+    </bullet>
+    <bullet>
+        <ru>Сеть: IP-адрес для защиты от DDoS-атак и спама, статус подключения к интернету.</ru>
+        <en>Network: IP address for DDoS and spam protection, internet connection status.</en>
+    </bullet>
+    <bullet>
+        <ru>Push-уведомления: FCM Token (Firebase Cloud Messaging) — уникальный ключ устройства для доставки уведомлений о личных сообщениях и системных событиях. Токен сохраняется в профиле Firestore и автоматически удаляется при выходе из аккаунта или отзыве разрешения.</ru>
+        <en>Push notifications: FCM Token (Firebase Cloud Messaging) — a unique device key for delivering notifications about private messages and system events. The token is stored in the Firestore profile and automatically deleted upon logout or permission revocation.</en>
+    </bullet>
+    <bullet>
+        <ru>Уровень безопасности устройства: приложение проверяет состояние аппаратной защиты через Android Keystore и Play Integrity API (Firebase App Check). Собираемые параметры — «уровень защиты» (STRONG / WEAK / NONE) — используются исключительно для защиты от читинга в игровых механиках и не позволяют идентифицировать вас лично.</ru>
+        <en>Device security level: the application checks the hardware security state via Android Keystore and Play Integrity API (Firebase App Check). The collected parameter — "security level" (STRONG / WEAK / NONE) — is used solely to protect against cheating in game mechanics and does not allow personal identification.</en>
+    </bullet>
+    <bullet>
+        <ru>Детектирование нарушений безопасности (RuntimeSecurityChecker): приложение в реальном времени проверяет наличие признаков, свидетельствующих о попытке манипуляции — фиктивного местоположения (Mock Location), включённой отладки по USB, а также программ для обхода системы безопасности (например, Shizuku). При обнаружении нарушений соответствующая запись добавляется в защищённый журнал аккаунта для ручной проверки администратором. Эти данные используются исключительно для защиты честности игровой экономики. Решение о применении санкций на основании этих записей может быть обжаловано в порядке, предусмотренном Пользовательским соглашением.</ru>
+        <en>Security violation detection (RuntimeSecurityChecker): the application checks in real time for signs of manipulation — fake location (Mock Location), enabled USB debugging, and security bypass tools (e.g., Shizuku). Upon detection, a record is added to the account's protected log for manual review by an administrator. This data is used solely to protect the fairness of the in-game economy. Any sanction based on these records may be appealed under the procedure set out in the Terms of Service.</en>
+    </bullet>
+    <bullet>
+        <ru>Бета-телеметрия: в бета-версии приложения может собираться анонимный технический журнал (версия приложения, тип ошибок, временные метки событий жизненного цикла) для выявления и устранения багов. Журнал хранится локально в зашифрованном виде и передаётся на сервер только при явном обращении администратора. Персональные данные в телеметрию не включаются.</ru>
+        <en>Beta telemetry: in the beta version of the app, an anonymous technical log may be collected (app version, error types, lifecycle event timestamps) to identify and fix bugs. The log is stored locally in encrypted form and transmitted to the server only upon explicit request from an administrator. Personal data is not included in telemetry.</en>
+    </bullet>
+
+    <subsection>
+        <ru>3.3. Коммуникации и пользовательский контент</ru>
+        <en>3.3. Communications and User Content</en>
+    </subsection>
+
+    <alert severity="warning" icon="warning">
+        <title>
+            <ru>ProtoMap не использует сквозное (E2E) шифрование</ru>
+            <en>ProtoMap does not use end-to-end (E2E) encryption</en>
+        </title>
+        <text>
+            <ru>Чат и личные сообщения работают по принципу облачной синхронизации (аналогично Telegram или Discord): данные хранятся в облаке, чтобы история переписки была доступна со всех ваших устройств. Сообщения защищены при передаче (HTTPS/TLS), но остаются читаемыми для сервера в целях модерации.</ru>
+            <en>Chat and private messages work on a cloud synchronization principle (similar to Telegram or Discord): data is stored in the cloud so your message history is accessible from all your devices. Messages are protected in transit (HTTPS/TLS) but remain readable by the server for moderation purposes.</en>
+        </text>
+    </alert>
+
+    <bullet>
+        <ru>Текстовые сообщения: сохраняются в базе данных Firestore в зашифрованном при передаче, но читаемом для сервера виде.</ru>
+        <en>Text messages: stored in the Firestore database, encrypted in transit but readable by the server.</en>
+    </bullet>
+    <bullet>
+        <ru>Голосовые сообщения (Android, разрешение RECORD_AUDIO): аудиофайлы записываются и загружаются в облачное хранилище Firebase Storage, ссылка сохраняется в истории чата. Доступ к микрофону запрашивается только в момент удержания кнопки записи и немедленно прекращается после её отпускания. Записи вашего голоса не используются для вашей уникальной идентификации и не являются биометрическими персональными данными в значении статьи 1 Закона № 99-З: технологии распознавания или верификации по голосу в Сервисе не применяются.</ru>
+        <en>Voice messages (Android, RECORD_AUDIO permission): audio files are recorded and uploaded to Firebase Storage, the link is saved in the chat history. Microphone access is requested only while the record button is held and immediately stops upon release. Voice recordings are not used to uniquely identify you and do not constitute biometric personal data within the meaning of Article 1 of Law No. 99-Z: no voice recognition or verification technologies are used in the Service.</en>
+    </bullet>
+    <bullet>
+        <ru>Изображения и медиафайлы (Android, разрешения READ_MEDIA_IMAGES / READ_EXTERNAL_STORAGE): файлы, которые вы выбираете из галереи для отправки в чат или установки в качестве аватара. Приложение использует системный Photo Picker (PickVisualMedia) — это означает, что мы получаем доступ только к конкретному выбранному вами файлу, а не ко всей галерее.</ru>
+        <en>Images and media files (Android, READ_MEDIA_IMAGES / READ_EXTERNAL_STORAGE permissions): files you select from the gallery to send in chat or set as an avatar. The app uses the system Photo Picker (PickVisualMedia), which means we only gain access to the specific file you selected, not your entire gallery.</en>
+    </bullet>
+    <bullet>
+        <ru>Стикеры: изображения из пользовательских наборов стикеров, загружаемые администраторами в облачное хранилище Firebase. Пользователи не загружают стикеры напрямую — они выбирают их из предустановленных паков.</ru>
+        <en>Stickers: images from custom sticker packs uploaded by administrators to Firebase Storage. Users do not upload stickers directly — they select from pre-installed packs.</en>
+    </bullet>
+
+    <section>
+        <ru>4. ДАННЫЕ О ФИЗИЧЕСКОЙ АКТИВНОСТИ (ANDROID, ШАГОМЕР)</ru>
+        <en>4. PHYSICAL ACTIVITY DATA (ANDROID, STEP COUNTER)</en>
+    </section>
+
+    <alert severity="info" icon="info">
+        <title>
+            <ru>Это специальные персональные данные</ru>
+            <en>This is a special category of personal data</en>
+        </title>
+        <text>
+            <ru>Данные о вашей физической активности мы обрабатываем как специальные персональные данные в значении статьи 1 Закона № 99-З и только на основании вашего отдельного согласия (статья 8 Закона № 99-З). Функция «Шагомер» полностью опциональна: без включения этой функции данные о шагах не собираются и не передаются на сервер. Отзыв согласия прекращает начисление ProtoCoins за активность и не влияет на остальные функции Сервиса.</ru>
+            <en>We treat your physical activity data as a special category of personal data within the meaning of Article 1 of Law No. 99-Z and process it only on the basis of your separate consent (Article 8 of Law No. 99-Z). The Step Counter feature is entirely optional: unless you enable it, no step data is collected or sent to the server. Withdrawing consent stops ProtoCoins activity rewards and does not affect other features of the Service.</en>
+        </text>
+    </alert>
+
+    <paragraph>
+        <ru>Если вы активируете функцию «Шагомер», приложение получает количество пройденных вами шагов от аппаратного датчика вашего устройства (TYPE_STEP_COUNTER) и от платформы Health Connect. Разрешения запрашиваются только в момент, когда вы самостоятельно открываете раздел «Шагомер», и никогда при первом запуске приложения.</ru>
+        <en>If you activate the Step Counter feature, the application obtains your step count from your device's hardware sensor (TYPE_STEP_COUNTER) and from the Health Connect platform. Permissions are requested only when you open the Step Counter section yourself, never on first launch.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>4.1. Запрашиваемые разрешения</ru>
+        <en>4.1. Permissions requested</en>
+    </subsection>
+
+    <highlight>
+        <title>ACTIVITY_RECOGNITION</title>
+        <description>
+            <ru>Стандартное разрешение Android, необходимое для чтения данных аппаратного датчика шагов (TYPE_STEP_COUNTER). Датчик встроен в чип устройства и считает шаги непрерывно с момента последней перезагрузки. Приложение считывает значение датчика исключительно для вычисления количества шагов за текущую прогулку или за день.</ru>
+            <en>A standard Android permission required to read data from the hardware step counter sensor (TYPE_STEP_COUNTER). The sensor is embedded in the device chip and counts steps continuously since the last reboot. The app reads the sensor value solely to calculate the number of steps for the current walk or the day.</en>
+        </description>
+    </highlight>
+
+    <highlight>
+        <title>android.permission.health.READ_STEPS (Health Connect)</title>
+        <description>
+            <ru>Разрешение на чтение количества шагов из платформы Health Connect. Мы читаем исключительно показатель количества шагов. Никакие иные категории данных Health Connect — пульс, сон, вес, питание, показатели здоровья — не запрашиваются, не читаются и не обрабатываются. Данные Health Connect не записываются нами обратно в платформу.</ru>
+            <en>Permission to read step counts from the Health Connect platform. We read the step count only. No other Health Connect data categories — heart rate, sleep, weight, nutrition, or health metrics — are requested, read, or processed. We do not write any data back into the platform.</en>
+        </description>
+    </highlight>
+
+    <highlight>
+        <title>FOREGROUND_SERVICE_HEALTH + RECEIVE_BOOT_COMPLETED</title>
+        <description>
+            <ru>Служба шагомера (StepCounterService) работает как foreground service с постоянным уведомлением, чтобы Android не завершал её в фоне во время прогулки. Разрешение RECEIVE_BOOT_COMPLETED позволяет автоматически перезапустить службу после перезагрузки устройства — только если функция шагомера была активна до перезагрузки.</ru>
+            <en>The stepper service (StepCounterService) runs as a foreground service with a persistent notification so Android does not terminate it in the background during a walk. The RECEIVE_BOOT_COMPLETED permission allows the service to restart automatically after a device reboot — only if the stepper feature was active before the reboot.</en>
+        </description>
+    </highlight>
+
+    <subsection>
+        <ru>4.2. Как используются данные о шагах</ru>
+        <en>4.2. How step data is used</en>
+    </subsection>
+
+    <bullet>
+        <ru>Ежедневное вознаграждение за активность: приложение считает количество шагов за день и начисляет внутриигровую валюту ProtoCoins (PC) за каждые 1 000 пройденных шагов. Цель — мотивировать пользователей больше двигаться.</ru>
+        <en>Daily activity reward: the app counts the day's steps and awards in-game ProtoCoins (PC) for every 1,000 steps walked. The goal is to motivate users to move more.</en>
+    </bullet>
+    <bullet>
+        <ru>Отслеживание прогулок: при активной прогулочной сессии данные датчика отображаются в реальном времени (текущее количество шагов, примерная дистанция). По завершении сессии итоговая статистика (шаги, время, начисленные PC) сохраняется в вашем профиле.</ru>
+        <en>Walk tracking: during an active walk session, sensor data is displayed in real time (current step count, approximate distance). When the session ends, the final summary (steps, time, PC awarded) is saved to your profile.</en>
+    </bullet>
+    <bullet>
+        <ru>Защита от накрутки: суточное количество шагов передаётся на сервер для проверки лимитов вознаграждений и обнаружения аномальных значений. Необработанные данные датчика на сервере не хранятся — сохраняется только итоговая статистика дня.</ru>
+        <en>Anti-manipulation: the daily step count is sent to the server to enforce reward limits and detect anomalous values. Raw sensor data is not stored on the server — only the day's final summary is retained.</en>
+    </bullet>
+
+    <subsection>
+        <ru>4.3. Меры по предупреждению рисков и запреты</ru>
+        <en>4.3. Risk-mitigation measures and prohibitions</en>
+    </subsection>
+
+    <paragraph>
+        <ru>В соответствии с пунктом 3 статьи 8 Закона № 99-З при обработке специальных персональных данных мы принимаем комплекс мер, направленных на предупреждение рисков для ваших прав и свобод:</ru>
+        <en>In accordance with Article 8(3) of Law No. 99-Z, when processing special categories of personal data we apply a set of measures aimed at preventing risks to your rights and freedoms:</en>
+    </paragraph>
+
+    <bullet>
+        <ru>На сервере хранится только агрегированная суточная статистика; поминутные и посессионные показания датчика не покидают устройство.</ru>
+        <en>Only daily aggregates are stored on the server; per-minute and per-session sensor readings never leave the device.</en>
+    </bullet>
+    <bullet>
+        <ru>Не передаём данные о шагах третьим лицам, рекламодателям или аналитическим платформам.</ru>
+        <en>We do not share step data with third parties, advertisers, or analytics platforms.</en>
+    </bullet>
+    <bullet>
+        <ru>Не используем данные для таргетированной рекламы — в Сервисе реклама отсутствует.</ru>
+        <en>We do not use the data for targeted advertising — the Service contains no advertising.</en>
+    </bullet>
+    <bullet>
+        <ru>Не используем данные о шагах в мини-играх («The Glitch Pit»). Шагомер и игровые механики являются полностью изолированными модулями без какого-либо взаимодействия.</ru>
+        <en>We do not use step data in mini-games ("The Glitch Pit"). The step counter and gaming mechanics are fully isolated modules with no interaction.</en>
+    </bullet>
+    <bullet>
+        <ru>Не используем данные для профилирования, оценки состояния здоровья, финансовой оценки, страхования или медицинских целей.</ru>
+        <en>We do not use the data for profiling, health assessment, financial evaluation, insurance, or medical purposes.</en>
+    </bullet>
+
+    <section>
+        <ru>5. ГЕОЛОКАЦИЯ И ПРИВАТНОСТЬ НА КАРТЕ</ru>
+        <en>5. GEOLOCATION AND MAP PRIVACY</en>
+    </section>
+
+    <paragraph>
+        <ru>Интерактивная карта — ключевая функция ProtoMap. Мы разработали многоуровневую систему защиты, чтобы вы могли делиться своим местоположением, не раскрывая точный адрес проживания.</ru>
+        <en>The interactive map is the core feature of ProtoMap. We have developed a multi-layered protection system so you can share your location without revealing your exact home address.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>5.1. Режим «Призрак» — Автоматическое определение (рекомендуется)</ru>
+        <en>5.1. "Ghost" Mode — Automatic Detection (recommended)</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Это безопасный режим по умолчанию. Технически он работает следующим образом: приложение получает ваши точные GPS-координаты, затем сервер отправляет запрос к гео-провайдеру OpenStreetMap Nominatim для определения названия района или населённого пункта. В базу данных сохраняются координаты центра этого района — ваше реальное местоположение немедленно удаляется из оперативной памяти сервера и никогда не записывается на диск. Для стороннего наблюдателя вы находитесь «где-то в этом городе», но вычислить ваш адрес технически невозможно. Обратите внимание: для определения района точные координаты кратковременно передаются сервису Nominatim (см. раздел 7).</ru>
+        <en>This is the safe default mode. Technically it works as follows: the app receives your exact GPS coordinates, then the server sends a request to the OpenStreetMap Nominatim geocoder to determine the name of the district or locality. The database stores only the coordinates of the district centre — your real location is immediately removed from server RAM and is never written to disk. To any outside observer, you are "somewhere in this city", but determining your address is technically impossible. Please note: to identify the district, your exact coordinates are briefly transmitted to the Nominatim service (see Section 7).</en>
+    </paragraph>
+
+    <subsection>
+        <ru>5.2. Режим «Метка» — Ручная установка</ru>
+        <en>5.2. "Marker" Mode — Manual Placement</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Вы можете самостоятельно выбрать любую точку на карте — долгим нажатием в приложении или кликом на сайте. В этом случае сервер сохраняет именно те координаты, которые вы указали. Размещая метку, вы самостоятельно распространяете сведения о своём местонахождении среди неопределённого круга зарегистрированных пользователей; с этого момента такие сведения являются общедоступными персональными данными в значении статьи 1 Закона № 99-З. Если вы укажете точку прямо на своём доме — это будет вашим осознанным решением. Мы настоятельно рекомендуем ставить метку на ближайшем перекрёстке, в парке или ином общественном месте.</ru>
+        <en>You can manually select any point on the map — with a long press in the app or a click on the website. In this case, the server saves exactly the coordinates you specified. By placing a marker you yourself disseminate information about your location to an open group of registered users; from that moment such information constitutes publicly available personal data within the meaning of Article 1 of Law No. 99-Z. If you place the marker on your home — this is your conscious decision. We strongly recommend placing the marker at the nearest intersection, a park, or another public place.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>5.3. Хранение и отображение данных карты</ru>
+        <en>5.3. Map Data Storage and Display</en>
+    </subsection>
+
+    <bullet>
+        <ru>Публичность: координаты вашей метки, аватар и статус доступны всем зарегистрированным пользователям Сервиса.</ru>
+        <en>Visibility: your marker coordinates, avatar, and status are visible to all registered Service users.</en>
+    </bullet>
+    <bullet>
+        <ru>Кэширование: данные карты кэшируются на срок до 24 часов для снижения нагрузки на сервер. После удаления метки она может исчезнуть у других пользователей с небольшой задержкой.</ru>
+        <en>Caching: map data is cached for up to 24 hours to reduce server load. After deletion, your marker may disappear for other users with a slight delay.</en>
+    </bullet>
+    <bullet>
+        <ru>История перемещений: мы не храним трек ваших перемещений. В базе данных хранится только последняя актуальная метка — при обновлении позиции старая запись перезаписывается.</ru>
+        <en>Movement history: we do not store your movement track. The database only stores the latest marker — when the position is updated, the old record is overwritten.</en>
+    </bullet>
+
+    <alert severity="warning" icon="warning">
+        <title>
+            <ru>Внимание</ru>
+            <en>Warning</en>
+        </title>
+        <text>
+            <ru>Не используйте ProtoMap для навигации в критических ситуациях. Сервис предназначен исключительно для социальных и развлекательных целей. Данные OpenStreetMap могут содержать неточности.</ru>
+            <en>Do not use ProtoMap for navigation in critical situations. The Service is intended solely for social and entertainment purposes. OpenStreetMap data may contain inaccuracies.</en>
+        </text>
+    </alert>
+
+    <section>
+        <ru>6. ХРАНЕНИЕ ДАННЫХ НА УСТРОЙСТВЕ (ANDROID)</ru>
+        <en>6. LOCAL DATA STORAGE (ANDROID)</en>
+    </section>
+
+    <paragraph>
+        <ru>Приложение хранит на вашем устройстве зашифрованную локальную базу данных Room/SQLite. Резервное копирование через облако полностью отключено (android:allowBackup="false", правила dataExtractionRules и backupRules): ваши локальные данные не копируются в Google Drive или иные облачные хранилища Android.</ru>
+        <en>The application stores an encrypted local Room/SQLite database on your device. Cloud backup is fully disabled (android:allowBackup="false", dataExtractionRules and backupRules): your local data is not backed up to Google Drive or any other Android cloud storage.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>В локальной базе данных хранятся:</ru>
+        <en>The local database stores:</en>
+    </paragraph>
+
+    <bullet>
+        <ru>Кэш сообщений личных чатов, групп и каналов для работы при нестабильном соединении.</ru>
+        <en>Cached messages from private chats, groups, and channels for use during unstable connections.</en>
+    </bullet>
+    <bullet>
+        <ru>Кэш медиафайлов (изображения, стикеры) для ускорения загрузки.</ru>
+        <en>Media cache (images, stickers) to speed up loading.</en>
+    </bullet>
+    <bullet>
+        <ru>Локальные настройки приложения и выбранный язык (AppLocalesMetadataHolderService).</ru>
+        <en>Local application settings and selected language (AppLocalesMetadataHolderService).</en>
+    </bullet>
+    <bullet>
+        <ru>Зашифрованные технические журналы безопасности (LogCryptoManager). Журналы доступны только через инструменты администратора с использованием аппаратного ключа и не передаются на сервер автоматически.</ru>
+        <en>Encrypted security technical logs (LogCryptoManager). Logs are accessible only via administrator tools using a hardware key and are not automatically transmitted to the server.</en>
+    </bullet>
+
+    <section>
+        <ru>7. ПЕРЕДАЧА ДАННЫХ ТРЕТЬИМ ЛИЦАМ И ТРАНСГРАНИЧНАЯ ПЕРЕДАЧА</ru>
+        <en>7. DATA SHARING WITH THIRD PARTIES AND CROSS-BORDER TRANSFERS</en>
+    </section>
+
+    <paragraph>
+        <ru>Мы не продаём, не арендуем и не передаём ваши персональные данные рекламодателям или дата-брокерам. Доступ к данным имеют только технические партнёры, обеспечивающие работу инфраструктуры ProtoMap. Поскольку эта инфраструктура находится за пределами Республики Беларусь, имеет место трансграничная передача персональных данных — их передача на территорию иностранного государства (статья 9 Закона № 99-З).</ru>
+        <en>We do not sell, rent, or transfer your personal data to advertisers or data brokers. Only technical partners providing ProtoMap infrastructure have access to the data. Since this infrastructure is located outside the Republic of Belarus, cross-border transfer of personal data takes place — transfer to the territory of a foreign state (Article 9 of Law No. 99-Z).</en>
+    </paragraph>
+
+    <subsection>
+        <ru>7.1. Государства с надлежащим уровнем защиты</ru>
+        <en>7.1. States with an adequate level of protection</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Основная база данных, файлы и серверная логика размещены в регионе europe-central2 (Варшава, Республика Польша). Польша является стороной Конвенции Совета Европы о защите физических лиц при автоматизированной обработке персональных данных и включена в перечень государств, на территории которых обеспечивается надлежащий уровень защиты прав субъектов персональных данных, определяемый Национальным центром защиты персональных данных Республики Беларусь. К этой же категории относится Великобритания (сервис геокодирования OpenStreetMap Nominatim). Передача в такие государства осуществляется по общим правилам обработки без получения дополнительных разрешений.</ru>
+        <en>The primary database, files and server logic are hosted in the europe-central2 region (Warsaw, Poland). Poland is a party to the Council of Europe Convention for the Protection of Individuals with regard to Automatic Processing of Personal Data and is included in the list of states providing an adequate level of protection of data subjects' rights, determined by the National Personal Data Protection Center of the Republic of Belarus. The United Kingdom (OpenStreetMap Nominatim geocoding) falls into the same category. Transfers to such states follow the general processing rules without additional authorisation.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>7.2. Государства без надлежащего уровня защиты и связанные риски</ru>
+        <en>7.2. States without an adequate level of protection and the associated risks</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Часть технических партнёров находится в Соединённых Штатах Америки: Vercel Inc. (хостинг веб-версии), Cloudflare, Inc. (защита от автоматизированных запросов), Cloudinary (хранение и оптимизация аватаров), Google Cloud Vision (автоматическая проверка изображений). Кроме того, доступ к инфраструктуре Firebase может осуществляться контролирующей компанией группы Google, зарегистрированной в США. Соединённые Штаты Америки не включены в перечень государств, на территории которых обеспечивается надлежащий уровень защиты прав субъектов персональных данных.</ru>
+        <en>Some technical partners are located in the United States: Vercel Inc. (web hosting), Cloudflare, Inc. (bot protection), Cloudinary (avatar storage and optimisation), Google Cloud Vision (automated image screening). In addition, Firebase infrastructure may be accessed by the US-registered parent company of the Google group. The United States is not included in the list of states providing an adequate level of protection of data subjects' rights.</en>
+    </paragraph>
+
+    <alert severity="warning" icon="warning">
+        <title>
+            <ru>Риски, о которых мы обязаны вас предупредить</ru>
+            <en>Risks we are required to disclose</en>
+        </title>
+        <text>
+            <ru>Передавая данные в государства, где не обеспечивается надлежащий уровень защиты, вы принимаете, что: объём ваших прав в отношении переданных данных может быть уже, чем предусмотрено Законом № 99-З; данные могут быть раскрыты иностранным государственным органам в соответствии с законодательством соответствующего государства, в том числе без вашего уведомления и без уведомления Оператора; практическая возможность защитить свои права в отношении иностранного получателя данных, в том числе в судебном порядке на территории Республики Беларусь, может быть существенно ограничена; Оператор не может гарантировать применение к переданным данным стандартов защиты, эквивалентных предусмотренным законодательством Республики Беларусь.</ru>
+            <en>By transferring data to states that do not provide an adequate level of protection you accept that: your rights over the transferred data may be narrower than under Law No. 99-Z; the data may be disclosed to foreign authorities under that state's law, including without notice to you or to the Operator; your practical ability to enforce your rights against a foreign recipient, including before Belarusian courts, may be significantly limited; and the Operator cannot guarantee protection standards equivalent to those under Belarusian law.</en>
+        </text>
+    </alert>
+
+    <paragraph>
+        <ru>Передача данных в такие государства осуществляется исключительно на основании вашего согласия, данного при регистрации после ознакомления с настоящим разделом (абзац второй пункта 1 статьи 9 Закона № 99-З). Вы вправе отозвать это согласие в любое время. Поскольку без указанной инфраструктуры Сервис технически неработоспособен, отзыв данного согласия влечёт удаление учётной записи.</ru>
+        <en>Transfers to such states are made solely on the basis of your consent, given at registration after reading this section (Article 9(1) of Law No. 99-Z). You may withdraw this consent at any time. Because the Service is technically inoperable without this infrastructure, withdrawing this consent results in deletion of your account.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>7.3. Перечень технических партнёров</ru>
+        <en>7.3. List of technical partners</en>
+    </subsection>
+
+    <highlight>
+        <title>Google Firebase — Польша (хранение) / США (группа компаний)</title>
+        <description>
+            <ru>Основной провайдер: база данных (Firestore), авторизация (Identity Platform), серверная логика (Cloud Functions), хранение медиафайлов (Storage) и push-уведомления (FCM). Данные хранятся в регионе europe-central2 (Варшава, Польша). Политика: policies.google.com/privacy</ru>
+            <en>Primary provider: database (Firestore), authentication (Identity Platform), server logic (Cloud Functions), media storage (Storage), and push notifications (FCM). Data is stored in the europe-central2 region (Warsaw, Poland). Policy: policies.google.com/privacy</en>
+        </description>
+    </highlight>
+
+    <highlight>
+        <title>Vercel Inc. — США</title>
+        <description>
+            <ru>Хостинг веб-версии и сбор анонимной аналитики производительности (Vercel Analytics). Государство без надлежащего уровня защиты. Политика: vercel.com/legal/privacy-policy</ru>
+            <en>Web version hosting and anonymous performance analytics (Vercel Analytics). A state without an adequate level of protection. Policy: vercel.com/legal/privacy-policy</en>
+        </description>
+    </highlight>
+
+    <highlight>
+        <title>Cloudflare, Inc. (Turnstile) — США</title>
+        <description>
+            <ru>Защита форм регистрации и входа от автоматизированных программ. Cloudflare анализирует минимально необходимые параметры запроса (включая IP-адрес) для верификации пользователя. Обработка осуществляется до регистрации, в объёме, необходимом для заключения договора. Государство без надлежащего уровня защиты. Политика: cloudflare.com/privacypolicy</ru>
+            <en>Protection of registration and login forms from automated programs. Cloudflare analyses the minimum necessary request parameters (including the IP address) to verify the user. Processing occurs before registration, to the extent necessary to conclude the contract. A state without an adequate level of protection. Policy: cloudflare.com/privacypolicy</en>
+        </description>
+    </highlight>
+
+    <highlight>
+        <title>Cloudinary — США</title>
+        <description>
+            <ru>Хранение и оптимизация аватаров пользователей. Аватары, загружаемые через веб-версию, сохраняются здесь. Государство без надлежащего уровня защиты. Политика: cloudinary.com/privacy</ru>
+            <en>Storage and optimisation of user avatars. Avatars uploaded via the web version are stored here. A state without an adequate level of protection. Policy: cloudinary.com/privacy</en>
+        </description>
+    </highlight>
+
+    <highlight>
+        <title>Google Cloud Vision AI — США</title>
+        <description>
+            <ru>Автоматическая проверка загружаемых аватаров (только веб-версия) на наличие NSFW и CSAM-контента через SafeSearch API. Изображение передаётся на анализ и немедленно удаляется из памяти Google после получения результата. Постоянное хранение изображений на серверах Google Cloud Vision не производится. Государство без надлежащего уровня защиты.</ru>
+            <en>Automatic screening of uploaded avatars (web version only) for NSFW and CSAM content via the SafeSearch API. The image is sent for analysis and immediately deleted from Google's memory once the result is returned. Images are not permanently stored on Google Cloud Vision servers. A state without an adequate level of protection.</en>
+        </description>
+    </highlight>
+
+    <highlight>
+        <title>OpenStreetMap Foundation / Nominatim — Великобритания</title>
+        <description>
+            <ru>Сервис геокодирования для определения названия района по GPS-координатам (только в автоматическом режиме карты). Политика OSM допускает кратковременное логирование запросов. Государство с надлежащим уровнем защиты. Политика: wiki.osmfoundation.org/wiki/Privacy_Policy</ru>
+            <en>Geocoding service used to determine the district name from GPS coordinates (automatic map mode only). OSM policy permits short-term request logging. A state with an adequate level of protection. Policy: wiki.osmfoundation.org/wiki/Privacy_Policy</en>
+        </description>
+    </highlight>
+
+    <highlight>
+        <title>Telegram Bot API</title>
+        <description>
+            <ru>Используется для отправки уведомлений администратору о жалобах и событиях модерации, а также для опциональной привязки вашего Telegram-аккаунта к профилю ProtoMap и верификации в чате @proto_map. Привязка полностью добровольна; без неё передача данных в Telegram не производится.</ru>
+            <en>Used to send administrator notifications about reports and moderation events, and to optionally link your Telegram account to your ProtoMap profile and verify you in the @proto_map chat. Linking is entirely voluntary; without it, no data is transferred to Telegram.</en>
+        </description>
+    </highlight>
+
+    <subsection>
+        <ru>7.4. Юридические требования и защита детей</ru>
+        <en>7.4. Legal requirements and child protection</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Мы можем раскрыть ваши данные при наличии официального, юридически обоснованного требования уполномоченных государственных органов, предъявленного в порядке, установленном законодательством. Выявленные материалы, связанные с сексуальной эксплуатацией детей, незамедлительно передаются в NCMEC (США) и в правоохранительные органы Республики Беларусь. Правовым основанием такой передачи, включая трансграничную, является защита жизни, здоровья и иных жизненно важных интересов, когда получение согласия невозможно (статья 6 и абзац пятый пункта 1 статьи 9 Закона № 99-З).</ru>
+        <en>We may disclose your data upon an official, legally substantiated request from competent state authorities made in the manner prescribed by law. Any detected child sexual exploitation material is immediately reported to NCMEC (USA) and to the law enforcement authorities of the Republic of Belarus. The legal ground for such transfer, including cross-border transfer, is the protection of life, health and other vital interests where obtaining consent is impossible (Article 6 and Article 9(1) of Law No. 99-Z).</en>
+    </paragraph>
+
+    <section>
+        <ru>8. СРОКИ ХРАНЕНИЯ ДАННЫХ</ru>
+        <en>8. DATA RETENTION PERIODS</en>
+    </section>
+
+    <paragraph>
+        <ru>Мы храним персональные данные в форме, позволяющей идентифицировать вас, не дольше, чем этого требуют заявленные цели обработки (пункт 8 статьи 4 Закона № 99-З). По истечении указанных сроков данные удаляются либо обезличиваются автоматически.</ru>
+        <en>We keep personal data in a form permitting your identification no longer than the declared purposes require (Article 4(8) of Law No. 99-Z). Once these periods expire, data is automatically deleted or anonymised.</en>
+    </paragraph>
+
+    <bullet>
+        <ru>Данные учётной записи (идентификаторы, профиль, игровые данные) — в течение срока действия учётной записи и до истечения 30 дней после её удаления, необходимых для очистки резервных копий.</ru>
+        <en>Account data (identifiers, profile, game data) — for the life of the account and for up to 30 days after its deletion, needed to purge backups.</en>
+    </bullet>
+    <bullet>
+        <ru>Метка на карте — до её изменения или удаления вами; кэш карты обновляется в течение 24 часов.</ru>
+        <en>Map marker — until you change or remove it; the map cache refreshes within 24 hours.</en>
+    </bullet>
+    <bullet>
+        <ru>Сообщения и медиафайлы — до удаления вами либо до обезличивания при удалении учётной записи.</ru>
+        <en>Messages and media — until you delete them, or until anonymisation upon account deletion.</en>
+    </bullet>
+    <bullet>
+        <ru>Данные о шагах — агрегированная суточная статистика хранится 12 месяцев; необработанные показания датчика на сервере не сохраняются.</ru>
+        <en>Step data — daily aggregated statistics are kept for 12 months; raw sensor readings are not stored on the server.</en>
+    </bullet>
+    <bullet>
+        <ru>IP-адрес и технические журналы безопасности — 6 месяцев с момента фиксации события.</ru>
+        <en>IP address and technical security logs — 6 months from the recorded event.</en>
+    </bullet>
+    <bullet>
+        <ru>Журнал согласий — 3 года после прекращения обработки; хранится для исполнения обязанности доказывания согласия (пункт 7 статьи 5 Закона № 99-З).</ru>
+        <en>Consent log — 3 years after processing ends; retained to discharge the burden of proving consent (Article 5(7) of Law No. 99-Z).</en>
+    </bullet>
+    <bullet>
+        <ru>FCM-токен — до выхода из учётной записи или отзыва разрешения на уведомления.</ru>
+        <en>FCM token — until sign-out or withdrawal of the notification permission.</en>
+    </bullet>
+
+    <section>
+        <ru>9. ПРАВА СУБЪЕКТА ПЕРСОНАЛЬНЫХ ДАННЫХ</ru>
+        <en>9. RIGHTS OF THE DATA SUBJECT</en>
+    </section>
+
+    <paragraph>
+        <ru>Глава 3 Закона № 99-З предоставляет вам перечисленные ниже права, и мы обязаны обеспечить их реализацию в установленные сроки.</ru>
+        <en>Chapter 3 of Law No. 99-Z grants you the rights listed below, and we are obliged to give effect to them within the statutory time limits.</en>
+    </paragraph>
+
+    <bullet>
+        <ru>Отзыв согласия (статья 10) — в любое время и без объяснения причин. В течение 15 дней мы прекращаем обработку, удаляем данные и уведомляем вас об этом. При отсутствии технической возможности удаления мы блокируем данные и уведомляем вас в тот же срок. Отзыв согласия не имеет обратной силы: обработка, совершённая до его отзыва, законна.</ru>
+        <en>Withdrawal of consent (Article 10) — at any time and without giving reasons. Within 15 days we stop processing, delete the data and notify you. Where deletion is technically impossible we block the data and notify you within the same period. Withdrawal has no retroactive effect: processing carried out before withdrawal remains lawful.</en>
+    </bullet>
+    <bullet>
+        <ru>Получение информации об обработке (статья 11) — сведения об Операторе, подтверждение факта обработки, ваши данные и источник их получения, правовые основания и цели обработки, срок, на который дано согласие. Ответ предоставляется в течение 5 рабочих дней и бесплатно. Обосновывать свой интерес к запрашиваемой информации вы не обязаны.</ru>
+        <en>Information about processing (Article 11) — Operator details, confirmation of processing, your data and its source, legal grounds and purposes, and the period for which consent was given. The response is provided within 5 working days, free of charge. You do not need to justify your interest in the information requested.</en>
+    </bullet>
+    <bullet>
+        <ru>Изменение персональных данных (пункт 4 статьи 11), если они являются неполными, устаревшими или неточными — в течение 15 дней. Большинство данных вы можете изменить самостоятельно в разделе «Редактировать профиль»: изменения вступают в силу немедленно, обновление кэша карты занимает до нескольких минут. Никнейм можно менять не чаще одного раза в 30 дней.</ru>
+        <en>Rectification of personal data (Article 11(4)) where it is incomplete, outdated or inaccurate — within 15 days. Most data can be changed yourself in Edit Profile: changes take effect immediately, and the map cache refreshes within a few minutes. The username can be changed no more than once every 30 days.</en>
+    </bullet>
+    <bullet>
+        <ru>Получение сведений о предоставлении ваших данных третьим лицам (статья 12) — один раз в календарный год бесплатно, срок ответа 15 дней.</ru>
+        <en>Information about disclosures of your data to third parties (Article 12) — once per calendar year free of charge, response within 15 days.</en>
+    </bullet>
+    <bullet>
+        <ru>Требование прекращения обработки и удаления данных (статья 13) — бесплатно, срок 15 дней. Мы вправе отказать при наличии предусмотренных законодательством оснований для дальнейшей обработки, уведомив вас об этом в тот же срок.</ru>
+        <en>Request to cease processing and delete data (Article 13) — free of charge, within 15 days. We may refuse where the law provides grounds for continued processing, notifying you within the same period.</en>
+    </bullet>
+    <bullet>
+        <ru>Обжалование (статья 15) — вы вправе обжаловать наши действия, бездействие и решения в Национальный центр защиты персональных данных Республики Беларусь (cpd.by), а принятое им решение — в судебном порядке.</ru>
+        <en>Appeal (Article 15) — you may challenge our actions, omissions and decisions before the National Personal Data Protection Center of the Republic of Belarus (cpd.by), and appeal its decision to a court.</en>
+    </bullet>
+
+    <subsection>
+        <ru>9.1. Как подать заявление</ru>
+        <en>9.1. How to submit a request</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Упрощённый порядок: через раздел «Настройки — Безопасность» в Сервисе либо письмом на адрес электронной почты, указанный в разделе «Контакты». Формальный порядок, предусмотренный статьёй 14 Закона № 99-З: заявление в письменной форме на адрес Оператора либо в виде электронного документа, подписанного электронной цифровой подписью. Заявление должно содержать вашу фамилию, собственное имя, отчество, адрес места жительства, дату рождения, изложение сути требования и личную либо электронную цифровую подпись. Ответ направляется в форме, соответствующей форме подачи заявления.</ru>
+        <en>Simplified route: via Settings — Security in the Service, or by e-mail to the address in the Contacts section. Formal route under Article 14 of Law No. 99-Z: a written application sent to the Operator's address, or an electronic document signed with a qualified electronic signature. The application must state your full name, place of residence, date of birth, the substance of your request, and your handwritten or electronic signature. The reply is sent in the form corresponding to the form of the application.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>9.2. Удаление учётной записи и обезличивание</ru>
+        <en>9.2. Account deletion and anonymisation</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Вы можете запросить полное удаление учётной записи, нажав кнопку «Удалить аккаунт» в разделе «Настройки — Безопасность». Это действие необратимо. При удалении: email, токены авторизации, баланс ProtoCoins, инвентарь и игровые достижения удаляются безвозвратно; ваша метка на карте удаляется немедленно; файл аватара удаляется из облачного хранилища.</ru>
+        <en>You can request complete deletion of your account by pressing "Delete Account" in Settings — Security. This action is irreversible. Upon deletion: your email, authorisation tokens, ProtoCoins balance, inventory and achievements are permanently erased; your map marker is removed immediately; and your avatar file is deleted from cloud storage.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>Ваши сообщения в общих чатах и комментарии не удаляются, а обезличиваются в значении статьи 1 Закона № 99-З: имя автора заменяется, аватар удаляется, ссылка на профиль деактивируется. В результате определить принадлежность этих сообщений вам становится невозможно без использования дополнительной информации, которой мы не располагаем. После обезличивания такие сведения перестают быть вашими персональными данными, поэтому их дальнейшее хранение не нарушает ваше право на удаление.</ru>
+        <en>Your messages in public chats and comments are not deleted but anonymised within the meaning of Article 1 of Law No. 99-Z: the author's name is replaced, the avatar removed and the profile link deactivated. As a result, attributing these messages to you becomes impossible without additional information which we do not hold. Once anonymised, such records are no longer your personal data, so retaining them does not infringe your right to erasure.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>9.3. Отзыв разрешений (Android)</ru>
+        <en>9.3. Permission Revocation (Android)</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Вы можете отозвать любое разрешение в любой момент через настройки Android («Настройки — Приложения — ProtoMap — Разрешения»), не удаляя аккаунт. Отзыв разрешения отключает соответствующую функцию: геолокация — метка на карте перестаёт обновляться; данные о шагах — начисление PC за активность прекращается; микрофон — отправка голосовых сообщений становится недоступна; уведомления — push-уведомления перестают поступать. Отзыв разрешения на уровне операционной системы одновременно означает отзыв соответствующего согласия на обработку.</ru>
+        <en>You may revoke any permission at any time via Android settings ("Settings — Apps — ProtoMap — Permissions") without deleting your account. Revoking a permission disables the corresponding feature: location — the map marker stops updating; step data — PC activity rewards stop; microphone — voice messages become unavailable; notifications — push notifications stop. Revoking a permission at the operating-system level simultaneously constitutes withdrawal of the corresponding processing consent.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>9.4. Выгрузка данных</ru>
+        <en>9.4. Data export</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Дополнительно к правам, предусмотренным Законом № 99-З, мы добровольно предоставляем возможность получить копию хранимых о вас данных в машиночитаемом формате. Для этого отправьте запрос на контактный адрес электронной почты. Архив формируется и предоставляется в течение 15 дней.</ru>
+        <en>In addition to the rights provided by Law No. 99-Z, we voluntarily offer the option to obtain a copy of the data we hold about you in a machine-readable format. To do so, send a request to the contact e-mail address. The archive is prepared and provided within 15 days.</en>
+    </paragraph>
+
+    <section>
+        <ru>10. ЗАЩИТА ДАННЫХ, ИНЦИДЕНТЫ И ОГРАНИЧЕНИЕ ОТВЕТСТВЕННОСТИ</ru>
+        <en>10. DATA PROTECTION, INCIDENTS AND LIABILITY</en>
+    </section>
+
+    <subsection>
+        <ru>10.1. Меры безопасности</ru>
+        <en>10.1. Security Measures</en>
+    </subsection>
+
+    <paragraph>
+        <ru>В соответствии со статьёй 17 Закона № 99-З мы принимаем правовые, организационные и технические меры по обеспечению защиты персональных данных:</ru>
+        <en>In accordance with Article 17 of Law No. 99-Z we take legal, organisational and technical measures to protect personal data:</en>
+    </paragraph>
+
+    <bullet>
+        <ru>Весь трафик передаётся по протоколу HTTPS/TLS.</ru>
+        <en>All traffic is transmitted via HTTPS/TLS.</en>
+    </bullet>
+    <bullet>
+        <ru>Доступ к базе данных ограничен строгими правилами Firestore Security Rules; порядок доступа к персональным данным установлен и контролируется Оператором.</ru>
+        <en>Database access is restricted by strict Firestore Security Rules; the access procedure for personal data is defined and controlled by the Operator.</en>
+    </bullet>
+    <bullet>
+        <ru>Управление паролями и учётными данными полностью делегировано Google Identity Platform — пароли никогда не хранятся в наших базах данных.</ru>
+        <en>Password and credential management is fully delegated to Google Identity Platform — passwords are never stored in our databases.</en>
+    </bullet>
+    <bullet>
+        <ru>Чувствительные данные на Android-устройстве (токены, ключи шифрования) хранятся с использованием Android Keystore System (HardwareKeyManager).</ru>
+        <en>Sensitive data on Android devices (tokens, encryption keys) is stored using the Android Keystore System (HardwareKeyManager).</en>
+    </bullet>
+    <bullet>
+        <ru>Все серверные функции защищены Firebase App Check (Play Integrity API на Android, reCAPTCHA Enterprise на вебе).</ru>
+        <en>All server functions are protected by Firebase App Check (Play Integrity API on Android, reCAPTCHA Enterprise on the web).</en>
+    </bullet>
+    <bullet>
+        <ru>Резервное копирование приложения на устройстве полностью отключено (allowBackup="false") для защиты локальных данных от несанкционированного извлечения.</ru>
+        <en>Application backup on the device is fully disabled (allowBackup="false") to protect local data from unauthorised extraction.</en>
+    </bullet>
+
+    <subsection>
+        <ru>10.2. Уведомление о нарушениях системы защиты</ru>
+        <en>10.2. Notification of security breaches</en>
+    </subsection>
+
+    <paragraph>
+        <ru>При выявлении нарушения системы защиты персональных данных мы уведомляем Национальный центр защиты персональных данных Республики Беларусь незамедлительно, но не позднее трёх рабочих дней после того, как нам стало известно о таком нарушении (абзац восьмой пункта 1 статьи 16 Закона № 99-З). Если нарушение создаёт риск для ваших прав и интересов, мы дополнительно уведомляем вас через уведомление в приложении и по адресу электронной почты, указанному в учётной записи, с описанием характера нарушения, затронутых категорий данных и рекомендуемых мер.</ru>
+        <en>If a personal data security breach is identified, we notify the National Personal Data Protection Center of the Republic of Belarus immediately and no later than three working days after becoming aware of it (Article 16(1) of Law No. 99-Z). If the breach creates a risk to your rights and interests, we additionally notify you in-app and by e-mail, describing the nature of the breach, the categories of data affected and the recommended steps.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>10.3. Отказ от гарантий («КАК ЕСТЬ»)</ru>
+        <en>10.3. Disclaimer of Warranties ("AS IS")</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Несмотря на принимаемые меры, ни один метод передачи или хранения данных не является абсолютно безопасным. Сервис предоставляется по принципу «КАК ЕСТЬ». Разработчик не гарантирует сохранность данных в случае целенаправленных атак, сбоев хостинг-провайдеров или обстоятельств непреодолимой силы. Мы не несём ответственности за ущерб, возникший в результате утери пароля пользователем или передачи доступа к аккаунту третьим лицам.</ru>
+        <en>Despite the measures taken, no method of data transmission or storage is absolutely secure. The Service is provided on an "AS IS" basis. The Developer does not guarantee data safety in the event of targeted attacks, hosting provider failures, or force majeure. We are not liable for damage arising from a user losing their password or granting account access to third parties.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>Настоящее ограничение не распространяется на ответственность за умышленное нарушение обязательств, а также на возмещение морального вреда, причинённого нарушением ваших прав как субъекта персональных данных: такой вред возмещается независимо от возмещения имущественного вреда и понесённых убытков (пункт 2 статьи 19 Закона № 99-З).</ru>
+        <en>This limitation does not apply to liability for intentional breach of obligations, nor to compensation for moral harm caused by infringement of your rights as a data subject: such harm is compensated independently of compensation for property damage and losses incurred (Article 19(2) of Law No. 99-Z).</en>
+    </paragraph>
+
+    <section>
+        <ru>11. ВОЗРАСТНЫЕ ОГРАНИЧЕНИЯ</ru>
+        <en>11. AGE RESTRICTIONS</en>
+    </section>
+
+    <alert severity="error" icon="warning">
+        <title>
+            <ru>Сервис предназначен для лиц, достигших 16 лет</ru>
+            <en>The Service is intended for persons aged 16 and over</en>
+        </title>
+        <text>
+            <ru>Возрастной ценз установлен в соответствии с пунктом 9 статьи 5 Закона № 99-З: до достижения шестнадцати лет согласие на обработку персональных данных даёт один из законных представителей. Мы сознательно не собираем персональные данные лиц младше 16 лет. Если вам стало известно, что такое лицо зарегистрировалось в Сервисе, немедленно свяжитесь с нами — учётная запись будет удалена. Доступ к разделу мини-игр «The Glitch Pit» предоставляется пользователям, достигшим 18 лет.</ru>
+            <en>The age threshold follows Article 5(9) of Law No. 99-Z: below the age of sixteen, consent to the processing of personal data is given by a legal representative. We do not knowingly collect personal data from persons under 16. If you become aware that such a person has registered, contact us immediately — the account will be deleted. Access to The Glitch Pit mini-games section is available to users aged 18 and over.</en>
+        </text>
+    </alert>
+
+    <section>
+        <ru>12. ИЗМЕНЕНИЯ В ПОЛИТИКЕ</ru>
+        <en>12. CHANGES TO THIS POLICY</en>
+    </section>
+
+    <paragraph>
+        <ru>Мы вправе вносить изменения в настоящую Политику. При существенных изменениях версия документа сравнивается с последней принятой вами версией, и вам будет предложено ознакомиться с обновлённой редакцией и подтвердить согласие. Если изменения затрагивают цели обработки, перечень обрабатываемых данных или состав получателей, согласие запрашивается заново (пункт 4 статьи 4 Закона № 99-З). Актуальная версия Политики всегда доступна в приложении и на сайте.</ru>
+        <en>We may amend this Policy. For material changes, the document version is compared with the version you last accepted, and you will be asked to review the updated edition and confirm your consent. Where changes affect the purposes of processing, the categories of data processed, or the set of recipients, consent is obtained anew (Article 4(4) of Law No. 99-Z). The current version of the Policy is always available in the app and on the website.</en>
+    </paragraph>
+
+    <section>
+        <ru>13. КОНТАКТЫ</ru>
+        <en>13. CONTACTS</en>
+    </section>
+
+    <paragraph>
+        <ru>Мы — инди-команда, и мы отвечаем живыми людьми, а не автоответчиками. По любым вопросам, касающимся конфиденциальности, реализации ваших прав, удаления данных или разрешения споров, пишите нам напрямую:</ru>
+        <en>We are an indie team, and we respond with real people, not auto-responders. For any questions regarding privacy, exercising your rights, data deletion, or dispute resolution, write to us directly:</en>
+    </paragraph>
+
+    <contact email="orion.z43studios@gmail.com"/>
+
+</document>
