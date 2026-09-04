@@ -156,11 +156,11 @@
     <meta name="theme-color" content="#00f0ff" />
 
     <title>{hasCustomSeo ? seoData.title : 'ProtoMap - Карта протогенов'}</title>
-    <meta name="description" content={hasCustomSeo ? seoData.description : 'Интерактивная карта протогенов с казино, чатом и профилями'} />
+    <meta name="description" content={hasCustomSeo ? seoData.description : 'Интерактивная карта протогенов с мини-играми, чатом и профилями'} />
 
     <meta property="og:type"        content={hasCustomSeo ? 'profile' : 'website'} />
     <meta property="og:title"       content={hasCustomSeo ? seoData.title : 'ProtoMap - Карта протогенов'} />
-    <meta property="og:description" content={hasCustomSeo ? seoData.description : 'Интерактивная карта протогенов с казино, чатом и профилями'} />
+    <meta property="og:description" content={hasCustomSeo ? seoData.description : 'Интерактивная карта протогенов с мини-играми, чатом и профилями'} />
     <meta property="og:image"       content={hasCustomSeo ? seoData.image : 'https://proto-map.vercel.app/preview.png'} />
     <meta property="og:url"         content={hasCustomSeo ? seoData.url : 'https://proto-map.vercel.app'} />
 
@@ -172,7 +172,7 @@
 
     <meta name="twitter:card"        content="summary_large_image" />
     <meta name="twitter:title"       content={hasCustomSeo ? seoData.title : 'ProtoMap - Карта протогенов'} />
-    <meta name="twitter:description" content={hasCustomSeo ? seoData.description : 'Интерактивная карта протогенов с казино, чатом и профилями'} />
+    <meta name="twitter:description" content={hasCustomSeo ? seoData.description : 'Интерактивная карта протогенов с мини-играми, чатом и профилями'} />
     <meta name="twitter:image"       content={hasCustomSeo ? seoData.image : 'https://proto-map.vercel.app/preview.png'} />
 </svelte:head>
 
