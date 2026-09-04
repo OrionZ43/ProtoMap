@@ -139,6 +139,11 @@ export const actions: Actions = {
         const data      = await request.formData();
         const targetUid = (data.get('uid') as string ?? '').trim();
         const reason    = (data.get('reason') as string ?? '').trim();
+        // Категория блокировки. Влияет только на одно: по пункту 2.3
+        // Соглашения (безопасность детей) решение окончательное и кнопка
+        // обжалования на /banned не показывается. Все остальные блокировки
+        // обжалуются — по пункту 2.9.
+        const category  = data.get('category') === 'child_safety' ? 'child_safety' : 'general';
         if (!targetUid) return fail(400);
         // Защита: нельзя банить самого себя и других админов
         if (targetUid === locals.user!.uid) return fail(403, { message: 'Нельзя заблокировать самого себя.' });
@@ -147,11 +152,12 @@ export const actions: Actions = {
             await authAdmin.setCustomUserClaims(targetUid, { banned: true });
             await authAdmin.revokeRefreshTokens(targetUid);
             await firestoreAdmin.collection('users').doc(targetUid).update({
-                isBanned:  true,
-                banReason: reason || 'Нарушение протоколов сети.',
-                bannedAt:  FieldValue.serverTimestamp()
+                isBanned:    true,
+                banReason:   reason || 'Нарушение протоколов сети.',
+                banCategory: category,
+                bannedAt:    FieldValue.serverTimestamp()
             });
-            console.log(`[ADMIN] Banned uid=${targetUid} reason="${reason}" by admin=${locals.user!.uid}`);
+            console.log(`[ADMIN] Banned uid=${targetUid} reason="${reason}" category=${category} by admin=${locals.user!.uid}`);
             return { actionSuccess: true, message: 'СУБЪЕКТ ИЗОЛИРОВАН (TOKEN REVOKED).' };
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : String(e);
@@ -167,9 +173,10 @@ export const actions: Actions = {
         try {
             await authAdmin.setCustomUserClaims(targetUid, { banned: false });
             await firestoreAdmin.collection('users').doc(targetUid).update({
-                isBanned:  false,
-                banReason: FieldValue.delete(),
-                bannedAt:  FieldValue.delete()
+                isBanned:    false,
+                banReason:   FieldValue.delete(),
+                banCategory: FieldValue.delete(),
+                bannedAt:    FieldValue.delete()
             });
             return { actionSuccess: true, message: 'СУБЪЕКТ ВОССТАНОВЛЕН В ПРАВАХ.' };
         } catch (e) {

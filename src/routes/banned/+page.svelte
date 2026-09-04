@@ -5,7 +5,9 @@
     export let data: PageData;
 
     let displayedReason = "";
-    const fullReason = data.reason || get(t)('banned.default_reason');
+    // Причина всегда приходит непустой: +page.server.ts подставляет
+    // 'Protocol Violation.' при отсутствии banReason.
+    const fullReason = data.reason;
 
     onMount(() => {
         let i = 0;
@@ -14,6 +16,7 @@
             i++;
             if (i >= fullReason.length) clearInterval(interval);
         }, 50);
+        return () => clearInterval(interval);
     });
 </script>
 
@@ -26,7 +29,20 @@
     <div class="red-overlay"></div>
 
     <div class="content">
-        <div class="icon-lock">🔒</div>
+        <!-- Lucide «lock» -->
+        <svg
+            class="icon-lock"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+        >
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
 
         <h1 class="glitch-text" data-text="CRITICAL ERROR">CRITICAL ERROR</h1>
         <h2 class="sub-title">ВАШ АККАУНТ ЗАМОРОЖЕН</h2>
@@ -43,8 +59,21 @@
         </div>
 
         <div class="appeal-section">
-            <p class="appeal-text">Считаете это ошибкой? Ваши мольбы могут быть услышаны здесь:</p>
-            <a href="https://t.me/Orion_Z43" class="appeal-btn">ПОДАТЬ АПЕЛЛЯЦИЮ</a>
+            {#if data.appealable}
+                <p class="appeal-text">Считаете это ошибкой? Ваши мольбы могут быть услышаны здесь:</p>
+                <a href="https://t.me/Orion_Z43" class="appeal-btn">ПОДАТЬ АПЕЛЛЯЦИЮ</a>
+            {:else}
+                <!--
+                    Блокировка по пункту 2.3 Соглашения (безопасность детей).
+                    Решение окончательное, процедура обжалования по пункту 2.9
+                    на такие случаи не распространяется — кнопку не показываем.
+                -->
+                <p class="appeal-text final">
+                    Блокировка применена по пункту 2.3 Пользовательского соглашения
+                    (безопасность детей). Решение является окончательным и обжалованию
+                    не подлежит.
+                </p>
+            {/if}
         </div>
     </div>
 </div>
@@ -70,7 +99,11 @@
 
     .content { z-index: 10; text-align: center; max-width: 600px; width: 90%; }
 
-    .icon-lock { font-size: 4rem; margin-bottom: 1rem; animation: shake 0.5s infinite; }
+    .icon-lock {
+        width: 4rem; height: 4rem; margin-bottom: 1rem;
+        color: #ff003c; animation: shake 0.5s infinite;
+        filter: drop-shadow(0 0 8px rgba(255, 0, 60, 0.5));
+    }
 
     .glitch-text {
         font-size: 3rem; font-weight: 900; color: #fff; position: relative;
@@ -91,6 +124,10 @@
     .cursor { animation: blink 1s infinite; }
 
     .appeal-text { color: #666; font-size: 0.8rem; margin-bottom: 1rem; }
+    .appeal-text.final {
+        color: #8a5560; max-width: 34rem; margin: 0 auto;
+        line-height: 1.6; border-top: 1px solid rgba(255, 0, 60, 0.2); padding-top: 1rem;
+    }
     .appeal-btn {
         display: inline-block; padding: 0.8rem 2rem;
         border: 1px solid #ff003c; color: #ff003c; text-decoration: none;

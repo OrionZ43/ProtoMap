@@ -211,6 +211,10 @@
                             <input type="text" name="reason"
                                    placeholder="Причина блокировки..."
                                    class="reason-input" required />
+                            <label class="ban-category">
+                                <input type="checkbox" name="category" value="child_safety" />
+                                <span>Безопасность детей (п. 2.3) — без права обжалования</span>
+                            </label>
                             <button class="cmd red">ЗАБЛОКИРОВАТЬ</button>
                         </form>
                     {/if}
@@ -416,7 +420,12 @@
         border-radius: 2px;
     }
 
-    .ban-form { display: flex; gap: .5rem; }
+    .ban-form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    .ban-category {
+        display: flex; align-items: center; gap: .4rem; cursor: pointer;
+        font-size: .72rem; color: #9a8090; user-select: none; width: 100%;
+    }
+    .ban-category input { accent-color: var(--cr); }
     .reason-input {
         flex: 1; background: rgba(255,0,60,.05); border: 1px solid rgba(255,0,60,.2);
         color: #fff; padding: 0 .75rem; border-radius: 2px; outline: none;

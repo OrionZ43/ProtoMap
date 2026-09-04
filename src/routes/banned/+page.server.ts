@@ -16,6 +16,10 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     return {
         uid: locals.user.uid,
         reason: userData.banReason || 'Protocol Violation.',
-        bannedUntil: userData.bannedUntil || null
+        bannedUntil: userData.bannedUntil || null,
+        // Пункт 2.9 Соглашения даёт право обжаловать блокировку, кроме
+        // блокировок по пункту 2.3 (безопасность детей) — там решение
+        // окончательное. Старые баны поля не имеют: считаем их обжалуемыми.
+        appealable: userData.banCategory !== 'child_safety'
     };
 };
