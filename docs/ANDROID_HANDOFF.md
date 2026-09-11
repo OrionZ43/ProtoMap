@@ -8,11 +8,12 @@
 
 ## Что поменялось
 
-- **Документы.** Политика конфиденциальности и Пользовательское соглашение — редакция 5.1, залиты в `system/licenses`, вступают в силу 18.09.2026. Появился третий документ — Политика в отношении обработки персональных данных 1.0: её требует статья 17 Закона № 99-З, собрана по примерной форме НЦЗПД.
+- **Документы.** Политика конфиденциальности 5.2 и Пользовательское соглашение 5.1 залиты в `system/licenses`, вступают в силу 18.09.2026. Появился третий документ — Политика в отношении обработки персональных данных 1.1: её требует статья 17 Закона № 99-З, собрана по примерной форме НЦЗПД.
 - **Возраст — 16 лет.** До 16 согласие на обработку данных даёт законный представитель (пункт 9 статьи 5 Закона), поэтому регистрация доступна с 16. Раньше в документах было 17 — по рейтингу стора. Рейтинг стора описывает содержание приложения, а не возраст допуска.
 - **Журнал согласий на сервере.** Согласие фиксирует функция `recordConsents`: запись в `consents` с версией документа, датой, способом и IP. Версию определяет сервер по `system/licenses`, а не клиент. В `users/{uid}` функция пишет зеркала версий, по которым и сайт, и приложение понимают, принял ли человек текущую редакцию. Принял на сайте — считается в приложении, и наоборот.
 - **С 18.09 сайт закрывает всё экраном согласий** для тех, у кого зеркала не совпадают с `system/licenses`.
 - **`deleteAccount` переписан.** Теперь он удаляет или обезличивает всё, что относится к человеку (пункт 10). Та же очистка будет срабатывать для аккаунтов без входа 3 года.
+- **Шагомер.** Рейтинг — только по отдельному согласию `activity_leaderboard`. Отзыв согласия на шагомер удаляет данные о шагах с сервера (пункт 5).
 - **Все вызываемые функции — в `europe-west1`.** В `us-central1` остался только триггер `onUserCreated`.
 
 ## До 18 сентября
@@ -68,35 +69,53 @@
 
 Галочка `age_minimum` — «Мне исполнилось 16 лет.», под ней подсказка `consent_age_hint`. Если где-то в приложении или в описании стора минимальным возрастом указано 17 или 18 — замени на 16. Анкету IARC Орион пересмотрит позже, её не трогай.
 
-### 5. Отдельное согласие на шагомер
+### 5. Шагомер: согласие, рейтинг, отзыв
 
-Шаги — это данные о физической активности, то есть специальные персональные данные. Их можно обрабатывать только по отдельному согласию (статья 8 Закона № 99-З). Политика 5.1 так и обещает: шагомер необязателен, согласие запрашивается отдельно, когда человек сам открывает шагомер.
+Шаги — данные о физической активности, то есть специальные персональные данные: их можно обрабатывать только по отдельному согласию (статья 8 Закона № 99-З). Показ шагов другим людям в рейтинге — ещё и распространение, и на него нужно своё согласие. Политика 5.2 так и описывает: оба согласия необязательные, рейтинг — только с отдельной отметкой.
 
-Сейчас `ui/stepper/StepperScreen.kt:332-356` запрашивает `ACTIVITY_RECOGNITION` и запускает прогулку без записанного согласия.
+Сейчас приложение:
+- запрашивает `ACTIVITY_RECOGNITION` и запускает прогулку без записанного согласия (`ui/stepper/StepperScreen.kt:332-356`);
+- показывает в рейтинге всех, у кого есть шаги (`StepperCloudRepository.kt:200-258`).
 
-Нужно:
+**Что уже сделано на сервере (11.09):**
 
-1. Перед запросом разрешения — экран согласия на шагомер: короткий текст и одна галочка (черновик в справке 2, утверждает Орион). Дальше `recordConsents(["activity_data"])`, и только потом разрешение и `startWalk`.
-2. Выключение шагомера → `revokeConsent("activity_data")`.
-3. Если шагомер уже включён, а в `users/{uid}` нет `activity_data_consent == true`, — показать экран согласия. Отказался — выключить шагомер.
+- **Отозвавшим — без начисления.** `stepperClaim` не начисляет тем, кто отозвал согласие (`activity_data_consent == false`), и отвечает `FAILED_PRECONDITION` «Согласие на обработку данных о шагах отозвано.». У кого поля нет — согласие ещё не спрашивали, — начисление пока работает: иначе шагомер сломался бы у всех до твоего релиза.
+- **Рейтинг по согласию и без истории.** В рейтинг сервер пишет только тех, у кого `activity_leaderboard_consent == true`, и только суммы: `stepsToday`, `stepsWeek`, `stepsMonth`, `totalSteps`. Поля `history` там больше нет: шаги по дням лежат в `stepper/{uid}.stepsByDay`, а этот документ читает только владелец. Три старые записи без согласия удалены, их итоги перенесены в `stepper/{uid}.totalSteps`.
+- **Отзыв удаляет данные.** Отзыв согласия на шагомер удаляет с сервера данные о шагах: `stepper/{uid}` вместе с журналом начислений, запись в рейтинге и ключи идемпотентности. Начисленные ProtoCoins остаются.
+- **Защита от повторной оплаты.** Если сегодня уже было начисление, до конца суток (UTC) после отзыва остаётся отметка `claimsLockedUntil`, и `stepperClaim` отвечает `FAILED_PRECONDITION` «Шаги за сегодня уже учтены. Начисление возобновится завтра.». Без неё можно было бы отозвать согласие, дать его снова и получить ProtoCoins за те же шаги ещё раз.
+- **Появилось `claimedDate`.** Сервер теперь пишет `stepper/{uid}.claimedDate` — день (UTC), к которому относятся `dailyClaimed*`. `getClaimedSteps` (`StepperCloudRepository.kt:136-151`) читал это поле, а сервер его не писал, поэтому оплаченные шаги в приложении всегда были нулём.
+- **Почасовая разбивка не хранится.** `hourStats` в журнал начислений больше не сохраняется и вычищен из старых записей: Политика обещает хранить итоги дня. Присылать разбивку по-прежнему нужно — по ней проверяются лимиты и бонусные часы.
 
-Сервер принимает одно `activity_data` только от того, кто уже принял обязательные согласия на **текущую** редакцию. Иначе ответ — `FAILED_PRECONDITION` «Сначала нужно принять текущую редакцию документов.». Тогда сначала экран из пункта 3 — или отправь все пять id одним вызовом.
+**Что нужно в приложении:**
 
-Потом, когда версия с согласием разойдётся по пользователям, включим проверку `activity_data_consent` в `stepperClaim`: без согласия — без начисления. Дату согласуем, иначе сломаем старые версии приложения.
+1. **Экран согласия перед первым включением шагомера** — до запроса разрешения: `consent_activity_text` и две галочки (строки в справке 2).
+   - `consent_cb_activity` — без неё шагомер не включается. Вызов — `recordConsents(["activity_data"])`.
+   - `consent_cb_leaderboard` — необязательная, по умолчанию снята. Если отмечена, `"activity_leaderboard"` уходит в том же вызове.
+
+   Только после успешного вызова — разрешение и `startWalk`.
+2. **Переключатель «Показывать меня в рейтинге»** в настройках шагомера. Включение — `recordConsents(["activity_leaderboard"])`, выключение — `revokeConsent("activity_leaderboard")`. Запись в рейтинге появится со следующим начислением, а удаляется сразу.
+3. **Выключение шагомера** → `revokeConsent("activity_data")`: сервер отзовёт заодно и рейтинг и удалит данные о шагах. В приложении — остановить `WalkSessionService` и удалить локальную историю шагов.
+4. **Разрешение отозвали в настройках Android.** Политика (п. 9.3) считает это отзывом согласия, но сервер об этом не узнает. При запуске и при открытии шагомера проверяй `ACTIVITY_RECOGNITION`: если разрешения нет, а `activity_data_consent == true`, вызывай `revokeConsent("activity_data")`.
+5. **Кто уже пользуется шагомером.** Если шагомер включён, а `activity_data_consent != true`, — показать экран согласия. Отказался — выключить шагомер.
+6. **Рейтинг в приложении.** На `history` в документах рейтинга не рассчитывай: `LeaderboardEntry.history` будет пустым. `updateLeaderboard` (`StepperCloudRepository.kt:153-198`) можно удалить — правила запрещают клиенту писать в рейтинг, этот код ни разу не срабатывал.
+
+Необязательные согласия сервер принимает отдельно только от того, кто принял обязательные на **текущую** редакцию. Иначе ответ — `FAILED_PRECONDITION` «Сначала нужно принять текущую редакцию документов.»: тогда сначала экран из пункта 3 — или отправь всё одним вызовом. `activity_leaderboard` без согласия на шагомер не принимается: «Показ в рейтинге доступен только с согласием на шагомер.».
+
+Когда версия с согласием разойдётся по пользователям, включим на сервере и обратное: без `activity_data_consent == true` — без начисления. Дату согласуем, иначе сломаем старые версии приложения.
 
 ### 6. Документы в приложении
 
 `ui/legal/LegalScreens.kt` показывает `privacy_policy` и `terms_of_service` из `system/licenses`. Нужно ещё два изменения.
 
-**Третий документ.** Поле `personal_data_policy`, версия в `personal_data_policy_version` (сейчас `"1.0"`). Ссылка на него — на экране согласий (строки `consent_policy_more` и `consent_policy_link`) и в настройках рядом с двумя другими. Согласие на эту Политику не спрашивают, поэтому её версия в проверке из пункта 3 не участвует.
+**Третий документ.** Поле `personal_data_policy`, версия в `personal_data_policy_version` (сейчас `"1.1"`). Ссылка на него — на экране согласий (строки `consent_policy_more` и `consent_policy_link`) и в настройках рядом с двумя другими. Согласие на эту Политику не спрашивают, поэтому её версия в проверке из пункта 3 не участвует.
 
 **Тег `<table>` в парсере.** `LegalParser.parseXml` молча пропускает незнакомые теги, поэтому оба приложения к Политике обработки (цели обработки и уполномоченные лица) в приложении сейчас просто исчезнут. Формат — в справке 3. На телефоне сайт рисует таблицу карточками: строка — карточка, у каждой ячейки подпись из шапки. Так читается лучше, чем таблица на пять колонок.
 
 | Поле в `system/licenses` | Версия | Что это |
 | --- | --- | --- |
-| `privacy_policy` | `privacy_policy_version` = `"5.1"` | Политика конфиденциальности |
+| `privacy_policy` | `privacy_policy_version` = `"5.2"` | Политика конфиденциальности |
 | `terms_of_service` | `terms_of_service_version` = `"5.1"` | Пользовательское соглашение |
-| `personal_data_policy` | `personal_data_policy_version` = `"1.0"` | Политика обработки ПД, новая |
+| `personal_data_policy` | `personal_data_policy_version` = `"1.1"` | Политика обработки ПД, новая |
 
 ## После 18 сентября
 
@@ -157,7 +176,7 @@
 - **Каналы.** Если он владелец — `ownerUid: null`, аватар канала удаляется. Если подписчик — он убирается из `subscriberUids`, `subscriberCount` уменьшается на 1, `subscribers/{uid}` удаляется. Посты обезличиваются так же, как сообщения.
 - **Общий чат.** Картинки и голосовые удаляются: сообщение только с медиа — целиком, остальные обезличиваются.
 - **Комментарии** обезличиваются: `author_uid: null`, `author_username: "Deleted"`, `author_avatar_url: null`.
-- **Удаляется целиком:** `users/{uid}` с подколлекциями, метка на карте, шагомер и место в лидерборде, рефералка, лимиты, 2FA, `mobileapp/beta_stats/users/{uid}`, его файлы в Storage, аватар в Cloudinary, `status/{uid}` в Realtime Database. Последним удаляется пользователь в Auth.
+- **Удаляется целиком:** `users/{uid}` с подколлекциями, метка на карте, шагомер с журналом начислений и ключами идемпотентности, запись в рейтинге, рефералка, лимиты, 2FA, `mobileapp/beta_stats/users/{uid}`, его файлы в Storage, аватар в Cloudinary, `status/{uid}` в Realtime Database. Последним удаляется пользователь в Auth.
 - **Журнал согласий** не удаляется: он хранится 3 года как доказательство. Из записей убираются IP и способ, проставляется `accountDeletedAt`.
 
 Что проверить в приложении:
@@ -177,7 +196,7 @@
 
 ### 12. Порядок релиза
 
-Пункты 2, 3 и 5 связаны: одно согласие на шагомер сервер принимает только после обязательных на текущую редакцию. Выпускай экран согласий не позже согласия на шагомер. Когда ждать версию в сторе? Это определяет, когда включать проверку в `stepperClaim`.
+Пункты 2, 3 и 5 связаны: согласия на шагомер и рейтинг сервер принимает отдельно только после обязательных на текущую редакцию. Выпускай экран согласий не позже экрана шагомера. Когда ждать версию в сторе? Это определяет, когда включать проверку в `stepperClaim`.
 
 ### 13. `sendImageMessage` и `sendVoiceMessage`
 
@@ -205,12 +224,15 @@
 
 | Функция | Вход | Выход | Ошибки |
 | --- | --- | --- | --- |
-| `recordConsents` | `{granted: [id…], method: "android"}` | `{status: "ok", recorded, versions: {privacy, tos}}` | `invalid-argument` — пустой список или неизвестный id; `failed-precondition` — отмечены не все обязательные или одно `activity_data` без принятой текущей редакции; `internal` — не читаются версии документов |
-| `revokeConsent` | `{consentId: "activity_data"}` | `{status: "ok", revoked}` | `failed-precondition` — обязательное согласие; текст ошибки отправляет к удалению аккаунта |
+| `recordConsents` | `{granted: [id…], method: "android"}` | `{status: "ok", recorded, versions: {privacy, tos}}` | `invalid-argument` — пустой список или неизвестный id; `failed-precondition` — отмечены не все обязательные, необязательные без принятой текущей редакции или `activity_leaderboard` без согласия на шагомер; `internal` — не читаются версии документов |
+| `revokeConsent` | `{consentId}` — `"activity_data"` или `"activity_leaderboard"` | `{status: "ok", revoked}` | `failed-precondition` — обязательное согласие; текст ошибки отправляет к удалению аккаунта |
 | `getMyConsents` | `{}` | `{items: [{consentId, documentVersion, grantedAt, revokedAt, method}]}`, новые сверху, даты в мс | — |
 | `deleteAccount` | `{}` | `{status: "success"}` | `internal` — очистка упала; повторный вызов безопасен |
+| `stepperClaim` | как раньше | как раньше | новые `failed-precondition`: «Согласие на обработку данных о шагах отозвано.» и «Шаги за сегодня уже учтены. Начисление возобновится завтра.» |
 
-Версии документов сервер берёт сам из `system/licenses`, клиент их не передаёт. `method` — `"android"`, любое другое значение запишется как `"web"`. В журнале `documentVersion` выглядит так: `"tos 5.1"` для `tos` и `"privacy 5.1"` для остальных.
+`revokeConsent("activity_data")` отзывает заодно и `activity_leaderboard` и удаляет данные о шагах; `revoked` считает оба.
+
+Версии документов сервер берёт сам из `system/licenses`, клиент их не передаёт. `method` — `"android"`, любое другое значение запишется как `"web"`. В журнале `documentVersion` выглядит так: `"tos 5.1"` для `tos` и `"privacy 5.2"` для остальных.
 
 | id | Что это | Обязательное |
 | --- | --- | --- |
@@ -219,15 +241,20 @@
 | `cross_border` | передача данных за границу | да |
 | `tos` | Пользовательское соглашение и Политика конфиденциальности | да |
 | `activity_data` | шагомер, специальные персональные данные | нет |
+| `activity_leaderboard` | показ шагов в рейтинге; только вместе с `activity_data` | нет |
 
-Поля в `users/{uid}` — пишет только сервер, клиент читает:
+Поля пишет только сервер, клиент их читает:
 
 | Поле | Значение |
 | --- | --- |
-| `consents_privacy_version` | версия Политики, на которую есть согласие |
-| `consents_tos_version` | версия Соглашения, на которую есть согласие |
-| `consents_updated_at` | когда приняты обязательные |
-| `activity_data_consent` | `true` — согласие на шагомер дано, `false` — отозвано, поля нет — не давал |
+| `users/{uid}.consents_privacy_version` | версия Политики, на которую есть согласие |
+| `users/{uid}.consents_tos_version` | версия Соглашения, на которую есть согласие |
+| `users/{uid}.consents_updated_at` | когда приняты обязательные |
+| `users/{uid}.activity_data_consent` | `true` — согласие на шагомер дано, `false` — отозвано, поля нет — не давал |
+| `users/{uid}.activity_leaderboard_consent` | то же для рейтинга |
+| `stepper/{uid}.claimedDate` | день (UTC), к которому относятся `dailyClaimedNormalSteps` и `dailyClaimedBonusSteps` |
+| `stepper/{uid}.stepsByDay`, `totalSteps` | шаги по дням за 30 дней и итог за всё время |
+| `stepper/{uid}.claimsLockedUntil` | после отзыва согласия: до этого времени начисление закрыто |
 
 ```kotlin
 private val functions = FirebaseFunctions.getInstance("europe-west1")
@@ -240,20 +267,25 @@ suspend fun recordConsents(granted: List<String>) {
         .await()
 }
 
-suspend fun revokeActivityConsent() {
+suspend fun revokeConsent(consentId: String) {
     functions.getHttpsCallable("revokeConsent")
-        .call(mapOf("consentId" to "activity_data"))
+        .call(mapOf("consentId" to consentId))
         .await()
 }
 
-// Включение шагомера
+// Включение шагомера; галочка рейтинга — по желанию
+val granted = if (showInLeaderboard) listOf("activity_data", "activity_leaderboard")
+              else listOf("activity_data")
 try {
-    recordConsents(listOf("activity_data"))
+    recordConsents(granted)
 } catch (e: FirebaseFunctionsException) {
     if (e.code == FirebaseFunctionsException.Code.FAILED_PRECONDITION) {
         // Обязательные на текущую редакцию не приняты — сначала экран согласий
     }
 }
+
+// Выключение шагомера: сервер отзовёт и рейтинг и удалит данные о шагах
+revokeConsent("activity_data")
 ```
 
 ```kotlin
@@ -278,7 +310,7 @@ val showGate = consentOutdated(uid) &&
 
 ## Справка 2. Тексты для strings.xml
 
-Тексты те же, что на сайте: в веб-репо это `auth.consent`, `auth.terms_*` и `legal.gate` в `src/lib/i18n/locales/ru.json` и `en.json`. Выгружены оттуда же, уже с экранированием для Android. Названия ссылок (`consent_tos_link`, `consent_pp_link`, `consent_policy_link`) — кликабельные, ведут на документы.
+Тексты те же, что на сайте: в веб-репо это `auth.consent`, `auth.terms_*` и `legal.gate` в `src/lib/i18n/locales/ru.json` и `en.json`. Выгружены оттуда же, уже с экранированием для Android. Строки шагомера и рейтинга (`consent_activity_*`, `consent_cb_activity`, `consent_*leaderboard*`) — только для приложения. Названия ссылок (`consent_tos_link`, `consent_pp_link`, `consent_policy_link`) — кликабельные, ведут на документы.
 
 `values/strings.xml`:
 
@@ -315,10 +347,12 @@ val showGate = consentOutdated(uid) &&
 <string name="gate_logout">Выйти из аккаунта</string>
 <string name="gate_refuse">Не согласен — удалить аккаунт</string>
 
-<!-- Шагомер (пункт 5) — ЧЕРНОВИК, утверждает Орион -->
+<!-- Шагомер и рейтинг (пункт 5) -->
 <string name="consent_activity_title">Шагомер и ваши данные</string>
-<string name="consent_activity_text">Функция «Шагомер» получает количество шагов с датчика устройства и начисляет за них ProtoCoins. Данные о физической активности относятся к специальным персональным данным (статья 8 Закона № 99-З), поэтому для шагомера нужно отдельное согласие. На сервере хранится только суточная статистика шагов. Согласие можно отозвать в любой момент, выключив шагомер: начисление ProtoCoins за шаги прекратится, остальные функции Сервиса продолжат работать.</string>
-<string name="consent_cb_activity">Я даю согласие на обработку данных о моей физической активности (количество шагов) для работы шагомера и начисления ProtoCoins.</string>
+<string name="consent_activity_text">Функция «Шагомер» получает количество шагов с датчика устройства и начисляет за них ProtoCoins. Данные о физической активности — специальные персональные данные, и по статье 8 Закона № 99-З на их обработку нужно отдельное согласие. На сервере хранятся суточная статистика шагов и итоги прогулок (шаги, время, начисленные ProtoCoins); поминутные показания датчика остаются на устройстве. Согласие действует 3 года с даты последнего входа в учётную запись либо до отзыва. Отозвать его можно в любой момент, выключив шагомер: данные о шагах удалятся с сервера, начисление ProtoCoins за шаги прекратится, остальные функции Сервиса продолжат работать.</string>
+<string name="consent_cb_activity">Я даю согласие на обработку данных о моей физической активности (количество шагов, итоги прогулок) для работы шагомера и начисления ProtoCoins.</string>
+<string name="consent_cb_leaderboard">Показывать моё имя пользователя, аватар и количество шагов за день, неделю, месяц и всё время другим пользователям в рейтинге шагомера.</string>
+<string name="consent_leaderboard_hint">Необязательно. Отметку можно снять в любой момент в настройках шагомера — запись в рейтинге удалится сразу.</string>
 ```
 
 `values-en/strings.xml`:
@@ -356,10 +390,12 @@ val showGate = consentOutdated(uid) &&
 <string name="gate_logout">Sign out</string>
 <string name="gate_refuse">I do not agree — delete my account</string>
 
-<!-- Шагомер (пункт 5) — ЧЕРНОВИК, утверждает Орион -->
+<!-- Шагомер и рейтинг (пункт 5) -->
 <string name="consent_activity_title">The Step Counter and your data</string>
-<string name="consent_activity_text">The Step Counter feature reads your step count from the device sensor and awards ProtoCoins for it. Physical activity data is a special category of personal data (Article 8 of Law No. 99-Z), so the Step Counter requires separate consent. Only daily step statistics are stored on the server. You can withdraw consent at any time by turning the Step Counter off: ProtoCoins activity rewards will stop, and the rest of the Service will keep working.</string>
-<string name="consent_cb_activity">I consent to the processing of my physical activity data (step count) for the Step Counter and ProtoCoins rewards.</string>
+<string name="consent_activity_text">The Step Counter feature reads your step count from the device sensor and awards ProtoCoins for it. Physical activity data is a special category of personal data, and under Article 8 of Law No. 99-Z processing it requires separate consent. The server stores daily step statistics and walk summaries (steps, time, ProtoCoins awarded); minute-by-minute sensor readings stay on the device. Consent is valid for 3 years from your last sign-in or until withdrawn. You can withdraw it at any time by turning the Step Counter off: your step data will be deleted from the server, ProtoCoins activity rewards will stop, and the rest of the Service will keep working.</string>
+<string name="consent_cb_activity">I consent to the processing of my physical activity data (step count, walk summaries) for the Step Counter and ProtoCoins rewards.</string>
+<string name="consent_cb_leaderboard">Show my username, avatar and step counts for the day, week, month and all time to other users in the Step Counter leaderboard.</string>
+<string name="consent_leaderboard_hint">Optional. You can untick this at any time in the Step Counter settings — your leaderboard entry will be deleted immediately.</string>
 ```
 
 ## Справка 3. Тег `<table>` в документах

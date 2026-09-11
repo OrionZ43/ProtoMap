@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document id="privacy_policy" version="v5.1 | 18.09.2026">
+<document id="privacy_policy" version="v5.2 | 18.09.2026">
 
     <title>
         <ru>ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ И ЗАЩИТЫ ДАННЫХ</ru>
@@ -8,8 +8,8 @@
 
     <alert severity="info" icon="info">
         <title>
-            <ru>Версия 5.1 | Вступает в силу: 18.09.2026</ru>
-            <en>Version 5.1 | Effective date: 18 September 2026</en>
+            <ru>Версия 5.2 | Вступает в силу: 18.09.2026</ru>
+            <en>Version 5.2 | Effective date: 18 September 2026</en>
         </title>
         <text>
             <ru>Настоящая Политика распространяется на оба компонента Сервиса: веб-сайт proto-map.vercel.app и мобильное приложение ProtoMap для Android. Политика приведена в соответствие с Законом Республики Беларусь от 7 мая 2021 г. № 99-З «О защите персональных данных».</ru>
@@ -113,8 +113,8 @@
         <en>Consent of the data subject (Articles 4(3) and 5 of Law No. 99-Z) — for creating and maintaining an account, publishing a map marker, messaging, and for cross-border transfers to states not listed as providing an adequate level of protection.</en>
     </bullet>
     <bullet>
-        <ru>Отдельное согласие на обработку специальных персональных данных (статья 8 Закона № 99-З) — для функции «Шагомер» и начисления ProtoCoins за физическую активность. Это согласие является необязательным и запрашивается отдельно.</ru>
-        <en>Separate consent to processing of special categories of personal data (Article 8 of Law No. 99-Z) — for the Step Counter feature and ProtoCoins activity rewards. This consent is optional and is requested separately.</en>
+        <ru>Отдельное согласие на обработку специальных персональных данных (статья 8 Закона № 99-З) — для функции «Шагомер» и начисления ProtoCoins за физическую активность. Это согласие является необязательным и запрашивается отдельно. Показ ваших данных о шагах другим пользователям в рейтинге шагомера — по ещё одному отдельному согласию, тоже необязательному.</ru>
+        <en>Separate consent to processing of special categories of personal data (Article 8 of Law No. 99-Z) — for the Step Counter feature and ProtoCoins activity rewards. This consent is optional and is requested separately. Showing your step data to other users in the Step Counter leaderboard requires one more separate consent, also optional.</en>
     </bullet>
     <bullet>
         <ru>Получение персональных данных на основании договора, заключаемого с субъектом (статья 6 Закона № 99-З) — для проверки того, что регистрацию совершает человек, а не автоматизированная программа (Cloudflare Turnstile), и для технических действий, необходимых для заключения и исполнения Пользовательского соглашения.</ru>
@@ -250,8 +250,8 @@
             <en>This is a special category of personal data</en>
         </title>
         <text>
-            <ru>Данные о вашей физической активности мы обрабатываем как специальные персональные данные в значении статьи 1 Закона № 99-З и только на основании вашего отдельного согласия (статья 8 Закона № 99-З). Функция «Шагомер» полностью опциональна: без включения этой функции данные о шагах не собираются и не передаются на сервер. Отзыв согласия прекращает начисление ProtoCoins за активность и не влияет на остальные функции Сервиса.</ru>
-            <en>We treat your physical activity data as a special category of personal data within the meaning of Article 1 of Law No. 99-Z and process it only on the basis of your separate consent (Article 8 of Law No. 99-Z). The Step Counter feature is entirely optional: unless you enable it, no step data is collected or sent to the server. Withdrawing consent stops ProtoCoins activity rewards and does not affect other features of the Service.</en>
+            <ru>Данные о вашей физической активности мы обрабатываем как специальные персональные данные в значении статьи 1 Закона № 99-З и только на основании вашего отдельного согласия (статья 8 Закона № 99-З). Функция «Шагомер» полностью опциональна: без включения этой функции данные о шагах не собираются и не передаются на сервер. Отзыв согласия прекращает начисление ProtoCoins за активность, удаляет данные о шагах с сервера и не влияет на остальные функции Сервиса.</ru>
+            <en>We treat your physical activity data as a special category of personal data within the meaning of Article 1 of Law No. 99-Z and process it only on the basis of your separate consent (Article 8 of Law No. 99-Z). The Step Counter feature is entirely optional: unless you enable it, no step data is collected or sent to the server. Withdrawing consent stops ProtoCoins activity rewards, deletes step data from the server, and does not affect other features of the Service.</en>
         </text>
     </alert>
 
@@ -311,8 +311,13 @@
         <en>Walk tracking: during an active walk session, sensor data is displayed in real time (current step count, approximate distance). When the session ends, the final summary (steps, time, PC awarded) is saved to your profile.</en>
     </bullet>
     <bullet>
-        <ru>Защита от накрутки: суточное количество шагов передаётся на сервер для проверки лимитов вознаграждений и обнаружения аномальных значений. Необработанные данные датчика на сервере не хранятся — сохраняется только итоговая статистика дня.</ru>
-        <en>Anti-manipulation: the daily step count is sent to the server to enforce reward limits and detect anomalous values. Raw sensor data is not stored on the server — only the day's final summary is retained.</en>
+        <ru>Защита от накрутки: количество шагов за текущий день с разбивкой по часам передаётся на сервер для проверки лимитов вознаграждений, бонусных часов и обнаружения аномальных значений. После проверки на сервере сохраняется только итоговая статистика дня; разбивка по часам не хранится.</ru>
+        <en>Anti-manipulation: the current day's step count, broken down by hour, is sent to the server to enforce reward limits, verify bonus hours and detect anomalous values. After verification, only the day's final summary is stored on the server; the hourly breakdown is not kept.</en>
+    </bullet>
+
+    <bullet>
+        <ru>Рейтинг шагомера: если вы дали отдельное согласие на показ в рейтинге, другие пользователи видят ваше имя пользователя, аватар и количество шагов за день, неделю, месяц и всё время. Согласие можно отозвать в любой момент — запись в рейтинге удаляется сразу.</ru>
+        <en>Step Counter leaderboard: if you have given separate consent to appear in the leaderboard, other users see your username, avatar and step counts for the day, week, month and all time. You can withdraw this consent at any time — your leaderboard entry is deleted immediately.</en>
     </bullet>
 
     <subsection>
@@ -330,8 +335,8 @@
         <en>Only daily aggregates are stored on the server; per-minute and per-session sensor readings never leave the device.</en>
     </bullet>
     <bullet>
-        <ru>Не передаём данные о шагах третьим лицам, рекламодателям или аналитическим платформам.</ru>
-        <en>We do not share step data with third parties, advertisers, or analytics platforms.</en>
+        <ru>Не передаём данные о шагах третьим лицам, рекламодателям или аналитическим платформам; другим пользователям они показываются только в рейтинге шагомера и только с вашего отдельного согласия.</ru>
+        <en>We do not share step data with third parties, advertisers, or analytics platforms; other users see it only in the Step Counter leaderboard and only with your separate consent.</en>
     </bullet>
     <bullet>
         <ru>Не используем данные для таргетированной рекламы.</ru>
@@ -577,8 +582,8 @@
         <en>Message texts — until you delete them or until they are depersonalised when the account is deleted. Media files (voice messages, images, video) — until you delete them or the account is deleted.</en>
     </bullet>
     <bullet>
-        <ru>Данные о шагах — агрегированная суточная статистика хранится 12 месяцев; необработанные показания датчика на сервере не сохраняются.</ru>
-        <en>Step data — daily aggregated statistics are kept for 12 months; raw sensor readings are not stored on the server.</en>
+        <ru>Данные о шагах — агрегированная суточная статистика хранится 12 месяцев; необработанные показания датчика на сервере не сохраняются. Запись в рейтинге шагомера — пока действует согласие на показ. При отзыве согласия на шагомер данные о шагах удаляются сразу.</ru>
+        <en>Step data — daily aggregated statistics are kept for 12 months; raw sensor readings are not stored on the server. A Step Counter leaderboard entry — for as long as consent to appear in it remains in force. When the Step Counter consent is withdrawn, step data is deleted immediately.</en>
     </bullet>
     <bullet>
         <ru>IP-адрес и технические журналы безопасности — 6 месяцев с момента фиксации события.</ru>

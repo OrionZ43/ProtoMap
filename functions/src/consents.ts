@@ -20,16 +20,21 @@
 
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, type DocumentData } from "firebase-admin/firestore";
+import { eraseStepData } from "./stepperData";
 
 const db = () => admin.firestore();
 
-/** Виды согласий. Совпадают с чекбоксами на экране регистрации. */
+/**
+ * Виды согласий. Обязательные — чекбоксы экрана регистрации и экрана согласий;
+ * `activity_*` — экран шагомера в Android-приложении.
+ */
 export const CONSENT_IDS = [
     "age_minimum",
     "core_processing",
     "cross_border",
     "activity_data",
+    "activity_leaderboard",
     "tos",
 ] as const;
 
@@ -43,8 +48,26 @@ export type ConsentId = (typeof CONSENT_IDS)[number];
  */
 const REQUIRED_CONSENTS: ConsentId[] = ["age_minimum", "core_processing", "cross_border", "tos"];
 
-/** Единственное согласие, отзываемое само по себе, без последствий для аккаунта. */
-const OPTIONAL_CONSENTS: ConsentId[] = ["activity_data"];
+/** Согласия, которые отзываются сами по себе, без последствий для аккаунта. */
+const OPTIONAL_CONSENTS: ConsentId[] = ["activity_data", "activity_leaderboard"];
+
+/**
+ * Зеркала необязательных согласий в users/{uid}. По ним stepperClaim решает,
+ * начислять ли за шаги и выкладывать ли их в рейтинг.
+ */
+const OPTIONAL_MIRRORS: Partial<Record<ConsentId, string>> = {
+    activity_data: "activity_data_consent",
+    activity_leaderboard: "activity_leaderboard_consent",
+};
+
+/**
+ * Отзыв согласия на шагомер отзывает и показ в рейтинге: без данных о шагах
+ * показывать нечего, а действующее согласие на то, чего нет, только путает
+ * журнал.
+ */
+const REVOKE_CASCADE: Partial<Record<ConsentId, ConsentId[]>> = {
+    activity_data: ["activity_data", "activity_leaderboard"],
+};
 
 type Method = "web" | "android";
 
@@ -126,9 +149,15 @@ export const recordConsents = onCall(async (request) => {
     // обязательных: повторять их в журнале ради одной галочки незачем. Но
     // только если обязательные приняты на ТЕКУЩУЮ редакцию — иначе сначала
     // экран согласий.
+    let userData: DocumentData | undefined;
+    const readUser = async (): Promise<DocumentData> => {
+        if (!userData) userData = (await db().collection("users").doc(uid).get()).data() ?? {};
+        return userData;
+    };
+
     const onlyOptional = ids.every((id) => OPTIONAL_CONSENTS.includes(id));
     if (onlyOptional) {
-        const u = (await db().collection("users").doc(uid).get()).data() ?? {};
+        const u = await readUser();
         if (u.consents_privacy_version !== versions.privacy || u.consents_tos_version !== versions.tos) {
             throw new HttpsError(
                 "failed-precondition",
@@ -141,6 +170,18 @@ export const recordConsents = onCall(async (request) => {
             throw new HttpsError(
                 "failed-precondition",
                 `Не отмечены обязательные согласия: ${missing.join(", ")}.`
+            );
+        }
+    }
+
+    // Показ в рейтинге — показ данных о шагах другим людям. Без согласия на
+    // сам шагомер показывать нечего.
+    if (ids.includes("activity_leaderboard") && !ids.includes("activity_data")) {
+        const u = await readUser();
+        if (u.activity_data_consent !== true) {
+            throw new HttpsError(
+                "failed-precondition",
+                "Показ в рейтинге доступен только с согласием на шагомер."
             );
         }
     }
@@ -176,11 +217,14 @@ export const recordConsents = onCall(async (request) => {
         mirror.consents_tos_version = versions.tos;
         mirror.consents_updated_at = FieldValue.serverTimestamp();
     }
-    // Флаг шагомера здесь только включается, выключает его revokeConsent.
-    // Раньше повторное принятие документов без галочки шагомера (экран
-    // согласий на сайте отправляет только обязательные) молча выставляло
-    // false тем, кто шагомер включал, хотя их согласие не отозвано.
-    if (ids.includes("activity_data")) mirror.activity_data_consent = true;
+    // Флаги необязательных согласий здесь только включаются, выключает их
+    // revokeConsent. Раньше повторное принятие документов без галочки
+    // шагомера (экран согласий на сайте отправляет только обязательные) молча
+    // выставляло false тем, кто шагомер включал, хотя их согласие не отозвано.
+    for (const id of ids) {
+        const field = OPTIONAL_MIRRORS[id];
+        if (field) mirror[field] = true;
+    }
     batch.set(db().collection("users").doc(uid), mirror, { merge: true });
 
     await batch.commit();
@@ -191,8 +235,12 @@ export const recordConsents = onCall(async (request) => {
 // ─── Отзыв согласия ───────────────────────────────────────────────────────────
 
 /**
- * Отзывает опциональное согласие. Обязательные не отзывает — по ним путь один,
- * удаление аккаунта, и вызывающему об этом сообщается явно.
+ * Отзывает необязательное согласие. Обязательные не отзывает — по ним путь
+ * один, удаление аккаунта, и вызывающему об этом сообщается явно.
+ *
+ * Отзыв — не только пометка в журнале. Статья 10 Закона № 99-З: обработка
+ * прекращается, данные удаляются. Для шагомера — сразу (eraseStepData), для
+ * рейтинга — запись в рейтинге.
  */
 export const revokeConsent = onCall(async (request) => {
     if (request.app == undefined) {
@@ -216,29 +264,45 @@ export const revokeConsent = onCall(async (request) => {
         );
     }
 
-    const snap = await db()
-        .collection("consents")
-        .where("uid", "==", uid)
-        .where("consentId", "==", consentId)
-        .where("revokedAt", "==", null)
-        .get();
+    const cascade = REVOKE_CASCADE[consentId] ?? [consentId];
 
     const batch = db().batch();
-    for (const doc of snap.docs) {
-        batch.update(doc.ref, { revokedAt: FieldValue.serverTimestamp() });
+    let revoked = 0;
+    for (const id of cascade) {
+        const snap = await db()
+            .collection("consents")
+            .where("uid", "==", uid)
+            .where("consentId", "==", id)
+            .where("revokedAt", "==", null)
+            .get();
+        for (const doc of snap.docs) {
+            batch.update(doc.ref, { revokedAt: FieldValue.serverTimestamp() });
+        }
+        revoked += snap.size;
     }
 
-    if (OPTIONAL_CONSENTS.includes(consentId) && consentId === "activity_data") {
-        batch.set(
-            db().collection("users").doc(uid),
-            { activity_data_consent: false },
-            { merge: true }
-        );
+    const mirror: Record<string, boolean> = {};
+    for (const id of cascade) {
+        const field = OPTIONAL_MIRRORS[id];
+        if (field) mirror[field] = false;
+    }
+    if (Object.keys(mirror).length > 0) {
+        batch.set(db().collection("users").doc(uid), mirror, { merge: true });
     }
 
     await batch.commit();
 
-    return { status: "ok", revoked: snap.size };
+    // Данные удаляются после записи отзыва: если удаление упадёт, отзыв уже
+    // зафиксирован, и stepperClaim по флагу больше не начислит. Повторный
+    // вызов revokeConsent удаление доделает.
+    if (consentId === "activity_data") {
+        const erased = await eraseStepData(uid);
+        console.log(`[consents] ${uid}: согласие на шагомер отозвано, данные о шагах удалены:`, JSON.stringify(erased));
+    } else if (consentId === "activity_leaderboard") {
+        await db().collection("stepper_leaderboard").doc(uid).delete();
+    }
+
+    return { status: "ok", revoked };
 });
 
 // ─── Чтение своих согласий ────────────────────────────────────────────────────

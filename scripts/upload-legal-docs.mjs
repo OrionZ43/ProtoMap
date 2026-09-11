@@ -31,7 +31,7 @@ const DOCS = {
 		field: 'privacy_policy',
 		versionField: 'privacy_policy_version',
 		expectedId: 'privacy_policy',
-		version: '5.1'
+		version: '5.2'
 	},
 	tos: {
 		file: 'docs/аудит/terms_of_service_v5.xml',
@@ -49,7 +49,7 @@ const DOCS = {
 		field: 'personal_data_policy',
 		versionField: 'personal_data_policy_version',
 		expectedId: 'personal_data_policy',
-		version: '1.0'
+		version: '1.1'
 	}
 };
 

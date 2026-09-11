@@ -1,7 +1,7 @@
 // ===================================================================
 // 🦶 STEPPER CLOUD FUNCTIONS — v2.1
 // ===================================================================
-// Интегрируется с Health Connect (Android).
+// Шаги присылает Android-приложение с аппаратного датчика (TYPE_STEP_COUNTER).
 //
 // Серверные меры защиты:
 //   ✅ App Check
@@ -17,6 +17,10 @@
 //   ✅ Ошибки клиенту — общий код; детали только в логах
 //   ✅ [v2.1] Серверный учёт заклеймленных шагов: сброс данных приложения
 //            не позволяет переклеймить уже конвертированные шаги
+//   ✅ [v2.2] Начисление только без отозванного согласия на шагомер;
+//            после отзыва данные о шагах удаляются (stepperData.ts)
+//   ✅ [v2.2] Рейтинг — только с отдельным согласием и без истории по дням
+//   ✅ [v2.2] Почасовая разбивка в журнал начислений не сохраняется
 // ===================================================================
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -98,40 +102,43 @@ function daysAgoUtc(base: Date, days: number): Date {
 }
 
 /**
- * Пересчитывает документ лидерборда из истории по дням.
- * Пишется ТОЛЬКО сервером из проверенных шагов (см. stepperClaim).
+ * Шаги по дням и суммы для рейтинга. Считает ТОЛЬКО сервер из проверенных
+ * батчей (см. stepperClaim).
+ *
+ * Шаги по дням хранятся в stepper/{uid} — этот документ читает только сам
+ * человек. В рейтинг уходят одни суммы: документ рейтинга читает любой
+ * вошедший пользователь, и выкладывать туда шаги по датам незачем.
  */
-function computeLeaderboardUpdate(
-    existing:  DocumentData | undefined,
-    uid:       string,
+function computeStepTotals(
+    existing:   DocumentData | undefined,
     addedSteps: number,
-    now:       Date
+    now:        Date
 ) {
     const todayStr    = toUtcDateStr(now);
     const weekCutoff  = toUtcDateStr(daysAgoUtc(now, 7));
     const monthCutoff = toUtcDateStr(daysAgoUtc(now, 30));
 
-    const history: { [date: string]: number } = { ...(existing?.history ?? {}) };
+    const stepsByDay: { [date: string]: number } = { ...(existing?.stepsByDay ?? {}) };
 
     // Чистим записи старше 30 дней и любые мусорные ключи
-    for (const key of Object.keys(history)) {
+    for (const key of Object.keys(stepsByDay)) {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || key < monthCutoff) {
-            delete history[key];
+            delete stepsByDay[key];
         }
     }
 
-    history[todayStr] = (history[todayStr] ?? 0) + addedSteps;
+    stepsByDay[todayStr] = (stepsByDay[todayStr] ?? 0) + addedSteps;
 
-    const stepsToday = history[todayStr];
+    const stepsToday = stepsByDay[todayStr];
     let stepsWeek  = 0;
     let stepsMonth = 0;
-    for (const [date, steps] of Object.entries(history)) {
+    for (const [date, steps] of Object.entries(stepsByDay)) {
         stepsMonth += steps;
         if (date >= weekCutoff) stepsWeek += steps;
     }
     const totalSteps = (existing?.totalSteps ?? 0) + addedSteps;
 
-    return { userId: uid, stepsToday, stepsWeek, stepsMonth, totalSteps, history };
+    return { stepsByDay, stepsToday, stepsWeek, stepsMonth, totalSteps };
 }
 
 // ─── getStepperStatus ────────────────────────────────────────────────────────
@@ -291,6 +298,23 @@ export const stepperClaim = onCall(async (request) => {
 
             if (ud.isBanned) throw new HttpsError("permission-denied", "Аккаунт заблокирован.");
 
+            // [v2.2] Согласие на шагомер отозвано — данные о шагах больше не
+            // принимаем. Флаг false ставит только revokeConsent. У тех, кто
+            // согласия ещё не давал (поля нет), начисление пока работает:
+            // приложение начнёт спрашивать согласие со следующей версии, и
+            // требовать его раньше — значит сломать шагомер у всех.
+            if (ud.activity_data_consent === false) {
+                throw new HttpsError("failed-precondition", "Согласие на обработку данных о шагах отозвано.");
+            }
+
+            // [v2.2] После отзыва согласия сегодняшние счётчики удалены, и
+            // сервер не помнит, сколько шагов за день уже оплачено. Отметка
+            // из eraseStepData закрывает начисление до конца суток.
+            const lockMs = sd.claimsLockedUntil?.toMillis?.() ?? 0;
+            if (lockMs > now.getTime()) {
+                throw new HttpsError("failed-precondition", "Шаги за сегодня уже учтены. Начисление возобновится завтра.");
+            }
+
             const bonusHours: number[] = sd.bonusHours ?? [];
             const multiplier: number   = sd.multiplier  ?? BONUS_MULTIPLIER;
 
@@ -368,7 +392,7 @@ export const stepperClaim = onCall(async (request) => {
 
             // ── [v2.1] Защита от повторного клейма одних и тех же шагов ──────
             //
-            // Логика: клиент присылает ПОЛНЫЙ объём шагов за день (из Health Connect).
+            // Логика: клиент присылает ПОЛНЫЙ объём шагов за день (с датчика устройства).
             // Сервер помнит сколько нормальных и бонусных шагов уже было сконвертировано
             // сегодня. Доступные для клейма — только разница.
             //
@@ -447,7 +471,10 @@ export const stepperClaim = onCall(async (request) => {
             // ── Запись ────────────────────────────────────────────────────────
             t.update(userRef, { casino_credits: newBalance });
 
-            const stepperUpdate: { [key: string]: FieldValue | number | Date } = {
+            const claimedSteps = (normalBatches + bonusBatches) * STEPS_PER_REWARD;
+            const totals       = computeStepTotals(sd, claimedSteps, now);
+
+            const stepperUpdate: DocumentData = {
                 lastClaimAt:              FieldValue.serverTimestamp(),
                 totalClaimed:             newTotalClaimed,
                 dailyClaimedPc:           newDailyPc,
@@ -456,22 +483,37 @@ export const stepperClaim = onCall(async (request) => {
                 // [v2.1]
                 dailyClaimedNormalSteps:  newClaimedNormalSteps,
                 dailyClaimedBonusSteps:   newClaimedBonusSteps,
+                // [v2.2] День, к которому относятся dailyClaimed*: по нему
+                // приложение понимает, актуальны ли счётчики (getClaimedSteps).
+                claimedDate:              toUtcDateStr(now),
+                // [v2.2] Шаги по дням (30 дней) и итог за всё время — источник
+                // сумм для рейтинга. Раньше жили в самом документе рейтинга.
+                stepsByDay:               totals.stepsByDay,
+                totalSteps:               totals.totalSteps,
             };
             if (needsReset) {
                 stepperUpdate.dailyResetAt = new Date(nextMidnightUTC(now));
             }
+            if (lockMs > 0) {
+                // Отметка после отзыва согласия истекла — иначе отказ был бы выше
+                stepperUpdate.claimsLockedUntil = FieldValue.delete();
+            }
             t.update(stepperRef, stepperUpdate);
 
-            // ── Лидерборд (пишет ТОЛЬКО сервер, из проверенных батчей) ────────
-            const claimedStepsForBoard = (normalBatches + bonusBatches) * STEPS_PER_REWARD;
-            if (claimedStepsForBoard > 0) {
-                const boardData = computeLeaderboardUpdate(
-                    leaderboardSnap.data(), uid, claimedStepsForBoard, now
-                );
+            // ── Рейтинг (пишет ТОЛЬКО сервер, из проверенных батчей) ──────────
+            // [v2.2] Только с отдельным согласием на показ: в рейтинге шаги
+            // видят другие люди. Без согласия записи в рейтинге быть не должно.
+            if (ud.activity_leaderboard_consent === true) {
                 t.set(leaderboardRef, {
-                    ...boardData,
-                    updatedAt: FieldValue.serverTimestamp(),
-                }, { merge: true });
+                    userId:     uid,
+                    stepsToday: totals.stepsToday,
+                    stepsWeek:  totals.stepsWeek,
+                    stepsMonth: totals.stepsMonth,
+                    totalSteps: totals.totalSteps,
+                    updatedAt:  FieldValue.serverTimestamp(),
+                });
+            } else if (leaderboardSnap.exists) {
+                t.delete(leaderboardRef);
             }
 
             // Аудит-лог
@@ -495,7 +537,9 @@ export const stepperClaim = onCall(async (request) => {
                     claimedNormalAfter:     newClaimedNormalSteps,
                     claimedBonusAfter:      newClaimedBonusSteps,
                     bonusHoursUsed:         bonusHours,
-                    hourStats,
+                    // [v2.2] hourStats не сохраняем: почасовая разбивка нужна
+                    // только для проверки выше, а Политика обещает хранить
+                    // итоги дня.
                     statTotal,
                 }
             );

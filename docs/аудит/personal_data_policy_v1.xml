@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document id="personal_data_policy" version="v1.0 | 18.09.2026">
+<document id="personal_data_policy" version="v1.1 | 18.09.2026">
 
     <title>
         <ru>ПОЛИТИКА В ОТНОШЕНИИ ОБРАБОТКИ ПЕРСОНАЛЬНЫХ ДАННЫХ</ru>
@@ -8,8 +8,8 @@
 
     <alert severity="info" icon="info">
         <title>
-            <ru>Редакция 1.0 | Вступает в силу: 18.09.2026</ru>
-            <en>Revision 1.0 | Effective date: 18 September 2026</en>
+            <ru>Редакция 1.1 | Вступает в силу: 18.09.2026</ru>
+            <en>Revision 1.1 | Effective date: 18 September 2026</en>
         </title>
         <text>
             <ru>Политика действует в отношении всех персональных данных, которые обрабатывает оператор Сервиса ProtoMap: веб-сайта proto-map.vercel.app, мобильного приложения ProtoMap для Android, связанных с ними серверных функций, а также Telegram-бота ProtoMap в чате и канале сообщества ProtoMap.</ru>
@@ -108,6 +108,11 @@
     </paragraph>
 
     <paragraph>
+        <ru>С отдельного согласия пользователя Оператор распространяет и его данные о шагах: в рейтинге шагомера другим пользователям Сервиса показываются имя пользователя, аватар и количество шагов за день, неделю, месяц и всё время. Способ — мобильное приложение ProtoMap. Правовое основание — отдельное согласие (статьи 5 и 8 Закона); при его отзыве запись в рейтинге удаляется сразу.</ru>
+        <en>With the user’s separate consent, the Operator also disseminates their step data: in the Step Counter leaderboard, other users of the Service see the username, avatar and step counts for the day, week, month and all time. The means is the ProtoMap mobile app. The legal basis is separate consent (Articles 5 and 8 of the Law); when it is withdrawn, the leaderboard entry is deleted immediately.</en>
+    </paragraph>
+
+    <paragraph>
         <ru>Меры по защите прав при распространении: в автоматическом режиме вместо точных координат сохраняется центр района, а точные координаты не записываются; метку можно изменить или удалить в любой момент; при удалении учётной записи метка удаляется немедленно, тексты сообщений и комментарии обезличиваются, а отправленные медиафайлы удаляются. Оператор рекомендует не ставить метку на месте проживания.</ru>
         <en>Measures protecting rights in dissemination: in automatic mode the district centre is stored instead of exact coordinates, and exact coordinates are not recorded; the marker can be changed or removed at any time; when an account is deleted, the marker is removed immediately message texts and comments are depersonalised, and media files sent are deleted. The Operator recommends not placing the marker at one’s place of residence.</en>
     </paragraph>
@@ -189,8 +194,8 @@
     </subsection>
 
     <bullet>
-        <ru>Отозвать согласие (статья 10 Закона) — в любое время и без объяснения причин. Обработка прекращается, а данные удаляются в течение 15 дней. Отзыв обязательных согласий, включая согласие на трансграничную передачу, влечёт удаление учётной записи; отзыв согласия на шагомер прекращает только начисление ProtoCoins за активность.</ru>
-        <en>Withdraw consent (Article 10 of the Law) — at any time and without giving reasons. Processing stops and the data are deleted within 15 days. Withdrawing the mandatory consents, including consent to cross-border transfer, results in the deletion of the account; withdrawing the step counter consent only stops ProtoCoins being awarded for activity.</en>
+        <ru>Отозвать согласие (статья 10 Закона) — в любое время и без объяснения причин. Обработка прекращается, а данные удаляются в течение 15 дней. Отзыв обязательных согласий, включая согласие на трансграничную передачу, влечёт удаление учётной записи; отзыв согласия на шагомер прекращает начисление ProtoCoins за активность и удаляет данные о шагах, остальные функции Сервиса продолжают работать; отзыв согласия на показ в рейтинге удаляет запись из рейтинга.</ru>
+        <en>Withdraw consent (Article 10 of the Law) — at any time and without giving reasons. Processing stops and the data are deleted within 15 days. Withdrawing the mandatory consents, including consent to cross-border transfer, results in the deletion of the account; withdrawing the step counter consent stops ProtoCoins being awarded for activity and deletes the step data, while the rest of the Service keeps working; withdrawing consent to appear in the leaderboard removes the leaderboard entry.</en>
     </bullet>
 
     <bullet>
@@ -414,6 +419,28 @@
             <cell>
                 <ru>12 месяцев; необработанные показания датчика на сервере не хранятся</ru>
                 <en>12 months; raw sensor readings are not stored on the server</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Показ в рейтинге шагомера (Android)</ru>
+                <en>Showing the user in the Step Counter leaderboard (Android)</en>
+            </cell>
+            <cell>
+                <ru>Пользователи, давшие согласие на показ в рейтинге</ru>
+                <en>Users who consented to appear in the leaderboard</en>
+            </cell>
+            <cell>
+                <ru>Имя пользователя, аватар; количество шагов за день, неделю, месяц и всё время</ru>
+                <en>Username, avatar; step counts for the day, week, month and all time</en>
+            </cell>
+            <cell>
+                <ru>Отдельное согласие на распространение специальных персональных данных (статьи 5 и 8 Закона)</ru>
+                <en>Separate consent to the dissemination of special personal data (Articles 5 and 8 of the Law)</en>
+            </cell>
+            <cell>
+                <ru>Пока действует согласие на показ; при отзыве запись удаляется сразу</ru>
+                <en>While consent to appear remains in force; the entry is deleted immediately upon withdrawal</en>
             </cell>
         </row>
         <row>
