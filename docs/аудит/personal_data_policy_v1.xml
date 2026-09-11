@@ -33,8 +33,8 @@
     </paragraph>
 
     <paragraph>
-        <ru>1.3. Политика не применяется к обработке персональных данных в процессе трудовой деятельности: работников у оператора нет. Видеонаблюдение оператор не осуществляет. Сайт использует только технические cookie-файлы, необходимые для его работы и защиты (сеанс авторизации, защита от автоматизированных запросов); аналитические и рекламные cookie-файлы не используются.</ru>
-        <en>1.3. This Policy does not apply to the processing of personal data in the course of employment: the operator has no employees. The operator does not carry out video surveillance. The website uses only technical cookies necessary for its operation and security (the sign-in session, protection against automated requests); analytics and advertising cookies are not used.</en>
+        <ru>1.3. Сайт использует только технические cookie-файлы, необходимые для его работы и защиты: сеанс авторизации и защиту от автоматизированных запросов.</ru>
+        <en>1.3. The website uses only technical cookies necessary for its operation and security: the sign-in session and protection against automated requests.</en>
     </paragraph>
 
     <subsection>
@@ -93,18 +93,13 @@
     </paragraph>
 
     <paragraph>
-        <ru>2.4. При регистрации и использовании Сервиса Оператор не запрашивает и не обрабатывает фамилию, собственное имя, отчество, дату рождения и идентификационный номер субъекта: цели обработки этого не требуют. Исключение — заявление, подаваемое в порядке статьи 14 Закона, в котором эти сведения указывает сам заявитель.</ru>
-        <en>2.4. When a person registers and uses the Service, the Operator does not request or process their surname, first name, patronymic, date of birth or identification number: the purposes of processing do not require them. The exception is an application under Article 14 of the Law, in which the applicant provides this information themselves.</en>
-    </paragraph>
-
-    <paragraph>
-        <ru>2.5. Сервис предназначен для лиц, достигших 16 лет. До достижения шестнадцати лет согласие на обработку персональных данных даёт один из законных представителей (пункт 9 статьи 5 Закона); такой способ Сервис не предоставляет, поэтому регистрация лиц, не достигших 16 лет, не допускается. Выявленная учётная запись такого лица удаляется.</ru>
-        <en>2.5. The Service is intended for persons aged 16 and over. Below the age of sixteen, consent to the processing of personal data is given by a legal representative (Article 5(9) of the Law); the Service provides no such means, so persons under 16 may not register. An account of such a person, once identified, is deleted.</en>
+        <ru>2.4. Сервис предназначен для лиц, достигших 16 лет: до шестнадцати лет согласие на обработку персональных данных даёт один из законных представителей (пункт 9 статьи 5 Закона). Учётная запись лица младше 16 лет при выявлении удаляется.</ru>
+        <en>2.4. The Service is intended for persons aged 16 and over: below the age of sixteen, consent to the processing of personal data is given by a legal representative (Article 5(9) of the Law). An account of a person under 16, once identified, is deleted.</en>
     </paragraph>
 
     <subsection>
-        <ru>2.6. Распространение персональных данных</ru>
-        <en>2.6. Dissemination of personal data</en>
+        <ru>2.5. Распространение персональных данных</ru>
+        <en>2.5. Dissemination of personal data</en>
     </subsection>
 
     <paragraph>
@@ -395,8 +390,8 @@
                 <en>Contract (Article 6, fifteenth paragraph, of the Law)</en>
             </cell>
             <cell>
-                <ru>Оператором не хранятся</ru>
-                <en>Not stored by the Operator</en>
+                <ru>Только на время проверки (обрабатывает Cloudflare)</ru>
+                <en>Only for the duration of the check (processed by Cloudflare)</en>
             </cell>
         </row>
         <row>

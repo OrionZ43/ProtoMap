@@ -334,8 +334,8 @@
         <en>We do not share step data with third parties, advertisers, or analytics platforms.</en>
     </bullet>
     <bullet>
-        <ru>Не используем данные для таргетированной рекламы — в Сервисе реклама отсутствует.</ru>
-        <en>We do not use the data for targeted advertising — the Service contains no advertising.</en>
+        <ru>Не используем данные для таргетированной рекламы.</ru>
+        <en>We do not use the data for targeted advertising.</en>
     </bullet>
     <bullet>
         <ru>Не используем данные о шагах в мини-играх («The Glitch Pit»). Шагомер и игровые механики являются полностью изолированными модулями без какого-либо взаимодействия.</ru>
@@ -749,8 +749,8 @@
             <en>The Service is intended for persons aged 16 and over</en>
         </title>
         <text>
-            <ru>Возраст определён пунктом 9 статьи 5 Закона № 99-З: до достижения шестнадцати лет согласие на обработку персональных данных даёт один из законных представителей. Сервис не предоставляет способа получить такое согласие, поэтому регистрация лиц, не достигших 16 лет, не допускается. Ограничение распространяется на Сервис целиком, включая раздел мини-игр «The Glitch Pit»; отдельного ограничения у этого раздела нет. Мы сознательно не собираем персональные данные лиц, не достигших указанного возраста. Если вам стало известно, что такое лицо зарегистрировалось в Сервисе, немедленно свяжитесь с нами — учётная запись будет удалена.</ru>
-            <en>The age is set by Article 5(9) of Law No. 99-Z: below the age of sixteen, consent to the processing of personal data is given by a legal representative. The Service provides no means of obtaining such consent, so persons under 16 may not register. The restriction applies to the Service as a whole, including The Glitch Pit mini-games section, which has no separate restriction. We do not knowingly collect personal data from persons below that age. If you become aware that such a person has registered, contact us immediately — the account will be deleted.</en>
+            <ru>Возраст определён пунктом 9 статьи 5 Закона № 99-З: до шестнадцати лет согласие на обработку персональных данных даёт один из законных представителей, поэтому регистрация в Сервисе доступна с 16 лет. Ограничение распространяется на Сервис целиком, включая раздел мини-игр «The Glitch Pit». Если вам стало известно, что в Сервисе зарегистрировался человек младше 16 лет, свяжитесь с нами — учётная запись будет удалена.</ru>
+            <en>The age is set by Article 5(9) of Law No. 99-Z: below the age of sixteen, consent to the processing of personal data is given by a legal representative, so registration in the Service is available from the age of 16. The restriction applies to the Service as a whole, including The Glitch Pit mini-games section. If you become aware that a person under 16 has registered, contact us — the account will be deleted.</en>
         </text>
     </alert>
 

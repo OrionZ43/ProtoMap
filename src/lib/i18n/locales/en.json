@@ -85,7 +85,7 @@
 			"cb_age_minimum": "I am at least 16 years old.",
 			"cb_core": "I have read the explanation of my rights and consent to the processing of my personal data for the operation of my account, the map and chats.",
 			"cb_cross_border": "I consent to the transfer of my personal data to foreign states, including states that do not ensure an adequate level of protection of data subjects' rights, and confirm that I have been informed of the associated risks.",
-			"age_hint": "Below the age of 16, consent to the processing of personal data is given by a legal representative (Article 5(9) of Law No. 99-Z). The Service does not provide for this, so persons under 16 cannot register.",
+			"age_hint": "Below the age of 16, consent to the processing of personal data is given by a legal representative (Article 5(9) of Law No. 99-Z), so registration is available from the age of 16.",
 			"policy_more": "Processing purposes, retention periods and data recipients are listed in the",
 			"policy_link": "Personal Data Processing Policy"
 		}

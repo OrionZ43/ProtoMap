@@ -69,8 +69,8 @@
     </paragraph>
 
     <bullet>
-        <ru>Вам исполнилось полных 16 лет — или больше, если того требует законодательство вашей страны. До 16 лет согласие на обработку персональных данных даёт законный представитель (пункт 9 статьи 5 Закона № 99-З), а такой возможности Сервис не предоставляет.</ru>
-        <en>You are at least 16 years old, or older if required by the law of your country. Below the age of 16, consent to the processing of personal data is given by a legal representative (Article 5(9) of Law No. 99-Z), and the Service does not provide for this.</en>
+        <ru>Вам исполнилось полных 16 лет — или больше, если того требует законодательство вашей страны: до 16 лет согласие на обработку персональных данных даёт законный представитель (пункт 9 статьи 5 Закона № 99-З).</ru>
+        <en>You are at least 16 years old, or older if required by the law of your country: below the age of 16, consent to the processing of personal data is given by a legal representative (Article 5(9) of Law No. 99-Z).</en>
     </bullet>
     <bullet>
         <ru>Вы прочитали, поняли и полностью согласны с условиями настоящего Соглашения и Политикой конфиденциальности.</ru>
@@ -410,8 +410,8 @@
             <en>Age restriction for the Service: 16+</en>
         </title>
         <text>
-            <ru>Сервис предназначен для лиц, достигших 16 лет; ограничение распространяется на Сервис целиком, включая раздел «The Glitch Pit». Отдельного возрастного ограничения у этого раздела нет. Возрастная категория приложения в Google Play присваивается магазином по анкете IARC и описывает содержание приложения, а не возраст, с которого разрешено пользоваться Сервисом. Сообщение недостоверных сведений о возрасте является нарушением настоящего Соглашения.</ru>
-            <en>The Service is intended for persons aged 16 and over; the restriction applies to the Service as a whole, including The Glitch Pit. This section has no separate age restriction. The application’s age category on Google Play is assigned by the store based on the IARC questionnaire and describes the content of the application, not the age from which the Service may be used. Providing false age information is a breach of this Agreement.</en>
+            <ru>Сервис предназначен для лиц, достигших 16 лет; ограничение распространяется на Сервис целиком, включая раздел «The Glitch Pit». Возрастная категория приложения в Google Play присваивается магазином по анкете IARC и описывает содержание приложения, а не возраст, с которого разрешено пользоваться Сервисом. Сообщение недостоверных сведений о возрасте является нарушением настоящего Соглашения.</ru>
+            <en>The Service is intended for persons aged 16 and over; the restriction applies to the Service as a whole, including The Glitch Pit. The application’s age category on Google Play is assigned by the store based on the IARC questionnaire and describes the content of the application, not the age from which the Service may be used. Providing false age information is a breach of this Agreement.</en>
         </text>
     </alert>
 
