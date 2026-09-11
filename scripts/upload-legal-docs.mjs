@@ -312,3 +312,6 @@ console.log('Дальше вручную:');
 console.log('  1. Открыть /privacy-policy, /terms-of-service и /personal-data-policy, проверить рендер.');
 console.log('  2. Убедиться, что LegalUpdateBanner показал баннер повторного принятия.');
 console.log('  3. Проверить, что Android-клиент подхватил новую версию.');
+console.log();
+console.log('Страницы документов кэшируются на CDN до часа (s-maxage=3600 в +page.server.ts):');
+console.log('новый текст на сайте появится после следующего деплоя фронтенда или через час.');
