@@ -115,19 +115,34 @@ export const recordConsents = onCall(async (request) => {
         throw new HttpsError("invalid-argument", "Неизвестный вид согласия.");
     }
 
-    const missing = REQUIRED_CONSENTS.filter((id) => !ids.includes(id));
-    if (missing.length > 0) {
-        throw new HttpsError(
-            "failed-precondition",
-            `Не отмечены обязательные согласия: ${missing.join(", ")}.`
-        );
-    }
-
     const versions = await currentDocumentVersions();
     if (versions.privacy === "unknown" || versions.tos === "unknown") {
         // Записать согласие, не зная версии документа, — значит записать
         // бесполезную строку: доказать, ЧТО именно принял пользователь, будет нельзя.
         throw new HttpsError("internal", "Не удалось определить версии документов.");
+    }
+
+    // Необязательное согласие (шагомер) даётся поверх уже принятых
+    // обязательных: повторять их в журнале ради одной галочки незачем. Но
+    // только если обязательные приняты на ТЕКУЩУЮ редакцию — иначе сначала
+    // экран согласий.
+    const onlyOptional = ids.every((id) => OPTIONAL_CONSENTS.includes(id));
+    if (onlyOptional) {
+        const u = (await db().collection("users").doc(uid).get()).data() ?? {};
+        if (u.consents_privacy_version !== versions.privacy || u.consents_tos_version !== versions.tos) {
+            throw new HttpsError(
+                "failed-precondition",
+                "Сначала нужно принять текущую редакцию документов."
+            );
+        }
+    } else {
+        const missing = REQUIRED_CONSENTS.filter((id) => !ids.includes(id));
+        if (missing.length > 0) {
+            throw new HttpsError(
+                "failed-precondition",
+                `Не отмечены обязательные согласия: ${missing.join(", ")}.`
+            );
+        }
     }
 
     const method = normalizeMethod((request.data as Record<string, unknown>)?.method);
@@ -155,16 +170,18 @@ export const recordConsents = onCall(async (request) => {
     // в журнал с запросом «а согласен ли этот человек с текущей редакцией».
     // Документ пользователя и так читается в hooks.server.ts на каждый запрос,
     // так что проверка выходит бесплатной.
-    batch.set(
-        db().collection("users").doc(uid),
-        {
-            activity_data_consent: ids.includes("activity_data"),
-            consents_privacy_version: versions.privacy,
-            consents_tos_version: versions.tos,
-            consents_updated_at: FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-    );
+    const mirror: Record<string, unknown> = {};
+    if (!onlyOptional) {
+        mirror.consents_privacy_version = versions.privacy;
+        mirror.consents_tos_version = versions.tos;
+        mirror.consents_updated_at = FieldValue.serverTimestamp();
+    }
+    // Флаг шагомера здесь только включается, выключает его revokeConsent.
+    // Раньше повторное принятие документов без галочки шагомера (экран
+    // согласий на сайте отправляет только обязательные) молча выставляло
+    // false тем, кто шагомер включал, хотя их согласие не отозвано.
+    if (ids.includes("activity_data")) mirror.activity_data_consent = true;
+    batch.set(db().collection("users").doc(uid), mirror, { merge: true });
 
     await batch.commit();
 
