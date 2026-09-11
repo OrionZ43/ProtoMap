@@ -1,0 +1,714 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document id="personal_data_policy" version="v1.0 | 18.09.2026">
+
+    <title>
+        <ru>ПОЛИТИКА В ОТНОШЕНИИ ОБРАБОТКИ ПЕРСОНАЛЬНЫХ ДАННЫХ</ru>
+        <en>PERSONAL DATA PROCESSING POLICY</en>
+    </title>
+
+    <alert severity="info" icon="info">
+        <title>
+            <ru>Редакция 1.0 | Вступает в силу: 18.09.2026</ru>
+            <en>Revision 1.0 | Effective date: 18 September 2026</en>
+        </title>
+        <text>
+            <ru>Политика действует в отношении всех персональных данных, которые обрабатывает оператор Сервиса ProtoMap: веб-сайта proto-map.vercel.app, мобильного приложения ProtoMap для Android, связанных с ними серверных функций, а также Telegram-бота ProtoMap в чате и канале сообщества ProtoMap.</ru>
+            <en>This Policy applies to all personal data processed by the operator of the ProtoMap Service: the proto-map.vercel.app website, the ProtoMap mobile app for Android, the related server functions, and the ProtoMap Telegram bot in the ProtoMap community chat and channel.</en>
+        </text>
+    </alert>
+
+    <section>
+        <ru>1. ОБЩИЕ ПОЛОЖЕНИЯ</ru>
+        <en>1. GENERAL PROVISIONS</en>
+    </section>
+
+    <paragraph>
+        <ru>1.1. Издание настоящей Политики является одной из обязательных мер по обеспечению защиты персональных данных, предусмотренных статьёй 17 Закона Республики Беларусь от 7 мая 2021 г. № 99-З «О защите персональных данных» (далее — Закон), которые принимает оператор Сервиса ProtoMap.</ru>
+        <en>1.1. Issuing this Policy is one of the mandatory personal data protection measures provided for by Article 17 of Law of the Republic of Belarus No. 99-Z of 7 May 2021 “On Personal Data Protection” (the “Law”) that the operator of the ProtoMap Service takes.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>1.2. Политика разработана в соответствии с Законом и разъясняет субъектам персональных данных, как, для каких целей и на каком правовом основании их персональные данные собираются, используются или иным образом обрабатываются, а также отражает имеющиеся в связи с этим у субъектов персональных данных права и механизм их реализации.</ru>
+        <en>1.2. This Policy has been prepared in accordance with the Law. It explains to data subjects how, for what purposes and on what legal basis their personal data are collected, used or otherwise processed, and sets out the rights data subjects have in this connection and how to exercise them.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>1.3. Политика не применяется к обработке персональных данных в процессе трудовой деятельности: работников у оператора нет. Видеонаблюдение оператор не осуществляет. Сайт использует только технические cookie-файлы, необходимые для его работы и защиты (сеанс авторизации, защита от автоматизированных запросов); аналитические и рекламные cookie-файлы не используются.</ru>
+        <en>1.3. This Policy does not apply to the processing of personal data in the course of employment: the operator has no employees. The operator does not carry out video surveillance. The website uses only technical cookies necessary for its operation and security (the sign-in session, protection against automated requests); analytics and advertising cookies are not used.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>1.4. Сведения об операторе</ru>
+        <en>1.4. Operator details</en>
+    </subsection>
+
+    <bullet>
+        <ru>Оператор: Ковалёв Денис Дмитриевич — физическое лицо, действующее под творческим наименованием Z43 Studios (далее — Оператор).</ru>
+        <en>Operator: Kovalev Denis Dmitrievich — an individual acting under the creative name Z43 Studios (the “Operator”).</en>
+    </bullet>
+
+    <bullet>
+        <ru>Местонахождение: г. Минск, Республика Беларусь. Полный адрес для направления заявлений в порядке статьи 14 Закона сообщается по запросу, направленному на адрес электронной почты Оператора.</ru>
+        <en>Location: Minsk, Republic of Belarus. The full address for submitting applications under Article 14 of the Law is provided on request sent to the Operator’s e-mail address.</en>
+    </bullet>
+
+    <bullet>
+        <ru>Адрес в сети Интернет: proto-map.vercel.app</ru>
+        <en>Website: proto-map.vercel.app</en>
+    </bullet>
+
+    <bullet>
+        <ru>Адрес электронной почты: orion.z43studios@gmail.com</ru>
+        <en>E-mail: orion.z43studios@gmail.com</en>
+    </bullet>
+
+    <bullet>
+        <ru>Лицо, ответственное за осуществление внутреннего контроля за обработкой персональных данных: Оператор.</ru>
+        <en>Person responsible for internal control over personal data processing: the Operator.</en>
+    </bullet>
+
+    <paragraph>
+        <ru>1.5. Термины в настоящей Политике используются в значениях, предусмотренных Законом. Сервис — веб-сайт proto-map.vercel.app, мобильное приложение ProtoMap для Android, связанные с ними серверные функции, а также Telegram-бот ProtoMap в чате и канале сообщества ProtoMap. Согласие — согласие на обработку персональных данных.</ru>
+        <en>1.5. Terms in this Policy have the meanings given in the Law. The Service means the proto-map.vercel.app website, the ProtoMap mobile app for Android, the related server functions, and the ProtoMap Telegram bot in the ProtoMap community chat and channel. Consent means consent to the processing of personal data.</en>
+    </paragraph>
+
+    <section>
+        <ru>2. ПОРЯДОК И УСЛОВИЯ ОБРАБОТКИ ПЕРСОНАЛЬНЫХ ДАННЫХ</ru>
+        <en>2. PROCEDURE AND CONDITIONS OF PERSONAL DATA PROCESSING</en>
+    </section>
+
+    <paragraph>
+        <ru>2.1. Обработка персональных данных осуществляется с использованием средств автоматизации посредством сбора, систематизации, хранения, изменения, использования, обезличивания, блокирования, предоставления, распространения и удаления персональных данных.</ru>
+        <en>2.1. Personal data are processed by automated means through collection, systematisation, storage, modification, use, depersonalisation, blocking, provision, dissemination and deletion.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>2.2. Персональные данные получаются непосредственно от субъекта: при регистрации, заполнении профиля, размещении метки на карте, сообщений и комментариев. При входе через Google Оператор получает от Google идентификатор аккаунта, адрес электронной почты и изображение профиля; при добровольной привязке аккаунта Telegram — идентификатор и имя пользователя Telegram; при включённом шагомере (Android) — количество шагов от датчика устройства.</ru>
+        <en>2.2. Personal data are obtained directly from the data subject: at registration, when filling in the profile, placing a map marker, messages and comments. When signing in with Google, the Operator receives the account identifier, e-mail address and profile picture from Google; when a Telegram account is voluntarily linked — the Telegram identifier and username; when the step counter is enabled (Android) — the step count from the device sensor.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>2.3. Цели обработки персональных данных, категории субъектов, перечень обрабатываемых данных, правовые основания обработки и сроки хранения приведены в приложении 1 к настоящей Политике.</ru>
+        <en>2.3. The purposes of processing, categories of data subjects, lists of data processed, legal bases and retention periods are set out in Annex 1 to this Policy.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>2.4. При регистрации и использовании Сервиса Оператор не запрашивает и не обрабатывает фамилию, собственное имя, отчество, дату рождения и идентификационный номер субъекта: цели обработки этого не требуют. Исключение — заявление, подаваемое в порядке статьи 14 Закона, в котором эти сведения указывает сам заявитель.</ru>
+        <en>2.4. When a person registers and uses the Service, the Operator does not request or process their surname, first name, patronymic, date of birth or identification number: the purposes of processing do not require them. The exception is an application under Article 14 of the Law, in which the applicant provides this information themselves.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>2.5. Сервис предназначен для лиц, достигших 16 лет. До достижения шестнадцати лет согласие на обработку персональных данных даёт один из законных представителей (пункт 9 статьи 5 Закона); такой способ Сервис не предоставляет, поэтому регистрация лиц, не достигших 16 лет, не допускается. Выявленная учётная запись такого лица удаляется.</ru>
+        <en>2.5. The Service is intended for persons aged 16 and over. Below the age of sixteen, consent to the processing of personal data is given by a legal representative (Article 5(9) of the Law); the Service provides no such means, so persons under 16 may not register. An account of such a person, once identified, is deleted.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>2.6. Распространение персональных данных</ru>
+        <en>2.6. Dissemination of personal data</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Оператор распространяет персональные данные, которые пользователь публикует сам: имя пользователя, аватар, статус, описание «О себе», ссылки на социальные сети, метку на карте, сообщения в общих чатах и каналах, комментарии в профилях. Цель — работа Сервиса как социальной сети: отображение профиля, метки и сообщений другим людям. Способ — веб-сайт proto-map.vercel.app и мобильное приложение ProtoMap; карта, страницы профилей и комментарии к ним доступны неопределённому кругу лиц, в том числе посетителям сайта без регистрации. Правовое основание — согласие (статья 5 Закона).</ru>
+        <en>The Operator disseminates personal data that the user publishes themselves: username, avatar, status, the “About me” description, social media links, the map marker, messages in shared chats and channels, and comments on profiles. The purpose is the operation of the Service as a social network: showing the profile, marker and messages to other people. The means is the proto-map.vercel.app website and the ProtoMap mobile app; the map, profile pages and their comments are available to an indefinite range of persons, including website visitors who are not registered. The legal basis is consent (Article 5 of the Law).</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>Меры по защите прав при распространении: в автоматическом режиме вместо точных координат сохраняется центр района, а точные координаты не записываются; метку можно изменить или удалить в любой момент; при удалении учётной записи метка удаляется немедленно, тексты сообщений и комментарии обезличиваются, а отправленные медиафайлы удаляются. Оператор рекомендует не ставить метку на месте проживания.</ru>
+        <en>Measures protecting rights in dissemination: in automatic mode the district centre is stored instead of exact coordinates, and exact coordinates are not recorded; the marker can be changed or removed at any time; when an account is deleted, the marker is removed immediately message texts and comments are depersonalised, and media files sent are deleted. The Operator recommends not placing the marker at one’s place of residence.</en>
+    </paragraph>
+
+    <section>
+        <ru>3. УПОЛНОМОЧЕННЫЕ ЛИЦА</ru>
+        <en>3. AUTHORISED PERSONS</en>
+    </section>
+
+    <paragraph>
+        <ru>3.1. Оператор поручает обработку персональных данных уполномоченным лицам. Их перечень, место нахождения и цели, для которых они привлекаются, приведены в приложении 2 к настоящей Политике.</ru>
+        <en>3.1. The Operator entrusts the processing of personal data to authorised persons. Their list, location and the purposes for which they are engaged are set out in Annex 2 to this Policy.</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>3.2. Уполномоченные лица обрабатывают персональные данные на основании договоров с Оператором (статья 7 Закона), заключённых путём принятия условий использования соответствующих сервисов, и только для целей, указанных в приложении 2.</ru>
+        <en>3.2. Authorised persons process personal data on the basis of agreements with the Operator (Article 7 of the Law), concluded by accepting the terms of use of the relevant services, and only for the purposes listed in Annex 2.</en>
+    </paragraph>
+
+    <section>
+        <ru>4. ТРАНСГРАНИЧНАЯ ПЕРЕДАЧА ПЕРСОНАЛЬНЫХ ДАННЫХ</ru>
+        <en>4. CROSS-BORDER TRANSFER OF PERSONAL DATA</en>
+    </section>
+
+    <subsection>
+        <ru>4.1. Государства с надлежащим уровнем защиты</ru>
+        <en>4.1. States with an adequate level of protection</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Оператор передаёт персональные данные на территорию Республики Польша и Королевства Бельгия в адрес Google (инфраструктура Firebase) — для хранения и обработки данных учётных записей, профилей, меток, сообщений, игровых данных и журнала согласий, а также на территорию Соединённого Королевства Великобритании и Северной Ирландии в адрес OpenStreetMap Foundation (сервис Nominatim) — координаты для определения названия района в автоматическом режиме карты. Эти государства включены в перечень государств, на территории которых обеспечивается надлежащий уровень защиты прав субъектов персональных данных, определённый приказом директора Национального центра защиты персональных данных Республики Беларусь от 15 ноября 2021 г. № 14. Правовое основание — согласие (статья 5 Закона).</ru>
+        <en>The Operator transfers personal data to the territory of the Republic of Poland and the Kingdom of Belgium to Google (Firebase infrastructure) — to store and process account, profile, marker, message, game and consent log data — and to the territory of the United Kingdom of Great Britain and Northern Ireland to the OpenStreetMap Foundation (the Nominatim service) — coordinates, to determine the district name in the map’s automatic mode. These states are included in the list of states providing an adequate level of protection of data subjects’ rights, determined by Order No. 14 of the Director of the National Personal Data Protection Center of the Republic of Belarus of 15 November 2021. The legal basis is consent (Article 5 of the Law).</en>
+    </paragraph>
+
+    <subsection>
+        <ru>4.2. Государства без надлежащего уровня защиты</ru>
+        <en>4.2. States without an adequate level of protection</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Оператор передаёт персональные данные на территорию Соединённых Штатов Америки, которые не обеспечивают надлежащий уровень защиты прав субъектов персональных данных: Vercel Inc. — IP-адрес и технические параметры запросов для хостинга веб-версии и обезличенной аналитики производительности; Cloudflare, Inc. — IP-адрес и параметры запроса для защиты форм регистрации и входа; Cloudinary — аватары пользователей для их хранения и оптимизации; Google — медиафайлы из чатов, групп и каналов, аватары групп и каналов, изображения новостей и стикеры (хранилище Firebase Storage), аватары для автоматической проверки (Google Cloud Vision), а также данные учётных записей в объёме доступа группы компаний Google к инфраструктуре Firebase. Правовое основание — согласие субъекта персональных данных, данное после информирования о рисках (абзац второй пункта 1 статьи 9 Закона).</ru>
+        <en>The Operator transfers personal data to the territory of the United States of America, which does not provide an adequate level of protection of data subjects’ rights: Vercel Inc. — IP address and technical request parameters, for web hosting and depersonalised performance analytics; Cloudflare, Inc. — IP address and request parameters, to protect the registration and sign-in forms; Cloudinary — user avatars, for storage and optimisation; Google — media files from chats, groups and channels, group and channel avatars, news images and stickers (Firebase Storage), avatars for automated screening (Google Cloud Vision), and account data to the extent the Google group has access to Firebase infrastructure. The legal basis is the data subject’s consent given after being informed of the risks (Article 9(1), second paragraph, of the Law).</en>
+    </paragraph>
+
+    <paragraph>
+        <ru>Сведения о выявленных материалах, связанных с сексуальной эксплуатацией детей, передаются в NCMEC (США) на основании абзаца пятого пункта 1 статьи 9 Закона — для защиты жизни, здоровья или иных жизненно важных интересов, когда получение согласия невозможно.</ru>
+        <en>Information about identified child sexual exploitation material is transferred to NCMEC (United States) under Article 9(1), fifth paragraph, of the Law — to protect life, health or other vital interests where obtaining consent is impossible.</en>
+    </paragraph>
+
+    <subsection>
+        <ru>4.3. Передача, при которой государство установить невозможно</ru>
+        <en>4.3. Transfers where the state cannot be determined</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Для привязки аккаунта Telegram, доставки уведомлений и кодов двухфакторной аутентификации в привязанный аккаунт, верификации в Telegram-чате @proto_map и уведомлений администратору о жалобах Оператор передаёт в Telegram идентификатор и имя пользователя Telegram, тексты уведомлений и сведения о жалобах. Установить с точностью государство, где обрабатываются эти данные, невозможно. Правовое основание — согласие (абзац второй пункта 1 статьи 9 Закона).</ru>
+        <en>To link a Telegram account, deliver notifications and two-factor authentication codes to the linked account, verify members of the @proto_map Telegram chat and notify the administrator of reports, the Operator transfers to Telegram the Telegram identifier and username, notification texts and report details. The state in which these data are processed cannot be determined precisely. The legal basis is consent (Article 9(1), second paragraph, of the Law).</en>
+    </paragraph>
+
+    <alert severity="warning" icon="warning">
+        <title>
+            <ru>Риски трансграничной передачи</ru>
+            <en>Risks of cross-border transfer</en>
+        </title>
+        <text>
+            <ru>В государствах, не обеспечивающих надлежащий уровень защиты, а также в случаях, когда государство установить невозможно, существуют следующие риски: отсутствие законодательства о персональных данных; отнесение к персональным данным ограниченного круга сведений о физическом лице; отсутствие уполномоченного органа по защите прав субъектов персональных данных; ограниченный перечень или отсутствие прав субъектов персональных данных; иные риски нарушения прав субъектов, связанные со спецификой такого государства.</ru>
+            <en>In states that do not provide an adequate level of protection, and where the state cannot be determined, the following risks exist: no personal data legislation; only a limited range of information about an individual being treated as personal data; no authority for the protection of data subjects’ rights; a limited set of data subject rights, or none; other risks to data subjects’ rights arising from the specifics of that state.</en>
+        </text>
+    </alert>
+
+    <section>
+        <ru>5. ПРАВА СУБЪЕКТОВ ПЕРСОНАЛЬНЫХ ДАННЫХ И МЕХАНИЗМ ИХ РЕАЛИЗАЦИИ</ru>
+        <en>5. RIGHTS OF DATA SUBJECTS AND HOW TO EXERCISE THEM</en>
+    </section>
+
+    <subsection>
+        <ru>5.1. Права субъекта</ru>
+        <en>5.1. Data subject rights</en>
+    </subsection>
+
+    <bullet>
+        <ru>Отозвать согласие (статья 10 Закона) — в любое время и без объяснения причин. Обработка прекращается, а данные удаляются в течение 15 дней. Отзыв обязательных согласий, включая согласие на трансграничную передачу, влечёт удаление учётной записи; отзыв согласия на шагомер прекращает только начисление ProtoCoins за активность.</ru>
+        <en>Withdraw consent (Article 10 of the Law) — at any time and without giving reasons. Processing stops and the data are deleted within 15 days. Withdrawing the mandatory consents, including consent to cross-border transfer, results in the deletion of the account; withdrawing the step counter consent only stops ProtoCoins being awarded for activity.</en>
+    </bullet>
+
+    <bullet>
+        <ru>Получить информацию об обработке своих персональных данных (статья 11 Закона) — бесплатно, в течение 5 рабочих дней.</ru>
+        <en>Obtain information about the processing of your personal data (Article 11 of the Law) — free of charge, within 5 working days.</en>
+    </bullet>
+
+    <bullet>
+        <ru>Требовать изменения неполных, устаревших или неточных данных (пункт 4 статьи 11 Закона) — в течение 15 дней. Большинство данных можно изменить самостоятельно в разделе «Редактировать профиль».</ru>
+        <en>Require incomplete, outdated or inaccurate data to be corrected (Article 11(4) of the Law) — within 15 days. Most data can be changed by the user in the “Edit profile” section.</en>
+    </bullet>
+
+    <bullet>
+        <ru>Получить сведения о предоставлении своих персональных данных третьим лицам (статья 12 Закона) — один раз в календарный год бесплатно, в течение 15 дней.</ru>
+        <en>Obtain information about the provision of your personal data to third parties (Article 12 of the Law) — once per calendar year free of charge, within 15 days.</en>
+    </bullet>
+
+    <bullet>
+        <ru>Требовать прекращения обработки и удаления своих персональных данных (статья 13 Закона) — бесплатно, в течение 15 дней.</ru>
+        <en>Require the processing of your personal data to stop and the data to be deleted (Article 13 of the Law) — free of charge, within 15 days.</en>
+    </bullet>
+
+    <bullet>
+        <ru>Обжаловать действия (бездействие) и решения Оператора (статья 15 Закона) — в Национальный центр защиты персональных данных Республики Беларусь (cpd.by), а принятое им решение — в судебном порядке.</ru>
+        <en>Appeal against the Operator’s actions, omissions and decisions (Article 15 of the Law) — to the National Personal Data Protection Center of the Republic of Belarus (cpd.by), and against its decision — in court.</en>
+    </bullet>
+
+    <subsection>
+        <ru>5.2. Как подать заявление</ru>
+        <en>5.2. How to submit an application</en>
+    </subsection>
+
+    <paragraph>
+        <ru>Упрощённый порядок: раздел «Настройки — Безопасность» в Сервисе или письмо на адрес электронной почты Оператора. Формальный порядок (статья 14 Закона): заявление в письменной форме либо в виде электронного документа, подписанного электронной цифровой подписью. Заявление должно содержать фамилию, собственное имя, отчество, адрес места жительства, дату рождения, изложение сути требования и личную либо электронную цифровую подпись. Ответ направляется в форме, соответствующей форме подачи заявления.</ru>
+        <en>Simplified procedure: the “Settings — Security” section of the Service or an e-mail to the Operator’s address. Formal procedure (Article 14 of the Law): a written application or an electronic document signed with a digital signature. The application must contain the surname, first name, patronymic, address of residence, date of birth, the substance of the request and a handwritten or digital signature. The reply is sent in the same form as the application.</en>
+    </paragraph>
+
+    <contact email="orion.z43studios@gmail.com" />
+
+    <section>
+        <ru>ПРИЛОЖЕНИЕ 1. ЦЕЛИ ОБРАБОТКИ ПЕРСОНАЛЬНЫХ ДАННЫХ</ru>
+        <en>ANNEX 1. PURPOSES OF PERSONAL DATA PROCESSING</en>
+    </section>
+
+    <table>
+        <caption>
+            <ru>Цели обработки, категории субъектов, перечень данных, правовые основания и сроки хранения</ru>
+            <en>Purposes of processing, categories of data subjects, data, legal bases and retention periods</en>
+        </caption>
+        <head>
+            <cell>
+                <ru>Цель обработки</ru>
+                <en>Purpose of processing</en>
+            </cell>
+            <cell>
+                <ru>Категории субъектов</ru>
+                <en>Data subjects</en>
+            </cell>
+            <cell>
+                <ru>Перечень персональных данных</ru>
+                <en>Personal data</en>
+            </cell>
+            <cell>
+                <ru>Правовые основания</ru>
+                <en>Legal basis</en>
+            </cell>
+            <cell>
+                <ru>Срок хранения</ru>
+                <en>Retention period</en>
+            </cell>
+        </head>
+        <row>
+            <cell>
+                <ru>Регистрация и ведение учётной записи, аутентификация, восстановление доступа, двухфакторная аутентификация</ru>
+                <en>Registering and maintaining the account, authentication, access recovery, two-factor authentication</en>
+            </cell>
+            <cell>
+                <ru>Пользователи Сервиса</ru>
+                <en>Users of the Service</en>
+            </cell>
+            <cell>
+                <ru>Идентификатор учётной записи (UID), адрес электронной почты, имя пользователя; идентификатор аккаунта Google — при входе через Google; идентификатор Telegram — при подключении двухфакторной аутентификации</ru>
+                <en>Account identifier (UID), e-mail address, username; Google account identifier — when signing in with Google; Telegram identifier — when two-factor authentication is enabled</en>
+            </cell>
+            <cell>
+                <ru>Согласие (статья 5 Закона)</ru>
+                <en>Consent (Article 5 of the Law)</en>
+            </cell>
+            <cell>
+                <ru>До истечения срока действия согласия (3 года с даты последнего входа), его отзыва или удаления учётной записи; после удаления — 30 дней для очистки резервных копий</ru>
+                <en>Until the consent term expires (3 years from the last sign-in), consent is withdrawn or the account is deleted; after deletion — 30 days to purge backups</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Отображение профиля и метки на карте (распространение)</ru>
+                <en>Showing the profile and the map marker (dissemination)</en>
+            </cell>
+            <cell>
+                <ru>Пользователи Сервиса</ru>
+                <en>Users of the Service</en>
+            </cell>
+            <cell>
+                <ru>Имя пользователя, аватар, статус, описание «О себе», ссылки на социальные сети; метка на карте (центр района или выбранная пользователем точка)</ru>
+                <en>Username, avatar, status, “About me” description, social media links; map marker (district centre or a point chosen by the user)</en>
+            </cell>
+            <cell>
+                <ru>Согласие (статья 5 Закона)</ru>
+                <en>Consent (Article 5 of the Law)</en>
+            </cell>
+            <cell>
+                <ru>До изменения или удаления пользователем, но не дольше срока действия учётной записи; кэш карты — до 24 часов</ru>
+                <en>Until changed or removed by the user, but no longer than the lifetime of the account; map cache — up to 24 hours</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Обмен сообщениями (личные сообщения, группы, каналы, общие чаты, комментарии) и доставка уведомлений</ru>
+                <en>Messaging (private messages, groups, channels, shared chats, comments) and delivering notifications</en>
+            </cell>
+            <cell>
+                <ru>Пользователи Сервиса</ru>
+                <en>Users of the Service</en>
+            </cell>
+            <cell>
+                <ru>Тексты сообщений и комментариев, голосовые сообщения, изображения и иные медиафайлы; токен push-уведомлений (FCM)</ru>
+                <en>Message and comment texts, voice messages, images and other media files; push notification token (FCM)</en>
+            </cell>
+            <cell>
+                <ru>Согласие (статья 5 Закона)</ru>
+                <en>Consent (Article 5 of the Law)</en>
+            </cell>
+            <cell>
+                <ru>Тексты сообщений — до удаления пользователем либо до обезличивания при удалении учётной записи; медиафайлы — до удаления пользователем или удаления учётной записи; FCM-токен — до выхода из учётной записи или отзыва разрешения на уведомления</ru>
+                <en>Message texts — until deleted by the user or depersonalised when the account is deleted; media files — until deleted by the user or the account is deleted; FCM token — until sign-out or withdrawal of the notification permission</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Внутренняя валюта ProtoCoins, мини-игры, ежедневные бонусы, магазин оформления</ru>
+                <en>The ProtoCoins in-app currency, mini-games, daily bonuses, the cosmetics shop</en>
+            </cell>
+            <cell>
+                <ru>Пользователи Сервиса</ru>
+                <en>Users of the Service</en>
+            </cell>
+            <cell>
+                <ru>Баланс ProtoCoins, инвентарь и экипированные предметы, история ежедневных бонусов, серия входов</ru>
+                <en>ProtoCoins balance, inventory and equipped items, daily bonus history, sign-in streak</en>
+            </cell>
+            <cell>
+                <ru>Согласие (статья 5 Закона)</ru>
+                <en>Consent (Article 5 of the Law)</en>
+            </cell>
+            <cell>
+                <ru>В течение срока действия учётной записи; удаляются вместе с ней</ru>
+                <en>For the lifetime of the account; deleted together with it</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Защита Сервиса и пользователей: модерация, рассмотрение жалоб и обжалований, противодействие спаму, автоматизированным злоупотреблениям и манипуляциям игровой экономикой</ru>
+                <en>Protecting the Service and its users: moderation, handling reports and appeals, countering spam, automated abuse and manipulation of the game economy</en>
+            </cell>
+            <cell>
+                <ru>Пользователи Сервиса</ru>
+                <en>Users of the Service</en>
+            </cell>
+            <cell>
+                <ru>IP-адрес, технические журналы безопасности; сведения об устройстве Android (модель, версия ОС, уровень аппаратной защиты, признаки манипуляций); сведения о жалобах и блокировках</ru>
+                <en>IP address, technical security logs; Android device information (model, OS version, hardware security level, signs of tampering); report and ban records</en>
+            </cell>
+            <cell>
+                <ru>Согласие (статья 5 Закона)</ru>
+                <en>Consent (Article 5 of the Law)</en>
+            </cell>
+            <cell>
+                <ru>IP-адрес и журналы безопасности — 6 месяцев с момента фиксации события; сведения о жалобах и блокировках — в течение срока действия учётной записи</ru>
+                <en>IP address and security logs — 6 months from the event; report and ban records — for the lifetime of the account</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Проверка того, что регистрацию или вход выполняет человек</ru>
+                <en>Checking that a human, not a program, is registering or signing in</en>
+            </cell>
+            <cell>
+                <ru>Лица, выполняющие регистрацию или вход</ru>
+                <en>Persons registering or signing in</en>
+            </cell>
+            <cell>
+                <ru>IP-адрес и технические параметры запроса, анализируемые Cloudflare Turnstile</ru>
+                <en>IP address and technical request parameters analysed by Cloudflare Turnstile</en>
+            </cell>
+            <cell>
+                <ru>Договор (абзац пятнадцатый статьи 6 Закона)</ru>
+                <en>Contract (Article 6, fifteenth paragraph, of the Law)</en>
+            </cell>
+            <cell>
+                <ru>Оператором не хранятся</ru>
+                <en>Not stored by the Operator</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Начисление ProtoCoins за физическую активность (шагомер, Android)</ru>
+                <en>Awarding ProtoCoins for physical activity (step counter, Android)</en>
+            </cell>
+            <cell>
+                <ru>Пользователи, включившие шагомер</ru>
+                <en>Users who enabled the step counter</en>
+            </cell>
+            <cell>
+                <ru>Агрегированная суточная статистика шагов; итоги прогулок (шаги, время, начисленные ProtoCoins)</ru>
+                <en>Aggregated daily step statistics; walk summaries (steps, duration, ProtoCoins awarded)</en>
+            </cell>
+            <cell>
+                <ru>Отдельное согласие на обработку специальных персональных данных (статья 8 Закона)</ru>
+                <en>Separate consent to the processing of special personal data (Article 8 of the Law)</en>
+            </cell>
+            <cell>
+                <ru>12 месяцев; необработанные показания датчика на сервере не хранятся</ru>
+                <en>12 months; raw sensor readings are not stored on the server</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Привязка аккаунта Telegram, верификация в Telegram-чате @proto_map</ru>
+                <en>Linking a Telegram account, verification in the @proto_map Telegram chat</en>
+            </cell>
+            <cell>
+                <ru>Пользователи, привязавшие аккаунт Telegram</ru>
+                <en>Users who linked a Telegram account</en>
+            </cell>
+            <cell>
+                <ru>Идентификатор и имя пользователя Telegram</ru>
+                <en>Telegram identifier and username</en>
+            </cell>
+            <cell>
+                <ru>Согласие (статья 5 Закона)</ru>
+                <en>Consent (Article 5 of the Law)</en>
+            </cell>
+            <cell>
+                <ru>До отвязки аккаунта Telegram или удаления учётной записи</ru>
+                <en>Until the Telegram account is unlinked or the account is deleted</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Ведение журнала согласий и доказывание их получения</ru>
+                <en>Keeping the consent log and proving that consent was obtained</en>
+            </cell>
+            <cell>
+                <ru>Пользователи Сервиса</ru>
+                <en>Users of the Service</en>
+            </cell>
+            <cell>
+                <ru>Идентификатор учётной записи, вид согласия, версия документа, дата и способ выражения согласия, IP-адрес</ru>
+                <en>Account identifier, type of consent, document version, date and means of giving consent, IP address</en>
+            </cell>
+            <cell>
+                <ru>Абзац двадцатый статьи 6 Закона (обязанность оператора доказать получение согласия, пункт 7 статьи 5 Закона)</ru>
+                <en>Article 6, twentieth paragraph, of the Law (the operator’s duty to prove consent, Article 5(7) of the Law)</en>
+            </cell>
+            <cell>
+                <ru>3 года после прекращения обработки</ru>
+                <en>3 years after processing ends</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Рассмотрение заявлений субъектов персональных данных</ru>
+                <en>Handling applications from data subjects</en>
+            </cell>
+            <cell>
+                <ru>Лица, направившие заявление; иные лица, чьи данные указаны в заявлении</ru>
+                <en>Applicants; other persons whose data are included in the application</en>
+            </cell>
+            <cell>
+                <ru>Данные, указанные в статье 14 Закона; адрес электронной почты</ru>
+                <en>Data listed in Article 14 of the Law; e-mail address</en>
+            </cell>
+            <cell>
+                <ru>Абзац двадцатый статьи 6 Закона (законодательство о персональных данных)</ru>
+                <en>Article 6, twentieth paragraph, of the Law (personal data legislation)</en>
+            </cell>
+            <cell>
+                <ru>1 год</ru>
+                <en>1 year</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Переписка по вопросам работы Сервиса</ru>
+                <en>Correspondence about the Service</en>
+            </cell>
+            <cell>
+                <ru>Лица, направившие обращение</ru>
+                <en>Persons who contacted the Operator</en>
+            </cell>
+            <cell>
+                <ru>Адрес электронной почты, имя, иные данные, указанные в переписке</ru>
+                <en>E-mail address, name, other data included in the correspondence</en>
+            </cell>
+            <cell>
+                <ru>Договор (абзац пятнадцатый статьи 6 Закона) — для пользователей Сервиса; согласие — в иных случаях</ru>
+                <en>Contract (Article 6, fifteenth paragraph, of the Law) — for users of the Service; consent — in other cases</en>
+            </cell>
+            <cell>
+                <ru>3 года после завершения переписки</ru>
+                <en>3 years after the correspondence ends</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Исполнение требований законодательства: ответы на запросы государственных органов</ru>
+                <en>Complying with the law: responding to requests from state authorities</en>
+            </cell>
+            <cell>
+                <ru>Лица, в отношении которых поступил запрос</ru>
+                <en>Persons to whom the request relates</en>
+            </cell>
+            <cell>
+                <ru>Данные в объёме поступившего запроса</ru>
+                <en>Data within the scope of the request</en>
+            </cell>
+            <cell>
+                <ru>Абзац двадцатый статьи 6 Закона</ru>
+                <en>Article 6, twentieth paragraph, of the Law</en>
+            </cell>
+            <cell>
+                <ru>В соответствии со сроками, установленными законодательством</ru>
+                <en>In accordance with the periods set by law</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Передача сведений о материалах сексуальной эксплуатации детей в специализированные организации и правоохранительные органы</ru>
+                <en>Reporting child sexual exploitation material to specialised organisations and law enforcement</en>
+            </cell>
+            <cell>
+                <ru>Лица, разместившие такие материалы</ru>
+                <en>Persons who posted such material</en>
+            </cell>
+            <cell>
+                <ru>Сведения об учётной записи, выявленные материалы</ru>
+                <en>Account information, the identified material</en>
+            </cell>
+            <cell>
+                <ru>Статья 6 и абзац пятый пункта 1 статьи 9 Закона (защита жизни, здоровья или иных жизненно важных интересов, когда получение согласия невозможно)</ru>
+                <en>Article 6 and Article 9(1), fifth paragraph, of the Law (protecting life, health or other vital interests where obtaining consent is impossible)</en>
+            </cell>
+            <cell>
+                <ru>До передачи в компетентные органы, но не дольше сроков, указанных выше для соответствующих данных</ru>
+                <en>Until transferred to the competent authorities, but no longer than the periods set out above for the relevant data</en>
+            </cell>
+        </row>
+    </table>
+
+    <section>
+        <ru>ПРИЛОЖЕНИЕ 2. ПЕРЕЧЕНЬ УПОЛНОМОЧЕННЫХ ЛИЦ</ru>
+        <en>ANNEX 2. LIST OF AUTHORISED PERSONS</en>
+    </section>
+
+    <table>
+        <caption>
+            <ru>Уполномоченные лица, обрабатывающие персональные данные по поручению Оператора</ru>
+            <en>Authorised persons processing personal data on behalf of the Operator</en>
+        </caption>
+        <head>
+            <cell>
+                <ru>№</ru>
+                <en>No.</en>
+            </cell>
+            <cell>
+                <ru>Уполномоченное лицо</ru>
+                <en>Authorised person</en>
+            </cell>
+            <cell>
+                <ru>Место нахождения</ru>
+                <en>Location</en>
+            </cell>
+            <cell>
+                <ru>Цели обработки</ru>
+                <en>Purposes of processing</en>
+            </cell>
+        </head>
+        <row>
+            <cell>
+                <ru>1</ru>
+                <en>1</en>
+            </cell>
+            <cell>
+                <ru>Google (Firebase: Firestore, Identity Platform, Cloud Functions, Realtime Database, Storage, Cloud Messaging, App Check)</ru>
+                <en>Google (Firebase: Firestore, Identity Platform, Cloud Functions, Realtime Database, Storage, Cloud Messaging, App Check)</en>
+            </cell>
+            <cell>
+                <ru>Польша (Firestore), Бельгия (Cloud Functions, Realtime Database), США (Storage; группа компаний Google)</ru>
+                <en>Poland (Firestore), Belgium (Cloud Functions, Realtime Database), United States (Storage; the Google group)</en>
+            </cell>
+            <cell>
+                <ru>Хранение и обработка данных учётных записей, профилей, меток, сообщений, медиафайлов, игровых данных и журнала согласий; аутентификация; доставка push-уведомлений; защита серверных функций от автоматизированных запросов</ru>
+                <en>Storing and processing account, profile, marker, message, media, game and consent log data; authentication; delivering push notifications; protecting server functions against automated requests</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>2</ru>
+                <en>2</en>
+            </cell>
+            <cell>
+                <ru>Google (Cloud Vision)</ru>
+                <en>Google (Cloud Vision)</en>
+            </cell>
+            <cell>
+                <ru>США</ru>
+                <en>United States</en>
+            </cell>
+            <cell>
+                <ru>Автоматическая проверка загружаемых аватаров на недопустимое содержание</ru>
+                <en>Automated screening of uploaded avatars for prohibited content</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>3</ru>
+                <en>3</en>
+            </cell>
+            <cell>
+                <ru>Vercel Inc.</ru>
+                <en>Vercel Inc.</en>
+            </cell>
+            <cell>
+                <ru>США</ru>
+                <en>United States</en>
+            </cell>
+            <cell>
+                <ru>Хостинг веб-версии Сервиса, обезличенная аналитика производительности</ru>
+                <en>Hosting the web version of the Service, depersonalised performance analytics</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>4</ru>
+                <en>4</en>
+            </cell>
+            <cell>
+                <ru>Cloudflare, Inc.</ru>
+                <en>Cloudflare, Inc.</en>
+            </cell>
+            <cell>
+                <ru>США</ru>
+                <en>United States</en>
+            </cell>
+            <cell>
+                <ru>Проверка того, что регистрацию или вход выполняет человек (Turnstile)</ru>
+                <en>Checking that a human is registering or signing in (Turnstile)</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>5</ru>
+                <en>5</en>
+            </cell>
+            <cell>
+                <ru>Cloudinary</ru>
+                <en>Cloudinary</en>
+            </cell>
+            <cell>
+                <ru>США</ru>
+                <en>United States</en>
+            </cell>
+            <cell>
+                <ru>Хранение и оптимизация аватаров пользователей</ru>
+                <en>Storing and optimising user avatars</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>6</ru>
+                <en>6</en>
+            </cell>
+            <cell>
+                <ru>OpenStreetMap Foundation (Nominatim)</ru>
+                <en>OpenStreetMap Foundation (Nominatim)</en>
+            </cell>
+            <cell>
+                <ru>Великобритания</ru>
+                <en>United Kingdom</en>
+            </cell>
+            <cell>
+                <ru>Определение названия района по координатам в автоматическом режиме карты</ru>
+                <en>Determining the district name from coordinates in the map’s automatic mode</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>7</ru>
+                <en>7</en>
+            </cell>
+            <cell>
+                <ru>Telegram</ru>
+                <en>Telegram</en>
+            </cell>
+            <cell>
+                <ru>Государство установить невозможно</ru>
+                <en>State cannot be determined</en>
+            </cell>
+            <cell>
+                <ru>Привязка аккаунта Telegram, доставка уведомлений и кодов двухфакторной аутентификации, верификация в Telegram-чате @proto_map, уведомления администратору о жалобах</ru>
+                <en>Linking a Telegram account, delivering notifications and two-factor authentication codes, verification in the @proto_map Telegram chat, notifying the administrator of reports</en>
+            </cell>
+        </row>
+    </table>
+
+</document>

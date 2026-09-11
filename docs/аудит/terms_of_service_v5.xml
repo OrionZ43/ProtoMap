@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document id="terms_of_service" version="v5.0 | 14.09.2026">
+<document id="terms_of_service" version="v5.1 | 18.09.2026">
 
     <title>
         <ru>ПОЛЬЗОВАТЕЛЬСКОЕ СОГЛАШЕНИЕ</ru>
@@ -12,15 +12,15 @@
             <en>CRITICAL NOTICE: NO REAL MONEY IN THE SERVICE</en>
         </title>
         <text>
-            <ru>Данный Сервис содержит художественную симуляцию азартных игр («The Glitch Pit»). 1. НЕТ РЕАЛЬНЫХ ДЕНЕГ: вся игровая валюта (ProtoCoins) не имеет денежной стоимости, не является криптовалютой и не может быть обменяна на фиатные деньги, товары или услуги. 2. НЕТ ВВОДА И ВЫВОДА СРЕДСТВ: ProtoCoins невозможно приобрести за деньги, любой выигрыш является исключительно виртуальным достижением. 3. СИМУЛЯЦИЯ: механики игр настроены в развлекательных целях и не отражают реальные математические модели настоящих казино. 4. ВОЗРАСТ: приложению присвоен возрастной рейтинг ESRB Mature 17+; Сервис предназначен для лиц, достигших 17 лет.</ru>
-            <en>This Service contains an artistic simulation of gambling ("The Glitch Pit"). 1. NO REAL MONEY: all in-game currency (ProtoCoins) has no monetary value, is not cryptocurrency, and cannot be exchanged for fiat money, goods, or services. 2. NO DEPOSITS OR WITHDRAWALS: ProtoCoins cannot be purchased with money, and any winnings are purely virtual achievements. 3. SIMULATION: game mechanics are designed for entertainment and do not reflect the real mathematical models of actual casinos. 4. AGE: the application carries an ESRB Mature 17+ content rating; the Service is intended for persons aged 17 and over.</en>
+            <ru>Данный Сервис содержит художественную симуляцию азартных игр («The Glitch Pit»). 1. НЕТ РЕАЛЬНЫХ ДЕНЕГ: вся игровая валюта (ProtoCoins) не имеет денежной стоимости, не является криптовалютой и не может быть обменяна на фиатные деньги, товары или услуги. 2. НЕТ ВВОДА И ВЫВОДА СРЕДСТВ: ProtoCoins невозможно приобрести за деньги, любой выигрыш является исключительно виртуальным достижением. 3. СИМУЛЯЦИЯ: механики игр настроены в развлекательных целях и не отражают реальные математические модели настоящих казино. 4. ВОЗРАСТ: Сервис предназначен для лиц, достигших 16 лет (пункт 9 статьи 5 Закона Республики Беларусь № 99-З «О защите персональных данных»).</ru>
+            <en>This Service contains an artistic simulation of gambling ("The Glitch Pit"). 1. NO REAL MONEY: all in-game currency (ProtoCoins) has no monetary value, is not cryptocurrency, and cannot be exchanged for fiat money, goods, or services. 2. NO DEPOSITS OR WITHDRAWALS: ProtoCoins cannot be purchased with money, and any winnings are purely virtual achievements. 3. SIMULATION: game mechanics are designed for entertainment and do not reflect the real mathematical models of actual casinos. 4. AGE: the Service is intended for persons aged 16 and over (Article 5(9) of Law of the Republic of Belarus No. 99-Z “On Personal Data Protection”).</en>
         </text>
     </alert>
 
     <alert severity="warning" icon="warning">
         <title>
-            <ru>Версия 5.0 | Вступает в силу: 14.09.2026</ru>
-            <en>Version 5.0 | Effective date: 14 September 2026</en>
+            <ru>Версия 5.1 | Вступает в силу: 18.09.2026</ru>
+            <en>Version 5.1 | Effective date: 18 September 2026</en>
         </title>
         <text>
             <ru>Программный комплекс ProtoMap является независимым некоммерческим продуктом Z43 Studios и не связан с компанией Protomaps LLC (protomaps.com) ни юридически, ни коммерчески. Любое сходство в наименованиях случайно.</ru>
@@ -69,8 +69,8 @@
     </paragraph>
 
     <bullet>
-        <ru>Вам исполнилось полных 17 лет — в соответствии с возрастным рейтингом приложения (ESRB Mature 17+) — или больше, если того требует законодательство вашей страны.</ru>
-        <en>You are at least 17 years old, in line with the application's content rating (ESRB Mature 17+), or older if required by the law of your country.</en>
+        <ru>Вам исполнилось полных 16 лет — или больше, если того требует законодательство вашей страны. До 16 лет согласие на обработку персональных данных даёт законный представитель (пункт 9 статьи 5 Закона № 99-З), а такой возможности Сервис не предоставляет.</ru>
+        <en>You are at least 16 years old, or older if required by the law of your country. Below the age of 16, consent to the processing of personal data is given by a legal representative (Article 5(9) of Law No. 99-Z), and the Service does not provide for this.</en>
     </bullet>
     <bullet>
         <ru>Вы прочитали, поняли и полностью согласны с условиями настоящего Соглашения и Политикой конфиденциальности.</ru>
@@ -406,12 +406,12 @@
 
     <alert severity="warning" icon="warning">
         <title>
-            <ru>Возрастное ограничение Сервиса: 17+</ru>
-            <en>Age restriction for the Service: 17+</en>
+            <ru>Возрастное ограничение Сервиса: 16+</ru>
+            <en>Age restriction for the Service: 16+</en>
         </title>
         <text>
-            <ru>Приложению присвоен возрастной рейтинг ESRB Mature 17+, распространяющийся на Сервис целиком, включая раздел «The Glitch Pit». Отдельного возрастного ограничения у этого раздела нет. Сообщение недостоверных сведений о возрасте является нарушением настоящего Соглашения.</ru>
-            <en>The application carries an ESRB Mature 17+ content rating, which applies to the Service as a whole, including The Glitch Pit. This section has no separate age restriction. Providing false age information is a breach of this Agreement.</en>
+            <ru>Сервис предназначен для лиц, достигших 16 лет; ограничение распространяется на Сервис целиком, включая раздел «The Glitch Pit». Отдельного возрастного ограничения у этого раздела нет. Возрастная категория приложения в Google Play присваивается магазином по анкете IARC и описывает содержание приложения, а не возраст, с которого разрешено пользоваться Сервисом. Сообщение недостоверных сведений о возрасте является нарушением настоящего Соглашения.</ru>
+            <en>The Service is intended for persons aged 16 and over; the restriction applies to the Service as a whole, including The Glitch Pit. This section has no separate age restriction. The application’s age category on Google Play is assigned by the store based on the IARC questionnaire and describes the content of the application, not the age from which the Service may be used. Providing false age information is a breach of this Agreement.</en>
         </text>
     </alert>
 
@@ -460,8 +460,8 @@
     </section>
 
     <bullet>
-        <ru>Размещение метки на карте является добровольным. Публикуя метку, вы самостоятельно распространяете сведения о своём приблизительном местоположении среди всех зарегистрированных пользователей и принимаете последствия такого распространения.</ru>
-        <en>Placing a marker on the map is voluntary. By publishing a marker you yourself disseminate information about your approximate location to all registered users and accept the consequences of that dissemination.</en>
+        <ru>Размещение метки на карте является добровольным. Публикуя метку, вы самостоятельно распространяете сведения о своём приблизительном местоположении среди неопределённого круга лиц — карта доступна в том числе посетителям сайта без регистрации — и принимаете последствия такого распространения.</ru>
+        <en>Placing a marker on the map is voluntary. By publishing a marker you yourself disseminate information about your approximate location to an indefinite range of persons — the map is also available to website visitors who are not registered — and accept the consequences of that dissemination.</en>
     </bullet>
     <bullet>
         <ru>Внимание к окружению: запрещено использовать Приложение за рулём или в ситуациях, требующих концентрации внимания.</ru>

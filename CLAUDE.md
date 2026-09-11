@@ -154,6 +154,7 @@ For animations driven by an RTDB event queue, keep a local "visual state" that o
 - **Avatars** — uploaded through the `uploadAvatar` function to Cloudinary, moderated with Google Cloud Vision; Google profile pictures are migrated by `migrateExternalAvatar` after validating the host against an exact `*.googleusercontent.com` allowlist.
 - **Markdown** — `src/lib/utils/markdown.ts` (marked + DOMPurify). Register `DOMPurify.addHook` at module scope only; calling it inside the render function duplicates hooks and leaks memory.
 - **Profile routes** — `/u/[uid]` is canonical; `/profile/[username]` is the legacy username-based route.
+- **Account deletion** — `functions/src/accountPurge.ts` is the single path for both user-initiated deletion (`deleteAccount`) and retention (`enforceRetention`, 3 years without sign-in). It follows the Privacy Policy: message texts are anonymized, media files deleted, everything tied only to the user removed, the consent log anonymized and kept. Do not add a second deletion routine — the old `deleteAccount` drifted from the policy exactly that way. Any function that calls it must declare the Cloudinary secrets in its `secrets` option, or the avatar is silently left behind.
 
 ### `.jules/bolt.md`
 
@@ -169,7 +170,7 @@ Not auto-loaded — read the relevant file when the task touches its area:
 
 - **`.claude/rules/firebase.md`** — deploy commands, the region split and how it breaks, both secret stores and which name lives where.
 - **`.claude/rules/economy.md`** — the client-never-decides invariant behind the Firestore deny rules, the `onCall` guard ladder line by line, why bans are enforced three times.
-- **`.claude/rules/known-issues.md`** — active verified defects (`soundGenerator.ts` invalid oscillator type, `/banned` missing imports, `register` missing transitions), plus the `mobileapp/*` read rules that still need proper verification and the uncommitted `firestore.rules`.
+- **`.claude/rules/known-issues.md`** — active verified defects (`soundGenerator.ts` invalid oscillator type, `audioManager` preloading sound files that don't exist), plus the `mobileapp/*` read rules that still need proper verification.
 
 ## Related repository: Android app
 

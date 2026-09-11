@@ -3,7 +3,7 @@
 Active, verified defects. Each entry: what, where, how it was verified, what to do.
 Remove an entry when it's fixed — this file is only useful if it's true.
 
-Last verified: **2026-09-03** (against the working tree, not against prod).
+Last verified: **2026-09-11** (against the working tree, not against prod).
 
 ---
 
@@ -77,19 +77,29 @@ CLAUDE.md.
 
 ---
 
-## 3. Uncommitted `firestore.rules` — the deployed state is unknown
+## 3. `audioManager` preloads ten sound files that aren't in the repo
 
-`git diff` shows **+560 / −2** on `firestore.rules`: `HEAD` contains only a stub
-(`users` with `allow read: if true`), while the entire ~570-line ruleset — every deny rule the
-economy depends on, everything in `economy.md` — exists **only in the working tree**.
+**Where:** `src/lib/client/audioManager.ts:33-45` (the `soundFiles` map) and the
+`preload: true` loop at line 56.
 
-Consequences to keep in mind:
+**What:** Every entry in `soundFiles` is instantiated as a `Howl` with `preload: true`
+when the manager initializes, so the browser fetches all of them up front. Ten of the
+paths have no file behind them:
 
-- Nothing in git tells you what is actually live in Firebase. Only `firebase deploy` history
-  does. Don't infer the deployed rules from `HEAD` **or** from the working tree.
-- A careless `git checkout -- firestore.rules` destroys the whole ruleset. Treat this file as
-  unbacked work until it's committed.
-- If the stub is what's deployed, `users` is world-readable and `list` is open — worth
-  confirming early.
+`entercasino.mp3`, `vd_bgm.mp3`, `vd_win.mp3`, `vd_lose.mp3`, `vd_reload.mp3`,
+`vd_shot_live.mp3`, `vd_shot_blank.mp3`, `vd_item_scanner.mp3`, `vd_item_generic.mp3`,
+`vd_item_emp.mp3`
 
-**Do:** confirm what's deployed before editing, and get this file committed.
+`static/halloween/bat.svg` 404s the same way.
+
+**Verified:** 2026-09-04, by logging every response with status ≥ 400 during an automated
+browser pass over `/casino/*` (`scripts/showcase/capture.mjs`). Ten distinct 404s per
+casino page load, repeated on each visit — Howler retries rather than caching the failure.
+
+**Severity: cosmetic but noisy.** Nothing throws; Howler swallows the load error. The cost
+is a burst of failed requests on every casino page and a console full of 404s, which buries
+real errors when debugging — that is exactly how it was found.
+
+**Do:** either add the files, or remove those entries from `soundFiles` (and the matching
+members of the `SoundName` union) until the game that needs them ships. Don't set
+`preload: false` as the fix — that only defers the same 404 to first play.

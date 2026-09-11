@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document id="privacy_policy" version="v5.0 | 14.09.2026">
+<document id="privacy_policy" version="v5.1 | 18.09.2026">
 
     <title>
         <ru>ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ И ЗАЩИТЫ ДАННЫХ</ru>
@@ -8,8 +8,8 @@
 
     <alert severity="info" icon="info">
         <title>
-            <ru>Версия 5.0 | Вступает в силу: 14.09.2026</ru>
-            <en>Version 5.0 | Effective date: 14 September 2026</en>
+            <ru>Версия 5.1 | Вступает в силу: 18.09.2026</ru>
+            <en>Version 5.1 | Effective date: 18 September 2026</en>
         </title>
         <text>
             <ru>Настоящая Политика распространяется на оба компонента Сервиса: веб-сайт proto-map.vercel.app и мобильное приложение ProtoMap для Android. Политика приведена в соответствие с Законом Республики Беларусь от 7 мая 2021 г. № 99-З «О защите персональных данных».</ru>
@@ -54,13 +54,13 @@
     </subsection>
 
     <paragraph>
-        <ru>Понятие «Сервис» включает в себя: веб-сайт ProtoMap, мобильное приложение ProtoMap для Android, все связанные серверные функции (Firebase Cloud Functions), базы данных, API и Telegram-боты. Категории субъектов персональных данных: зарегистрированные пользователи Сервиса, а также лица, сведения о которых пользователи размещают в пользовательском контенте.</ru>
-        <en>The term "Service" includes: the ProtoMap website, the ProtoMap mobile app for Android, all related server functions (Firebase Cloud Functions), databases, APIs, and Telegram bots. Categories of data subjects: registered users of the Service, and individuals whose data users include in user-generated content.</en>
+        <ru>Понятие «Сервис» включает в себя: веб-сайт ProtoMap, мобильное приложение ProtoMap для Android, все связанные серверные функции (Firebase Cloud Functions), базы данных, API, а также Telegram-бот ProtoMap в чате и канале сообщества ProtoMap. Категории субъектов персональных данных: зарегистрированные пользователи Сервиса, а также лица, сведения о которых пользователи размещают в пользовательском контенте.</ru>
+        <en>The term "Service" includes: the ProtoMap website, the ProtoMap mobile app for Android, all related server functions (Firebase Cloud Functions), databases, APIs, and the ProtoMap Telegram bot in the ProtoMap community chat and channel. Categories of data subjects: registered users of the Service, and individuals whose data users include in user-generated content.</en>
     </paragraph>
 
     <paragraph>
-        <ru>Настоящая Политика является документом, определяющим политику Оператора в отношении обработки персональных данных, и одновременно информирует вас об условиях обработки в порядке пункта 6 статьи 4 Закона № 99-З (принцип прозрачности). Использование Сервиса без ознакомления с настоящей Политикой невозможно: согласие на обработку данных запрашивается отдельно при регистрации.</ru>
-        <en>This Policy is the document defining the Operator's personal data processing policy and at the same time informs you of the processing conditions under Article 4(6) of Law No. 99-Z (transparency principle). Use of the Service without reviewing this Policy is not possible: consent to processing is requested separately at registration.</en>
+        <ru>Документ, определяющий политику Оператора в отношении обработки персональных данных (абзац третий пункта 3 статьи 17 Закона № 99-З), издан отдельно: Политика в отношении обработки персональных данных размещена по адресу proto-map.vercel.app/personal-data-policy. Настоящая Политика конфиденциальности подробно информирует вас об условиях обработки в порядке пункта 6 статьи 4 Закона № 99-З (принцип прозрачности). Использование Сервиса без ознакомления с настоящей Политикой невозможно: согласие на обработку данных запрашивается отдельно при регистрации.</ru>
+        <en>The document setting out the Operator’s policy on the processing of personal data (Article 17(3), third paragraph, of Law No. 99-Z) is published separately: the Personal Data Processing Policy is available at proto-map.vercel.app/personal-data-policy. This Privacy Policy informs you in detail about the terms of processing in accordance with Article 4(6) of Law No. 99-Z (the principle of transparency). The Service cannot be used without reading this Policy: consent to data processing is requested separately at registration.</en>
     </paragraph>
 
     <section>
@@ -83,8 +83,8 @@
         <en>Creating and maintaining your account, authentication, and access recovery.</en>
     </bullet>
     <bullet>
-        <ru>Отображение вашего профиля и метки на интерактивной карте для других зарегистрированных пользователей.</ru>
-        <en>Displaying your profile and map marker to other registered users.</en>
+        <ru>Отображение вашего профиля и метки на интерактивной карте, доступных неопределённому кругу лиц, в том числе посетителям сайта без регистрации.</ru>
+        <en>Displaying your profile and map marker on the interactive map, available to an indefinite range of persons, including website visitors who are not registered.</en>
     </bullet>
     <bullet>
         <ru>Обмен сообщениями (текст, голос, медиафайлы) и доставка уведомлений.</ru>
@@ -372,8 +372,8 @@
     </subsection>
 
     <paragraph>
-        <ru>Вы можете самостоятельно выбрать любую точку на карте — долгим нажатием в приложении или кликом на сайте. В этом случае сервер сохраняет именно те координаты, которые вы указали. Размещая метку, вы самостоятельно распространяете сведения о своём местонахождении среди неопределённого круга зарегистрированных пользователей; с этого момента такие сведения являются общедоступными персональными данными в значении статьи 1 Закона № 99-З. Если вы укажете точку прямо на своём доме — это будет вашим осознанным решением. Мы настоятельно рекомендуем ставить метку на ближайшем перекрёстке, в парке или ином общественном месте.</ru>
-        <en>You can manually select any point on the map — with a long press in the app or a click on the website. In this case, the server saves exactly the coordinates you specified. By placing a marker you yourself disseminate information about your location to an open group of registered users; from that moment such information constitutes publicly available personal data within the meaning of Article 1 of Law No. 99-Z. If you place the marker on your home — this is your conscious decision. We strongly recommend placing the marker at the nearest intersection, a park, or another public place.</en>
+        <ru>Вы можете самостоятельно выбрать любую точку на карте — долгим нажатием в приложении или кликом на сайте. В этом случае сервер сохраняет именно те координаты, которые вы указали. Размещая метку, вы самостоятельно распространяете сведения о своём местонахождении среди неопределённого круга лиц: карта и страницы профилей доступны в том числе посетителям сайта без регистрации; с этого момента такие сведения являются общедоступными персональными данными в значении статьи 1 Закона № 99-З. Если вы укажете точку прямо на своём доме — это будет вашим осознанным решением. Мы настоятельно рекомендуем ставить метку на ближайшем перекрёстке, в парке или ином общественном месте.</ru>
+        <en>You can manually select any point on the map — with a long press in the app or a click on the website. In this case, the server saves exactly the coordinates you specified. By placing a marker you yourself disseminate information about your location to an indefinite range of persons: the map and profile pages are also available to website visitors who are not registered; from that moment such information constitutes publicly available personal data within the meaning of Article 1 of Law No. 99-Z. If you place the marker on your home — this is your conscious decision. We strongly recommend placing the marker at the nearest intersection, a park, or another public place.</en>
     </paragraph>
 
     <subsection>
@@ -382,8 +382,8 @@
     </subsection>
 
     <bullet>
-        <ru>Публичность: координаты вашей метки, аватар и статус доступны всем зарегистрированным пользователям Сервиса.</ru>
-        <en>Visibility: your marker coordinates, avatar, and status are visible to all registered Service users.</en>
+        <ru>Публичность: координаты вашей метки, имя пользователя, аватар и статус доступны неопределённому кругу лиц, в том числе посетителям сайта без регистрации.</ru>
+        <en>Visibility: your marker coordinates, username, avatar and status are available to an indefinite range of persons, including website visitors who are not registered.</en>
     </bullet>
     <bullet>
         <ru>Кэширование: данные карты кэшируются на срок до 24 часов для снижения нагрузки на сервер. После удаления метки она может исчезнуть у других пользователей с небольшой задержкой.</ru>
@@ -453,8 +453,8 @@
     </subsection>
 
     <paragraph>
-        <ru>Основная база данных, файлы и серверная логика размещены в регионе europe-central2 (Варшава, Республика Польша). Польша является стороной Конвенции Совета Европы о защите физических лиц при автоматизированной обработке персональных данных и включена в перечень государств, на территории которых обеспечивается надлежащий уровень защиты прав субъектов персональных данных, определяемый Национальным центром защиты персональных данных Республики Беларусь. К этой же категории относится Великобритания (сервис геокодирования OpenStreetMap Nominatim). Передача в такие государства осуществляется по общим правилам обработки без получения дополнительных разрешений.</ru>
-        <en>The primary database, files and server logic are hosted in the europe-central2 region (Warsaw, Poland). Poland is a party to the Council of Europe Convention for the Protection of Individuals with regard to Automatic Processing of Personal Data and is included in the list of states providing an adequate level of protection of data subjects' rights, determined by the National Personal Data Protection Center of the Republic of Belarus. The United Kingdom (OpenStreetMap Nominatim geocoding) falls into the same category. Transfers to such states follow the general processing rules without additional authorisation.</en>
+        <ru>Сервис размещён в инфраструктуре Google Firebase в нескольких регионах. База данных Firestore находится в регионе europe-central2 (Варшава, Республика Польша); серверные функции (Cloud Functions) и база данных реального времени (Realtime Database) — в регионе europe-west1 (Бельгия). Польша и Бельгия являются сторонами Конвенции Совета Европы о защите физических лиц при автоматизированной обработке персональных данных и включены в перечень государств, на территории которых обеспечивается надлежащий уровень защиты прав субъектов персональных данных, определённый приказом директора Национального центра защиты персональных данных Республики Беларусь от 15 ноября 2021 г. № 14. К этой же категории относится Великобритания (сервис геокодирования OpenStreetMap Nominatim). Передача в такие государства осуществляется по общим правилам обработки без получения дополнительных разрешений. Файловое хранилище Firebase Storage размещено в США — см. пункт 7.2.</ru>
+        <en>The Service runs on Google Firebase infrastructure across several regions. The Firestore database is located in the europe-central2 region (Warsaw, Poland); server functions (Cloud Functions) and the Realtime Database are located in the europe-west1 region (Belgium). Poland and Belgium are parties to the Council of Europe Convention for the Protection of Individuals with regard to Automatic Processing of Personal Data and are included in the list of states providing an adequate level of protection of data subjects’ rights, determined by Order No. 14 of the Director of the National Personal Data Protection Center of the Republic of Belarus of 15 November 2021. The United Kingdom (OpenStreetMap Nominatim geocoding) falls into the same category. Transfers to such states follow the general processing rules without additional authorisation. The Firebase Storage file storage is located in the United States — see clause 7.2.</en>
     </paragraph>
 
     <subsection>
@@ -463,8 +463,8 @@
     </subsection>
 
     <paragraph>
-        <ru>Часть технических партнёров находится в Соединённых Штатах Америки: Vercel Inc. (хостинг веб-версии), Cloudflare, Inc. (защита от автоматизированных запросов), Cloudinary (хранение и оптимизация аватаров), Google Cloud Vision (автоматическая проверка изображений). Кроме того, доступ к инфраструктуре Firebase может осуществляться контролирующей компанией группы Google, зарегистрированной в США. Соединённые Штаты Америки не включены в перечень государств, на территории которых обеспечивается надлежащий уровень защиты прав субъектов персональных данных.</ru>
-        <en>Some technical partners are located in the United States: Vercel Inc. (web hosting), Cloudflare, Inc. (bot protection), Cloudinary (avatar storage and optimisation), Google Cloud Vision (automated image screening). In addition, Firebase infrastructure may be accessed by the US-registered parent company of the Google group. The United States is not included in the list of states providing an adequate level of protection of data subjects' rights.</en>
+        <ru>Часть технических партнёров находится в Соединённых Штатах Америки: Vercel Inc. (хостинг веб-версии), Cloudflare, Inc. (защита от автоматизированных запросов), Cloudinary (хранение и оптимизация аватаров), Google Cloud Vision (автоматическая проверка изображений). В США также размещено файловое хранилище Firebase Storage: в нём хранятся медиафайлы из личных чатов, групп и каналов (изображения, голосовые сообщения), аватары групп и каналов, изображения к новостям и наборы стикеров. Кроме того, доступ к инфраструктуре Firebase может осуществляться контролирующей компанией группы Google, зарегистрированной в США. Соединённые Штаты Америки не включены в перечень государств, на территории которых обеспечивается надлежащий уровень защиты прав субъектов персональных данных.</ru>
+        <en>Some technical partners are located in the United States: Vercel Inc. (web hosting), Cloudflare, Inc. (bot protection), Cloudinary (avatar storage and optimisation), Google Cloud Vision (automated image screening). The Firebase Storage file storage is also located in the United States: it holds media files from private chats, groups and channels (images, voice messages), group and channel avatars, news images and sticker packs. In addition, Firebase infrastructure may be accessed by the controlling company of the Google group, registered in the United States. The United States is not included in the list of states providing an adequate level of protection of data subjects’ rights.</en>
     </paragraph>
 
     <alert severity="warning" icon="warning">
@@ -489,10 +489,10 @@
     </subsection>
 
     <highlight>
-        <title>Google Firebase — Польша (хранение) / США (группа компаний)</title>
+        <title>Google Firebase — Польша, Бельгия, США</title>
         <description>
-            <ru>Основной провайдер: база данных (Firestore), авторизация (Identity Platform), серверная логика (Cloud Functions), хранение медиафайлов (Storage) и push-уведомления (FCM). Данные хранятся в регионе europe-central2 (Варшава, Польша). Политика: policies.google.com/privacy</ru>
-            <en>Primary provider: database (Firestore), authentication (Identity Platform), server logic (Cloud Functions), media storage (Storage), and push notifications (FCM). Data is stored in the europe-central2 region (Warsaw, Poland). Policy: policies.google.com/privacy</en>
+            <ru>Основной провайдер: база данных (Firestore), авторизация (Identity Platform), серверная логика (Cloud Functions), база данных реального времени (Realtime Database), хранение медиафайлов (Storage) и push-уведомления (FCM). Firestore — регион europe-central2 (Польша); Cloud Functions и Realtime Database — регион europe-west1 (Бельгия); Storage — регион us-central1 (США). Политика: policies.google.com/privacy</ru>
+            <en>Primary provider: database (Firestore), authentication (Identity Platform), server logic (Cloud Functions), Realtime Database, media storage (Storage), and push notifications (FCM). Firestore — europe-central2 region (Poland); Cloud Functions and Realtime Database — europe-west1 region (Belgium); Storage — us-central1 region (United States). Policy: policies.google.com/privacy</en>
         </description>
     </highlight>
 
@@ -565,16 +565,16 @@
     </paragraph>
 
     <bullet>
-        <ru>Данные учётной записи (идентификаторы, профиль, игровые данные) — в течение срока действия учётной записи и до истечения 30 дней после её удаления, необходимых для очистки резервных копий.</ru>
-        <en>Account data (identifiers, profile, game data) — for the life of the account and for up to 30 days after its deletion, needed to purge backups.</en>
+        <ru>Данные учётной записи (идентификаторы, профиль, игровые данные) — в течение срока действия учётной записи, но не дольше срока действия согласия (3 года с даты последнего входа), и до истечения 30 дней после удаления учётной записи, необходимых для очистки резервных копий.</ru>
+        <en>Account data (identifiers, profile, game data) — for the lifetime of the account, but no longer than the consent term (3 years from the last sign-in), and for 30 days after the account is deleted, as needed to purge backups.</en>
     </bullet>
     <bullet>
         <ru>Метка на карте — до её изменения или удаления вами; кэш карты обновляется в течение 24 часов.</ru>
         <en>Map marker — until you change or remove it; the map cache refreshes within 24 hours.</en>
     </bullet>
     <bullet>
-        <ru>Сообщения и медиафайлы — до удаления вами либо до обезличивания при удалении учётной записи.</ru>
-        <en>Messages and media — until you delete them, or until anonymisation upon account deletion.</en>
+        <ru>Тексты сообщений — до удаления вами либо до обезличивания при удалении учётной записи. Медиафайлы (голосовые сообщения, изображения, видео) — до удаления вами или удаления учётной записи.</ru>
+        <en>Message texts — until you delete them or until they are depersonalised when the account is deleted. Media files (voice messages, images, video) — until you delete them or the account is deleted.</en>
     </bullet>
     <bullet>
         <ru>Данные о шагах — агрегированная суточная статистика хранится 12 месяцев; необработанные показания датчика на сервере не сохраняются.</ru>
@@ -649,8 +649,8 @@
     </paragraph>
 
     <paragraph>
-        <ru>Ваши сообщения в общих чатах и комментарии не удаляются, а обезличиваются в значении статьи 1 Закона № 99-З: имя автора заменяется, аватар удаляется, ссылка на профиль деактивируется. В результате определить принадлежность этих сообщений вам становится невозможно без использования дополнительной информации, которой мы не располагаем. После обезличивания такие сведения перестают быть вашими персональными данными, поэтому их дальнейшее хранение не нарушает ваше право на удаление.</ru>
-        <en>Your messages in public chats and comments are not deleted but anonymised within the meaning of Article 1 of Law No. 99-Z: the author's name is replaced, the avatar removed and the profile link deactivated. As a result, attributing these messages to you becomes impossible without additional information which we do not hold. Once anonymised, such records are no longer your personal data, so retaining them does not infringe your right to erasure.</en>
+        <ru>Медиафайлы, которые вы отправляли (голосовые сообщения, изображения, видео), удаляются: голос и изображение нельзя обезличить заменой подписи. Тексты ваших сообщений в чатах и каналах и комментарии не удаляются, а обезличиваются в значении статьи 1 Закона № 99-З: имя автора заменяется, аватар удаляется, ссылка на профиль деактивируется. В результате определить принадлежность этих сообщений вам становится невозможно без использования дополнительной информации, которой мы не располагаем. После обезличивания такие сведения перестают быть вашими персональными данными, поэтому их дальнейшее хранение не нарушает ваше право на удаление.</ru>
+        <en>Media files you sent (voice messages, images, video) are deleted: a voice or an image cannot be anonymised by changing the caption. The texts of your messages in chats and channels, and your comments, are not deleted but anonymised within the meaning of Article 1 of Law No. 99-Z: the author's name is replaced, the avatar removed and the profile link deactivated. As a result, attributing these messages to you becomes impossible without additional information which we do not hold. Once anonymised, such records are no longer your personal data, so retaining them does not infringe your right to erasure.</en>
     </paragraph>
 
     <subsection>
@@ -745,12 +745,12 @@
 
     <alert severity="error" icon="warning">
         <title>
-            <ru>Сервис предназначен для лиц, достигших 17 лет</ru>
-            <en>The Service is intended for persons aged 17 and over</en>
+            <ru>Сервис предназначен для лиц, достигших 16 лет</ru>
+            <en>The Service is intended for persons aged 16 and over</en>
         </title>
         <text>
-            <ru>Возрастной ценз соответствует рейтингу, присвоенному приложению в Google Play, — ESRB Mature 17+. Он распространяется на Сервис целиком, включая раздел мини-игр «The Glitch Pit»; отдельного ограничения у этого раздела нет. Независимо от этого пункт 9 статьи 5 Закона № 99-З устанавливает, что до достижения шестнадцати лет согласие на обработку персональных данных даёт один из законных представителей. Мы сознательно не собираем персональные данные лиц, не достигших указанного возраста. Если вам стало известно, что такое лицо зарегистрировалось в Сервисе, немедленно свяжитесь с нами — учётная запись будет удалена.</ru>
-            <en>The age threshold matches the rating assigned to the application on Google Play — ESRB Mature 17+. It applies to the Service as a whole, including The Glitch Pit mini-games section, which has no separate restriction. Independently of this, Article 5(9) of Law No. 99-Z provides that below the age of sixteen, consent to the processing of personal data is given by a legal representative. We do not knowingly collect personal data from persons below that age. If you become aware that such a person has registered, contact us immediately — the account will be deleted.</en>
+            <ru>Возраст определён пунктом 9 статьи 5 Закона № 99-З: до достижения шестнадцати лет согласие на обработку персональных данных даёт один из законных представителей. Сервис не предоставляет способа получить такое согласие, поэтому регистрация лиц, не достигших 16 лет, не допускается. Ограничение распространяется на Сервис целиком, включая раздел мини-игр «The Glitch Pit»; отдельного ограничения у этого раздела нет. Мы сознательно не собираем персональные данные лиц, не достигших указанного возраста. Если вам стало известно, что такое лицо зарегистрировалось в Сервисе, немедленно свяжитесь с нами — учётная запись будет удалена.</ru>
+            <en>The age is set by Article 5(9) of Law No. 99-Z: below the age of sixteen, consent to the processing of personal data is given by a legal representative. The Service provides no means of obtaining such consent, so persons under 16 may not register. The restriction applies to the Service as a whole, including The Glitch Pit mini-games section, which has no separate restriction. We do not knowingly collect personal data from persons below that age. If you become aware that such a person has registered, contact us immediately — the account will be deleted.</en>
         </text>
     </alert>
 

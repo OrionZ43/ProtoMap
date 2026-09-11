@@ -35,6 +35,12 @@ with their own tooling; never run the root Prettier over `functions/`.
 `firebase.json` sets `predeploy: npm --prefix "$RESOURCE_DIR" run build`, so a TS error blocks
 the deploy. That is the intended safety net — don't bypass it.
 
+`firestore.indexes.json` is an export of prod (`firebase firestore:indexes`), not a hand-written
+list. Indexes and TTL policies have been created in the console before, and until 2026-09-11 the
+file was missing 5 composite indexes and 2 TTL policies. A deploy without `--force` leaves extra
+prod indexes alone; **with `--force` it deletes everything not in the file** — chat lists, news
+and referral ranking would break, and message TTL would stop. Re-export before any `--force`.
+
 ## Regions: the rule that actually bites
 
 **Client code must import the shared instance:**
