@@ -219,12 +219,13 @@ async function handleAutoMute(ctx: any, trigger: string) {
         console.log(`[AUTOMUTE] ${targetUser.first_name} (${targetUser.id}) muted for 5h (trigger: ${trigger})`);
 
         try {
+            // Только триггер и время: /whining считает по ним статистику, а
+            // кто написал и что именно — ему не нужно. Раньше сюда же писались
+            // Telegram ID, имя и начало сообщения — персональные данные
+            // участников чата без цели обработки.
             await db.collection('whining_attempts').add({
-                userId:       targetUser.id,
-                username:     targetUser.username || targetUser.first_name,
                 trigger,
-                originalText: ctx.message.text.substring(0, 100),
-                timestamp:    admin.firestore.FieldValue.serverTimestamp()
+                timestamp: admin.firestore.FieldValue.serverTimestamp()
             });
         } catch (e) {
             console.error('[AUTOMUTE] Failed to log attempt:', e);

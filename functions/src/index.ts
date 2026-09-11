@@ -1,6 +1,8 @@
 // ⚠️ ПЕРВЫМ импортом и не переставлять. Задаёт регион (europe-west1) до того,
 // как подмодули объявят свои функции. Подробности — в options.ts.
 import './options';
+import { purgeAccount } from './accountPurge';
+import { clearMapCache } from './mapCache';
 
 import { onRequest } from "firebase-functions/v2/https";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -15,7 +17,6 @@ import vision from "@google-cloud/vision";
 export { getStepperStatus, stepperClaim } from './stepper';
 export { recordConsents, revokeConsent, getMyConsents } from './consents';
 export { enforceRetention } from './retention';
-import { anonymizeConsentsOnDelete } from './consents';
 export { getOrCreateReferralCode, claimReferral, getReferralStatus, finishReferralCampaign } from './referralFunctions';
 import { auth } from "firebase-functions/v1";
 
@@ -283,41 +284,6 @@ export const migrateExternalAvatar = onCall(async (request) => {
     }
 });
 
-// ===================================================================
-// 🔒 SECURITY FIX #6: Исправленный clearMapCache с транзакцией
-// ===================================================================
-async function clearMapCache() {
-    const cacheRef = db.collection('system').doc('map_cache');
-
-    try {
-        // ✅ ИСПРАВЛЕНО: Атомарная транзакция вместо race condition
-        await db.runTransaction(async (t) => {
-            const doc = await t.get(cacheRef);
-
-            if (doc.exists) {
-                const data = doc.data();
-                const lastUpdated = data?.updatedAt?.toMillis() || 0;
-
-                // ЗАЩИТА: Проверка внутри транзакции
-                if (Date.now() - lastUpdated < 60000) {
-                    throw new Error('THROTTLED'); // Откатится автоматически
-                }
-            }
-
-            // Удаление в рамках той же транзакции
-            t.delete(cacheRef);
-        });
-
-        console.log("Map cache cleared.");
-
-    } catch (e: any) {
-        if (e.message === 'THROTTLED') {
-            console.log("Cache clear throttled (safe).");
-        } else {
-            console.error("Failed to clear cache:", e);
-        }
-    }
-}
 
 // ⚠️ Тип НЕ `any` намеренно. Раньше он был `any`, и в пяти местах сюда по ошибке
 // передавали `uid` вместо `request`. На строке `request.auth?.token` и
@@ -2157,73 +2123,23 @@ export const changeUsername = onCall(async (request) => {
     }
 });
 
-export const deleteAccount = onCall(async (request) => {
+// Ключи Cloudinary нужны очистке аккаунта, чтобы удалить аватар. Они лежат
+// в Secret Manager и видны только функциям, которые объявили их явно.
+export const deleteAccount = onCall({ secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"] }, async (request) => {
     if (request.app == undefined) {
         throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
     }
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
     const uid = request.auth.uid;
 
-    // ✅ [ЭТАП 1] Вспомогательная функция: commit батча и вернуть новый
-    async function commitAndRenew(batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch> {
-        await batch.commit();
-        return db.batch();
-    }
-
+    // Вся очистка — в accountPurge.ts: тот же путь использует удаление по
+    // сроку (три года без входа), и двух копий этой логики быть не должно.
     try {
-        let batch = db.batch();
-        let opCount = 0;
-        const BATCH_LIMIT = 400; // Безопасный лимит (макс 500 у Firestore)
-
-        // Анонимизируем комментарии автора (может быть много)
-        const comments = await db.collectionGroup('comments').where('author_uid', '==', uid).get();
-        for (const d of comments.docs) {
-            batch.update(d.ref, { author_username: 'Deleted', author_avatar_url: null, author_uid: null });
-            opCount++;
-            if (opCount >= BATCH_LIMIT) {
-                batch = await commitAndRenew(batch);
-                opCount = 0;
-            }
-        }
-
-        // Анонимизируем сообщения в глобальном чате
-        const msgs = await db.collection('global_chat').where('author_uid', '==', uid).get();
-        for (const d of msgs.docs) {
-            batch.update(d.ref, { author_username: 'Deleted', author_avatar_url: null, author_uid: null });
-            opCount++;
-            if (opCount >= BATCH_LIMIT) {
-                batch = await commitAndRenew(batch);
-                opCount = 0;
-            }
-        }
-
-        // Финальный commit если остались незакоммиченные операции
-        if (opCount > 0) {
-            await batch.commit();
-        }
-
-        // Журнал согласий НЕ удаляем: Политика заявляет срок хранения 3 года,
-        // а пункт 7 статьи 5 требует уметь доказать наличие согласия — в том
-        // числе после того, как аккаунт удалён. Записи обезличиваются: из них
-        // убирается IP и способ входа, остаются uid, вид согласия, версия
-        // документа и даты. Чистит их по сроку enforceRetention.
-        const anonymized = await anonymizeConsentsOnDelete(uid);
-        if (anonymized > 0) {
-            console.log(`Обезличено записей согласий: ${anonymized}`);
-        }
-
-        // Удаляем документ пользователя
-        await db.collection('users').doc(uid).delete();
-
-        // Удаляем метки на карте (обычно 1 документ)
-        const locs = await db.collection('locations').where('user_id', '==', uid).get();
-        await Promise.all(locs.docs.map(d => d.ref.delete()));
-
-        await clearMapCache();
-
-        await admin.auth().deleteUser(uid);
+        const report = await purgeAccount(uid, { dryRun: false });
+        console.log(`[deleteAccount] ${uid}:`, JSON.stringify(report));
         return { status: 'success', message: 'Аккаунт удален.' };
     } catch (e) {
+        console.error('[deleteAccount] ошибка очистки:', e);
         throw new HttpsError('internal', 'Delete error.');
     }
 });

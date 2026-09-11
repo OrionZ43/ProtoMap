@@ -146,12 +146,23 @@ export const recordConsents = onCall(async (request) => {
         });
     }
 
-    // Зеркало для шагомера: читать журнал на каждое начисление дорого.
-    // Источник истины — коллекция consents, это лишь производное значение,
-    // и пишется оно только отсюда.
+    // Зеркала в документе пользователя. Источник истины — коллекция consents,
+    // это производные значения, и пишутся они только отсюда. Клиент их
+    // подделать не может: правило на users разрешает владельцу менять только
+    // fcmToken и lastBackupSignature.
+    //
+    // `consents_*_version` нужны, чтобы на каждой отрисовке страницы не ходить
+    // в журнал с запросом «а согласен ли этот человек с текущей редакцией».
+    // Документ пользователя и так читается в hooks.server.ts на каждый запрос,
+    // так что проверка выходит бесплатной.
     batch.set(
         db().collection("users").doc(uid),
-        { activity_data_consent: ids.includes("activity_data") },
+        {
+            activity_data_consent: ids.includes("activity_data"),
+            consents_privacy_version: versions.privacy,
+            consents_tos_version: versions.tos,
+            consents_updated_at: FieldValue.serverTimestamp(),
+        },
         { merge: true }
     );
 
@@ -271,7 +282,9 @@ export async function anonymizeConsentsOnDelete(uid: string): Promise<number> {
             ip: FieldValue.delete(),
             method: FieldValue.delete(),
             revokedAt: doc.data().revokedAt ?? FieldValue.serverTimestamp(),
-            accountDeletedAt: FieldValue.serverTimestamp(),
+            // Первую дату не перезаписываем: повторная очистка иначе
+            // сдвигала бы начало трёхлетнего срока хранения.
+            accountDeletedAt: doc.data().accountDeletedAt ?? FieldValue.serverTimestamp(),
         });
     }
     await batch.commit();
