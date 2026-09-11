@@ -24,6 +24,7 @@
     import CyberConfetti from '$lib/components/CyberConfetti.svelte';
     import { goto, beforeNavigate } from '$app/navigation';
     import LegalUpdateBanner from '$lib/components/LegalUpdateBanner.svelte';
+    import ConsentGate from '$lib/components/ConsentGate.svelte';
 
     import '$lib/i18n';
     import { waitLocale } from 'svelte-i18n';
@@ -219,12 +220,25 @@
 
         <Modal />
 
+        <!-- Экран согласий перекрывает всё, поэтому стоит перед остальными
+             оверлеями. Решение принимает сервер (`needsConsent`), здесь только
+             отрисовка: клиентскую проверку обошёл бы любой, кто откроет консоль.
+             Забаненные его не видят — им и так закрыт весь Сервис. -->
+        {#if $page.data.needsConsent && !isBanned}
+            <ConsentGate versions={$page.data.legalVersions} />
+        {/if}
+
         {#if !isBanned}
             {#if !isMessagesPage}
                 <ChatWidget />
             {/if}
             <CookieBanner />
             <SplashModal />
+            <!-- Уведомление о новой редакции документов. Было импортировано, но
+                 не отрисовано, то есть не показывалось никому. Стоит после
+                 гейта: пока согласие не дано, показывать нечего — гейт и так
+                 перекрывает экран. -->
+            <LegalUpdateBanner versions={$page.data.legalVersions} />
 
             {#if !isMessagesPage}
                 <button

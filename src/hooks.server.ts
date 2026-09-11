@@ -48,7 +48,11 @@ export const handle: Handle = async ({ event, resolve }) => {
                 email: decodedClaims.email,
                 username: userData.username || 'Unknown',
                 emailVerified: decodedClaims.email_verified || false,
-                isBanned: isBanned
+                isBanned: isBanned,
+                // Зеркала журнала согласий. Пишет их только recordConsents;
+                // правило на users владельцу этих полей менять не даёт.
+                consentsPrivacyVersion: userData.consents_privacy_version ?? null,
+                consentsTosVersion: userData.consents_tos_version ?? null
             };
         } else {
             event.locals.user = null; // Токен есть, юзера в базе нет

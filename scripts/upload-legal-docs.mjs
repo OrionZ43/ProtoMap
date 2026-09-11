@@ -1,6 +1,7 @@
 // scripts/upload-legal-docs.mjs
 //
-// Заливка Политики конфиденциальности и Пользовательского соглашения в Firestore.
+// Заливка юридических документов в Firestore: Политики конфиденциальности,
+// Пользовательского соглашения и Политики в отношении обработки персональных данных.
 //
 // Документы живут в `system/licenses`: поля `privacy_policy` и `terms_of_service`
 // хранят XML целиком, `privacy_policy_version` и `terms_of_service_version` —
@@ -24,20 +25,31 @@ import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { XMLParser } from 'fast-xml-parser';
 
-const VERSION = '5.0';
-
 const DOCS = {
 	privacy: {
 		file: 'docs/аудит/privacy_policy_v5.xml',
 		field: 'privacy_policy',
 		versionField: 'privacy_policy_version',
-		expectedId: 'privacy_policy'
+		expectedId: 'privacy_policy',
+		version: '5.1'
 	},
 	tos: {
 		file: 'docs/аудит/terms_of_service_v5.xml',
 		field: 'terms_of_service',
 		versionField: 'terms_of_service_version',
-		expectedId: 'terms_of_service'
+		expectedId: 'terms_of_service',
+		version: '5.1'
+	},
+	// Политика в отношении обработки персональных данных — отдельный документ
+	// по абзацу третьему пункта 3 статьи 17 Закона № 99-З, собранный по
+	// примерной форме НЦЗПД. Согласия на неё не спрашивают, поэтому её версия
+	// не участвует ни в журнале согласий, ни в экране согласий.
+	pdpolicy: {
+		file: 'docs/аудит/personal_data_policy_v1.xml',
+		field: 'personal_data_policy',
+		versionField: 'personal_data_policy_version',
+		expectedId: 'personal_data_policy',
+		version: '1.0'
 	}
 };
 
@@ -94,7 +106,8 @@ const KNOWN_TAGS = [
 	'bullet',
 	'alert',
 	'highlight',
-	'contact'
+	'contact',
+	'table'
 ];
 
 function tagOf(child) {
@@ -181,6 +194,32 @@ function validate(xml, expectedId) {
 				if (!ld.ru || !ld.en)
 					problems.push(`<highlight> "${textOf(t.title)}" без пары ru/en`);
 			}
+		} else if (tag === 'table') {
+			// Приложения к Политике обработки — таблицы. Ячейка без пары ru/en
+			// на сайте отрисуется пустой, а строка с лишней или недостающей
+			// ячейкой съедет относительно шапки.
+			const cellsOf = (row) => (row ?? []).filter((c) => 'cell' in c).map((c) => locOf(c.cell));
+			const cap = content.find((c) => 'caption' in c);
+			if (cap) {
+				const lc = locOf(cap.caption);
+				if (!lc.ru || !lc.en) problems.push('<table>: <caption> без пары ru/en');
+			}
+			const head = content.find((c) => 'head' in c);
+			const headCells = head ? cellsOf(head.head) : [];
+			if (!headCells.length) problems.push('<table> без <head> с ячейками');
+			headCells.forEach((c, k) => {
+				if (!c.ru || !c.en) problems.push(`<table>: шапка, ячейка ${k + 1} без пары ru/en`);
+			});
+			const rows = content.filter((c) => 'row' in c);
+			if (!rows.length) problems.push('<table> без строк <row>');
+			rows.forEach((r, n) => {
+				const cells = cellsOf(r.row);
+				if (cells.length !== headCells.length)
+					problems.push(`<table>: в строке ${n + 1} ячеек ${cells.length}, в шапке ${headCells.length}`);
+				cells.forEach((c, k) => {
+					if (!c.ru || !c.en) problems.push(`<table>: строка ${n + 1}, ячейка ${k + 1} без пары ru/en`);
+				});
+			});
 		} else if (tag === 'contact') {
 			if (!(child[':@'] ?? {})['@_email']) problems.push('<contact> без email');
 		} else {
@@ -200,7 +239,7 @@ function validate(xml, expectedId) {
 const targets = only ? { [only]: DOCS[only] } : DOCS;
 
 console.log(`Документ: system/licenses`);
-console.log(`Версия:   ${VERSION}`);
+console.log(`Версии:   ${Object.entries(targets).map(([k, c]) => `${k} ${c.version}`).join(', ')}`);
 console.log(`Режим:    ${apply ? 'ПРИМЕНЕНИЕ' : 'сухой прогон (добавь --apply)'}\n`);
 
 const prepared = {};
@@ -248,7 +287,7 @@ for (const [key, { cfg }] of Object.entries(prepared)) {
 	const curVer = current[cfg.versionField] ?? '(нет)';
 	const curLen = (current[cfg.field] ?? '').length;
 	console.log(
-		`   ${cfg.field}: версия ${curVer} → ${VERSION},  ` +
+		`   ${cfg.field}: версия ${curVer} → ${cfg.version},  ` +
 			`${Math.round(curLen / 1024)} КБ → ${Math.round(prepared[key].xml.length / 1024)} КБ`
 	);
 }
@@ -262,7 +301,7 @@ if (!apply) {
 const payload = {};
 for (const [, { cfg, xml }] of Object.entries(prepared)) {
 	payload[cfg.field] = xml;
-	payload[cfg.versionField] = VERSION;
+	payload[cfg.versionField] = cfg.version;
 }
 
 await ref.set(payload, { merge: true });
@@ -270,6 +309,6 @@ await ref.set(payload, { merge: true });
 console.log('Записано.');
 console.log();
 console.log('Дальше вручную:');
-console.log('  1. Открыть /privacy-policy и /terms-of-service, проверить рендер.');
+console.log('  1. Открыть /privacy-policy, /terms-of-service и /personal-data-policy, проверить рендер.');
 console.log('  2. Убедиться, что LegalUpdateBanner показал баннер повторного принятия.');
 console.log('  3. Проверить, что Android-клиент подхватил новую версию.');

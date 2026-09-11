@@ -6,12 +6,15 @@
 
 <div class:legal-ticker={mode === 'fixed'} class:menu-links={mode === 'menu'}>
     {#if mode === 'menu'}
+        <a href="/personal-data-policy">{$t('footer.pd_policy')}</a>
         <a href="/privacy-policy">{$t('footer.policy')}</a>
         <a href="/terms-of-service">{$t('footer.terms')}</a>
         <span>© {currentYear} {$t('footer.rights')}</span>
     {:else}
         <p>© {currentYear} {$t('footer.rights')}</p>
         <div class="links">
+            <a href="/personal-data-policy">{$t('footer.pd_policy')}</a>
+            <span>//</span>
             <a href="/privacy-policy">{$t('footer.policy')}</a>
             <span>//</span>
             <a href="/terms-of-service">{$t('footer.terms')}</a>

@@ -15,21 +15,27 @@
             bg:     'rgba(0, 240, 255, 0.05)',
             glow:   'rgba(0, 240, 255, 0.15)',
             accent: '#00f0ff',
-            label:  'ℹ',
+            // Lucide `info`
+            icon: 'M12 16v-4M12 8h.01',
+            circle: true,
         },
         warning: {
             border: 'rgba(252, 238, 10, 0.40)',
             bg:     'rgba(252, 238, 10, 0.05)',
             glow:   'rgba(252, 238, 10, 0.12)',
             accent: '#fcee0a',
-            label:  '⚠',
+            // Lucide `alert-triangle`
+            icon: 'M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0ZM12 9v4M12 17h.01',
+            circle: false,
         },
         error: {
             border: 'rgba(255, 0, 60, 0.40)',
             bg:     'rgba(255, 0, 60, 0.06)',
             glow:   'rgba(255, 0, 60, 0.15)',
             accent: '#ff003c',
-            label:  '✕',
+            // Lucide `x-circle`
+            icon: 'm15 9-6 6M9 9l6 6',
+            circle: true,
         },
     } as const;
 </script>
@@ -74,7 +80,11 @@
             >
                 <div class="alert-header">
                     <span class="alert-icon" style="color: {s.accent};" aria-hidden="true">
-                        {s.label}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round" width="17" height="17">
+                            {#if s.circle}<circle cx="12" cy="12" r="10" />{/if}
+                            <path d={s.icon} />
+                        </svg>
                     </span>
                     <span class="alert-title font-display" style="color: {s.accent};">
                         {t(node.title)}
@@ -93,10 +103,48 @@
                 <p class="highlight-desc">{t(node.description)}</p>
             </div>
 
+        <!-- TABLE ─────────────────────────────────────────────────────────── -->
+        <!-- На узком экране строки превращаются в карточки: подписи столбцов
+             берутся из data-label, чтобы пять колонок юридического текста не
+             пришлось листать вбок. -->
+        {:else if node.type === 'table'}
+            <figure class="doc-table">
+                {#if t(node.caption)}
+                    <figcaption class="doc-table__caption font-display">{t(node.caption)}</figcaption>
+                {/if}
+                <div class="doc-table__scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                {#each node.head as h}
+                                    <th scope="col">{t(h)}</th>
+                                {/each}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {#each node.rows as row}
+                                <tr>
+                                    {#each row as cell, i}
+                                        <td data-label={node.head[i] ? t(node.head[i]) : ''}>{t(cell)}</td>
+                                    {/each}
+                                </tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                </div>
+            </figure>
+
         <!-- CONTACT ─────────────────────────────────────────────────────── -->
         {:else if node.type === 'contact'}
             <div class="doc-contact">
-                <span class="contact-icon" aria-hidden="true">📡</span>
+                <span class="contact-icon" aria-hidden="true">
+                    <!-- Lucide `mail` -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                         stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                        <rect x="2" y="4" width="20" height="16" rx="2" />
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
+                </span>
                 <a href="mailto:{node.email}" class="contact-email font-display">
                     {node.email}
                 </a>
@@ -171,14 +219,14 @@
     .doc-subsection {
         font-size: 0.88rem;
         font-weight: 700;
-        color: var(--cyber-cyan, #00f0ff);
+        color: #f1f5f9;
         text-transform: uppercase;
         letter-spacing: 0.12em;
         margin-top: 1.75rem;
         margin-bottom: 0.75rem;
         padding-left: 0.5rem;
-        border-left: 2px solid rgba(0, 240, 255, 0.4);
-        text-shadow: 0 0 6px rgba(0, 240, 255, 0.25);
+        border-left: 2px solid rgba(252, 238, 10, 0.45);
+        text-shadow: none;
     }
 
     /* ── PARAGRAPH ─────────────────────────────────────────────────────── */
@@ -236,7 +284,8 @@
         margin-bottom: 0.5rem;
     }
     .alert-icon {
-        font-size: 1rem;
+        display: inline-flex;
+        align-items: center;
         flex-shrink: 0;
     }
     .alert-title {
@@ -258,23 +307,23 @@
     .doc-highlight {
         background: rgba(255, 255, 255, 0.025);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        border-left: 3px solid rgba(0, 240, 255, 0.35);
+        border-left: 3px solid rgba(252, 238, 10, 0.35);
         padding: 0.9rem 1.1rem;
         margin-bottom: 0.6rem;
         transition: border-color 0.2s, background 0.2s;
     }
     .doc-highlight:hover {
-        border-color: rgba(0, 240, 255, 0.25);
-        border-left-color: var(--cyber-cyan, #00f0ff);
-        background: rgba(0, 240, 255, 0.04);
+        border-color: rgba(252, 238, 10, 0.25);
+        border-left-color: var(--cyber-yellow, #fcee0a);
+        background: rgba(252, 238, 10, 0.04);
     }
     .highlight-title {
         font-size: 0.78rem;
         font-weight: 700;
-        color: var(--cyber-cyan, #00f0ff);
+        color: var(--cyber-yellow, #fcee0a);
         letter-spacing: 0.06em;
         margin-bottom: 0.35rem;
-        text-shadow: 0 0 5px rgba(0, 240, 255, 0.2);
+        text-shadow: 0 0 5px rgba(252, 238, 10, 0.2);
     }
     .highlight-desc {
         font-size: 0.82rem;
@@ -295,7 +344,9 @@
         clip-path: polygon(0 8px, 8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
     }
     .contact-icon {
-        font-size: 1.25rem;
+        display: inline-flex;
+        align-items: center;
+        color: var(--cyber-yellow, #fcee0a);
     }
     .contact-email {
         font-size: 0.9rem;
@@ -308,5 +359,96 @@
     .contact-email:hover {
         color: #fff;
         text-shadow: 0 0 12px var(--cyber-yellow, #fcee0a);
+    }
+
+    /* ── TABLE ─────────────────────────────────────────────────────────── */
+    .doc-table {
+        margin: 1.25rem 0 1.75rem;
+    }
+    .doc-table__caption {
+        margin-bottom: 0.6rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--cyber-yellow, #fcee0a);
+    }
+    .doc-table__scroll {
+        overflow-x: auto;
+        border: 1px solid rgba(252, 238, 10, 0.18);
+    }
+    .doc-table table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+        line-height: 1.55;
+    }
+    .doc-table th {
+        text-align: left;
+        vertical-align: bottom;
+        padding: 0.65rem 0.75rem;
+        font-family: 'Chakra Petch', monospace;
+        font-size: 0.66rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--cyber-yellow, #fcee0a);
+        background: rgba(252, 238, 10, 0.06);
+        border-bottom: 1px solid rgba(252, 238, 10, 0.25);
+    }
+    .doc-table td {
+        vertical-align: top;
+        padding: 0.7rem 0.75rem;
+        color: #cbd5e1;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .doc-table tbody tr:nth-child(even) td {
+        background: rgba(255, 255, 255, 0.015);
+    }
+    .doc-table td:first-child {
+        color: #f1f5f9;
+        font-weight: 600;
+    }
+    @media (max-width: 720px) {
+        .doc-table__scroll {
+            overflow: visible;
+            border: none;
+        }
+        .doc-table thead {
+            display: none;
+        }
+        .doc-table table,
+        .doc-table tbody,
+        .doc-table tr,
+        .doc-table td {
+            display: block;
+            width: 100%;
+        }
+        .doc-table tr {
+            margin-bottom: 0.9rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(252, 238, 10, 0.16);
+            border-left: 3px solid var(--cyber-yellow, #fcee0a);
+        }
+        .doc-table td {
+            padding: 0.55rem 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .doc-table td:last-child {
+            border-bottom: none;
+        }
+        .doc-table tbody tr:nth-child(even) td {
+            background: none;
+        }
+        .doc-table td::before {
+            content: attr(data-label);
+            display: block;
+            margin-bottom: 0.2rem;
+            font-family: 'Chakra Petch', monospace;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(252, 238, 10, 0.75);
+        }
     }
 </style>

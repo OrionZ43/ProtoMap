@@ -272,6 +272,38 @@ export function initMap(containerId: string) {
         if (batchMarkers.length > 0) {
             markers.addLayers(batchMarkers);
         }
+
+        focusRequestedMarker();
+    }
+
+    /**
+     * Перелёт к метке по адресу вида `/?focus=username`.
+     *
+     * Нужен для ссылок «открыть на карте» из профиля: без этого поделиться
+     * чужой меткой нельзя, приходится искать её глазами среди кластеров.
+     *
+     * Вызывается из renderMarkers, а не при инициализации карты: до загрузки
+     * меток `userMarkers` пуст, и лететь просто не к чему.
+     *
+     * `zoomToShowLayer` вместо `setView` не случайно — метка почти наверняка
+     * спрятана внутри кластера, и обычный перелёт показал бы кружок с цифрой
+     * вместо карточки. Этот метод сначала раскрывает кластер.
+     */
+    function focusRequestedMarker(): void {
+        const username = new URLSearchParams(window.location.search).get('focus')?.trim();
+        if (!username) return;
+
+        const marker = userMarkers[username];
+        if (!marker) {
+            console.warn(`[Map] Метка ${username} не найдена — возможно, она снята`);
+            return;
+        }
+
+        markers.zoomToShowLayer(marker, () => marker.openPopup());
+
+        // Убираем параметр из адреса: он одноразовый, и без этого обновление
+        // страницы каждый раз утаскивало бы пользователя обратно к чужой метке.
+        window.history.replaceState({}, '', window.location.pathname);
     }
 
     async function loadAllMarkers() {

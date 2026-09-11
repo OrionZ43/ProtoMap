@@ -13,6 +13,18 @@ export type AlertNode = {
     text: LocalizedText;
 };
 
+/**
+ * Таблица. Нужна приложениям к Политике в отношении обработки персональных
+ * данных: по примерной форме НЦЗПД цели обработки и перечень уполномоченных
+ * лиц оформляются именно таблицами.
+ */
+export type TableNode = {
+    type:    'table';
+    caption: LocalizedText;
+    head:    LocalizedText[];
+    rows:    LocalizedText[][];
+};
+
 export type LegalNode =
     | { type: 'title';      text: LocalizedText }
     | { type: 'section';    text: LocalizedText }
@@ -21,7 +33,8 @@ export type LegalNode =
     | { type: 'bullet';     text: LocalizedText }
     | AlertNode
     | { type: 'highlight'; title: string; description: LocalizedText }
-    | { type: 'contact';   email: string };
+    | { type: 'contact';   email: string }
+    | TableNode;
 
 export type ParsedLegalDoc = {
     id:      string;
@@ -143,6 +156,20 @@ export function parseXmlDoc(xmlString: string): ParsedLegalDoc {
                     break;
                 }
 
+                case 'table': {
+                    const cellsOf = (row: any[]): LocalizedText[] =>
+                        (row ?? []).filter(c => 'cell' in c).map(c => getLoc(c['cell']));
+                    const cap  = content.find(c => 'caption' in c);
+                    const head = content.find(c => 'head'    in c);
+                    nodes.push({
+                        type:    'table',
+                        caption: cap  ? getLoc(cap['caption']) : { ru: '', en: '' },
+                        head:    head ? cellsOf(head['head'])  : [],
+                        rows:    content.filter(c => 'row' in c).map(r => cellsOf(r['row'])),
+                    });
+                    break;
+                }
+
                 case 'contact':
                     nodes.push({ type: 'contact', email: childAttrs['@_email'] ?? '' });
                     break;
@@ -164,7 +191,7 @@ export function parseXmlDoc(xmlString: string): ParsedLegalDoc {
 const LICENSES_REF = () => firestoreAdmin.collection('system').doc('licenses');
 
 export async function loadLegalDoc(
-    field: 'privacy_policy' | 'terms_of_service'
+    field: 'privacy_policy' | 'terms_of_service' | 'personal_data_policy'
 ): Promise<{ doc: ParsedLegalDoc; version: string }> {
     try {
         const snap    = await LICENSES_REF().get();

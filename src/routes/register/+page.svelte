@@ -24,6 +24,21 @@
 	import { modal } from '$lib/stores/modalStore';
 	import { userStore } from '$lib/stores';
 	import { t } from 'svelte-i18n';
+	import { TURNSTILE_SITE_KEY } from '$lib/turnstile';
+	import AuthShell from '$lib/components/auth/AuthShell.svelte';
+	import StepDots from '$lib/components/auth/StepDots.svelte';
+	import type { PageData } from './$types';
+
+	export let data: PageData;
+
+	/**
+	 * Шаг мастера: 1 — данные, 2 — согласия, 3 — капча и отправка.
+	 *
+	 * Разбито на шаги не ради моды: блок разъяснения прав нельзя сворачивать
+	 * (часть вторая пункта 5 статьи 5), и в одной форме он превращал страницу
+	 * в колонку вдвое длиннее экрана.
+	 */
+	let step = 1;
 
 	let email = '';
 	let password = '';
@@ -50,6 +65,9 @@
 
 	$: allConsentsGiven =
 		consentAgeMinimum && consentCoreProcessing && consentCrossBorder && consentTos;
+
+	/** Первый шаг пройден, когда заполнены все три поля. */
+	$: step1Filled = username.trim().length > 0 && email.trim().length > 0 && password.length > 0;
 
 	/** Виды согласий в том порядке, в котором их ждёт Cloud Function. */
 	const GRANTED_CONSENTS = ['age_minimum', 'core_processing', 'cross_border', 'tos'];
@@ -154,7 +172,7 @@
 	let turnstileToken = '';
 	let turnstileVerified = false;
 
-	const TURNSTILE_SITE_KEY = '0x4AAAAAACYHm8usBkEdoF37';
+
 
 	const opacity = tweened(0, { duration: 400, easing: quintOut });
 
@@ -230,6 +248,7 @@
 		}
 
 		if (!allConsentsGiven) {
+			step = 2;
 			modal.error('Требуется согласие', 'Отметьте все обязательные пункты согласия.');
 			return;
 		}
@@ -238,6 +257,9 @@
 		const finalUsername = username.trim();
 
 		if (!finalEmail || !password || !finalUsername) {
+			// Возвращаем на шаг с полями: сообщение без возможности его исправить
+			// бесполезно.
+			step = 1;
 			modal.error('Ошибка ввода', 'Заполните все поля.');
 			return;
 		}
@@ -501,125 +523,146 @@
 	<title>{$t('auth.register_title')} | ProtoMap</title>
 </svelte:head>
 
-<div class="form-container cyber-panel pb-12" style="opacity: {$opacity}">
-	<h2 class="form-title font-display">{$t('auth.register_title')}</h2>
+<AuthShell
+	title={$t('auth.register_title')}
+	subtitle="Три коротких шага"
+	protogens={data?.protogens ?? null}
+>
+	<div style="opacity: {$opacity}">
+		<StepDots total={3} current={step} onGoTo={(s) => (step = s)} />
 
-	<form on:submit|preventDefault={handleRegister} class="space-y-8" novalidate>
-		<div class="form-group">
-			<label for="username" class="form-label font-display">{$t('auth.username_label')}</label>
-			<input bind:value={username} type="text" id="username" name="username" class="input-field" />
-		</div>
-		<div class="form-group">
-			<label for="email" class="form-label font-display">{$t('auth.email_label')}</label>
-			<input bind:value={email} type="email" id="email" name="email" class="input-field" />
-		</div>
-		<div class="form-group">
-			<label for="password" class="form-label font-display">{$t('auth.password_label')}</label>
-			<input
-				bind:value={password}
-				type="password"
-				id="password"
-				name="password"
-				class="input-field"
-			/>
-		</div>
+		<form on:submit|preventDefault={handleRegister} novalidate>
+			{#if step === 1}
+				<div class="step" in:fade={{ duration: 150 }}>
+					<div class="form-group">
+						<label for="username" class="form-label font-display">{$t('auth.username_label')}</label>
+						<input bind:value={username} type="text" id="username" name="username" class="input-field" autocomplete="username" />
+					</div>
+					<div class="form-group">
+						<label for="email" class="form-label font-display">{$t('auth.email_label')}</label>
+						<input bind:value={email} type="email" id="email" name="email" class="input-field" autocomplete="email" />
+					</div>
+					<div class="form-group">
+						<label for="password" class="form-label font-display">{$t('auth.password_label')}</label>
+						<input bind:value={password} type="password" id="password" name="password" class="input-field" autocomplete="new-password" />
+					</div>
 
-		<div class="form-group flex justify-center">
-			<CyberTurnstile
-				siteKey={TURNSTILE_SITE_KEY}
-				on:verified={handleTurnstileVerified}
-				on:error={handleTurnstileError}
-			/>
-		</div>
+					<div class="nav">
+						<span></span>
+						<NeonButton type="button" disabled={!step1Filled} on:click={() => (step = 2)}>
+							Далее
+						</NeonButton>
+					</div>
+				</div>
+			{/if}
 
-		<!--
-			Разъяснение прав ДО получения согласия. По части второй пункта 5
-			статьи 5 Закона № 99-З права субъекта разъясняются отдельным блоком,
-			а не ссылкой на документ, — поэтому текст показан целиком и не
-			сворачивается в аккордеон.
-		-->
-		<div class="form-group pt-2">
-			<section class="consent-notice" aria-labelledby="consent-notice-title">
-				<h2 id="consent-notice-title" class="consent-notice__title font-display">
-					{$t('auth.consent.notice_title')}
-				</h2>
+			{#if step === 2}
+				<!--
+					Разъяснение прав ДО получения согласия. По части второй пункта 5
+					статьи 5 Закона № 99-З права субъекта разъясняются отдельным блоком,
+					а не ссылкой на документ. Отдельным шагом мастера это требование
+					выполняется даже нагляднее, чем куском длинной формы, — но
+					сворачивать текст по-прежнему нельзя.
+				-->
+				<div class="step" in:fade={{ duration: 150 }}>
+					<section class="consent-notice" aria-labelledby="consent-notice-title">
+						<h2 id="consent-notice-title" class="consent-notice__title font-display">
+							{$t('auth.consent.notice_title')}
+						</h2>
 
-				<p class="consent-notice__p">{$t('auth.consent.operator')}</p>
-				<p class="consent-notice__p">{$t('auth.consent.purposes')}</p>
+						<p class="consent-notice__p">{$t('auth.consent.operator')}</p>
+						<p class="consent-notice__p">{$t('auth.consent.purposes')}</p>
 
-				<p class="consent-notice__p">
-					<strong>{$t('auth.consent.rights_title')}</strong>
-					{$t('auth.consent.rights')}
-				</p>
-				<p class="consent-notice__p">
-					<strong>{$t('auth.consent.howto_title')}</strong>
-					{$t('auth.consent.howto')}
-				</p>
-				<p class="consent-notice__p">
-					<strong>{$t('auth.consent.consequences_title')}</strong>
-					{$t('auth.consent.consequences')}
-				</p>
-			</section>
+						<p class="consent-notice__p">
+							<strong>{$t('auth.consent.rights_title')}</strong>
+							{$t('auth.consent.rights')}
+						</p>
+						<p class="consent-notice__p">
+							<strong>{$t('auth.consent.howto_title')}</strong>
+							{$t('auth.consent.howto')}
+						</p>
+						<p class="consent-notice__p">
+							<strong>{$t('auth.consent.consequences_title')}</strong>
+							{$t('auth.consent.consequences')}
+						</p>
+						<p class="consent-notice__p">
+							{$t('auth.consent.policy_more')}
+							<a href="/personal-data-policy" target="_blank" rel="noopener" class="link"
+								>{$t('auth.consent.policy_link')}</a
+							>.
+						</p>
+					</section>
 
-			<div class="consent-list">
-				<label class="terms-label">
-					<input type="checkbox" bind:checked={consentAgeMinimum} class="terms-checkbox" />
-					<span class="custom-checkbox"></span>
-					<span class="text-sm text-gray-400">{$t('auth.consent.cb_age_minimum')}</span>
-				</label>
+					<div class="consent-list">
+						<label class="terms-label">
+							<input type="checkbox" bind:checked={consentAgeMinimum} class="terms-checkbox" />
+							<span class="custom-checkbox"></span>
+							<span class="text-sm text-gray-400">
+								{$t('auth.consent.cb_age_minimum')}
+								<span class="consent-hint">{$t('auth.consent.age_hint')}</span>
+							</span>
+						</label>
 
-				<label class="terms-label">
-					<input type="checkbox" bind:checked={consentCoreProcessing} class="terms-checkbox" />
-					<span class="custom-checkbox"></span>
-					<span class="text-sm text-gray-400">{$t('auth.consent.cb_core')}</span>
-				</label>
+						<label class="terms-label">
+							<input type="checkbox" bind:checked={consentCoreProcessing} class="terms-checkbox" />
+							<span class="custom-checkbox"></span>
+							<span class="text-sm text-gray-400">{$t('auth.consent.cb_core')}</span>
+						</label>
 
-				<label class="terms-label">
-					<input type="checkbox" bind:checked={consentCrossBorder} class="terms-checkbox" />
-					<span class="custom-checkbox"></span>
-					<span class="text-sm text-gray-400">{$t('auth.consent.cb_cross_border')}</span>
-				</label>
+						<label class="terms-label">
+							<input type="checkbox" bind:checked={consentCrossBorder} class="terms-checkbox" />
+							<span class="custom-checkbox"></span>
+							<span class="text-sm text-gray-400">{$t('auth.consent.cb_cross_border')}</span>
+						</label>
 
-				<label class="terms-label">
-					<input type="checkbox" bind:checked={consentTos} class="terms-checkbox" />
-					<span class="custom-checkbox"></span>
-					<span class="text-sm text-gray-400">
-						{$t('auth.terms_agree')}
-						<a href="/terms-of-service" target="_blank" class="link">{$t('auth.terms_link')}</a>
-						&
-						<a href="/privacy-policy" target="_blank" class="link">{$t('auth.privacy_link')}</a>
-					</span>
-				</label>
-			</div>
-		</div>
+						<label class="terms-label">
+							<input type="checkbox" bind:checked={consentTos} class="terms-checkbox" />
+							<span class="custom-checkbox"></span>
+							<span class="text-sm text-gray-400">
+								{$t('auth.terms_agree')}
+								<a href="/terms-of-service" target="_blank" class="link">{$t('auth.terms_link')}</a>
+								&
+								<a href="/privacy-policy" target="_blank" class="link">{$t('auth.privacy_link')}</a>
+							</span>
+						</label>
+					</div>
 
-		<div class="pt-2">
-			<NeonButton
-				type="submit"
-				disabled={loading || googleLoading || !allConsentsGiven || !turnstileVerified}
-				extraClass="w-full"
-			>
-				{#if loading}
-					{$t('ui.loading')}
-				{:else}
-					{$t('auth.register_btn')}
-				{/if}
-			</NeonButton>
-		</div>
-	</form>
+					<div class="nav">
+						<button type="button" class="back" on:click={() => (step = 1)}>← Назад</button>
+						<NeonButton type="button" disabled={!allConsentsGiven} on:click={() => (step = 3)}>
+							Далее
+						</NeonButton>
+					</div>
+				</div>
+			{/if}
 
-	<div class="relative my-6">
-		<div class="absolute inset-0 flex items-center" aria-hidden="true">
-			<div class="w-full border-t border-gray-700/50"></div>
-		</div>
-		<div class="relative flex justify-center text-sm">
-			<span class="bg-gray-900 px-3 font-display uppercase tracking-wider text-gray-500"
-				>{$t('auth.or')}</span
-			>
-		</div>
-	</div>
+			{#if step === 3}
+				<div class="step" in:fade={{ duration: 150 }}>
+					<p class="step__hint">Последний шаг — подтверди, что ты не робот.</p>
 
-	<div class="text-center">
+					<div class="form-group flex justify-center">
+						<CyberTurnstile
+							siteKey={TURNSTILE_SITE_KEY}
+							on:verified={handleTurnstileVerified}
+							on:error={handleTurnstileError}
+						/>
+					</div>
+
+					<div class="nav">
+						<button type="button" class="back" on:click={() => (step = 2)}>← Назад</button>
+						<NeonButton
+							type="submit"
+							disabled={loading || googleLoading || !allConsentsGiven || !turnstileVerified}
+						>
+							{#if loading}{$t('ui.loading')}{:else}{$t('auth.register_btn')}{/if}
+						</NeonButton>
+					</div>
+
+					<div class="divider">
+						<span class="font-display">{$t('auth.or')}</span>
+					</div>
+
+					<div class="text-center">
 		<button
 			on:click={() => handleGoogleLogin()}
 			disabled={googleLoading || loading || !allConsentsGiven || !turnstileVerified || !appCheckReady}
@@ -654,35 +697,70 @@
 				</svg>
 			{/if}
 		</button>
-	</div>
+					</div>
+				</div>
+			{/if}
+		</form>
 
-	<p class="mt-8 text-center text-sm text-gray-500">
-		{$t('auth.has_account')}
-		<a href="/login" class="font-bold text-cyber-yellow hover:text-white">{$t('auth.login_btn')}</a>
-	</p>
-</div>
+		<p class="mt-8 text-center text-sm text-gray-500">
+			{$t('auth.has_account')}
+			<a href="/login" class="font-bold text-cyber-yellow hover:text-white">{$t('auth.login_btn')}</a>
+		</p>
+	</div>
+</AuthShell>
 
 <style>
-	.form-container {
-		@apply relative mx-auto my-10 max-w-lg rounded-none p-8 shadow-2xl;
-		background: rgba(10, 10, 10, 0.5);
-		backdrop-filter: blur(4px);
-		-webkit-backdrop-filter: blur(4px);
-		border: 1px solid rgba(252, 238, 10, 0.2);
-		clip-path: polygon(
-			0 15px,
-			15px 0,
-			100% 0,
-			100% calc(100% - 15px),
-			calc(100% - 15px) 100%,
-			0 100%
-		);
-		transition: opacity 0.4s ease-in-out;
+	/* ─── Мастер ──────────────────────────────────────────────────────────── */
+
+	.step {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
 	}
-	@media (max-width: 640px) {
-		.form-container {
-			@apply mx-4 my-4 p-6;
-		}
+
+	.step__hint {
+		margin: 0;
+		font-size: 0.9rem;
+		color: #7e93a5;
+	}
+
+	.nav {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-top: 0.5rem;
+	}
+
+	.back {
+		background: none;
+		border: none;
+		padding: 0.5rem 0;
+		font-size: 0.85rem;
+		color: #64798c;
+		cursor: pointer;
+		transition: color 0.15s;
+	}
+	.back:hover {
+		color: var(--cyber-yellow, #ffd500);
+	}
+
+	.divider {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin: 0.5rem 0;
+		color: #4a5a68;
+		font-size: 0.72rem;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+	}
+	.divider::before,
+	.divider::after {
+		content: '';
+		flex: 1;
+		height: 1px;
+		background: rgba(120, 140, 160, 0.25);
 	}
 
 	.form-title {
@@ -810,5 +888,14 @@
 	}
 	.link:hover {
 		color: #fff;
+	}
+
+	/* Пояснение под галочкой возраста: почему младше 16 нельзя */
+	.consent-hint {
+		display: block;
+		margin-top: 0.25rem;
+		font-size: 0.72rem;
+		line-height: 1.45;
+		color: #64748b;
 	}
 </style>

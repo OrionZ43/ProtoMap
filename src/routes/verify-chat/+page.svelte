@@ -18,6 +18,9 @@
     let container: HTMLDivElement;
     let widgetId: string | null = null;
 
+    // Боевой ключ намеренно: токен отсюда проверяется на сервере
+    // (PRIVATE_TURNSTILE_SECRET_KEY), и тестовому ключу нужен парный тестовый
+    // секрет. См. src/lib/turnstile.ts.
     const TURNSTILE_SITE_KEY = '0x4AAAAAACYHm8usBkEdoF37';
 
     onMount(() => {

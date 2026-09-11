@@ -22,6 +22,11 @@
 	import { httpsCallable } from 'firebase/functions';
 	import { userStore } from '$lib/stores';
 	import { t } from 'svelte-i18n';
+	import { TURNSTILE_SITE_KEY } from '$lib/turnstile';
+	import AuthShell from '$lib/components/auth/AuthShell.svelte';
+	import type { PageData } from './$types';
+
+	export let data: PageData;
 
 	let email = '';
 	let password = '';
@@ -73,7 +78,7 @@
 	let turnstileToken = '';
 	let turnstileVerified = false;
 
-	const TURNSTILE_SITE_KEY = '0x4AAAAAACYHm8usBkEdoF37';
+
 
 	const opacity = tweened(0, { duration: 400, easing: quintOut });
 
@@ -601,15 +606,12 @@
 {/if}
 <!-- ===== /1 АПРЕЛЯ ===== -->
 
-<div class="form-container cyber-panel pb-12" style="opacity: {$opacity}">
-	<div class="corner top-left"></div>
-	<div class="corner top-right"></div>
-	<div class="corner bottom-left"></div>
-	<div class="corner bottom-right"></div>
-
-	<h2 class="form-title font-display">
-		{isResetMode ? $t('auth.recover_title') : $t('auth.login_title')}
-	</h2>
+<AuthShell
+	title={isResetMode ? $t('auth.recover_title') : $t('auth.login_title')}
+	subtitle={isResetMode ? null : 'С возвращением в Сеть'}
+	protogens={data?.protogens ?? null}
+>
+	<div style="opacity: {$opacity}">
 
 	<form
 		on:submit|preventDefault={isResetMode ? handleResetPassword : handleLogin}
@@ -757,33 +759,10 @@
 			>
 		</p>
 	{/if}
-</div>
+	</div>
+</AuthShell>
 
 <style>
-	.form-container {
-		transition: opacity 0.4s ease-in-out;
-	}
-	.form-container {
-		@apply relative mx-auto my-10 max-w-lg rounded-none p-8 shadow-2xl;
-		background: rgba(10, 10, 10, 0.5);
-		backdrop-filter: blur(4px);
-		-webkit-backdrop-filter: blur(4px);
-		border: 1px solid rgba(252, 238, 10, 0.2);
-		clip-path: polygon(
-			0 15px,
-			15px 0,
-			100% 0,
-			100% calc(100% - 15px),
-			calc(100% - 15px) 100%,
-			0 100%
-		);
-	}
-	@media (max-width: 640px) {
-		.form-container {
-			@apply mx-4 my-4 p-6;
-		}
-	}
-
 	.form-title {
 		@apply mb-10 text-center text-2xl font-bold text-white lg:text-3xl;
 		text-shadow: none;

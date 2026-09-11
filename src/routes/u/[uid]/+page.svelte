@@ -482,6 +482,25 @@
                     {/if}
                 {/if}
 
+                <!--
+                    Показывается только тем, у кого метка есть: кнопка, ведущая
+                    в никуда, хуже её отсутствия. Карта по параметру focus сама
+                    раскроет кластер и откроет карточку.
+                -->
+                {#if data.hasLocation}
+                    <a
+                        href="/?focus={encodeURIComponent(data.profile.username)}"
+                        class="map-link font-display"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        Открыть на карте
+                    </a>
+                {/if}
+
             </div>
 
             <div class="profile-content">
@@ -741,6 +760,32 @@
     .profile-avatar { @apply w-32 h-32 rounded-full object-cover mb-4; border: 4px solid var(--cyber-yellow); box-shadow: 0 0 20px var(--cyber-yellow); }
 
     .profile-username { @apply text-4xl font-bold text-white break-words; }
+
+    /* Ссылка на метку. Иконка — SVG, а не эмодзи: правило проекта. */
+    .map-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.9rem;
+        padding: 0.45rem 1.1rem;
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #00f3ff;
+        border: 1px solid rgba(0, 243, 255, 0.4);
+        background: rgba(0, 243, 255, 0.06);
+        transition: background 0.18s, border-color 0.18s, color 0.18s;
+    }
+    .map-link:hover {
+        background: rgba(0, 243, 255, 0.16);
+        border-color: #00f3ff;
+        color: #fff;
+    }
+    .map-link svg {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+    }
 
     .presence-indicator { font-family: 'Chakra Petch', monospace; font-size: 0.85rem; margin-top: 0.25rem; }
     .presence-indicator.online { color: #39ff14; text-shadow: 0 0 8px #39ff14; font-weight: bold; }

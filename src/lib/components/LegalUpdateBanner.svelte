@@ -11,6 +11,8 @@
     // ── Storage keys ──────────────────────────────────────────────────────
     const KEY_PRIVACY = 'protomap_legal_privacy_version';
     const KEY_TOS     = 'protomap_legal_tos_version';
+    /** Ключ баннера про куки — он прибит к тому же низу экрана. */
+    const KEY_COOKIE  = 'protomap_cookie_consent';
 
     // ── State ─────────────────────────────────────────────────────────────
     let visible           = false;
@@ -27,7 +29,11 @@
         privacyOutdated = !!versions.privacy && versions.privacy !== savedPrivacy;
         tosOutdated     = !!versions.tos     && versions.tos     !== savedTos;
 
-        visible = privacyOutdated || tosOutdated;
+        // Баннер про куки живёт в том же нижнем углу. Показывать оба разом —
+        // значит наложить их друг на друга; пропускаем ход, пока он висит.
+        const cookiesPending = !localStorage.getItem(KEY_COOKIE);
+
+        visible = (privacyOutdated || tosOutdated) && !cookiesPending;
     });
 
     function accept() {
@@ -63,31 +69,48 @@
         <div class="banner-inner">
             <!-- Icon + Text -->
             <div class="banner-left">
-                <span class="banner-icon" aria-hidden="true">⚖</span>
+                <span class="banner-icon" aria-hidden="true">
+                    <!-- Весы правосудия, иконка `scale` из набора Lucide (ISC) -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                         stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+                        <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                        <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                        <path d="M7 21h10" />
+                        <path d="M12 3v18" />
+                        <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
+                    </svg>
+                </span>
                 <div class="banner-text">
                     <span class="banner-title font-display">// LEGAL_UPDATE</span>
                     <p class="banner-body">
                         {#if privacyOutdated && tosOutdated}
-                            Политика конфиденциальности и Условия использования обновились.
-                            Ознакомьтесь с изменениями.
+                            {$t('legal.banner.body_both')}
                         {:else if privacyOutdated}
-                            Политика конфиденциальности обновилась.
-                            Ознакомьтесь с изменениями.
+                            {$t('legal.banner.body_privacy')}
                         {:else}
-                            Условия использования (EULA) обновились.
-                            Ознакомьтесь с изменениями.
+                            {$t('legal.banner.body_tos')}
                         {/if}
                     </p>
                     <!-- Links to the relevant docs -->
                     <div class="banner-links">
                         {#if privacyOutdated}
                             <a href="/privacy-policy" class="doc-link">
-                                Политика конфиденциальности →
+                                {$t('legal.banner.link_privacy')}
+                                <svg class="doc-link__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                     width="12" height="12" aria-hidden="true">
+                                    <path d="M5 12h14M13 6l6 6-6 6" />
+                                </svg>
                             </a>
                         {/if}
                         {#if tosOutdated}
                             <a href="/terms-of-service" class="doc-link">
-                                Условия использования →
+                                {$t('legal.banner.link_tos')}
+                                <svg class="doc-link__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                     width="12" height="12" aria-hidden="true">
+                                    <path d="M5 12h14M13 6l6 6-6 6" />
+                                </svg>
                             </a>
                         {/if}
                     </div>
@@ -99,12 +122,12 @@
                 class="accept-btn font-display"
                 on:click={accept}
                 disabled={acceptInProgress}
-                aria-label="Принять обновлённые документы"
+                aria-label={$t('legal.banner.accept_aria')}
             >
                 {#if acceptInProgress}
                     <span class="btn-spinner" aria-hidden="true"></span>
                 {:else}
-                    ПРИНЯТЬ
+                    {$t('legal.banner.accept')}
                 {/if}
             </button>
         </div>
@@ -196,7 +219,8 @@
     }
 
     .banner-icon {
-        font-size: 1.5rem;
+        display: inline-flex;
+        color: var(--cyber-yellow, #fcee0a);
         flex-shrink: 0;
         filter: drop-shadow(0 0 6px rgba(252, 238, 10, 0.4));
         animation: icon-pulse 3s infinite ease-in-out;
@@ -236,14 +260,26 @@
     }
 
     .doc-link {
+        /* inline-flex + nowrap: иначе SVG-стрелка переносилась на свою строку */
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        white-space: nowrap;
         font-family: 'Chakra Petch', monospace;
         font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.06em;
-        color: var(--cyber-cyan, #00f0ff);
+        color: var(--cyber-yellow, #fcee0a);
         text-decoration: none;
-        border-bottom: 1px dashed rgba(0, 240, 255, 0.35);
+        border-bottom: 1px dashed rgba(252, 238, 10, 0.4);
         transition: color 0.2s, border-color 0.2s, text-shadow 0.2s;
+    }
+    .doc-link__arrow {
+        flex-shrink: 0;
+        transition: transform 0.2s;
+    }
+    .doc-link:hover .doc-link__arrow {
+        transform: translateX(2px);
     }
     .doc-link:hover {
         color: #fff;

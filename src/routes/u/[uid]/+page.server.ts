@@ -166,7 +166,30 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 
     setHeaders({ 'Cache-Control': 'public, max-age=60' });
 
+    /**
+     * Есть ли у пользователя метка на карте.
+     *
+     * Нужно, чтобы не показывать кнопку «открыть на карте» тем, кто метку не
+     * ставил: кнопка, ведущая в никуда, хуже её отсутствия.
+     *
+     * Запрос лёгкий — по индексированному полю с limit(1); сами координаты
+     * не читаем, они здесь не нужны.
+     */
+    let hasLocation = false;
+    try {
+        const locSnap = await firestoreAdmin
+            .collection('locations')
+            .where('user_id', '==', userDoc.id)
+            .limit(1)
+            .get();
+        hasLocation = !locSnap.empty;
+    } catch (e) {
+        // Профиль важнее кнопки: не смогли проверить — просто не показываем её.
+        console.error('[profile] Не удалось проверить наличие метки:', e);
+    }
+
     return {
+        hasLocation,
         profile: {
             uid: userDoc.id,
             username: userProfileData.username,

@@ -82,9 +82,12 @@
 			"howto": "The quick route is Settings — Security, or an e-mail to our address. The formal route is an application under Article 14 of Law No. 99-Z. Response times: 5 working days for a request for information about processing; 15 days for withdrawal of consent, modification, deletion, and information about transfers to third parties.",
 			"consequences_title": "Consequences.",
 			"consequences": "Registration is not possible without consent: the Service cannot operate without processing this data. Withdrawal of consent results in deletion of your account within 15 days and has no retroactive effect.",
-			"cb_age_minimum": "I am at least 17 years old.",
+			"cb_age_minimum": "I am at least 16 years old.",
 			"cb_core": "I have read the explanation of my rights and consent to the processing of my personal data for the operation of my account, the map and chats.",
-			"cb_cross_border": "I consent to the transfer of my personal data to foreign states, including states that do not ensure an adequate level of protection of data subjects' rights, and confirm that I have been informed of the associated risks."
+			"cb_cross_border": "I consent to the transfer of my personal data to foreign states, including states that do not ensure an adequate level of protection of data subjects' rights, and confirm that I have been informed of the associated risks.",
+			"age_hint": "Below the age of 16, consent to the processing of personal data is given by a legal representative (Article 5(9) of Law No. 99-Z). The Service does not provide for this, so persons under 16 cannot register.",
+			"policy_more": "Processing purposes, retention periods and data recipients are listed in the",
+			"policy_link": "Personal Data Processing Policy"
 		}
 	},
 	"security": {
@@ -120,7 +123,8 @@
 	"footer": {
 		"policy": "PRIVACY POLICY",
 		"terms": "TERMS OF SERVICE",
-		"rights": "ProtoMap"
+		"rights": "ProtoMap",
+		"pd_policy": "PERSONAL DATA"
 	},
 	"chat": {
 		"title": "GLOBAL CHAT",
@@ -733,5 +737,36 @@
 		"login_btn": "LOGIN"
 	},
 	"privacy_policy": "Privacy Policy",
-	"terms_of_service": "Terms of Service"
+	"terms_of_service": "Terms of Service",
+	"legal": {
+		"banner": {
+			"body_both": "The Privacy Policy and Terms of Service have been updated. Please review the changes.",
+			"body_privacy": "The Privacy Policy has been updated. Please review the changes.",
+			"body_tos": "The Terms of Service have been updated. Please review the changes.",
+			"link_privacy": "Privacy Policy",
+			"link_tos": "Terms of Service",
+			"accept": "ACCEPT",
+			"accept_aria": "Accept the updated documents"
+		},
+		"gate": {
+			"title": "Documents updated",
+			"lede": "A new revision of the Privacy Policy and Terms of Service has taken effect. To keep using ProtoMap, please confirm your consent — this is a one-time step.",
+			"v_privacy": "PRIVACY",
+			"v_tos": "TERMS",
+			"and": "and",
+			"accept": "I agree, continue",
+			"saving": "Saving…",
+			"error": "Could not record your consent. Please try again.",
+			"logout": "Sign out",
+			"refuse": "I do not agree — delete my account"
+		},
+		"page": {
+			"back": "BACK TO THE MAP",
+			"not_found": "The document is temporarily unavailable. Please try again later.",
+			"privacy": "PRIVACY POLICY",
+			"terms": "TERMS OF SERVICE",
+			"pd_policy": "PERSONAL DATA PROCESSING"
+		}
+	},
+	"personal_data_policy": "Personal Data Processing Policy"
 }
