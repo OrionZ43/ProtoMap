@@ -22,7 +22,11 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-repomix-output.xml
+site.xml
 repomix.config.json
 
 .idea/
+
+# Trailer studio (локальная работа, не публикуется)
+trailer/
+*.auth.json

@@ -90,7 +90,6 @@ paths have no file behind them:
 `vd_shot_live.mp3`, `vd_shot_blank.mp3`, `vd_item_scanner.mp3`, `vd_item_generic.mp3`,
 `vd_item_emp.mp3`
 
-`static/halloween/bat.svg` 404s the same way.
 
 **Verified:** 2026-09-04, by logging every response with status ≥ 400 during an automated
 browser pass over `/casino/*` (`scripts/showcase/capture.mjs`). Ten distinct 404s per
