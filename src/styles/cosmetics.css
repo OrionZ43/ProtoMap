@@ -36,7 +36,9 @@
 }
 
 /* --- 1. Неоновый Поток (Neon Blue) --- */
-.avatar-wrapper.frame_neon_blue img {
+/* Рамка рисуется на самом аватаре, поэтому в превью магазина и инвентаря,
+   где вместо картинки заглушка .avatar-placeholder, она нужна и заглушке. */
+.avatar-wrapper.frame_neon_blue > :is(img, .avatar-placeholder) {
     outline: 3px solid var(--cyber-cyan);
     outline-offset: 3px;
     box-shadow: 0 0 15px var(--cyber-cyan), 0 0 25px var(--cyber-cyan);
@@ -142,7 +144,7 @@
 
 /* Базовый стиль (для пользователей БЕЗ рамки) */
 .user-avatar-marker {
-    box-shadow: 0 0 8px rgba(252, 238, 10, 0.7);
+    box-shadow: 0 0 8px rgb(var(--cyber-yellow-rgb) / 0.7);
     transition: transform 0.2s ease-out;
     border-radius: 50%;
     overflow: hidden; /* Важно для обрезки круга без рамки */
@@ -1195,4 +1197,175 @@
 .user-avatar-marker.frame_genesis img {
     border: 1.5px solid rgba(200,218,240,0.45) !important;
     border-radius: 50% !important;
+}
+
+/* ==========================================================================
+   Хэллоуин 2026 — рамки. Продаются в окно из shop_items (available_from/until),
+   «Тыквенная голова» — приз Плинко. Картинки — static/halloween/cosmetics/.
+   Рамка — SVG 200×200 поверх аватарки: аватар занимает круг r=50 в центре, поэтому
+   слой вдвое больше обёртки (inset: -50%). В профиле, магазине и инвентаре
+   (.avatar-wrapper) — полная версия с медленной анимацией; на карте, в чате
+   и лидерборде — неподвижная облегчённая, мотив тот же.
+   ========================================================================== */
+.avatar-wrapper.frame_cat_familiar,
+.user-avatar-marker.frame_cat_familiar,
+.avatar-wrapper-popup.frame_cat_familiar,
+.comment-avatar-wrapper.frame_cat_familiar,
+.avatar-wrapper.frame_autumn_leaves,
+.user-avatar-marker.frame_autumn_leaves,
+.avatar-wrapper-popup.frame_autumn_leaves,
+.comment-avatar-wrapper.frame_autumn_leaves,
+.avatar-wrapper.frame_pumpkin_head,
+.user-avatar-marker.frame_pumpkin_head,
+.avatar-wrapper-popup.frame_pumpkin_head,
+.comment-avatar-wrapper.frame_pumpkin_head,
+.avatar-wrapper.frame_spider_couple,
+.user-avatar-marker.frame_spider_couple,
+.avatar-wrapper-popup.frame_spider_couple,
+.comment-avatar-wrapper.frame_spider_couple,
+.avatar-wrapper.frame_cobweb,
+.user-avatar-marker.frame_cobweb,
+.avatar-wrapper-popup.frame_cobweb,
+.comment-avatar-wrapper.frame_cobweb {
+    position: relative;
+    isolation: isolate;
+    overflow: visible;
+}
+
+.avatar-wrapper.frame_cat_familiar img,
+.user-avatar-marker.frame_cat_familiar img,
+.avatar-wrapper-popup.frame_cat_familiar img,
+.comment-avatar-wrapper.frame_cat_familiar img,
+.avatar-wrapper.frame_autumn_leaves img,
+.user-avatar-marker.frame_autumn_leaves img,
+.avatar-wrapper-popup.frame_autumn_leaves img,
+.comment-avatar-wrapper.frame_autumn_leaves img,
+.avatar-wrapper.frame_pumpkin_head img,
+.user-avatar-marker.frame_pumpkin_head img,
+.avatar-wrapper-popup.frame_pumpkin_head img,
+.comment-avatar-wrapper.frame_pumpkin_head img,
+.avatar-wrapper.frame_spider_couple img,
+.user-avatar-marker.frame_spider_couple img,
+.avatar-wrapper-popup.frame_spider_couple img,
+.comment-avatar-wrapper.frame_spider_couple img,
+.avatar-wrapper.frame_cobweb img,
+.user-avatar-marker.frame_cobweb img,
+.avatar-wrapper-popup.frame_cobweb img,
+.comment-avatar-wrapper.frame_cobweb img {
+    position: relative;
+    z-index: 1;
+}
+
+.avatar-wrapper.frame_cat_familiar::after,
+.user-avatar-marker.frame_cat_familiar::after,
+.avatar-wrapper-popup.frame_cat_familiar::after,
+.comment-avatar-wrapper.frame_cat_familiar::after,
+.avatar-wrapper.frame_autumn_leaves::after,
+.user-avatar-marker.frame_autumn_leaves::after,
+.avatar-wrapper-popup.frame_autumn_leaves::after,
+.comment-avatar-wrapper.frame_autumn_leaves::after,
+.avatar-wrapper.frame_pumpkin_head::after,
+.user-avatar-marker.frame_pumpkin_head::after,
+.avatar-wrapper-popup.frame_pumpkin_head::after,
+.comment-avatar-wrapper.frame_pumpkin_head::after,
+.avatar-wrapper.frame_spider_couple::after,
+.user-avatar-marker.frame_spider_couple::after,
+.avatar-wrapper-popup.frame_spider_couple::after,
+.comment-avatar-wrapper.frame_spider_couple::after,
+.avatar-wrapper.frame_cobweb::after,
+.user-avatar-marker.frame_cobweb::after,
+.avatar-wrapper-popup.frame_cobweb::after,
+.comment-avatar-wrapper.frame_cobweb::after {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    z-index: 2;
+    pointer-events: none;
+    background: center / 100% 100% no-repeat;
+    border: none;
+    box-shadow: none;
+    animation: none;
+}
+
+/* Своё кольцо у рамки — штатное свечение и жёлтая обводка метки под ним не нужны */
+.user-avatar-marker.frame_cat_familiar,
+.user-avatar-marker.frame_autumn_leaves,
+.user-avatar-marker.frame_pumpkin_head,
+.user-avatar-marker.frame_spider_couple,
+.user-avatar-marker.frame_cobweb {
+    box-shadow: none !important;
+}
+
+.user-avatar-marker.frame_cat_familiar img,
+.user-avatar-marker.frame_autumn_leaves img,
+.user-avatar-marker.frame_pumpkin_head img,
+.user-avatar-marker.frame_spider_couple img,
+.user-avatar-marker.frame_cobweb img {
+    border: none !important;
+    border-radius: 50%;
+}
+
+.avatar-wrapper.frame_cat_familiar::after { background-image: url('/halloween/cosmetics/frame_cat_familiar.svg'); }
+.user-avatar-marker.frame_cat_familiar::after,
+.avatar-wrapper-popup.frame_cat_familiar::after,
+.comment-avatar-wrapper.frame_cat_familiar::after { background-image: url('/halloween/cosmetics/frame_cat_familiar-lite.svg'); }
+
+.avatar-wrapper.frame_autumn_leaves::after { background-image: url('/halloween/cosmetics/frame_autumn_leaves.svg'); }
+.user-avatar-marker.frame_autumn_leaves::after,
+.avatar-wrapper-popup.frame_autumn_leaves::after,
+.comment-avatar-wrapper.frame_autumn_leaves::after { background-image: url('/halloween/cosmetics/frame_autumn_leaves-lite.svg'); }
+
+.avatar-wrapper.frame_pumpkin_head::after { background-image: url('/halloween/cosmetics/frame_pumpkin_head.svg'); }
+.user-avatar-marker.frame_pumpkin_head::after,
+.avatar-wrapper-popup.frame_pumpkin_head::after,
+.comment-avatar-wrapper.frame_pumpkin_head::after { background-image: url('/halloween/cosmetics/frame_pumpkin_head-lite.svg'); }
+
+.avatar-wrapper.frame_spider_couple::after { background-image: url('/halloween/cosmetics/frame_spider_couple.svg'); }
+.user-avatar-marker.frame_spider_couple::after,
+.avatar-wrapper-popup.frame_spider_couple::after,
+.comment-avatar-wrapper.frame_spider_couple::after { background-image: url('/halloween/cosmetics/frame_spider_couple-lite.svg'); }
+
+.avatar-wrapper.frame_cobweb::after { background-image: url('/halloween/cosmetics/frame_cobweb.svg'); }
+.user-avatar-marker.frame_cobweb::after,
+.avatar-wrapper-popup.frame_cobweb::after,
+.comment-avatar-wrapper.frame_cobweb::after { background-image: url('/halloween/cosmetics/frame_cobweb-lite.svg'); }
+
+/* Кот изредка моргает: глаза — отдельный слой поверх картинки */
+.avatar-wrapper.frame_cat_familiar::before {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    z-index: 4;
+    pointer-events: none;
+    background: center / 100% 100% no-repeat url('/halloween/cosmetics/frame_cat_familiar-eyes.svg');
+    animation: hw-blink 5.5s steps(1, end) infinite;
+}
+
+/* Тыквенная голова: по краю отверстия медленно дышит свет свечи */
+.avatar-wrapper.frame_pumpkin_head::before {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    z-index: 2;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 50%, transparent 30%, rgba(255, 176, 70, .6) 34.5%, transparent 37%);
+    animation: hw-breathe 3.6s ease-in-out infinite alternate;
+}
+
+@keyframes hw-blink {
+    0%, 91% { opacity: 1; }
+    92%, 95% { opacity: 0; }
+    96%, 100% { opacity: 1; }
+}
+
+@keyframes hw-breathe {
+    from { opacity: .35; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .avatar-wrapper.frame_cat_familiar::before,
+    .avatar-wrapper.frame_pumpkin_head::before {
+        animation: none;
+    }
 }

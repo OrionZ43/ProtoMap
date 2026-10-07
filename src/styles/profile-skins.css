@@ -7,6 +7,10 @@
     z-index: -1;
     pointer-events: none;
     overflow: hidden;
+    /* Размеры узоров считаются от самого фона (cqw/cqh), а не от окна: на профиле
+       это одно и то же, а уменьшенная копия в магазине (BackgroundPreview) выглядит
+       как маленький экран, а не как обрезок большого. */
+    container-type: size;
 }
 
 .profile-container.themed {
@@ -54,9 +58,24 @@
 .profile-container.bg_carbon-theme h4 { color: #888 !important; letter-spacing: 0.2em; }
 .profile-container.bg_carbon-theme .top-bar { border-color: rgba(255, 140, 0, 0.2) !important; }
 
+/* Движущаяся часть фона живёт в отдельном слое <div class="backdrop-motion"> внутри
+   .profile-backdrop. Слой рисуется один раз и только сдвигается через transform —
+   анимация background-position перерисовывала весь экран на каждом кадре.
+   z-index: -1 кладёт его поверх фона самого .profile-backdrop, но под ::before и ::after. */
+.profile-backdrop > .backdrop-motion {
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Полосы — шаг 10px, туман — высота экрана: у каждого свой бесшовный цикл. */
 @keyframes matrix-fall {
-    0% { background-position: 0% 0%; }
-    100% { background-position: 0% 1000px; }
+    from { transform: translateY(0); }
+    to { transform: translateY(10px); }
+}
+@keyframes matrix-fog {
+    from { transform: translateY(0); }
+    to { transform: translateY(100cqh); }
 }
 @keyframes crt-flicker {
     0% { opacity: 0.95; }
@@ -67,12 +86,28 @@
 
 .profile-backdrop.bg_matrix {
     background-color: #000;
-    background-image:
-        linear-gradient(to top, rgba(0, 50, 0, 0.8), transparent),
-        repeating-linear-gradient(0deg, transparent, transparent 50%, rgba(0, 255, 0, 0.1) 50%, rgba(0, 255, 0, 0.1) 100%),
-        repeating-linear-gradient(90deg, rgba(0,0,0,0.9) 0px, rgba(0,0,0,0.9) 20px, transparent 20px, transparent 40px);
-    background-size: 100% 100%, 100% 10px, 40px 100%;
-    animation: matrix-fall 20s linear infinite;
+    /* Колонки вертикальные — сдвиг вниз их не меняет, поэтому они неподвижны. */
+    background-image: repeating-linear-gradient(90deg, rgba(0,0,0,0.9) 0px, rgba(0,0,0,0.9) 20px, transparent 20px, transparent 40px);
+    background-size: 40px 100%;
+}
+
+/* Полосы падают со скоростью 50 px/с: слой выше экрана на один шаг и съезжает на него. */
+.profile-backdrop.bg_matrix > .backdrop-motion {
+    left: 0; right: 0; top: -10px; bottom: 0;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 50%, rgba(0, 255, 0, 0.1) 50%, rgba(0, 255, 0, 0.1) 100%);
+    background-size: 100% 10px;
+    animation: matrix-fall 0.2s linear infinite;
+}
+
+/* Туман высотой в экран сползает на свою высоту за 18 с — около 50 px/с, как раньше.
+   Раньше сдвиг за цикл был 1000px, а период тумана — высота экрана, и раз в 20 с туман
+   прыгал; теперь цикл бесшовный. Туман лежит над полосами, как и был. */
+.profile-backdrop.bg_matrix::before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; top: -100cqh; bottom: 0;
+    background: linear-gradient(to top, rgba(0, 50, 0, 0.8), transparent) 0 0 / 100% 100cqh;
+    animation: matrix-fog 18s linear infinite;
 }
 
 .profile-backdrop.bg_matrix::after {
@@ -176,10 +211,10 @@
 
 /* ──── АНИМАЦИИ ────────────────────────────────────────────────────────── */
 
-/* Медленный дрейф сетки — только transform, zero reflow */
+/* Медленный дрейф сетки, тумана и виньетки — сдвиг слоя .backdrop-motion */
 @keyframes genesis-grid-drift {
-    0%   { background-position: 0px 0px,   40px 40px,  0% 50%; }
-    100% { background-position: 80px 80px, 120px 120px, 0% 50%; }
+    from { transform: translate(0, 0); }
+    to   { transform: translate(80px, 80px); }
 }
 
 /* Проход тонкого сканлайна */
@@ -206,25 +241,32 @@
 
 .profile-backdrop.bg_genesis {
     background-color: #050a12;
+    /* Диагональные тончайшие линии для «объёма» (80px) — неподвижны. */
+    background-image: linear-gradient(45deg, rgba(100,200,255,0.025) 1px, transparent 1px);
+    background-size: 80px 80px;
+    background-position: 0% 50%;
+    overflow: hidden;
+}
 
-    /*
-       Слои (снизу вверх):
-       1. Горизонтальная wireframe-сетка (40px)
-       2. Вертикальная wireframe-сетка (40px)
-       3. Диагональные тончайшие линии для «объёма» (80px)
-       4. Центральный радиальный туман (глубина)
-       5. Краевая виньетка (тьма по углам)
-    */
+/*
+   Дрейфующий слой (сверху вниз):
+   1. Горизонтальная wireframe-сетка (40px)
+   2. Вертикальная wireframe-сетка (40px)
+   3. Центральный радиальный туман (глубина)
+   4. Краевая виньетка (тьма по углам)
+   Слой на 80px больше экрана сверху и слева и съезжает на 80px вниз-вправо за 35 с.
+   Позиции картинок сдвинуты на те же 80px, поэтому кадры совпадают с прежним дрейфом
+   background-position, а сетка с шагом 40px сходится бесшовно.
+*/
+.profile-backdrop.bg_genesis > .backdrop-motion {
+    left: -80px; top: -80px; right: 0; bottom: 0;
     background-image:
         linear-gradient(rgba(100,200,255,0.06) 1px, transparent 1px),
         linear-gradient(90deg, rgba(100,200,255,0.06) 1px, transparent 1px),
-        linear-gradient(45deg, rgba(100,200,255,0.025) 1px, transparent 1px),
         radial-gradient(ellipse at 50% 35%, rgba(80,140,220,0.07) 0%, transparent 65%),
         radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,5,18,0.88) 100%);
-    background-size: 40px 40px, 40px 40px, 80px 80px, 100% 100%, 100% 100%;
-    overflow: hidden;
-
-    /* Дрейф сетки */
+    background-size: 40px 40px, 40px 40px, 100cqw 100cqh, 100cqw 100cqh;
+    background-position: 80px 80px, 120px 120px, 80px 80px, 120px 120px;
     animation: genesis-grid-drift 35s linear infinite;
 }
 
@@ -368,4 +410,120 @@
     color: #fff !important;
     box-shadow: 0 0 14px rgba(160,210,255,0.25) !important;
     transform: scale(1.07);
+}
+
+/* «Меньше движения» в системе — фоны профиля замирают. */
+@media (prefers-reduced-motion: reduce) {
+    .profile-backdrop,
+    .profile-backdrop::before,
+    .profile-backdrop::after,
+    .profile-backdrop > .backdrop-motion {
+        animation: none !important;
+    }
+    /* Без анимации пульс Carbon застыл бы на полной яркости — ставим середину его размаха. */
+    .profile-backdrop.bg_carbon::before { opacity: 0.45; }
+}
+
+/* ==========================================================================
+   Хэллоуин 2026 — фоны. Сцена 1600×1000 (static/halloween/cosmetics/<id>.svg)
+   растягивается как cover; ::after — передние силуэты; ::before — маленький слой
+   мерцания (окна, рожица, глаза) точно по своей коробке в координатах сцены.
+   Сцена неподвижна, движется только прозрачность этого слоя.
+   --fx — какую часть сцены по горизонтали держать в кадре (0 — левый край,
+   1 — правый). На широком экране середина; на вертикальном видна лишь узкая
+   полоса, и она сдвигается к герою сцены (--fx-portrait), иначе остаются одни
+   звёзды и трава. Миниатюры (BackgroundPreview) всегда берут --fx-portrait:
+   в коробке шире сцены сдвигу некуда, в узкой нужен герой.
+   ========================================================================== */
+.profile-backdrop.bg_moonlit_night,
+.profile-backdrop.bg_cat_on_fence,
+.profile-backdrop.bg_castle_on_hill {
+    --fx: .5;
+}
+
+.profile-backdrop.bg_moonlit_night { --fx-portrait: .95; }
+.profile-backdrop.bg_cat_on_fence { --fx-portrait: .95; }
+.profile-backdrop.bg_castle_on_hill { --fx-portrait: 1; }
+
+@media (orientation: portrait) {
+    .profile-backdrop.bg_moonlit_night,
+    .profile-backdrop.bg_cat_on_fence,
+    .profile-backdrop.bg_castle_on_hill {
+        --fx: var(--fx-portrait);
+    }
+}
+
+.profile-backdrop.bg_moonlit_night::before,
+.profile-backdrop.bg_moonlit_night::after,
+.profile-backdrop.bg_cat_on_fence::before,
+.profile-backdrop.bg_cat_on_fence::after,
+.profile-backdrop.bg_castle_on_hill::before,
+.profile-backdrop.bg_castle_on_hill::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+    /* масштаб сцены при cover: 1 единица сцены в пикселях экрана */
+    --k: max(calc(100cqw / 1600), calc(100cqh / 1000));
+}
+
+.profile-backdrop.bg_moonlit_night::after,
+.profile-backdrop.bg_cat_on_fence::after,
+.profile-backdrop.bg_castle_on_hill::after {
+    z-index: 1;
+    inset: 0;
+    background: calc(var(--fx) * 100%) 50% / cover no-repeat;
+}
+
+.profile-backdrop.bg_moonlit_night { background: #05040a calc(var(--fx) * 100%) 50% / cover no-repeat url('/halloween/cosmetics/bg_moonlit_night.svg'); }
+.profile-backdrop.bg_moonlit_night::after { background-image: url('/halloween/cosmetics/bg_moonlit_night-front.svg'); }
+.profile-backdrop.bg_moonlit_night::before {
+    z-index: 2;
+    left: calc((100cqw - 1600 * var(--k)) * var(--fx) + 1301.36 * var(--k));
+    top: calc(50% + 277.08 * var(--k));
+    width: calc(99.94 * var(--k));
+    height: calc(62.12 * var(--k));
+    background: center / 100% 100% no-repeat url('/halloween/cosmetics/bg_moonlit_night-glow.svg');
+    animation: hw-breathe 3.6s ease-in-out infinite alternate;
+}
+
+.profile-backdrop.bg_cat_on_fence { background: #05040a calc(var(--fx) * 100%) 50% / cover no-repeat url('/halloween/cosmetics/bg_cat_on_fence.svg'); }
+.profile-backdrop.bg_cat_on_fence::after { background-image: url('/halloween/cosmetics/bg_cat_on_fence-front.svg'); }
+.profile-backdrop.bg_cat_on_fence::before {
+    z-index: 2;
+    left: calc((100cqw - 1600 * var(--k)) * var(--fx) + 1316.39 * var(--k));
+    top: calc(50% + 64.62 * var(--k));
+    width: calc(110.84 * var(--k));
+    height: calc(38.06 * var(--k));
+    background: center / 100% 100% no-repeat url('/halloween/cosmetics/bg_cat_on_fence-glow.svg');
+    animation: hw-blink 5.5s steps(1, end) infinite;
+}
+
+.profile-backdrop.bg_castle_on_hill { background: #05040a calc(var(--fx) * 100%) 50% / cover no-repeat url('/halloween/cosmetics/bg_castle_on_hill.svg'); }
+.profile-backdrop.bg_castle_on_hill::after { background-image: url('/halloween/cosmetics/bg_castle_on_hill-front.svg'); }
+.profile-backdrop.bg_castle_on_hill::before {
+    z-index: 2;
+    left: calc((100cqw - 1600 * var(--k)) * var(--fx) + 1269.63 * var(--k));
+    top: calc(50% + 36.80 * var(--k));
+    width: calc(126.09 * var(--k));
+    height: calc(204.23 * var(--k));
+    background: center / 100% 100% no-repeat url('/halloween/cosmetics/bg_castle_on_hill-glow.svg');
+    animation: hw-flicker 5s ease-in-out infinite;
+}
+
+@keyframes hw-flicker {
+    0%, 100% { opacity: 1; }
+    18% { opacity: .55; }
+    22% { opacity: .9; }
+    47% { opacity: .4; }
+    53% { opacity: .85; }
+    78% { opacity: .5; }
+    83% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .profile-backdrop.bg_moonlit_night::before,
+    .profile-backdrop.bg_cat_on_fence::before,
+    .profile-backdrop.bg_castle_on_hill::before {
+        animation: none;
+    }
 }

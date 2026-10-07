@@ -10,6 +10,11 @@
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
     import { functions } from '$lib/firebase';
+    import { isPlinkoOpen } from '$lib/games/plinko';
+    import { seasonNow } from '$lib/seasonal/seasons';
+
+    // Плинко появляется в лобби вместе с Хэллоуином 20 октября и остаётся насовсем
+    const plinkoOpen = isPlinkoOpen(seasonNow().getTime());
 
     let loadingBonus = false;
     let loadingLeaderboard = true;
@@ -261,6 +266,21 @@
                     <span class="play-indicator font-display">{$t('casino.play')}</span>
                 </div>
             </a>
+
+            <!-- PLINKO -->
+            {#if plinkoOpen}
+            <a href="/casino/plinko" class="game-card">
+                <div class="game-art">
+                     <img src="/casino/plinko.svg" alt="Plinko" class="art-img">
+                     <div class="art-overlay"></div>
+                </div>
+                <div class="game-info">
+                    <h3 class="game-title font-display">{$t('casino.game_plinko_title')}</h3>
+                    <p class="game-desc">{$t('casino.game_plinko_desc')}</p>
+                    <span class="play-indicator font-display">{$t('casino.play')}</span>
+                </div>
+            </a>
+            {/if}
         </div>
 
         <div class="leaderboard-section mt-12 max-w-3xl w-full mx-auto">

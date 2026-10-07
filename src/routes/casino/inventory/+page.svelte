@@ -8,6 +8,7 @@
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
     import { functions } from '$lib/firebase';
+    import BackgroundPreview from '$lib/components/BackgroundPreview.svelte';
 
     export let data: PageData;
 
@@ -121,7 +122,10 @@
         <div class="wardrobe">
 
             <div class="preview-panel">
-                <div class="preview-box {selectedBg || ''}">
+                <div class="preview-box">
+                    {#if selectedBg}
+                        <BackgroundPreview id={selectedBg} />
+                    {/if}
                     <div class="avatar-wrapper {selectedFrame ? data.allItems[selectedFrame]?.id : ''}">
                         <img
                             src={$userStore.user?.avatar_url || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${$userStore.user?.username}`}
@@ -179,7 +183,8 @@
                                     class:selected={selectedBg === item.id}
                                     on:click={() => selectItem(item.id, 'background')}
                                 >
-                                    <div class="bg-icon-preview {item.id}">
+                                    <div class="bg-icon-preview">
+                                        <BackgroundPreview id={item.id} />
                                         <div class="mini-profile-line"></div>
                                         <div class="mini-profile-line short"></div>
                                     </div>
@@ -311,13 +316,14 @@
 
     /* Иконка для фона */
     .bg-icon-preview {
+        position: relative; overflow: hidden;
         width: 70px; height: 70px; border-radius: 8px;
         border: 1px solid #555;
         display: flex; flex-direction: column;
         align-items: center; justify-content: center;
         gap: 5px;
     }
-    .mini-profile-line { width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; }
+    .mini-profile-line { position: relative; z-index: 1; width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; }
     .mini-profile-line.short { width: 25px; }
 
     .item-name { color: #ccc; font-size: 0.8rem; margin-top: 1rem; }

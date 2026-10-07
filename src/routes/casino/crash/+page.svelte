@@ -2,7 +2,7 @@
     import { userStore } from '$lib/stores';
     import { onMount, onDestroy } from 'svelte';
     import { httpsCallable } from 'firebase/functions';
-    import { getDatabase, ref, onValue, off } from 'firebase/database';
+    import { ref, onValue } from 'firebase/database';
     import { modal } from '$lib/stores/modalStore';
     import { Howl } from 'howler';
     import { tweened } from 'svelte/motion';
@@ -10,7 +10,7 @@
     import { t } from 'svelte-i18n';
     import { get } from 'svelte/store';
     import { renderMarkdown } from '$lib/utils/markdown';
-    import { functions } from '$lib/firebase';
+    import { functions, rtdb } from '$lib/firebase';
 
     let canvas: HTMLCanvasElement;
     let ctx: CanvasRenderingContext2D;
@@ -170,8 +170,11 @@
                 });
             }
 
-            const db = getDatabase(undefined, "https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app");
-            const gameRef = ref(db, `crash_games/${gameId}`);
+            // Только общий экземпляр из $lib/firebase. Второй getDatabase() на тот же
+            // адрес SDK не переживает: «FIREBASE FATAL ERROR: Database initialized
+            // multiple times». Ставка к этому моменту уже списана сервером, так что
+            // падение здесь стоило игроку денег.
+            const gameRef = ref(rtdb, `crash_games/${gameId}`);
 
             if (unsubscribeRTDB) unsubscribeRTDB();
 
@@ -228,7 +231,12 @@
 
         try {
             const cashOutFunc = httpsCallable(functions, 'cashOutCrashGame');
-            await cashOutFunc({ gameId, multiplier: currentMult });
+            const res: any = await cashOutFunc({ gameId, multiplier: currentMult });
+
+            // Сумму решает сервер: он платит по меньшему из множителей — экранному
+            // и тому, до которого игра выросла по его часам.
+            const paid = res?.data?.data?.winAmount;
+            if (typeof paid === 'number') winAmount = paid;
 
             userStore.update(s => { if(s.user) s.user.casino_credits += winAmount; return s; });
         } catch (e) {
@@ -786,7 +794,7 @@
     .launch-btn:hover { background: #00d0dd; box-shadow: 0 0 50px rgba(0, 240, 255, 0.4); }
     .launch-btn:disabled { background: #222; color: #444; box-shadow: none; cursor: not-allowed; }
 
-    .abort-btn { background: var(--cyber-yellow); box-shadow: 0 0 30px rgba(252, 238, 10, 0.3); animation: pulse-red 0.5s infinite; }
+    .abort-btn { background: var(--cyber-yellow); box-shadow: 0 0 30px rgb(var(--cyber-yellow-rgb) / 0.3); animation: pulse-red 0.5s infinite; }
     .abort-btn:hover { background: #ffd700; }
 
     .btn-content { display: flex; flex-direction: column; align-items: center; line-height: 1.1; color: #000; z-index: 2; }

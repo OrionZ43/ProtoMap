@@ -7,10 +7,11 @@
     import { httpsCallable } from 'firebase/functions';
     import { modal } from '$lib/stores/modalStore';
     import { Howl } from 'howler';
-    import { t } from 'svelte-i18n';
+    import { t, locale } from 'svelte-i18n';
     import { get } from 'svelte/store';
     import { fade } from 'svelte/transition';
     import { functions } from '$lib/firebase';
+    import BackgroundPreview from '$lib/components/BackgroundPreview.svelte';
 
     export let data: PageData;
 
@@ -22,6 +23,10 @@
 
     // Фильтруем товары на лету
     $: visibleItems = data.items.filter(item => item.type === activeCategory);
+
+    // Последний день окна продаж: available_until — начало следующего дня по Минску
+    $: untilFormat = new Intl.DateTimeFormat($locale || 'ru', { day: 'numeric', month: 'long', timeZone: 'Europe/Minsk' });
+    const lastDay = (iso: string) => untilFormat.format(new Date(Date.parse(iso) - 1));
 
     // Хелпер для перевода
     const translate = (key: string) => get(t)(key);
@@ -169,6 +174,7 @@
                     <!-- ЕСЛИ ФОН -->
                     {:else if item.type === 'background'}
                         <div class="bg-preview-box {item.id}">
+                            <BackgroundPreview id={item.id} />
                             <!-- Мини-контент для демонстрации фона -->
                             <div class="mini-profile">
                                 <div class="mini-avatar"></div>
@@ -179,6 +185,9 @@
                 </div>
 
                 <div class="item-info">
+                    {#if item.available_until}
+                        <span class="season-badge">{$t('shop.until', { values: { date: lastDay(item.available_until) } })}</span>
+                    {/if}
                     <h3 class="item-name font-display">{item.name}</h3>
                     <p class="item-desc">{item.description}</p>
                 </div>
@@ -331,6 +340,8 @@
     }
 
     .bg-preview-box {
+        position: relative;
+        overflow: hidden;
         width: 100%;
         height: 100%;
         display: flex;
@@ -339,11 +350,14 @@
     }
 
     .mini-profile {
+        position: relative;
+        z-index: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 5px;
         pointer-events: none;
+        text-shadow: 0 1px 3px #000;
     }
     .mini-avatar {
         width: 40px; height: 40px;
@@ -360,6 +374,18 @@
     .bg_carbon .mini-name { color: #fff; text-shadow: 1px 1px 0 #000; }
 
     .item-info { padding: 1rem; text-align: center; flex-grow: 1; }
+    .season-badge {
+        display: inline-block;
+        margin-bottom: 0.5rem;
+        padding: 0.15rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #0b0b0f;
+        background: var(--cyber-yellow);
+    }
     .item-name { font-size: 1.5rem; color: #fff; margin-bottom: 0.5rem; }
     .item-desc { font-size: 0.9rem; color: var(--text-muted-color); line-height: 1.5; }
 

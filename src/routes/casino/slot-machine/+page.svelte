@@ -592,7 +592,7 @@
         --color-paw: #00f0ff;
         --color-ram: #39ff14;
         --color-heart: #bd00ff;
-        --color-protomap_logo: #fcee0a;
+        --color-protomap_logo: var(--cyber-yellow);
         --color-glitch-6: #ff003c;
         --color-povestka: #ff0000;
     }
@@ -608,7 +608,7 @@
         100% { transform: translateY(0) scaleY(1); }
     }
 
-    @keyframes win-pulse { 0%, 100% { text-shadow: 0 0 10px #fcee0a, 0 0 20px #fcee0a; transform: scale(1); } 50% { text-shadow: 0 0 30px #fcee0a, 0 0 50px #fff; transform: scale(1.1); } }
+    @keyframes win-pulse { 0%, 100% { text-shadow: 0 0 10px var(--cyber-yellow), 0 0 20px var(--cyber-yellow); transform: scale(1); } 50% { text-shadow: 0 0 30px var(--cyber-yellow), 0 0 50px #fff; transform: scale(1.1); } }
     @keyframes glitch-text { 0% { text-shadow: 2px 0 #ff00c1, -2px 0 #01ffff; } 25% { text-shadow: -2px 0 #ff00c1, 2px 0 #01ffff; } 50% { text-shadow: 2px 0 #01ffff, -2px 0 #ff00c1; } 100% { text-shadow: 2px 0 #ff00c1, -2px 0 #01ffff; } }
     @keyframes float-blur-1 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(100px, 50px); } }
     @keyframes float-blur-2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-80px, -60px); } }
@@ -630,14 +630,14 @@
     }
     .bg-blur-1, .bg-blur-2 { position: absolute; width: 400px; height: 400px; border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; }
     .bg-blur-1 { background: #bd00ff; top: 10%; left: 10%; animation: float-blur-1 20s infinite ease-in-out; }
-    .bg-blur-2 { background: #fcee0a; bottom: 10%; right: 10%; animation: float-blur-2 25s infinite ease-in-out; }
+    .bg-blur-2 { background: var(--cyber-yellow); bottom: 10%; right: 10%; animation: float-blur-2 25s infinite ease-in-out; }
 
     .win-effects { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
     .particle { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; border-radius: 50%; opacity: 0; }
-    .win-tier-1 .particle { background: #fcee0a; animation: particle-anim 1s ease-out forwards; --x: calc(cos(var(--i) * 18deg) * 100px); --y: calc(sin(var(--i) * 18deg) * 100px); }
+    .win-tier-1 .particle { background: var(--cyber-yellow); animation: particle-anim 1s ease-out forwards; --x: calc(cos(var(--i) * 18deg) * 100px); --y: calc(sin(var(--i) * 18deg) * 100px); }
     .win-tier-2 .machine-frame { animation: win-pulse 0.5s 2; }
-    .win-tier-3::before { content: ''; position: absolute; top: 50%; left: 50%; width: 2px; height: 2px; border-radius: 50%; box-shadow: 0 0 200px 100px #fcee0a; animation: god-rays 1.5s ease-out; }
-    .jackpot-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, white, #fcee0a, transparent 70%); opacity: 0; }
+    .win-tier-3::before { content: ''; position: absolute; top: 50%; left: 50%; width: 2px; height: 2px; border-radius: 50%; box-shadow: 0 0 200px 100px var(--cyber-yellow); animation: god-rays 1.5s ease-out; }
+    .jackpot-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, white, var(--cyber-yellow), transparent 70%); opacity: 0; }
     .win-tier-4 .jackpot-flash { animation: jackpot-flash-anim 1s ease-in-out; }
     .page-container.win-tier-negative { animation: screen-flicker 0.2s 5; }
 
@@ -664,7 +664,7 @@
     .symbol { width: 70%; height: 70%; object-fit: contain; filter: drop-shadow(0 0 10px var(--glow-color)) drop-shadow(0 0 20px var(--glow-color)); opacity: 1; transform: scale(1); }
     .placeholder-symbol { font-size: 5rem; color: #333; font-family: 'Chakra Petch', monospace; }
 
-    .win-display { text-align: center; font-family: 'Chakra Petch', monospace; font-size: 2.5rem; color: #fcee0a; margin-bottom: 2rem; opacity: 0; height: 3.5rem; transition: opacity 0.3s; }
+    .win-display { text-align: center; font-family: 'Chakra Petch', monospace; font-size: 2.5rem; color: var(--cyber-yellow); margin-bottom: 2rem; opacity: 0; height: 3.5rem; transition: opacity 0.3s; }
     .win-display.visible { opacity: 1; animation: win-pulse 1s infinite; }
     .win-display.loss { color: #ff003c; animation-name: none; }
 
@@ -695,7 +695,7 @@
     .icons { display: flex; gap: 0.25rem; }
     .icons img { width: 24px; height: 24px; }
     .multiplier { font-family: 'Chakra Petch', monospace; font-size: 1.2rem; color: #fff; font-weight: bold; }
-    .combo.jackpot .multiplier { color: #fcee0a; animation: win-pulse 2s infinite; }
+    .combo.jackpot .multiplier { color: var(--cyber-yellow); animation: win-pulse 2s infinite; }
     .combo.loss .multiplier { color: #ff003c; }
 
     /* CHAOS METER */

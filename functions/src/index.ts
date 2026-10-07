@@ -3,6 +3,8 @@
 import './options';
 import { purgeAccount } from './accountPurge';
 import { clearMapCache } from './mapCache';
+import { PLINKO_MIN_BET, PLINKO_MAX_BALLS, PLINKO_PRIZE_ITEM, PLINKO_PRIZE_SLOTS, plinkoMaxBet, plinkoPayout, dropBall, isPlinkoPrizeOpen, isPlinkoOpen } from './plinko';
+import { isOnSale } from './shopRules';
 
 import { onRequest } from "firebase-functions/v2/https";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -577,6 +579,7 @@ export const purchaseShopItem = onCall({ cors: ALLOWED_ORIGINS }, async (request
     assertEmailVerified(request.auth);
 
     const { itemId } = request.data;
+    if (typeof itemId !== 'string' || !itemId) throw new HttpsError('invalid-argument', 'Invalid item.');
     const userRef = db.collection('users').doc(uid);
     const itemRef = db.collection('shop_items').doc(itemId);
 
@@ -591,11 +594,14 @@ export const purchaseShopItem = onCall({ cors: ALLOWED_ORIGINS }, async (request
             const itemData = itemDoc.data() as any;
             const price = itemData.price || 999999;
 
+            // Скрытые, призовые и сезонные вне окна — не продаются, даже при прямом вызове.
+            if (!isOnSale(itemId, itemData, Date.now())) throw new HttpsError('failed-precondition', 'Этот предмет сейчас не продаётся.');
             if (userData.owned_items?.includes(itemId)) throw new HttpsError('already-exists', 'Уже куплено.');
-            if ((userData.casino_credits || 0) < price) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
+            const credits = Number(userData.casino_credits ?? 0);
+            if (!Number.isFinite(credits) || credits < price) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
 
             t.update(userRef, {
-                casino_credits: userData.casino_credits - price,
+                casino_credits: credits - price,
                 owned_items: FieldValue.arrayUnion(itemId)
             });
         });
@@ -709,7 +715,9 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
     bet = Math.floor(Number(bet));
     const MAX_BET = 1000;
 
-    if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
+    // typeof NaN === 'number', а NaN не меньше и не больше нуля — старая проверка
+    // пропускала ставку "abc" дальше в транзакцию.
+    if (!Number.isFinite(bet) || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
     if (bet > MAX_BET) throw new HttpsError('invalid-argument', `Max bet is ${MAX_BET}.`);
 
     const userRef = db.collection('users').doc(uid);
@@ -808,6 +816,10 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
     }
 });
 
+// Скорость роста множителя: m(t) = e^(CRASH_SPEED · t), t в секундах.
+// Та же константа SPEED_CONST стоит в клиенте (casino/crash/+page.svelte).
+const CRASH_SPEED = 0.08;
+
 async function runGameLoopRTDB(gameId: string, crashPoint: number) {
     const rtdb = admin.app().database("https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app");
     const gameRef = rtdb.ref(`crash_games/${gameId}`);
@@ -819,7 +831,7 @@ async function runGameLoopRTDB(gameId: string, crashPoint: number) {
 
     const interval = setInterval(async () => {
         const t = (Date.now() - startTime) / 1000;
-        current = Math.exp(0.08 * t);
+        current = Math.exp(CRASH_SPEED * t);
         if (current >= crashPoint) {
             clearInterval(interval);
 
@@ -838,7 +850,22 @@ export const cashOutCrashGame = onCall(async (request) => {
     if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check.');
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth.');
     const uid = request.auth.uid;
-    const { gameId, multiplier } = request.data;
+    await assertNotBanned(request);
+    assertEmailVerified(request.auth);
+
+    const { gameId, multiplier } = request.data ?? {};
+    if (typeof gameId !== 'string' || gameId.length === 0) {
+        throw new HttpsError('invalid-argument', 'Invalid game.');
+    }
+    // Множитель клиента — только верхняя граница: больше, чем игрок видел на
+    // экране, он не получит. Сколько игра на самом деле успела вырасти, считает
+    // сервер по своему времени. Раньше клиентское число сверялось лишь с точкой
+    // краша, а неудачная попытка игру не закрывала — точку можно было нащупать
+    // повторными вызовами и забрать максимум сразу после старта.
+    const claimed = Number(multiplier);
+    if (!Number.isFinite(claimed) || claimed < 1) {
+        throw new HttpsError('invalid-argument', 'Invalid multiplier.');
+    }
 
     const gameRef = db.collection('crash_games').doc(gameId);
     const userRef = db.collection('users').doc(uid);
@@ -853,24 +880,35 @@ export const cashOutCrashGame = onCall(async (request) => {
             if (!gameDoc.exists) throw new Error('Game expired');
             const data = gameDoc.data()!;
 
+            if (data.uid !== uid) throw new HttpsError('permission-denied', 'Not your game.');
             if (data.status !== 'active') throw new Error('Too late');
-            if (multiplier > data.crashPoint) throw new Error('Cheating detected');
 
-            const winAmount = Math.floor(data.bet * multiplier);
+            const startedAt = data.createdAt?.toMillis?.();
+            if (!startedAt) throw new Error('Game expired');
+            const elapsed = Math.max(0, (Date.now() - startedAt) / 1000);
+            const serverMult = Math.floor(Math.exp(CRASH_SPEED * elapsed) * 100) / 100;
+
+            // Фоновый цикл может отстать (после ответа функции Cloud Run урезает
+            // CPU), поэтому момент краша проверяем сами, а не только по статусу.
+            if (serverMult >= data.crashPoint) throw new Error('Too late');
+
+            const cashOutAt = Math.min(claimed, serverMult);
+            const winAmount = Math.floor(data.bet * cashOutAt);
 
             t.update(userRef, { casino_credits: FieldValue.increment(winAmount) });
 
-            t.update(gameRef, { status: 'cashed_out', winAmount, cashOutAt: multiplier });
+            t.update(gameRef, { status: 'cashed_out', winAmount, cashOutAt });
 
             const currentBank = bankDoc.exists ? (bankDoc.data()?.bank_balance || 0) : 0;
             t.set(bankRef, { bank_balance: currentBank - winAmount }, { merge: true });
 
-            return { winAmount };
+            return { winAmount, cashOutAt };
         });
-        await rtdbRef.update({ s: 'done', m: multiplier });
+        await rtdbRef.update({ s: 'done', m: result.cashOutAt });
 
         return { data: result };
     } catch (e: any) {
+        if (e instanceof HttpsError) throw e;
         throw new HttpsError('internal', e.message);
     }
 });
@@ -1000,7 +1038,8 @@ export const playSlotMachine = onCall(
         const MAX_BET = 1000;
         const MIN_BET = 10;
 
-        if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
+        // NaN проходил старую проверку typeof и попадал в баланс и в банк.
+        if (!Number.isFinite(bet) || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
         if (bet < MIN_BET) {
             throw new HttpsError('invalid-argument', `⛔ ERROR_CODE: MORO_DETECTED.\nСистема не принимает микро-ставки.\nМинимум: ${MIN_BET} PC.`);
         }
@@ -1241,7 +1280,9 @@ export const playCoinFlip = onCall(async (request) => {
     let { bet, choice } = request.data;
     bet = Math.floor(Number(bet));
 
-    if (typeof bet !== 'number' || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
+    // NaN проходил старую проверку typeof: баланс игрока и общий банк
+    // становились NaN, а банк потом читался как 0 — и монетка проигрывала всем.
+    if (!Number.isFinite(bet) || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
 
     const userRef = db.collection('users').doc(uid);
     const bankRef = db.collection('system').doc('casino_stats');
@@ -1300,6 +1341,130 @@ export const playCoinFlip = onCall(async (request) => {
         if (error.code) throw error;
         throw new HttpsError('internal', 'Game error.');
     }
+});
+
+// ===================================================================
+// 🎯 ПЛИНКО: путь шарика решает сервер, ставка — доля общего банка
+// ===================================================================
+export const playPlinko = onCall(async (request) => {
+    if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(request);
+    assertEmailVerified(request.auth);
+
+    if (!isPlinkoOpen(Date.now())) {
+        throw new HttpsError('failed-precondition', 'Плинко откроется 20 октября.');
+    }
+
+    // Бросок — до 10 шариков; 30 бросков в минуту хватает, чтобы играть без пауз.
+    await checkGlobalRateLimit(uid, 'plinko', 30, 60 * 1000);
+
+    const bet = Math.floor(Number(request.data?.bet));
+    const balls = Math.floor(Number(request.data?.balls ?? 1));
+    if (!Number.isFinite(bet) || bet < PLINKO_MIN_BET) {
+        throw new HttpsError('invalid-argument', `Минимальная ставка — ${PLINKO_MIN_BET} PC за шарик.`);
+    }
+    if (!Number.isFinite(balls) || balls < 1 || balls > PLINKO_MAX_BALLS) {
+        throw new HttpsError('invalid-argument', `За бросок — от 1 до ${PLINKO_MAX_BALLS} шариков.`);
+    }
+
+    const userRef = db.collection('users').doc(uid);
+    const bankRef = db.collection('system').doc('casino_stats');
+
+    try {
+        const result = await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+            const bankDoc = await t.get(bankRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
+
+            const credits = userDoc.data()?.casino_credits ?? 100;
+            const bank = bankDoc.exists ? (bankDoc.data()?.bank_balance || 0) : 0;
+
+            // Лимит считается от банка внутри транзакции — по тому банку, из которого и заплатим.
+            // Сам банк игроку не отдаём: ни в ответе, ни в тексте ошибки.
+            const maxBet = plinkoMaxBet(bank);
+            if (maxBet < PLINKO_MIN_BET) {
+                throw new HttpsError('failed-precondition', 'Банк казино почти пуст — Плинко откроется, когда он пополнится.');
+            }
+            if (bet > maxBet) {
+                throw new HttpsError('invalid-argument', `Сейчас ставка до ${maxBet} PC за шарик.`);
+            }
+
+            const stake = bet * balls;
+            // NaN в балансе проходит любое сравнение «<» как false и утёк бы в банк.
+            if (!Number.isFinite(credits) || credits < stake) {
+                throw new HttpsError('failed-precondition', 'Недостаточно средств.');
+            }
+
+            const drops = Array.from({ length: balls }, () => {
+                const { path, slot } = dropBall(() => crypto.randomInt(0, 2));
+                return { path, slot, payout: plinkoPayout(bet, slot) };
+            });
+            const win = drops.reduce((sum, drop) => sum + drop.payout, 0);
+            const newBalance = credits - stake + win;
+            const newBank = bank + stake - win;
+
+            // Приз ивента: первый шарик в крайней лунке приносит рамку, если её ещё нет
+            // и открыто окно призового документа. Документ читается, только когда шарик
+            // туда попал, — все чтения транзакции идут до записей.
+            let prizeIndex = -1;
+            const owned: string[] = userDoc.data()?.owned_items || [];
+            const hit = drops.findIndex((drop) => PLINKO_PRIZE_SLOTS.includes(drop.slot));
+            if (hit >= 0 && !owned.includes(PLINKO_PRIZE_ITEM)) {
+                const prizeDoc = await t.get(db.collection('shop_items').doc(PLINKO_PRIZE_ITEM));
+                if (isPlinkoPrizeOpen(prizeDoc.data(), owned, Date.now())) prizeIndex = hit;
+            }
+
+            const userUpdate: { [field: string]: number | FieldValue } = { casino_credits: newBalance };
+            if (prizeIndex >= 0) userUpdate.owned_items = FieldValue.arrayUnion(PLINKO_PRIZE_ITEM);
+            t.update(userRef, userUpdate);
+            t.set(bankRef, { bank_balance: newBank }, { merge: true });
+
+            console.log(`[PLINKO] ${uid} | ${balls}x${bet} | Win:${win} | Bank:${newBank}${prizeIndex >= 0 ? ' | Prize' : ''}`);
+            return {
+                drops: drops.map((drop, i) => ({ ...drop, prize: i === prizeIndex })),
+                stake,
+                win,
+                newBalance,
+                maxBet: plinkoMaxBet(newBank),
+                prize: prizeIndex >= 0 ? PLINKO_PRIZE_ITEM : null
+            };
+        });
+        return { data: result };
+    } catch (error: any) {
+        if (error instanceof HttpsError) throw error;
+        console.error('[PLINKO ERROR]:', error);
+        throw new HttpsError('internal', 'Game error.');
+    }
+});
+
+// Состояние Плинко перед игрой: лимит ставки за шарик и разыгрывается ли приз.
+// Сайт считает это сам на сервере (casino/plinko/+page.server.ts), а приложению
+// банк закрыт правилами — поэтому функция. Сумму банка не отдаёт.
+export const getPlinkoState = onCall(async (request) => {
+    if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(request);
+    assertEmailVerified(request.auth);
+
+    const [bankDoc, prizeDoc, userDoc] = await Promise.all([
+        db.collection('system').doc('casino_stats').get(),
+        db.collection('shop_items').doc(PLINKO_PRIZE_ITEM).get(),
+        db.collection('users').doc(uid).get(),
+    ]);
+    const bank = Number(bankDoc.data()?.bank_balance);
+    const owned: string[] = userDoc.data()?.owned_items || [];
+    return {
+        data: {
+            open: isPlinkoOpen(Date.now()),
+            maxBet: Number.isFinite(bank) ? plinkoMaxBet(bank) : 0,
+            prizeAvailable: isPlinkoPrizeOpen(prizeDoc.data(), owned, Date.now())
+        }
+    };
 });
 
 export const getLeaderboard = onCall( async (request) => {
