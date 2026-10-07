@@ -87,7 +87,7 @@
     .subtitle { color: var(--text-muted-color); font-family: 'Chakra Petch', monospace; }
     .news-feed { display: flex; flex-direction: column; gap: 2rem; }
     .news-card { background: rgba(10, 15, 20, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.5rem; overflow: hidden; transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s; }
-    .news-card:hover { transform: translateY(-5px); border-color: var(--cyber-yellow); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 15px rgba(252, 238, 10, 0.2); }
+    .news-card:hover { transform: translateY(-5px); border-color: var(--cyber-yellow); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 15px rgb(var(--cyber-yellow-rgb) / 0.2); }
     .card-image { position: relative; height: 200px; overflow: hidden; border-bottom: 1px solid rgba(255,255,255,0.1); }
     .card-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
     .news-card:hover .card-image img { transform: scale(1.05); }
@@ -112,7 +112,7 @@
     .markdown-body :global(strong) {
         color: var(--cyber-yellow);
         font-weight: 800;
-        text-shadow: 0 0 5px rgba(252, 238, 10, 0.3);
+        text-shadow: 0 0 5px rgb(var(--cyber-yellow-rgb) / 0.3);
     }
 
     .markdown-body :global(em) {

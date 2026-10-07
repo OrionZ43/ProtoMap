@@ -142,7 +142,7 @@
 	}
 	.orig:hover {
 		color: var(--cyber-yellow, #fcee0a);
-		border-color: rgba(252, 238, 10, 0.35);
+		border-color: rgb(var(--cyber-yellow-rgb) / 0.35);
 	}
 
 	.close {

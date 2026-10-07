@@ -171,7 +171,7 @@
 		background: rgba(255, 255, 255, 0.04);
 	}
 	.row.active {
-		background: rgba(252, 238, 10, 0.06);
+		background: rgb(var(--cyber-yellow-rgb) / 0.06);
 	}
 	.row.active::before {
 		content: '';
@@ -184,10 +184,10 @@
 		box-shadow: 0 0 8px var(--cyber-yellow, #fcee0a);
 	}
 	.favorites {
-		border-bottom-color: rgba(252, 238, 10, 0.08);
+		border-bottom-color: rgb(var(--cyber-yellow-rgb) / 0.08);
 	}
 	.favorites:hover {
-		background: rgba(252, 238, 10, 0.04);
+		background: rgb(var(--cyber-yellow-rgb) / 0.04);
 	}
 
 	/* Размеры держит обёртка — см. комментарий в шапке файла */
@@ -213,8 +213,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(252, 238, 10, 0.1);
-		border: 1px solid rgba(252, 238, 10, 0.25);
+		background: rgb(var(--cyber-yellow-rgb) / 0.1);
+		border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.25);
 		color: var(--cyber-yellow, #fcee0a);
 	}
 

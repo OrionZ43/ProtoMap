@@ -821,7 +821,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(252, 238, 10, 0.1);
+		background: rgb(var(--cyber-yellow-rgb) / 0.1);
 		color: var(--cyber-yellow, #fcee0a);
 	}
 

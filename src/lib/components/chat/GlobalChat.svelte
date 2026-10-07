@@ -337,7 +337,7 @@
        «Доступно в приложении» — кириллицы у Chakra Petch нет */
     .mobile-exclusive { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: rgba(0,0,0,0.3); border: 1px dashed rgba(255,255,255,0.2); border-radius: 6px; font-family: var(--font-display); min-width: 180px; }
     .mobile-exclusive.image { border-color: var(--cyber-cyan); background: rgba(0,240,255,0.05); }
-    .mobile-exclusive.voice { border-color: var(--cyber-yellow); background: rgba(252,238,10,0.05); }
+    .mobile-exclusive.voice { border-color: var(--cyber-yellow); background: rgb(var(--cyber-yellow-rgb) / 0.05); }
     .mobile-exclusive .icon { font-size: 1rem; }
     .mobile-exclusive .info { display: flex; flex-direction: column; }
     .mobile-exclusive .title { font-weight: bold; font-size: 0.75rem; color: #fff; }

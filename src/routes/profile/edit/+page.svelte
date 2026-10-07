@@ -328,7 +328,7 @@
 />
 
 <style>
-    .form-container { @apply max-w-2xl mx-auto my-10 p-8 rounded-none shadow-2xl relative; background: rgba(10, 10, 10, 0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid rgba(252, 238, 10, 0.2); clip-path: polygon(0 15px, 15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%); }
+    .form-container { @apply max-w-2xl mx-auto my-10 p-8 rounded-none shadow-2xl relative; background: rgba(10, 10, 10, 0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.2); clip-path: polygon(0 15px, 15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%); }
     .form-title { @apply text-2xl lg:text-3xl font-bold text-center text-white mb-10; text-shadow: none; }
     .form-label { @apply block text-sm font-bold uppercase tracking-widest text-cyber-yellow mb-2; }
     .input-field { @apply block w-full p-2 bg-transparent text-gray-200; border: none; border-bottom: 1px solid var(--border-color, #30363d); border-radius: 0; font-family: 'Inter', sans-serif; font-size: 1.1em; transition: border-color 0.3s, box-shadow 0.3s; }
@@ -341,7 +341,7 @@
     .cancel-btn:hover { background-color: var(--input-bg-color, #1a1a1a); border-color: var(--cyber-red, #ff003c); color: var(--cyber-red, #ff003c); text-shadow: 0 0 8px var(--cyber-red, #ff003c); }
     .separator { @apply border-t-2 border-dashed border-gray-700/50 my-8; }
     .hidden-file-input { width: 0; height: 0; position: absolute; opacity: 0; z-index: -1; }
-    .username-current { @apply p-3 rounded; background: rgba(252, 238, 10, 0.05); border: 1px solid rgba(252, 238, 10, 0.15); }
+    .username-current { @apply p-3 rounded; background: rgb(var(--cyber-yellow-rgb) / 0.05); border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.15); }
     .animate-pulse { animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
 </style>

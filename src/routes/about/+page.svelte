@@ -231,7 +231,7 @@
         font-family: 'Chakra Petch', monospace; font-size: 1.5rem; font-weight: bold;
         color: var(--cyber-yellow, #fcee0a); margin-bottom: 2rem;
         text-align: center; letter-spacing: 0.1em;
-        text-shadow: 0 0 10px rgba(252, 238, 10, 0.3);
+        text-shadow: 0 0 10px rgb(var(--cyber-yellow-rgb) / 0.3);
     }
     .section-subtitle {
         font-family: 'Chakra Petch', monospace; font-size: 0.9rem; font-weight: bold;

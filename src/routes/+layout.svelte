@@ -22,16 +22,17 @@
     import { settingsStore } from '$lib/stores/settingsStore';
     import Snowfall from '$lib/components/Snowfall.svelte';
     import CyberConfetti from '$lib/components/CyberConfetti.svelte';
+    import LeafFall from '$lib/components/LeafFall.svelte';
+    import { getThemeSeason, type ThemeSeason } from '$lib/seasonal/seasons';
     import { goto, beforeNavigate } from '$app/navigation';
     import LegalUpdateBanner from '$lib/components/LegalUpdateBanner.svelte';
     import ConsentGate from '$lib/components/ConsentGate.svelte';
 
     import '$lib/i18n';
-    import { waitLocale } from 'svelte-i18n';
+    import { waitLocale, t } from 'svelte-i18n';
 
-    let themeState = 'default';
-    let sideTextLeft  = 'СТАТУС СИСТЕМЫ: ОНЛАЙН';
-    let sideTextRight = 'МОЩНОСТЬ СЕТИ: 99%';
+    // Тема сезона; от неё же зависят надписи на боковых панелях (season.side.* в локалях).
+    let themeState: ThemeSeason | 'default' = 'default';
     let isReady = false;
     let seasonActiveInSession = false;
 
@@ -73,46 +74,18 @@
     });
 
     // ── Определяем активную сезонную тему ──────────────────────────────
+    // Даты сезонов — в $lib/seasonal/seasons.ts. Пути к стилям записаны литералами,
+    // чтобы Vite собрал их в отдельные файлы.
     function initSeasonalTheme() {
-        const d   = new Date();
-        const m   = d.getMonth();   // 0-based
-        const day = d.getDate();
-
-        // 🎂 ANNIVERSARY — 4-10 мая (месяц 4)
-        if (m === 4 && day >= 4 && day <= 10) {
-            themeState    = 'anniversary';
-            sideTextLeft  = 'СИСТЕМА: 1 ГОД В ОНЛАЙНЕ';
-            sideTextRight = 'ПРОТОКОЛ ПРАЗДНИКА: АКТИВЕН';
-            import('/src/styles/anniversary.css');
-            return;
-        }
-
-        // 👻 Хэллоуин — 20 октября – 2 ноября
-        if ((m === 9 && day >= 20) || (m === 10 && day <= 2)) {
-            themeState    = 'halloween';
-            sideTextLeft  = 'СИСТЕМА: НЕСТАБИЛЬНА';
-            sideTextRight = 'АНАЛИЗ АНОМАЛИИ...';
-            import('/src/styles/halloween.css');
-            return;
-        }
-
-        // ❄️ Зима — 1-14 декабря
-        if (m === 11 && day >= 1 && day < 15) {
-            themeState    = 'winter';
-            sideTextLeft  = 'ТЕМПЕРАТУРА: -15°C';
-            sideTextRight = 'СИСТЕМА ОХЛАЖДЕНИЯ: АКТИВНА';
-            import('/src/styles/winter.css');
-            return;
-        }
-
-        // 🎄 Glitchmas / Новый год — 15 декабря – 14 января
-        if ((m === 11 && day >= 15) || (m === 0 && day <= 14)) {
-            themeState    = 'newyear';
-            sideTextLeft  = 'РЕЖИМ: GLITCHMAS';
-            sideTextRight = 'КРИОГЕННЫЕ ПРОТОКОЛЫ: МАКСИМУМ';
+        const season = getThemeSeason();
+        if (!season) return;
+        themeState = season;
+        if (season === 'anniversary') import('/src/styles/anniversary.css');
+        else if (season === 'halloween') import('/src/styles/halloween.css');
+        else if (season === 'winter') import('/src/styles/winter.css');
+        else {
             import('/src/styles/winter.css');
             import('/src/styles/newyear.css');
-            return;
         }
     }
 
@@ -190,15 +163,17 @@
                 <Snowfall />
             {:else if themeState === 'anniversary'}
                 <CyberConfetti />
+            {:else if themeState === 'halloween'}
+                <LeafFall />
             {/if}
         {/if}
 
         {#if !isBanned}
             <div class="side-panel left z-10">
-                <div class="v-text">{sideTextLeft}</div>
+                <div class="v-text">{$t(`season.side.${themeState}.left`)}</div>
             </div>
             <div class="side-panel right z-10">
-                <div class="v-text">{sideTextRight}</div>
+                <div class="v-text">{$t(`season.side.${themeState}.right`)}</div>
             </div>
         {/if}
 

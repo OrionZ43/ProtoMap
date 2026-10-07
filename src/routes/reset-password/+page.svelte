@@ -123,13 +123,13 @@
         @apply max-w-md w-full p-8 rounded-none shadow-2xl relative;
         background: rgba(10, 10, 10, 0.6);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(252, 238, 10, 0.2);
+        border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.2);
         clip-path: polygon(0 15px, 15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
     }
 
     .form-title {
         @apply text-2xl font-bold text-center text-white mb-6;
-        text-shadow: 0 0 10px rgba(252, 238, 10, 0.5);
+        text-shadow: 0 0 10px rgb(var(--cyber-yellow-rgb) / 0.5);
     }
 
     .form-label {

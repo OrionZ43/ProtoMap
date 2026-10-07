@@ -81,7 +81,7 @@
         display: inline-block;
         padding: 10px;
         background: rgba(10, 10, 10, 0.5);
-        border: 1px solid rgba(252, 238, 10, 0.3);
+        border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.3);
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
 
@@ -99,7 +99,7 @@
     }
 
     .turnstile-container:hover {
-        border-color: rgba(252, 238, 10, 0.6);
+        border-color: rgb(var(--cyber-yellow-rgb) / 0.6);
     }
 
     .cf-turnstile-placeholder {
@@ -112,7 +112,7 @@
         align-items: center;
         justify-content: center;
         min-height: 65px;
-        color: rgba(252, 238, 10, 0.8);
+        color: rgb(var(--cyber-yellow-rgb) / 0.8);
         font-family: 'Inter', sans-serif;
         font-size: 14px;
         text-transform: uppercase;

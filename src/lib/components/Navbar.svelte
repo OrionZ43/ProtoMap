@@ -5,7 +5,8 @@
     import { signOut } from 'firebase/auth';
     import { afterNavigate } from '$app/navigation';
     import NeonButton from '$lib/components/NeonButton.svelte';
-    import { getSeasonalContent } from '$lib/seasonal/seasonalContent';
+    import { SEASON_LINKS, pickTeaser } from '$lib/seasonal/seasonalContent';
+    import { getSeason } from '$lib/seasonal/seasons';
     import { settingsStore } from '$lib/stores/settingsStore';
     import Footer from "$lib/components/Footer.svelte";
     import { page } from '$app/stores';
@@ -13,12 +14,20 @@
     import { quintOut } from 'svelte/easing';
     import { tweened } from 'svelte/motion';
     import { onMount } from 'svelte';
-    import { t, locale } from 'svelte-i18n';
+    import { t, json, locale } from 'svelte-i18n';
     import SettingsModal from '$lib/components/SettingsModal.svelte';
+    import HalloweenSpiders from '$lib/components/HalloweenSpiders.svelte';
 
     let isSettingsOpenMobile = false;
 
-    const seasonal = getSeasonalContent();
+    // Фраза у логотипа: в сезон — одна из фраз сезона на языке интерфейса, иначе пасхалка.
+    // Номер фразы выбирается один раз, текст меняется вместе с языком.
+    const season = getSeason();
+    const roll = Math.random();
+    $: seasonPhrases = season ? ($json(`season.phrases.${season}`) as string[] | undefined) : undefined;
+    $: seasonal = season && seasonPhrases?.length
+        ? { phrase: seasonPhrases[Math.floor(roll * seasonPhrases.length)], link: SEASON_LINKS[season] }
+        : pickTeaser(roll);
     let isMobileMenuOpen = false;
     let isUserMenuOpen = false;
     let isSettingsOpen = false;
@@ -356,6 +365,10 @@
     {#if isSettingsOpenMobile}
         <SettingsModal on:close={() => isSettingsOpenMobile = false} />
     {/if}
+
+    <!-- Паучки с сердечком и паутина под шапкой — персонажи хэллоуинской темы.
+         Компонент сам решает, показываться ли (сезон и настройка сезонных эффектов). -->
+    <HalloweenSpiders />
 </nav>
 
 <style>
@@ -475,7 +488,7 @@
         padding: 0.3rem 0.8rem; border-radius: 6px; color: #e2e8f0;
         transition: all 0.2s; font-family: 'Chakra Petch', monospace;
     }
-    .balance-pill:hover { border-color: var(--cyber-yellow); box-shadow: 0 0 10px rgba(252, 238, 10, 0.1); }
+    .balance-pill:hover { border-color: var(--cyber-yellow); box-shadow: 0 0 10px rgb(var(--cyber-yellow-rgb) / 0.1); }
     .balance-pill.mobile { padding: 0.2rem 0.6rem; background: rgba(0,0,0,0.4); }
 
     .icon-btn { padding: 0.5rem; color: #94a3b8; border-radius: 8px; transition: all 0.2s; }
@@ -634,11 +647,11 @@
 
     .referral-btn {
         color: var(--cyber-yellow, #fcee0a);
-        border-color: rgba(252,238,10,0.3);
+        border-color: rgb(var(--cyber-yellow-rgb) / 0.3);
     }
     .referral-btn:hover {
-        background: rgba(252,238,10,0.1);
-        box-shadow: 0 0 12px rgba(252,238,10,0.25);
+        background: rgb(var(--cyber-yellow-rgb) / 0.1);
+        box-shadow: 0 0 12px rgb(var(--cyber-yellow-rgb) / 0.25);
         color: #fff;
     }
 </style>

@@ -10,6 +10,8 @@
     import { httpsCallable } from "firebase/functions";
     import { settingsStore } from '$lib/stores/settingsStore';
     import CinematicLoader from '$lib/components/CinematicLoader.svelte';
+    import PumpkinLoader from '$lib/components/PumpkinLoader.svelte';
+    import { getThemeSeason } from '$lib/seasonal/seasons';
     import { browser } from '$app/environment';
     import { sendEmailVerification } from "firebase/auth";
     import { auth, functions } from "$lib/firebase";
@@ -59,6 +61,7 @@
     export let form: ActionData;
 
     let showCinematicIntro = true;
+    let showPumpkinIntro = false;
     let isProfileVisible = false;
     let isSubmitting = false;
     let verificationSent = false;
@@ -128,7 +131,16 @@
             const sessionKey = `viewed_profile_${data.profile.username}`;
             const alreadyViewed = sessionStorage.getItem(sessionKey);
 
-            if (cinematicEnabled && !alreadyViewed) {
+            // В Хэллоуин вместо синематика — короткий тыквенный экран при каждом заходе
+            // в профиль. Выключенные синематик-загрузки или сезонные эффекты убирают и его.
+            const pumpkinIntro = cinematicEnabled && $settingsStore.seasonalEnabled && getThemeSeason() === 'halloween';
+
+            if (pumpkinIntro) {
+                showPumpkinIntro = true;
+                showCinematicIntro = false;
+                isProfileVisible = true;
+                containerOpacity.set(1);
+            } else if (cinematicEnabled && !alreadyViewed) {
                 showCinematicIntro = true;
                 sessionStorage.setItem(sessionKey, 'true');
             } else {
@@ -435,6 +447,13 @@
     />
 {/if}
 
+{#if showPumpkinIntro}
+    <!-- Ключ — профиль: при переходе к другому профилю тыква загорается заново -->
+    {#key data.profile.uid}
+        <PumpkinLoader />
+    {/key}
+{/if}
+
 {#if isWatermelonMode}
     <WatermelonInteractive />
 {/if}
@@ -444,7 +463,7 @@
 
     <div class="container mx-auto px-4" transition:fade={{ duration: 300 }}>
         {#if data.profile.equipped_bg}
-        <div class="profile-backdrop {data.profile.equipped_bg}"></div>
+        <div class="profile-backdrop {data.profile.equipped_bg}"><div class="backdrop-motion"></div></div>
     {/if}
 
     <div class="profile-container cyber-panel pb-12 {data.profile.equipped_bg ? 'themed ' + data.profile.equipped_bg + '-theme' : ''}" style="opacity: {$containerOpacity}">
@@ -730,17 +749,17 @@
         @apply max-w-2xl mx-auto my-10 p-1 sm:p-2 rounded-none shadow-2xl relative;
         padding-bottom: 2rem !important;
         background: #0a0a0a;
-        border: 1px solid rgba(252, 238, 10, 0.3);
+        border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.3);
         clip-path: polygon(0 20px, 20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
         overflow: hidden;
         background-image:
             linear-gradient(rgba(10, 10, 10, 0.96), rgba(10, 10, 10, 0.96)),
-            linear-gradient(rgba(252, 238, 10, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(252, 238, 10, 0.1) 1px, transparent 1px);
+            linear-gradient(rgb(var(--cyber-yellow-rgb) / 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgb(var(--cyber-yellow-rgb) / 0.1) 1px, transparent 1px);
         background-size: 100% 100%, 30px 30px, 30px 30px;
     }
 
-    .corner-bg { @apply absolute w-16 h-16 opacity-15 blur-sm; background: radial-gradient(circle, var(--cyber-yellow, #fcee0a) 0%, rgba(252, 238, 10, 0) 60%); }
+    .corner-bg { @apply absolute w-16 h-16 opacity-15 blur-sm; background: radial-gradient(circle, var(--cyber-yellow, #fcee0a) 0%, rgb(var(--cyber-yellow-rgb) / 0) 60%); }
     .top-left { top: -30px; left: -30px; }
     .top-right { top: -30px; right: -30px; }
     .bottom-left { bottom: -30px; left: -30px; }
@@ -1420,7 +1439,7 @@
         overflow: hidden;
         transition: color 0.3s, box-shadow 0.3s;
         box-shadow: 0 0 6px var(--cyber-yellow, #fcee0a),
-                    inset 0 0 6px rgba(252,238,10,0.08);
+                    inset 0 0 6px rgb(var(--cyber-yellow-rgb) / 0.08);
     }
 
     .write-btn::before {
@@ -1428,13 +1447,13 @@
         position: absolute;
         top: 0; left: -100%;
         width: 100%; height: 100%;
-        background: linear-gradient(120deg, transparent, rgba(252,238,10,0.15), transparent);
+        background: linear-gradient(120deg, transparent, rgb(var(--cyber-yellow-rgb) / 0.15), transparent);
         transition: left 0.45s ease-in-out;
     }
 
     .write-btn:hover {
         box-shadow: 0 0 22px var(--cyber-yellow, #fcee0a),
-                    inset 0 0 12px rgba(252,238,10,0.12);
+                    inset 0 0 12px rgb(var(--cyber-yellow-rgb) / 0.12);
     }
 
     .write-btn:hover::before { left: 100%; }

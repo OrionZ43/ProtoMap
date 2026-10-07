@@ -156,8 +156,8 @@
         inset: 0;
         z-index: -1;
         background-image:
-            linear-gradient(rgba(252, 238, 10, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(252, 238, 10, 0.03) 1px, transparent 1px);
+            linear-gradient(rgb(var(--cyber-yellow-rgb) / 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgb(var(--cyber-yellow-rgb) / 0.03) 1px, transparent 1px);
         background-size: 40px 40px;
         pointer-events: none;
     }
@@ -168,9 +168,9 @@
         margin: 0 auto;
         background: rgba(8, 10, 14, 0.92);
         backdrop-filter: blur(12px);
-        border: 1px solid rgba(252, 238, 10, 0.18);
+        border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.18);
         clip-path: polygon(0 16px, 16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
-        box-shadow: 0 0 40px rgba(252, 238, 10, 0.05);
+        box-shadow: 0 0 40px rgb(var(--cyber-yellow-rgb) / 0.05);
     }
 
     /* ── Служебная строка ─────────────────────────────────────────────── */
@@ -179,8 +179,8 @@
         align-items: center;
         gap: 0.75rem;
         padding: 0.6rem 1.5rem;
-        border-bottom: 1px solid rgba(252, 238, 10, 0.12);
-        background: rgba(252, 238, 10, 0.03);
+        border-bottom: 1px solid rgb(var(--cyber-yellow-rgb) / 0.12);
+        background: rgb(var(--cyber-yellow-rgb) / 0.03);
         flex-wrap: wrap;
     }
     .bar-dot {
@@ -203,7 +203,7 @@
     }
     .bar-text {
         font-size: 0.72rem;
-        color: rgba(252, 238, 10, 0.7);
+        color: rgb(var(--cyber-yellow-rgb) / 0.7);
         letter-spacing: 0.18em;
     }
     .bar-version {
@@ -232,7 +232,7 @@
         text-align: center;
     }
     .empty-icon {
-        color: rgba(252, 238, 10, 0.4);
+        color: rgb(var(--cyber-yellow-rgb) / 0.4);
     }
     .empty-text {
         font-size: 1rem;
@@ -281,7 +281,7 @@
     }
     .nav-link:hover {
         color: var(--cyber-yellow, #fcee0a);
-        text-shadow: 0 0 8px rgba(252, 238, 10, 0.3);
+        text-shadow: 0 0 8px rgb(var(--cyber-yellow-rgb) / 0.3);
     }
     .sep {
         font-size: 0.7rem;

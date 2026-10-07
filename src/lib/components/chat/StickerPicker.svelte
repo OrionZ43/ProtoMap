@@ -83,7 +83,7 @@
 	}
 	.ptab.active {
 		border-color: var(--cyber-yellow, #fcee0a);
-		box-shadow: 0 0 10px rgba(252, 238, 10, 0.25);
+		box-shadow: 0 0 10px rgb(var(--cyber-yellow-rgb) / 0.25);
 	}
 	.ptab-img {
 		width: 100%;

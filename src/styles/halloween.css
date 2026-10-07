@@ -1,65 +1,23 @@
+/* ==========================================================================
+   Хэллоуин, 20 октября — 2 ноября (даты — src/lib/seasonal/seasons.ts).
+   Подключается из +layout.svelte, только когда включены сезонные эффекты.
+   Один акцент — тыквенный оранжевый: тройка RGB перекрашивает и переменные,
+   и классы Tailwind (см. src/app.css).
+   ========================================================================== */
 :root {
-    --cyber-yellow: #ff6600;
+    --cyber-yellow-rgb: 255 102 0;
     --cyber-purple: #bd00ff;
     --cyber-green: #39ff14;
     --cyber-red: #ff3300;
     --text-color: #e8e8e8;
 }
 
-@keyframes spooky-pulse {
+@keyframes pumpkin-glow {
     0%, 100% {
-        filter: drop-shadow(0 0 5px var(--cyber-yellow));
-        transform: scale(1);
-    }
-    50% {
-        filter: drop-shadow(0 0 15px var(--cyber-yellow));
-        transform: scale(1.1);
-    }
-}
-
-@keyframes bat-fly-across {
-    0% {
-        transform: translate(-10vw, 10vh) scale(0.5) rotate(15deg);
-        opacity: 0;
-    }
-    10% {
-        opacity: 0.8;
-    }
-    90% {
-        opacity: 0.8;
-    }
-    100% {
-        transform: translate(110vw, 30vh) scale(0.8) rotate(-15deg);
-        opacity: 0;
-    }
-}
-
-@keyframes sway-left {
-    0%, 100% {
-        transform: rotate(12deg);
-    }
-    50% {
-        transform: rotate(-12deg);
-    }
-}
-
-@keyframes sway-right {
-    0%, 100% {
-        transform: rotate(-12deg);
-    }
-    50% {
-        transform: rotate(12deg);
-    }
-}
-
-@keyframes heart-beat {
-    0%, 35%, 75%, 100% {
-        opacity: 0;
-        transform: scale(0.5) translateY(10px);
+        opacity: 0.35;
     }
     50% {
         opacity: 1;
-        transform: scale(1.2) translateY(0);
     }
 }
 
@@ -69,15 +27,7 @@ body {
         radial-gradient(ellipse at bottom, rgba(80, 20, 0, 0.5) 0%, rgba(0, 0, 0, 0.9) 80%);
 }
 
-.font-display, .nav-brand, .profile-username {
-    text-shadow: 0 0 5px var(--cyber-red), 0 0 10px var(--cyber-yellow);
-}
-
-nav.bg-gray-900\/50 {
-    position: relative;
-    overflow: visible !important;
-}
-
+/* Свечение — только у логотипа: светящиеся заголовки по всему сайту тяжело читать. */
 .nav-brand {
     position: relative;
     color: var(--cyber-yellow) !important;
@@ -90,64 +40,13 @@ nav.bg-gray-900\/50 {
     display: none;
 }
 
-.spider-scene {
-    position: absolute;
-    top: 90%;
-    left: calc(50% - 145px);
-    width: 110px;
-    height: 70px;
-    z-index: 51;
-    pointer-events: none;
-}
-
-.spider-scene::before,
-.spider-scene::after {
+/* ── Паутина — только в верхних углах большой панели «Инфо», где нет текста ──
+   На остальных панелях остаются обычные бегущие блики, в оранжевом цвете. */
+.about-container.cyber-panel::before,
+.about-container.cyber-panel::after {
     content: '';
     position: absolute;
-    top: 0;
-    width: 45px;
-    height: 65px;
-    background-color: #ffffff;
-    -webkit-mask-image: url('/halloween/spider.svg');
-    mask-image: url('/halloween/spider.svg');
-    -webkit-mask-size: contain;
-    mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    transform-origin: top center;
-}
-
-.spider-scene::before {
-    left: 0;
-    animation: sway-left 4s infinite ease-in-out;
-}
-
-.spider-scene::after {
-    right: 0;
-    animation: sway-right 4s infinite ease-in-out;
-}
-
-.spider-scene .heart {
-    position: absolute;
-    top: 15px;
-    left: 43%;
-    transform: translateX(-50%);
-    width: 15px;
-    height: 15px;
-    background-color: var(--cyber-red);
-    -webkit-mask-image: url('/halloween/heart.svg');
-    mask-image: url('/halloween/heart.svg');
-    -webkit-mask-size: contain;
-    mask-size: contain;
-    filter: drop-shadow(0 0 8px var(--cyber-red));
-    opacity: 0;
-    animation: heart-beat 4s infinite;
-}
-
-.cyber-panel::before,
-.cyber-panel::after {
-    content: '';
-    position: absolute;
+    top: -10px;
     width: 120px;
     height: 120px;
     background-color: rgba(255, 255, 255, 0.15);
@@ -159,77 +58,115 @@ nav.bg-gray-900\/50 {
     mask-repeat: no-repeat;
     z-index: 0;
     animation: none;
+    opacity: 1;
     pointer-events: none;
 }
 
-.cyber-panel::before {
-    top: -10px;
+.about-container.cyber-panel::before {
     left: -10px;
 }
 
-.cyber-panel::after {
-    bottom: -10px;
+.about-container.cyber-panel::after {
     right: -10px;
-    transform: rotate(180deg);
+    transform: scaleX(-1);
 }
 
+/* ── Карта ──────────────────────────────────────────────────────────────── */
+
+/* Ночь: тайлы чуть в лиловый, как небо в фонах профиля. Метки и кластеры —
+   в своих слоях, фильтр их не задевает. */
+.leaflet-tile-pane {
+    filter: sepia(1) hue-rotate(215deg) saturate(2) brightness(0.9);
+}
+
+/* Кластеры — тыквы, число вырезано прямо на тыкве и светится изнутри: середина
+   тыквы стоит ровно на точке кластера. Свеча — маленький слой-подсветка за числом,
+   у него меняется только прозрачность, без тяжёлых drop-shadow на каждой метке. */
 .reactor-cluster {
     animation: none !important;
-    transition: none !important;
+    transition: transform 0.3s ease;
+    filter: none;
 }
 
 .reactor-ring, .reactor-glow, .reactor-charge-indicator, .particle {
     display: none !important;
 }
 
-.reactor-cluster::before {
+.reactor-cluster::before,
+.reactor-cluster::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url('/halloween/pumpkin.svg');
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-    filter: drop-shadow(0 0 15px var(--cyber-yellow)) drop-shadow(0 0 5px #fff);
-    transition: transform 0.3s ease;
+    left: 50%;
+    /* середина тела — на 60% высоты картинки, ставим её в центр метки */
+    top: calc(50% - var(--pumpkin, 46px) * 0.1);
+    width: var(--pumpkin, 46px);
+    height: var(--pumpkin, 46px);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
 }
 
-.reactor-cluster:hover::before {
-    transform: scale(1.15) rotate(5deg);
+.reactor-cluster::before {
+    background: center / contain no-repeat url('/halloween/pumpkin-cluster.svg');
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
 }
 
-.reactor-core {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    z-index: 10;
-    transform: translateY(15%);
+.reactor-cluster::after {
+    background: radial-gradient(circle at 50% 61%, rgba(255, 224, 140, 0.55), rgba(255, 170, 60, 0.18) 24%, transparent 40%);
+    animation: pumpkin-glow 4.5s ease-in-out infinite;
 }
 
-.reactor-core .count {
-    color: #000 !important;
-    font-family: 'Creepster', cursive;
-    font-weight: 400 !important;
-    text-shadow: 0 0 3px var(--cyber-yellow), 0 0 5px var(--cyber-yellow) !important;
-    -webkit-text-stroke: 1px var(--cyber-yellow);
-    line-height: 1;
+.reactor-cluster.medium {
+    --pumpkin: 54px;
 }
 
-.small .reactor-core .count {
-    font-size: 2.5em;
+.reactor-cluster.large {
+    --pumpkin: 62px;
 }
 
-.medium .reactor-core .count {
-    font-size: 2.8em;
+/* Разный такт, чтобы тыквы не мигали хором */
+.leaflet-marker-icon:nth-child(3n) .reactor-cluster::after {
+    animation-delay: -1.5s;
 }
 
-.large .reactor-core .count {
-    font-size: 3em;
+.leaflet-marker-icon:nth-child(3n + 1) .reactor-cluster::after {
+    animation-delay: -3s;
 }
 
+/* Число — на тыкве: светлое, с тёмной кромкой, как прорезь со свечой за ней.
+   Селекторы с .reactor-cluster: в app.css цвет числа задан по размеру кластера
+   (.small .reactor-core .count) и иначе перебил бы. */
+.reactor-cluster .reactor-core {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 1;
+    transform: translate(-50%, -50%);
+    width: auto;
+    height: auto;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.reactor-cluster .reactor-core .count {
+    font: 700 15px/1 var(--font-tech);
+    color: #ffe8b0;
+    text-shadow:
+        1px 0 0 #4a1804, -1px 0 0 #4a1804, 0 1px 0 #4a1804, 0 -1px 0 #4a1804,
+        0 0 7px rgba(255, 196, 92, 0.9);
+}
+
+.reactor-cluster.medium .reactor-core .count {
+    font-size: 17px;
+}
+
+.reactor-cluster.large .reactor-core .count {
+    font-size: 19px;
+}
+
+/* Стандартные аватарки на карте — призраки */
 .user-avatar-marker:has(img[src*="bottts-neutral"]) {
     background-color: rgba(255, 255, 255, 0.9);
     -webkit-mask-image: url('/halloween/ghost.svg');
@@ -247,27 +184,18 @@ nav.bg-gray-900\/50 {
     opacity: 0;
 }
 
-body::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100px;
-    height: 60px;
-    background-color: #000;
-    -webkit-mask-image: url('/halloween/bat.svg');
-    mask-image: url('/halloween/bat.svg');
-    -webkit-mask-size: contain;
-    mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0;
-    animation: bat-fly-across 60s linear infinite;
-    animation-delay: 10s;
+/* Переключатель слоёв карты — в цвет темы. Значок нарисован голубым внутри
+   data-URI, поэтому его цвет сдвигается фильтром. */
+.cyber-layers-control.leaflet-control-layers {
+    border-color: rgb(var(--cyber-yellow-rgb) / 0.3);
+    box-shadow: 0 0 15px rgb(var(--cyber-yellow-rgb) / 0.2);
 }
 
+.cyber-layers-control.leaflet-control-layers a.leaflet-control-layers-toggle {
+    filter: hue-rotate(205deg) saturate(1.2);
+}
+
+/* ── Мелочи интерфейса ──────────────────────────────────────────────────── */
 ::-webkit-scrollbar-thumb {
     background-color: var(--cyber-yellow);
     border-color: #000;
@@ -281,9 +209,6 @@ html {
     scrollbar-color: var(--cyber-yellow) #1a1a1a;
 }
 
-.cyber-layers-control.leaflet-control-layers a.leaflet-control-layers-toggle {
-    filter: hue-rotate(270deg) brightness(1.5);
-}
 .setting-toggle input:checked + .slider {
     background-color: var(--cyber-yellow);
     border-color: var(--cyber-yellow);
@@ -291,4 +216,21 @@ html {
 
 .popover-header {
     color: var(--cyber-yellow);
+}
+
+/* Плинко: на Хэллоуин вместо шарика — тыква (её рисует src/lib/client/plinkoBoard.ts) */
+body.seasonal-on .plinko-board .ball-skin {
+    display: inline;
+}
+
+body.seasonal-on .plinko-board .ball-core,
+body.seasonal-on .plinko-board .ball-shine {
+    display: none;
+}
+
+/* «Меньше движения» в системе — тема замирает */
+@media (prefers-reduced-motion: reduce) {
+    .reactor-cluster::after {
+        animation: none;
+    }
 }

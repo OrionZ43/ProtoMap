@@ -300,7 +300,9 @@
 		"time_h": "h",
 		"time_m": "m",
 		"game_crash_title": "Data Uplink",
-		"game_crash_desc": "Hack the corp server. The longer you stay, the more you earn. Disconnect before the connection gets terminated!"
+		"game_crash_desc": "Hack the corp server. The longer you stay, the more you earn. Disconnect before the connection gets terminated!",
+		"game_plinko_title": "Plinko",
+		"game_plinko_desc": "A ball falls through 16 rows of pegs. The middle takes part of your bet, the edges pay up to ×50. The shared casino bank sets the bet limit."
 	},
 	"artifacts": {
 		"toast": {
@@ -425,7 +427,8 @@
 				"> Pleasure doing business... mostly.",
 				"> Enjoy your new pixels."
 			]
-		}
+		},
+		"until": "Until {date}"
 	},
 	"coin": {
 		"title": "Orion's Table",
@@ -502,6 +505,28 @@
 		"title": "Data Uplink",
 		"mechanics_title": "UPLINK PROTOCOL",
 		"mechanics_text": "**How to Play:**\n1. Place your bet and initiate the uplink\n2. The multiplier starts at **1.00x** and grows exponentially\n3. Cash out **BEFORE** the connection crashes to secure your profit\n4. If you don't cash out in time, you lose everything\n\n**Risk Factor:**\nThe crash point is cryptographically random (6% instant crash, 94% variable)\n\n**Max Multiplier:** 50.00x (capped)\n**Cooldown:** 5 seconds between games\n**Rate Limit:** 50 games per hour\n\n**Bank Protection:**\nIf potential payout exceeds 90% of casino reserves, the crash point is adjusted downward to protect system liquidity."
+	},
+	"plinko": {
+		"title": "Plinko",
+		"max_bet": "Bets up to {max} PC per ball",
+		"bank_closed": "The casino bank is nearly empty — Plinko reopens once it refills.",
+		"board_label": "Plinko board: 16 rows of pegs and 17 slots with bet multipliers",
+		"history_label": "Recent slots",
+		"history_empty": "No balls dropped yet",
+		"bet_label": "Bet per ball",
+		"bet_down": "Decrease bet",
+		"bet_up": "Increase bet",
+		"balls_label": "Balls",
+		"drop": "Drop",
+		"stake_label": "Per drop",
+		"modal_poor_title": "Not enough credits",
+		"modal_poor_text": "You don't have enough ProtoCoins for this drop.",
+		"modal_error_title": "Game error",
+		"mechanics_title": "How it works",
+		"mechanics_text": "**How to play.** The ball falls through 16 rows of pegs, bouncing left or right on each. The slot it lands in multiplies your bet. The server decides the path; the animation only shows it.\n\n**Odds.** Most balls land in the middle: ×0.3–×0.7, losing part of the bet. About one ball in five returns more than the bet, one in 13 pays ×3 or more, and ×50 is one in 32,768.\n\n**Shared bank.** Your bet goes into the shared casino bank, and wins are paid from it. The bet limit per ball depends on the bank: when the bank shrinks, so does the limit. Return to player is 89.6%.",
+		"prize_hint": "Halloween: a ball in an edge slot — ×12 and up — wins the Pumpkin Head frame. One per player, until November 2.",
+		"prize_title": "The Pumpkin Head frame is yours!",
+		"prize_text": "Your ball landed in a pumpkin slot. The frame is in your inventory — equip it there."
 	},
 	"profile": {
 		"page_title": "Profile",
@@ -768,5 +793,71 @@
 			"pd_policy": "PERSONAL DATA PROCESSING"
 		}
 	},
-	"personal_data_policy": "Personal Data Processing Policy"
+	"personal_data_policy": "Personal Data Processing Policy",
+	"season": {
+		"side": {
+			"default": {
+				"left": "SYSTEM STATUS: ONLINE",
+				"right": "NETWORK POWER: 99%"
+			},
+			"anniversary": {
+				"left": "SYSTEM: 1 YEAR ONLINE",
+				"right": "CELEBRATION PROTOCOL: ACTIVE"
+			},
+			"halloween": {
+				"left": "SYSTEM: UNSTABLE",
+				"right": "ANALYZING ANOMALY..."
+			},
+			"winter": {
+				"left": "TEMPERATURE: -15°C",
+				"right": "COOLING SYSTEM: ACTIVE"
+			},
+			"newyear": {
+				"left": "MODE: GLITCHMAS",
+				"right": "CRYOGENIC PROTOCOLS: MAXIMUM"
+			}
+		},
+		"phrases": {
+			"anniversary": [
+				"Happy 1st Birthday, ProtoMap!",
+				"The system turns one!",
+				"//: DEPLOYING CAKE.EXE",
+				"1 year of pure glitch!",
+				"ANNIVERSARY PROTOCOL: ACTIVE"
+			],
+			"halloween": [
+				"by a spooky ghost",
+				"Happy Halloween!",
+				"powered by ectoplasm",
+				"treats, no tricks!",
+				"// system anomaly..."
+			],
+			"winter": [
+				"Frost protocols loaded",
+				"Stay warm, user.",
+				"Temperature dropping...",
+				"Ice detected in sector 7",
+				"//: SYSTEM COOLING ACTIVE",
+				"Cold logic only."
+			],
+			"newyear": [
+				"Merry Glitchmas!",
+				"Ho-ho-host unreachable.",
+				"Powered by peppermint",
+				"Gift received: [ERROR]",
+				"//: DEPLOYING FESTIVE MOOD",
+				"Happy New Cycle!",
+				"Snow.exe is running..."
+			],
+			"april": [
+				"Russification complete.",
+				"Sign-in via Gosuslugi required",
+				"Works even in the basement",
+				"//: RAM MINING IN PROGRESS",
+				"ProtoCoin tax is now 13%",
+				"Your e-summons has been delivered.",
+				"You are my sunshine."
+			]
+		}
+	}
 }

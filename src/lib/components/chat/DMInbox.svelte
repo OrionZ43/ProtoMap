@@ -520,7 +520,7 @@
     .avatar-wrap { position: relative; flex-shrink: 0; width: 42px; height: 42px; }
     .avatar-wrap.small { width: 32px; height: 32px; }
     .avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
-    .favorites-icon-sm { width: 32px; height: 32px; border-radius: 50%; background: rgba(252,238,10,0.1); display: flex; align-items: center; justify-content: center; color: var(--cyber-yellow); flex-shrink: 0; }
+    .favorites-icon-sm { width: 32px; height: 32px; border-radius: 50%; background: rgb(var(--cyber-yellow-rgb) / 0.1); display: flex; align-items: center; justify-content: center; color: var(--cyber-yellow); flex-shrink: 0; }
 
     /* ── Лента ──────────────────────────────────────────────────────── */
     .messages-window { flex: 1; overflow-y: auto; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; scrollbar-width: thin; scrollbar-color: #334155 transparent; }

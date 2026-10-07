@@ -303,7 +303,7 @@
 	}
 	.tool-btn.active {
 		color: var(--cyber-yellow, #fcee0a);
-		background: rgba(252, 238, 10, 0.08);
+		background: rgb(var(--cyber-yellow-rgb) / 0.08);
 	}
 	.tool-btn:disabled {
 		opacity: 0.35;
@@ -353,7 +353,7 @@
 		transition: box-shadow 0.2s;
 	}
 	.send-btn:hover:not(:disabled) {
-		box-shadow: 0 0 10px rgba(252, 238, 10, 0.4);
+		box-shadow: 0 0 10px rgb(var(--cyber-yellow-rgb) / 0.4);
 	}
 	.send-btn:disabled {
 		background: #374151;

@@ -1,5 +1,5 @@
 :root {
-    --cyber-yellow: #00f3ff;
+    --cyber-yellow-rgb: 0 243 255;
     --cyber-red: #0077ff;
     --text-color: #e0f7fa;
     scrollbar-color: #00f3ff #051015;
@@ -68,8 +68,6 @@ body::before {
 nav {
     border-bottom: 1px solid rgba(0, 243, 255, 0.2) !important;
 }
-
-.spider-scene { display: none; }
 
 .panel-btn, .neon-btn {
     border-color: rgba(0, 243, 255, 0.5) !important;

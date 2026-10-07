@@ -9,7 +9,7 @@
     --anniv-magenta: #ff00ff;
     --anniv-cyan:    #00f0ff;
     --anniv-pink:    #ff6ec7;
-    --cyber-yellow:  #ffd700;
+    --cyber-yellow-rgb: 255 215 0;
     scrollbar-color: #ffd700 #0a080f;
 }
 

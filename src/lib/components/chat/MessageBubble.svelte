@@ -310,8 +310,8 @@
 		overflow-wrap: anywhere;
 	}
 	.bubble.own {
-		background: rgba(252, 238, 10, 0.08);
-		border-color: rgba(252, 238, 10, 0.2);
+		background: rgb(var(--cyber-yellow-rgb) / 0.08);
+		border-color: rgb(var(--cyber-yellow-rgb) / 0.2);
 	}
 	.bubble.sticker {
 		background: transparent;
@@ -552,7 +552,7 @@
 		transform: scale(1.35);
 	}
 	.panel-btn.picked {
-		background: rgba(252, 238, 10, 0.16);
+		background: rgb(var(--cyber-yellow-rgb) / 0.16);
 	}
 
 	.reactions {
@@ -581,8 +581,8 @@
 		background: rgba(255, 255, 255, 0.12);
 	}
 	.pill.mine {
-		background: rgba(252, 238, 10, 0.12);
-		border-color: rgba(252, 238, 10, 0.3);
+		background: rgb(var(--cyber-yellow-rgb) / 0.12);
+		border-color: rgb(var(--cyber-yellow-rgb) / 0.3);
 	}
 	.pill-n {
 		font-size: 0.65rem;

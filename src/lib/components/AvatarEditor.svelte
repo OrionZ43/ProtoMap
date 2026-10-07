@@ -524,7 +524,7 @@
 		background: rgba(10, 10, 10, 0.5);
 		backdrop-filter: blur(4px);
 		-webkit-backdrop-filter: blur(4px);
-		border: 1px solid rgba(252, 238, 10, 0.2);
+		border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.2);
 		clip-path: polygon(0 15px, 15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
 		max-width: 900px;
 		width: 100%;
@@ -535,7 +535,7 @@
 	}
 
 	.header {
-		border-bottom: 1px solid rgba(252, 238, 10, 0.2);
+		border-bottom: 1px solid rgb(var(--cyber-yellow-rgb) / 0.2);
 		padding: 1.5rem 2rem;
 		display: flex;
 		align-items: center;
@@ -591,7 +591,7 @@
 		border-radius: 50%;
 		cursor: move;
 		background: #000;
-		box-shadow: 0 0 20px rgba(252, 238, 10, 0.2);
+		box-shadow: 0 0 20px rgb(var(--cyber-yellow-rgb) / 0.2);
 		max-width: 100%;
 		height: auto;
 		touch-action: none; /* 🔥 Отключаем дефолтные тач-жесты браузера */
@@ -654,7 +654,7 @@
 	.preview-canvas {
 		border: 2px solid var(--cyber-yellow, #fcee0a);
 		border-radius: 50%;
-		box-shadow: 0 0 15px rgba(252, 238, 10, 0.2);
+		box-shadow: 0 0 15px rgb(var(--cyber-yellow-rgb) / 0.2);
 		background: #000;
 	}
 
@@ -683,8 +683,8 @@
 	}
 
 	.icon-btn {
-		background: rgba(252, 238, 10, 0.1);
-		border: 1px solid rgba(252, 238, 10, 0.3);
+		background: rgb(var(--cyber-yellow-rgb) / 0.1);
+		border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.3);
 		color: var(--cyber-yellow, #fcee0a);
 		padding: 0.5rem;
 		cursor: pointer;
@@ -696,7 +696,7 @@
 	}
 
 	.icon-btn:hover:not(:disabled) {
-		background: rgba(252, 238, 10, 0.2);
+		background: rgb(var(--cyber-yellow-rgb) / 0.2);
 		border-color: var(--cyber-yellow, #fcee0a);
 		transform: translateY(-1px);
 	}
@@ -728,7 +728,7 @@
 	}
 
 	.toggle-btn.active {
-		background: rgba(252, 238, 10, 0.2);
+		background: rgb(var(--cyber-yellow-rgb) / 0.2);
 		border-color: var(--cyber-yellow, #fcee0a);
 		color: var(--cyber-yellow, #fcee0a);
 	}
@@ -773,7 +773,7 @@
 		border: 2px solid #000;
 		border-radius: 50%;
 		cursor: pointer;
-		box-shadow: 0 0 8px rgba(252, 238, 10, 0.5);
+		box-shadow: 0 0 8px rgb(var(--cyber-yellow-rgb) / 0.5);
 	}
 
 	.slider::-moz-range-thumb {
@@ -783,7 +783,7 @@
 		border: 2px solid #000;
 		border-radius: 50%;
 		cursor: pointer;
-		box-shadow: 0 0 8px rgba(252, 238, 10, 0.5);
+		box-shadow: 0 0 8px rgb(var(--cyber-yellow-rgb) / 0.5);
 	}
 
 	.reset-btn {
@@ -809,7 +809,7 @@
 	}
 
 	.footer {
-		border-top: 1px solid rgba(252, 238, 10, 0.2);
+		border-top: 1px solid rgb(var(--cyber-yellow-rgb) / 0.2);
 		padding: 1.5rem 2rem;
 		display: flex;
 		gap: 1rem;

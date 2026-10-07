@@ -17,7 +17,11 @@
 
     /* --- НОВЫЙ БЛОК: УНИВЕРСАЛЬНАЯ ПАЛИТРА --- */
     /* Здесь мы определяем цвета по умолчанию */
-    --cyber-yellow: #fcee0a;
+    /* Акцент задан тройкой RGB: из неё строятся var(--cyber-yellow), полупрозрачные
+       оттенки rgb(var(--cyber-yellow-rgb) / .3) и цвета Tailwind (tailwind.config.cjs).
+       Сезонная тема меняет только тройку — и перекрашивается весь сайт. */
+    --cyber-yellow-rgb: 252 238 10;
+    --cyber-yellow: rgb(var(--cyber-yellow-rgb));
     --cyber-cyan: #00f0ff;
     --cyber-purple: #bd00ff;
     --cyber-green: #39ff14;
@@ -285,7 +289,7 @@ body {
 }
 
 .user-avatar-marker {
-    box-shadow: 0 0 8px rgba(252, 238, 10, 0.7);
+    box-shadow: 0 0 8px rgb(var(--cyber-yellow-rgb) / 0.7);
     transition: transform 0.2s ease-out;
     border-radius: 50%;
     overflow: hidden;

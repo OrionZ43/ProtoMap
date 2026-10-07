@@ -221,10 +221,10 @@
         display: flex;
         flex-direction: column;
         background: #08080c;
-        border: 1px solid rgba(252, 238, 10, 0.22);
+        border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.22);
         box-shadow:
-            0 0 42px rgba(252, 238, 10, 0.09),
-            inset 0 0 60px rgba(252, 238, 10, 0.012);
+            0 0 42px rgb(var(--cyber-yellow-rgb) / 0.09),
+            inset 0 0 60px rgb(var(--cyber-yellow-rgb) / 0.012);
         overflow: hidden;
     }
 
@@ -256,7 +256,7 @@
         background: repeating-linear-gradient(
             to bottom,
             transparent 0 3px,
-            rgba(252, 238, 10, 0.018) 3px 4px
+            rgb(var(--cyber-yellow-rgb) / 0.018) 3px 4px
         );
     }
 
@@ -266,8 +266,8 @@
         align-items: center;
         gap: 0.6rem;
         padding: 0.55rem 1.1rem;
-        background: rgba(252, 238, 10, 0.05);
-        border-bottom: 1px solid rgba(252, 238, 10, 0.2);
+        background: rgb(var(--cyber-yellow-rgb) / 0.05);
+        border-bottom: 1px solid rgb(var(--cyber-yellow-rgb) / 0.2);
     }
     .dot {
         width: 7px;
@@ -291,7 +291,7 @@
         gap: 2px;
         margin-left: auto;
         padding: 2px;
-        border: 1px solid rgba(252, 238, 10, 0.25);
+        border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.25);
         background: rgba(0, 0, 0, 0.4);
     }
     .lang-btn {
@@ -311,7 +311,7 @@
     .lang-btn.active {
         color: #06080f;
         background: var(--cyber-yellow, #fcee0a);
-        box-shadow: 0 0 8px rgba(252, 238, 10, 0.45);
+        box-shadow: 0 0 8px rgb(var(--cyber-yellow-rgb) / 0.45);
     }
 
     .head {
@@ -360,10 +360,10 @@
         background: rgba(0, 0, 0, 0.3);
     }
     .notice::-webkit-scrollbar-thumb {
-        background: rgba(252, 238, 10, 0.35);
+        background: rgb(var(--cyber-yellow-rgb) / 0.35);
     }
     .notice::-webkit-scrollbar-thumb:hover {
-        background: rgba(252, 238, 10, 0.55);
+        background: rgb(var(--cyber-yellow-rgb) / 0.55);
     }
 
     .notice {
@@ -418,8 +418,8 @@
         transition: border-color 0.18s, background 0.18s;
     }
     .check:hover {
-        border-color: rgba(252, 238, 10, 0.32);
-        background: rgba(252, 238, 10, 0.03);
+        border-color: rgb(var(--cyber-yellow-rgb) / 0.32);
+        background: rgb(var(--cyber-yellow-rgb) / 0.03);
     }
     .check input {
         position: absolute;
@@ -432,15 +432,15 @@
         width: 18px;
         height: 18px;
         margin-top: 2px;
-        border: 1px solid rgba(252, 238, 10, 0.45);
-        background: rgba(252, 238, 10, 0.05);
+        border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.45);
+        background: rgb(var(--cyber-yellow-rgb) / 0.05);
         position: relative;
         transition: background 0.15s, border-color 0.15s;
     }
     .check input:checked + .box {
         background: var(--cyber-yellow, #fcee0a);
         border-color: var(--cyber-yellow, #fcee0a);
-        box-shadow: 0 0 10px rgba(252, 238, 10, 0.45);
+        box-shadow: 0 0 10px rgb(var(--cyber-yellow-rgb) / 0.45);
     }
     .check input:checked + .box::after {
         content: '';
@@ -465,7 +465,7 @@
     .label a {
         color: var(--cyber-yellow, #fcee0a);
         text-decoration: none;
-        border-bottom: 1px dashed rgba(252, 238, 10, 0.45);
+        border-bottom: 1px dashed rgb(var(--cyber-yellow-rgb) / 0.45);
     }
     .label a:hover {
         color: #fff;
@@ -512,7 +512,7 @@
     }
     .link-btn:hover {
         color: var(--cyber-yellow, #fcee0a);
-        border-color: rgba(252, 238, 10, 0.5);
+        border-color: rgb(var(--cyber-yellow-rgb) / 0.5);
     }
     .sep {
         color: #3d4d5c;
@@ -542,7 +542,7 @@
     .notice a {
         color: var(--cyber-yellow, #fcee0a);
         text-decoration: none;
-        border-bottom: 1px dashed rgba(252, 238, 10, 0.45);
+        border-bottom: 1px dashed rgb(var(--cyber-yellow-rgb) / 0.45);
     }
     .notice a:hover {
         color: #fff;

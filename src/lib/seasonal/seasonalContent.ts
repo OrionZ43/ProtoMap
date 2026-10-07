@@ -1,99 +1,16 @@
-type SeasonalEvent = {
-    name: string;
-    isActive: (date: Date) => boolean;
-    link: string;
-    phrases: string[];
-};
+// Фраза рядом с логотипом в шапке. В сезон — одна из фраз сезона на языке
+// интерфейса (season.phrases.* в локалях), в остальные дни — пасхалка из TEASERS.
+// Даты сезонов — в ./seasons.ts.
+import type { Season } from './seasons';
 
-const events: SeasonalEvent[] =[
-    // 🎂 ГОДОВЩИНА PROTOMAP (4-10 мая)
-    {
-        name: 'anniversary',
-        isActive: (date) => {
-            const m = date.getMonth();
-            const d = date.getDate();
-            // Месяц 4 = Май (отсчет с нуля)
-            return (m === 4 && d >= 4 && d <= 10);
-        },
-        link: 'https://t.me/proto_map',
-        phrases:[
-            '🎂 Happy 1st Birthday, ProtoMap!',
-            '🎉 Система празднует год!',
-            '//: DEPLOYING CAKE.EXE',
-            '1 year of pure glitch!',
-            '🥳 ПРОТОКОЛ ГОДОВЩИНЫ: АКТИВЕН'
-        ]
-    },
-    {
-        name: 'Glitch-o-Ween',
-        isActive: (date) => {
-            const m = date.getMonth();
-            const d = date.getDate();
-            return (m === 9 && d >= 20) || (m === 10 && d <= 2);
-        },
-        link: 'https://vm.tiktok.com/ZMAqvpf1X/',
-        phrases:[
-            'by a spooky ghost 👻',
-            'Happy Halloween!',
-            'powered by ectoplasm',
-            'treats, no tricks!',
-            '// system anomaly...',
-        ]
-    },
-    {
-        name: 'Winter Chill',
-        isActive: (date) => {
-            const m = date.getMonth();
-            const d = date.getDate();
-            return (m === 11 && d >= 1 && d < 15);
-        },
-        link: 'https://t.me/proto_map',
-        phrases:[
-            '❄️ Frost protocols loaded',
-            'Stay warm, user.',
-            'Temperature dropping...',
-            'Ice detected in sector 7',
-            '//: SYSTEM COOLING ACTIVE',
-            'Cold logic only.'
-        ]
-    },
-    {
-        name: 'Glitchmas',
-        isActive: (date) => {
-            const m = date.getMonth();
-            const d = date.getDate();
-            return (m === 11 && d >= 15) || (m === 0 && d <= 14);
-        },
-        link: 'https://t.me/proto_map',
-        phrases:[
-            '🎄 Merry Glitchmas!',
-            'Ho-ho-host unreachable.',
-            'Powered by peppermint',
-            'Gift received: [ERROR]',
-            '//: DEPLOYING FESTIVE MOOD',
-            'Happy New Cycle!',
-            'Snow.exe is running...'
-        ]
-    },
-    {
-        name: 'April Fools',
-        isActive: (date) => {
-            const m = date.getMonth();
-            const d = date.getDate();
-            return (m === 3 && d === 1);
-        },
-        link: 'https://t.me/proto_map', // Добавил ссылку, так как в старом коде была незакрытая кавычка (link: ',)
-        phrases:[
-            'Русификация прошла успешно.',
-            'Требуется авторизация через Госуслуги',
-            'Ловит даже в подвале',
-            '//: RAM MINING IN PROGRESS',
-            'Налог на ProtoCoins составил 13%',
-            'Электронная повестка доставлена.',
-            'You are my sunshine.'
-        ]
-    }
-];
+/** Куда ведёт фраза в сезон. */
+export const SEASON_LINKS: Record<Season, string> = {
+    anniversary: 'https://t.me/proto_map',
+    halloween: 'https://vm.tiktok.com/ZMAqvpf1X/',
+    winter: 'https://t.me/proto_map',
+    newyear: 'https://t.me/proto_map',
+    april: 'https://t.me/proto_map',
+};
 
 // === ПАСХАЛКИ И ПРИКОЛЫ (Когда нет ивентов) ===
 
@@ -122,30 +39,12 @@ const TEASERS: Teaser[] =[
 
 const defaultLink = 'https://t.me/Orion_Z43';
 
-export function getSeasonalContent(): { phrase: string; link: string } {
-    const today = new Date();
-    const activeEvent = events.find(event => event.isActive(today));
-
-    // Если есть активный праздник
-    if (activeEvent) {
-        const randomPhrase = activeEvent.phrases[Math.floor(Math.random() * activeEvent.phrases.length)];
-        return {
-            phrase: randomPhrase,
-            link: activeEvent.link
-        };
-    }
-
-    // Если праздников нет (Рандомные пасхалки)
-    const randomTeaser = TEASERS[Math.floor(Math.random() * TEASERS.length)];
+/** Пасхалка для дня без сезона; roll — случайное число от 0 до 1. */
+export function pickTeaser(roll: number): { phrase: string; link: string } {
+    const teaser = TEASERS[Math.floor(roll * TEASERS.length)];
     return {
-        phrase: randomTeaser.text,
+        phrase: teaser.text,
         // Если у пасхалки есть своя ссылка - берем её, иначе - дефолтную на тебя
-        link: randomTeaser.link || defaultLink
+        link: teaser.link || defaultLink
     };
-}
-
-export function getActiveEventName(): string | null {
-    const today = new Date();
-    const activeEvent = events.find(event => event.isActive(today));
-    return activeEvent ? activeEvent.name : null;
 }

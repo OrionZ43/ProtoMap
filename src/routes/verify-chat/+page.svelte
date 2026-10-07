@@ -164,7 +164,7 @@
 </div>
 
 <style>
-    :root { --cy:#fcee0a; --cc:#00f0ff; --cr:#ff003c; --cp:#bd00ff; }
+    :root { --cy:var(--cyber-yellow); --cc:#00f0ff; --cr:#ff003c; --cp:#bd00ff; }
 
     .page-wrap {
         min-height: 100vh;
@@ -305,9 +305,9 @@
     .btn-retry {
         background: transparent;
         color: var(--cy);
-        border: 1px solid rgba(252,238,10,.35);
+        border: 1px solid rgb(var(--cyber-yellow-rgb) / .35);
     }
-    .btn-retry:hover { background: rgba(252,238,10,.08); box-shadow: 0 0 14px rgba(252,238,10,.2); }
+    .btn-retry:hover { background: rgb(var(--cyber-yellow-rgb) / .08); box-shadow: 0 0 14px rgb(var(--cyber-yellow-rgb) / .2); }
 
     /* Футер */
     .card-footer {

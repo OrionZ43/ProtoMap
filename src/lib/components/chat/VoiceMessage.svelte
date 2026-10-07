@@ -54,7 +54,7 @@
     $: progress    = duration > 0 ? currentTime / duration : 0;
     // Свои — жёлтые (передача), чужие — циановые (приём). Тот же код цвета,
     // что у пузырей в MessageBubble; раньше здесь было наоборот.
-    $: color       = isOwn ? '#fcee0a' : '#00f0ff';
+    $: color       = isOwn ? 'var(--cyber-yellow)' : '#00f0ff';
 
     async function togglePlay() {
         if (!audio) return;
@@ -150,8 +150,8 @@
         transition:background .2s, box-shadow .2s;
     }
     .play-btn:hover { background:rgba(0,240,255,.2); box-shadow:0 0 10px rgba(0,240,255,.3); }
-    .own .play-btn { background:rgba(252,238,10,.12); border-color:rgba(252,238,10,.45); color:#fcee0a; }
-    .own .play-btn:hover { background:rgba(252,238,10,.22); box-shadow:0 0 10px rgba(252,238,10,.3); }
+    .own .play-btn { background:rgb(var(--cyber-yellow-rgb) / .12); border-color:rgb(var(--cyber-yellow-rgb) / .45); color:var(--cyber-yellow); }
+    .own .play-btn:hover { background:rgb(var(--cyber-yellow-rgb) / .22); box-shadow:0 0 10px rgb(var(--cyber-yellow-rgb) / .3); }
     .wide .play-btn { width:42px; height:42px; }
 
     .wave { flex:1; cursor:pointer; display:flex; flex-direction:column; gap:3px; min-width:0; }

@@ -1,10 +1,8 @@
 import { register, init, getLocaleFromNavigator } from 'svelte-i18n';
 import { browser } from '$app/environment';
+import { isAprilFools } from '$lib/seasonal/seasons';
 
-const d = new Date();
-const isAprilFools = d.getMonth() === 3 && d.getDate() === 1;
-
-if (isAprilFools) {
+if (isAprilFools()) {
     register('ru', () => import('./locales/ru_april.json'));
 } else {
     register('ru', () => import('./locales/ru.json'));

@@ -589,8 +589,8 @@
 		width: 42px;
 		height: 42px;
 		border-radius: 10px;
-		background: rgba(252,238,10,0.1);
-		border: 1px solid rgba(252,238,10,0.2);
+		background: rgb(var(--cyber-yellow-rgb) / 0.1);
+		border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.2);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -665,7 +665,7 @@
 		width: 28px;
 		height: 28px;
 		border-radius: 50%;
-		border: 1px solid rgba(252,238,10,0.4);
+		border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.4);
 		color: var(--cyber-yellow);
 		font-size: 1rem;
 		font-weight: 900;
@@ -675,8 +675,8 @@
 		transition: all 0.2s;
 	}
 
-	.sub-btn:hover { background: rgba(252,238,10,0.1); }
-	.sub-btn.subbed { background: rgba(252,238,10,0.15); border-color: var(--cyber-yellow); }
+	.sub-btn:hover { background: rgb(var(--cyber-yellow-rgb) / 0.1); }
+	.sub-btn.subbed { background: rgb(var(--cyber-yellow-rgb) / 0.15); border-color: var(--cyber-yellow); }
 	.sub-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 	.posts-feed {
@@ -742,8 +742,8 @@
 	.reaction-pill:hover { background: rgba(255,255,255,0.1); }
 
 	.reaction-pill.own {
-		background: rgba(252,238,10,0.12);
-		border-color: rgba(252,238,10,0.3);
+		background: rgb(var(--cyber-yellow-rgb) / 0.12);
+		border-color: rgb(var(--cyber-yellow-rgb) / 0.3);
 		color: var(--cyber-yellow);
 	}
 
@@ -849,7 +849,7 @@
 		transition: box-shadow 0.2s;
 	}
 
-	.send-btn:hover { box-shadow: 0 0 12px rgba(252,238,10,0.4); }
+	.send-btn:hover { box-shadow: 0 0 12px rgb(var(--cyber-yellow-rgb) / 0.4); }
 
 	.send-btn:disabled {
 		background: #374151;

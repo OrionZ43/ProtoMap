@@ -11,7 +11,8 @@ module.exports = {
         display: ['Russo One', 'sans-serif'],
       },
       colors: {
-        'cyber-yellow': '#fcee0a',
+        // Из переменной, чтобы классы перекрашивала сезонная тема (см. src/app.css).
+        'cyber-yellow': 'rgb(var(--cyber-yellow-rgb) / <alpha-value>)',
         'cyber-cyan': '#00f0ff',
         'cyber-magenta': '#ff00c1',
         'cyber-red': '#ff003c',
