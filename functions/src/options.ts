@@ -24,4 +24,7 @@
 
 import { setGlobalOptions } from "firebase-functions/v2";
 
-setGlobalOptions({ region: "europe-west1" });
+/** Регион всех функций. Нужен и по имени — например, адресовать очередь Cloud Tasks. */
+export const REGION = "europe-west1";
+
+setGlobalOptions({ region: REGION });

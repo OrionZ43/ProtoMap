@@ -44,11 +44,13 @@ export function register(bot: Telegraf): void {
     });
 
     // Шаг 2: 🆕 Cloudflare Turnstile верификация через сайт
-    bot.on("new_chat_members", async (ctx) => {
+    bot.on("new_chat_members", async (ctx, next) => {
         // В личном чате и в обсуждении канала капчи нет: там свои люди либо
         // обычные читатели, а не защита от рейдов. Шаг 1 (lockdown) при этом
         // остаётся — он под 'moderation' и срабатывает только по команде админа.
-        if (!hasFeature(ctx.chat?.id, 'captcha')) return;
+        // next() обязателен: без него вход в другие чаты не доходит до
+        // обработчиков ниже — например, до проверки возраста.
+        if (!hasFeature(ctx.chat?.id, 'captcha')) return next();
 
         try {
             for (const member of ctx.message.new_chat_members) {

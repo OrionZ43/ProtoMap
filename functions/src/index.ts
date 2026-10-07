@@ -11,13 +11,14 @@ import fetch from "node-fetch";
 import { FieldValue } from "firebase-admin/firestore";
 import { v2 as cloudinary } from "cloudinary";
 import * as crypto from 'crypto';
-export { telegramWebhook } from './telegram';
+export { telegramWebhook, ageGateTimeout } from './telegram';
 import { getMessaging } from "firebase-admin/messaging";
 import vision from "@google-cloud/vision";
 export { getStepperStatus, stepperClaim } from './stepper';
 export { recordConsents, revokeConsent, getMyConsents } from './consents';
 export { enforceRetention } from './retention';
 export { getOrCreateReferralCode, claimReferral, getReferralStatus, finishReferralCampaign } from './referralFunctions';
+export { onChannelCommentWritten, onChannelPostCreated, onChannelPostDeleted, onChannelDeleted } from './channelComments';
 import { auth } from "firebase-functions/v1";
 
 

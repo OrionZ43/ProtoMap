@@ -19,6 +19,14 @@ import {
     type TranscribeResult
 } from "../gemini";
 
+/**
+ * Значки в начале расшифровок. По ним banter.ts отличает расшифровку чужого
+ * голосового от реплики самого бота: ответ на расшифровку адресован автору
+ * голосового, а не боту.
+ */
+export const TRANSCRIPT_ICON = '🎙';
+export const UWU_ICON = '🌸';
+
 const TRANSCRIBE_ERRORS: Record<Exclude<TranscribeResult, { ok: true }>['reason'], string> = {
     too_long:        'Слишком длинное — расшифровываю до 5 минут.',
     too_big:         'Файл слишком большой.',
@@ -39,7 +47,7 @@ async function replyWithTranscript(
     duration: number,
     verbose: boolean,
     prompt?: string,
-    icon = '🎙'
+    icon = TRANSCRIPT_ICON
 ) {
     try {
         await ctx.sendChatAction('typing');
@@ -123,13 +131,13 @@ export function register(bot: Telegraf): void {
         await ctx.reply(body.slice(0, 3900));
     });
 
-    bot.command('text', (ctx) => handleReplyCommand(ctx, DEFAULT_PROMPT, '🎙'));
+    bot.command('text', (ctx) => handleReplyCommand(ctx, DEFAULT_PROMPT, TRANSCRIPT_ICON));
 
     // Няшный режим. Работает не заменой букв на стороне бота, а другим промптом:
     // модель понимает, что сказано, и переписывает осмысленно. Первая версия была
     // набором регулярок (р→в, вставки «ня», заикание) — выброшена как заведомо
     // худшая: она портила текст, не считаясь с его содержанием.
-    bot.command('uwufier', (ctx) => handleReplyCommand(ctx, UWU_PROMPT, '🌸'));
+    bot.command('uwufier', (ctx) => handleReplyCommand(ctx, UWU_PROMPT, UWU_ICON));
 
     // ─── 🆕 Расшифровка голосовых и кружков ──────────────────────────────────────
     //

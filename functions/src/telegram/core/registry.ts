@@ -25,6 +25,13 @@ import {
 //
 // `triggers` и `captcha` — выключены в личном чате по прямой просьбе Ориона:
 //   там свои люди, автомут за слово «подкрутка» и капча на входе не нужны.
+//
+// `age_gate` — только личный чат, по просьбе Ориона: там взрослый контент
+//   (включён `download_nsfw`), и вход только для 18+.
+//
+// `banter` — только личный чат, по просьбе Ориона: подколы с матом в ответ на
+//   обращения к боту, реакции на медиа под спойлером, комментарии к стикерам
+//   и замечания за стикерный спам. В ProtoMap этому не место.
 
 export type Feature =
     | 'triggers' | 'captcha' | 'transcribe' | 'games' | 'moderation'
@@ -35,11 +42,15 @@ export type Feature =
     /** Скачивание медиа по ссылкам из обычных источников. */
     | 'download'
     /** Плюс источники со взрослым контентом — только там, где это уместно. */
-    | 'download_nsfw';
+    | 'download_nsfw'
+    /** Вопрос «есть ли 18» на входе; «нет» или молчание пять минут — бан. */
+    | 'age_gate'
+    /** Ответы на обращения к боту (с матом), реакции на спойлеры, стикеры. */
+    | 'banter';
 
 const CHAT_FEATURES: Record<number, Feature[]> = {
     [PROTOMAP_CHAT_ID]: ['triggers', 'captcha', 'games', 'moderation', 'download'],
-    [GAREM_CHAT_ID]:    ['transcribe', 'games', 'moderation', 'download', 'download_nsfw'],
+    [GAREM_CHAT_ID]:    ['transcribe', 'games', 'moderation', 'download', 'download_nsfw', 'age_gate', 'banter'],
 
     // В канале бот ничего не делает сам — он нужен там только чтобы иметь право
     // читать. Вся работа с постами происходит в обсуждении: Telegram пересылает

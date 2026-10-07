@@ -1,5 +1,5 @@
 /**
- * Реакции на слова и стикеры.
+ * Реакции на слова.
  *
  * Два разных механизма в одном модуле: автомут за нытьё про «подкрутку»
  * (WHINING_TRIGGERS) и шуточные ответы на ключевые слова (FUN_TRIGGERS).
@@ -287,13 +287,5 @@ export function register(bot: Telegraf): void {
 
         await checkTriggers(ctx, text);
         return next();
-    });
-
-    // ─── Стикеры ─────────────────────────────────────────────────────────────────
-    bot.on('sticker', async (ctx) => {
-        if (Math.random() < 0.05) {
-            const responses = ['🗿', '> Интересный стикер.', '👀', '🤔', '> *[АНАЛИЗИРУЮ]*', 'Based.'];
-            await ctx.reply(responses[Math.floor(Math.random() * responses.length)], { parse_mode: 'Markdown' });
-        }
     });
 }

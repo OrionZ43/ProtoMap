@@ -13,11 +13,15 @@
  *   guards      — первым, до него не должно выполняться ничего
  *   channel     — до triggers: пост канала может быть текстом, а bot.on('text')
  *                 его перехватит; здесь же приветствие в комментариях, которое
- *                 обязано идти до капчи (та не вызывает next())
+ *                 обязано идти до капчи (в своём чате та не вызывает next())
  *   команды     — до triggers по той же причине: bot.on('text') ловит и команды
+ *   age_gate    — после captcha: карантин (шаг 1 капчи) должен забанить
+ *                 вошедшего раньше, чем ему зададут вопрос
  *   transcribe  — тоже команды, /text и /uwufier
  *   download    — тоже ловит текст (ищет ссылки), но вызывает next(),
  *                 поэтому обязан стоять до triggers
+ *   banter      — ловит текст, стикеры и любые сообщения, вызывает next()
+ *                 всегда; до triggers по той же причине
  *   triggers    — ПОСЛЕДНИМ: bot.on('text') ловит любой текст
  */
 
@@ -31,8 +35,10 @@ import * as linking from "./features/linking";
 import * as duel from "./features/duel";
 import * as moderation from "./features/moderation";
 import * as captcha from "./features/captcha";
+import * as ageGate from "./features/ageGate";
 import * as transcribe from "./features/transcribe";
 import * as download from "./features/download";
+import * as banter from "./features/banter";
 import * as triggers from "./features/triggers";
 
 console.log('[BOT] Initializing ProtoMap Guardian Bot v2.1...');
@@ -44,11 +50,16 @@ linking.register(bot);
 duel.register(bot);
 moderation.register(bot);
 captcha.register(bot);
+ageGate.register(bot);
 transcribe.register(bot);
 download.register(bot);
+banter.register(bot);
 triggers.register(bot);
 
 console.log('[BOT] ✅ All handlers registered successfully!');
+
+// Таймаут проверки возраста — отдельная функция, её вызывает Cloud Tasks.
+export { ageGateTimeout } from "./features/ageGate";
 
 // ─── Webhook ─────────────────────────────────────────────────────────────────
 

@@ -450,6 +450,18 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Незавершённые проверки возраста в Telegram-чате. Только бот.
+    match /telegram_age_gate/{checkId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // Состояние подколов бота по чатам (счётчик стикерного спама). Только бот.
+    match /telegram_banter/{chatId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
     // =========================================================
     // 👥 РАЗДЕЛ 12: ГРУППЫ
     // =========================================================
