@@ -21,6 +21,8 @@ export { recordConsents, revokeConsent, getMyConsents } from './consents';
 export { enforceRetention } from './retention';
 export { getOrCreateReferralCode, claimReferral, getReferralStatus, finishReferralCampaign } from './referralFunctions';
 export { onChannelCommentWritten, onChannelPostCreated, onChannelPostDeleted, onChannelDeleted } from './channelComments';
+export { onChannelCommentReplyCreated } from './notifications';
+import { notifyProfileComment } from './notifications';
 import { auth } from "firebase-functions/v1";
 
 
@@ -204,33 +206,22 @@ export const sendPrivateChatNotification = onCall(async (request) => {
                 bodyText = messageText?.substring(0, 100) || 'Новое сообщение';
         }
 
+        // Только data, без блока notification: уведомление строит клиент
+        // (MyFirebaseMessagingService). Иначе в фоне его рисует система —
+        // тап не открывает чат, а заглушённые чаты и открытый сейчас чат
+        // не учитываются. title/body клиент читает из data.
         const message = {
             token: fcmToken,
-            notification: {
-                title: senderName,
-                body: bodyText,
-            },
             data: {
-                chatId: chatId,
+                chatId: String(chatId),
                 partnerUid: uid,
                 type: 'private_message',
+                title: String(senderName),
+                body: bodyText,
             },
             android: {
                 priority: 'high' as const,
-                notification: {
-                    channelId: 'protomap_chat_channel',
-                    priority: 'high' as const,
-                    defaultSound: true,
-                    defaultVibrateTimings: true,
-                },
-            },
-            apns: {
-                payload: {
-                    aps: {
-                        sound: 'default',
-                        badge: 1,
-                    },
-                },
+                ttl: 24 * 60 * 60 * 1000,
             },
         };
 
@@ -426,12 +417,16 @@ export const addComment = onCall(async (request) => {
     await assertNotBanned(request); // ✅ [ЭТАП 1] Исправлен баг: передаём request, а не uid
     assertEmailVerified(request.auth);
 
-    const { profileUid, text, parentId } = request.data;
+    const { profileUid, text, parentId, replyToCommentId } = request.data;
 
     if (!profileUid || !text || typeof text !== 'string' || !text.trim()) {
         throw new HttpsError('invalid-argument', 'Пустое сообщение.');
     }
     if (text.length > 1000) throw new HttpsError('invalid-argument', 'Слишком длинно.');
+
+    // Каждый комментарий — ещё и пуш владельцу профиля: без лимита спам
+    // в комментариях становится спамом уведомлениями.
+    await checkGlobalRateLimit(uid, 'comment', 5, 60 * 1000);
 
     const authorRef = db.collection('users').doc(uid);
     const profileRef = db.collection('users').doc(profileUid);
@@ -455,7 +450,19 @@ export const addComment = onCall(async (request) => {
             commentData.parentId = parentId;
         }
 
-        await profileRef.collection('comments').add(commentData);
+        const commentRef = await profileRef.collection('comments').add(commentData);
+
+        // Пуш владельцу профиля и тому, кому ответили. Ошибки внутри
+        // глотаются — комментарий уже сохранён.
+        await notifyProfileComment({
+            profileUid,
+            commentId: commentRef.id,
+            authorUid: uid,
+            authorName: String(authorData.username || ''),
+            text: commentData.text,
+            parentId: typeof parentId === 'string' ? parentId : null,
+            replyToCommentId: typeof replyToCommentId === 'string' ? replyToCommentId : null,
+        });
 
         return { status: 'success', message: 'Сигнал отправлен!' };
     } catch (error: any) {
@@ -1354,7 +1361,7 @@ export const playPlinko = onCall(async (request) => {
     await assertNotBanned(request);
     assertEmailVerified(request.auth);
 
-    if (!isPlinkoOpen(Date.now())) {
+    if (process.env.FUNCTIONS_EMULATOR !== 'true' && !isPlinkoOpen(Date.now())) {
         throw new HttpsError('failed-precondition', 'Плинко откроется 20 октября.');
     }
 
@@ -1458,10 +1465,11 @@ export const getPlinkoState = onCall(async (request) => {
     ]);
     const bank = Number(bankDoc.data()?.bank_balance);
     const owned: string[] = userDoc.data()?.owned_items || [];
+    const isEmulator = process.env.FUNCTIONS_EMULATOR === 'true';
     return {
         data: {
-            open: isPlinkoOpen(Date.now()),
-            maxBet: Number.isFinite(bank) ? plinkoMaxBet(bank) : 0,
+            open: isEmulator || isPlinkoOpen(Date.now()),
+            maxBet: Number.isFinite(bank) ? plinkoMaxBet(bank) : (isEmulator ? 500 : 0),
             prizeAvailable: isPlinkoPrizeOpen(prizeDoc.data(), owned, Date.now())
         }
     };
