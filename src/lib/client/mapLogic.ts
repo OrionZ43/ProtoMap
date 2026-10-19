@@ -1,5 +1,11 @@
 import L from 'leaflet';
 import 'leaflet.markercluster';
+import { maplibreGL } from '@maplibre/maplibre-gl-leaflet';
+import type { ExpressionSpecification, StyleSpecification } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import darkMatterStyle from '$lib/client/darkMatterStyle.json';
+import { locale } from 'svelte-i18n';
+import { get } from 'svelte/store';
 import { auth, functions } from '$lib/firebase';
 import { userStore, type UserProfile } from '$lib/stores';
 import { httpsCallable } from "firebase/functions";
@@ -92,6 +98,20 @@ function clearClientCache() {
     localStorage.removeItem('protomap_markers_time');
 }
 
+// Векторный слой включаем только при WebGL 2: на нём MapLibre работает полноценно,
+// а с версии 6 — только на нём. Проверяем заранее: если контекст не создаётся,
+// MapLibre падает уже при добавлении слоя, и карта остаётся без подложки.
+function hasWebGL2(): boolean {
+    try {
+        const gl = document.createElement('canvas').getContext('webgl2');
+        // Пробный контекст сразу отпускаем: число живых WebGL-контекстов у браузера ограничено
+        gl?.getExtension('WEBGL_lose_context')?.loseContext();
+        return !!gl;
+    } catch {
+        return false;
+    }
+}
+
 export function initMap(containerId: string) {
     let currentUserProfile: UserProfile | null = null;
 
@@ -114,31 +134,58 @@ export function initMap(containerId: string) {
     }
 
     // Атрибуция — это лицензионное обязательство, а не украшение: ODbL требует
-    // указывать OpenStreetMap, а условия бесплатного ключа CARTO — ещё и CARTO.
+    // указывать OpenStreetMap, а тайлы OpenFreeMap — ещё и их, и OpenMapTiles.
     const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
-    const CARTO_ATTR = `${OSM_ATTR}, &copy; <a href="https://carto.com/attributions">CARTO</a>`;
+    const OFM_ATTR = `<a href="https://openfreemap.org">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/">OpenMapTiles</a> ${OSM_ATTR}`;
 
-    // Ключ базовых карт CARTO. С марта 2026 растровые тайлы
-    // basemaps.cartocdn.com без ключа отдаются с водяным знаком
-    // «API KEY REQUIRED» поверх карты. Ключ публичный по природе — он уходит
-    // в URL тайла и виден в браузере, поэтому VITE_, а не PRIVATE_.
-    // Если ключа нет — не дёргаем CARTO вообще и рисуем тёмную тему
-    // из OSM через CSS-фильтр (.map-dark в app.css). Хуже по качеству,
-    // но без водяного знака и без падения сборки без секретов.
-    const cartoKey = import.meta.env.VITE_CARTO_BASEMAP_KEY;
+    // «Тёмную» рисуем сами из векторных тайлов OpenFreeMap: данные OSM, сборка
+    // раз в неделю, без ключа и лимитов. Стиль лежит в darkMatterStyle.json:
+    // Dark Matter GL от CARTO, перекрашенный под их прежний растр dark_all,
+    // с подписями на русском. Растр CARTO с 01.10.2026 рисуется по-новому,
+    // а свой стиль чужие правки не задевают. Без WebGL 2 — OSM с CSS-фильтром
+    // (.map-dark в app.css).
+    // Подписи — на языке сайта. В стиле лежат русские (name:ru); для английского берём
+    // name:en, а где перевода нет — латиницу, потом местное название. Номера домов не трогаем.
+    const NAME_EN: ExpressionSpecification = ['coalesce', ['get', 'name:en'], ['get', 'name_en'], ['get', 'name:latin'], ['get', 'name']];
+    const isEnglish = (lang: string | null | undefined) => !!lang && lang.startsWith('en');
+    const darkStyle = (lang: string | null | undefined) => {
+        const style = structuredClone(darkMatterStyle) as unknown as StyleSpecification;
+        // Точка у подписей городов — своя картинка из static/map; MapLibre нужен полный адрес
+        style.sprite = new URL(darkMatterStyle.sprite, location.origin).href;
+        if (isEnglish(lang)) {
+            for (const layer of style.layers) {
+                if (layer.type === 'symbol' && layer.id !== 'housenumber' && layer.layout?.['text-field']) {
+                    layer.layout['text-field'] = NAME_EN;
+                }
+            }
+        }
+        return style;
+    };
+    let darkLang = get(locale);
+    const glDark = hasWebGL2()
+        ? maplibreGL({ style: darkStyle(darkLang), attributionControl: { customAttribution: OFM_ATTR }, maxZoom: 20 })
+        : null;
+    const darkLayer: L.Layer = glDark ?? L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: OSM_ATTR,
+        className: 'map-dark'
+    });
+    // Язык переключается без перезагрузки (шапка, настройки). Новый стиль кладём и в опции
+    // слоя: при возврате на «Тёмную» плагин создаёт карту MapLibre заново из них.
+    const unsubscribeLocale = locale.subscribe((lang) => {
+        if (!glDark || isEnglish(lang) === isEnglish(darkLang)) return;
+        darkLang = lang;
+        const style = darkStyle(lang);
+        (glDark.options as { style?: StyleSpecification }).style = style;
+        const gl = glDark.getMaplibreMap();
+        if (!gl) return;
+        for (const layer of style.layers) {
+            if (layer.type === 'symbol' && layer.layout?.['text-field']) gl.setLayoutProperty(layer.id, 'text-field', layer.layout['text-field']);
+        }
+    });
+    map.on('unload', unsubscribeLocale);
 
-    const darkLayer = cartoKey
-        ? L.tileLayer(
-              `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${cartoKey}`,
-              { maxZoom: 20, subdomains: 'abcd', attribution: CARTO_ATTR }
-          )
-        : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              maxZoom: 19,
-              attribution: OSM_ATTR,
-              className: 'map-dark'
-          });
-
-    const baseLayers: { [key: string]: L.TileLayer } = {
+    const baseLayers: { [key: string]: L.Layer } = {
         "Стандартная": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: OSM_ATTR }),
         "Полночь": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: OSM_ATTR, className: 'map-black' }),
         "Тёмная": darkLayer,
@@ -156,7 +203,15 @@ export function initMap(containerId: string) {
         console.error("Не удалось получить доступ к localStorage", e);
     }
 
+    // Предел зума Leaflet считает только по тайловым слоям. У векторного слоя его
+    // нет: карта зумилась бы бесконечно, а markercluster падает с «Map has no
+    // maxZoom specified». Поэтому предел ставим сами при каждой смене подложки.
+    const applyMaxZoom = (layer: L.Layer) => {
+        map.setMaxZoom((layer.options as L.LayerOptions & { maxZoom?: number }).maxZoom ?? 19);
+    };
+
     baseLayers[savedLayerName].addTo(map);
+    applyMaxZoom(baseLayers[savedLayerName]);
 
     let layersControl: L.Control.Layers | null = null;
 
@@ -165,6 +220,7 @@ export function initMap(containerId: string) {
             layersControl = L.control.layers(baseLayers).addTo(map);
 
             map.on('baselayerchange', function (e: L.LayersControlEvent) {
+                applyMaxZoom(e.layer);
                 try {
                     localStorage.setItem(storageKey, e.name);
                 } catch (error) {

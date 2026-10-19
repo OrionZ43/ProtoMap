@@ -118,6 +118,8 @@ Admin identity is defined **twice** and both must be updated together:
 
 `mapLogic.ts` builds popups as raw HTML strings — anything interpolated goes through `escapeHtml`.
 
+The default base layer «Тёмная» is vector: MapLibre inside Leaflet (`@maplibre/maplibre-gl-leaflet`), tiles and fonts from OpenFreeMap, our own style in `src/lib/client/darkMatterStyle.json`. The other base layers are OSM raster with CSS filters. Details and pitfalls (fonts, max zoom, weight) — `.claude/rules/firebase.md`, section «Подложка «Тёмная»».
+
 ### Stores and UI
 
 - `src/lib/stores.ts` — `userStore` (auth + profile, live `onSnapshot`) and `chat`.

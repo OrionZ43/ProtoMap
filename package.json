@@ -48,6 +48,7 @@
 		"vitest": "^4.1.5"
 	},
 	"dependencies": {
+		"@maplibre/maplibre-gl-leaflet": "^0.1.4",
 		"@vercel/analytics": "^1.5.0",
 		"@vercel/og": "^0.8.6",
 		"dompurify": "^3.3.1",
@@ -58,6 +59,7 @@
 		"howler": "^2.2.4",
 		"leaflet": "^1.9.4",
 		"leaflet.markercluster": "^1.5.3",
+		"maplibre-gl": "^5.24.0",
 		"marked": "^17.0.1",
 		"node-fetch": "^2.7.0",
 		"pixi.js": "^8.10.1",
