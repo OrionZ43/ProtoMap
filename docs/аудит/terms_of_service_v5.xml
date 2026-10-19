@@ -19,8 +19,8 @@
 
     <alert severity="warning" icon="warning">
         <title>
-            <ru>Версия 5.1 | Вступает в силу: 18.09.2026</ru>
-            <en>Version 5.1 | Effective date: 18 September 2026</en>
+            <ru>Версия 5.2 | Вступает в силу: 30.10.2026</ru>
+            <en>Version 5.2 | Effective date: 30 October 2026</en>
         </title>
         <text>
             <ru>Программный комплекс ProtoMap является независимым некоммерческим продуктом Z43 Studios и не связан с компанией Protomaps LLC (protomaps.com) ни юридически, ни коммерчески. Любое сходство в наименованиях случайно.</ru>
@@ -388,6 +388,10 @@
         <ru>Способы начисления: ежедневные бонусы, конвертация шагов, реферальная программа, выигрыши в мини-играх. Все способы начисления безвозмездны. Начисление может быть изменено или прекращено в любое время.</ru>
         <en>Earning methods: daily bonuses, step conversion, referral programme, and mini-game winnings. All earning methods are free of charge. Earning may be changed or discontinued at any time.</en>
     </bullet>
+    <bullet>
+        <ru>Сезонные предметы: часть цифровых предметов (рамок, фонов) продаётся только во время сезонного события. После его окончания такие предметы недоступны для покупки, а уже полученные остаются у пользователя с учётом пункта 3.4.</ru>
+        <en>Seasonal items: some digital items (frames, backgrounds) are sold only during a seasonal event. After it ends they cannot be bought, and items already obtained remain with the user, subject to clause 3.4.</en>
+    </bullet>
 
     <subsection>
         <ru>3.2. Симуляция азартных игр — The Glitch Pit</ru>
@@ -395,13 +399,17 @@
     </subsection>
 
     <paragraph>
-        <ru>Раздел «The Glitch Pit» (мини-игры Slots, Data Uplink/Crash, Coin Flip, Artifact Synthesis) является художественной симуляцией, созданной исключительно в развлекательных целях. В Приложении технически невозможно выиграть реальные деньги или материальные призы. Любой успех в мини-играх не гарантирует успеха в реальных азартных играх и не является финансовым советом.</ru>
-        <en>The Glitch Pit section (Slots, Data Uplink/Crash, Coin Flip, Artifact Synthesis mini-games) is an artistic simulation created solely for entertainment. It is technically impossible to win real money or material prizes in the Application. Any success in the mini-games does not guarantee success in real gambling and does not constitute financial advice.</en>
+        <ru>Раздел «The Glitch Pit» (мини-игры Slots, Data Uplink/Crash, Coin Flip, Plinko, Artifact Synthesis) является художественной симуляцией, созданной исключительно в развлекательных целях. В Приложении технически невозможно выиграть реальные деньги или материальные призы. Любой успех в мини-играх не гарантирует успеха в реальных азартных играх и не является финансовым советом.</ru>
+        <en>The Glitch Pit section (Slots, Data Uplink/Crash, Coin Flip, Plinko, Artifact Synthesis mini-games) is an artistic simulation created solely for entertainment. It is technically impossible to win real money or material prizes in the Application. Any success in the mini-games does not guarantee success in real gambling and does not constitute financial advice.</en>
     </paragraph>
 
     <paragraph>
         <ru>ProtoCoins не являются ставкой в значении Положения об осуществлении деятельности в сфере игорного бизнеса на территории Республики Беларусь: они не являются денежными средствами или их эквивалентом и не имеют имущественной стоимости. Разработчик не организует и не проводит азартные игры, не осуществляет деятельность в сфере игорного бизнеса и не принимает ставок. Исход мини-игр не связан с каким-либо имущественным предоставлением со стороны участника.</ru>
         <en>ProtoCoins are not a stake within the meaning of the Regulation on gambling activity in the Republic of Belarus: they are neither money nor a money equivalent and have no property value. The Developer does not organise or conduct gambling, does not carry out gambling business activity, and does not accept stakes. The outcome of the mini-games involves no property contribution from the participant.</en>
+    </paragraph>
+    <paragraph>
+        <ru>Во время сезонных событий в отдельных мини-играх можно получить виртуальный предмет, например рамку профиля. Такой предмет, как и другие цифровые предметы, не имеет имущественной стоимости, не может быть обменян на денежные средства и не является материальным призом.</ru>
+        <en>During seasonal events, a virtual item such as a profile frame can be obtained in some mini-games. Like other digital items, it has no property value, cannot be exchanged for money and is not a material prize.</en>
     </paragraph>
 
     <alert severity="warning" icon="warning">
@@ -474,6 +482,10 @@
     <bullet>
         <ru>Точность карт: картографические данные предоставлены OpenStreetMap и могут содержать неточности. Не используйте их для навигации в критических ситуациях.</ru>
         <en>Map accuracy: map data is provided by OpenStreetMap and may contain inaccuracies. Do not use it for navigation in critical situations.</en>
+    </bullet>
+    <bullet>
+        <ru>Границы и названия: границы государств и административно-территориальных единиц и названия территорий показываются по данным OpenStreetMap и не выражают позицию Разработчика относительно их правового статуса. Спорные границы обозначены пунктиром.</ru>
+        <en>Borders and names: the borders of states and administrative units and the names of territories are shown according to OpenStreetMap data and do not express the Developer’s position on their legal status. Disputed borders are shown as dashed lines.</en>
     </bullet>
 
     <section>

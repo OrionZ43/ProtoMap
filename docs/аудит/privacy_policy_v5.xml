@@ -8,8 +8,8 @@
 
     <alert severity="info" icon="info">
         <title>
-            <ru>Версия 5.2 | Вступает в силу: 18.09.2026</ru>
-            <en>Version 5.2 | Effective date: 18 September 2026</en>
+            <ru>Версия 5.3 | Вступает в силу: 30.10.2026</ru>
+            <en>Version 5.3 | Effective date: 30 October 2026</en>
         </title>
         <text>
             <ru>Настоящая Политика распространяется на оба компонента Сервиса: веб-сайт proto-map.vercel.app и мобильное приложение ProtoMap для Android. Политика приведена в соответствие с Законом Республики Беларусь от 7 мая 2021 г. № 99-З «О защите персональных данных».</ru>
@@ -190,8 +190,8 @@
         <en>Network: IP address for DDoS and spam protection, internet connection status.</en>
     </bullet>
     <bullet>
-        <ru>Push-уведомления: FCM Token (Firebase Cloud Messaging) — уникальный ключ устройства для доставки уведомлений о личных сообщениях и системных событиях. Токен сохраняется в профиле Firestore и автоматически удаляется при выходе из аккаунта или отзыве разрешения.</ru>
-        <en>Push notifications: FCM Token (Firebase Cloud Messaging) — a unique device key for delivering notifications about private messages and system events. The token is stored in the Firestore profile and automatically deleted upon logout or permission revocation.</en>
+        <ru>Push-уведомления: FCM Token (Firebase Cloud Messaging) — уникальный ключ устройства для доставки уведомлений о личных сообщениях, комментариях в вашем профиле, ответах на ваши комментарии и системных событиях. Токен сохраняется в профиле Firestore и автоматически удаляется при выходе из аккаунта или отзыве разрешения.</ru>
+        <en>Push notifications: FCM Token (Firebase Cloud Messaging) — a unique device key for delivering notifications about private messages, comments on your profile, replies to your comments and system events. The token is stored in the Firestore profile and automatically deleted upon logout or permission revocation.</en>
     </bullet>
     <bullet>
         <ru>Уровень безопасности устройства: приложение проверяет состояние аппаратной защиты через Android Keystore и Play Integrity API (Firebase App Check). Собираемые параметры — «уровень защиты» (STRONG / WEAK / NONE) — используются исключительно для защиты от читинга в игровых механиках и не позволяют идентифицировать вас лично.</ru>
@@ -237,6 +237,10 @@
     <bullet>
         <ru>Стикеры: изображения из пользовательских наборов стикеров, загружаемые администраторами в облачное хранилище Firebase. Пользователи не загружают стикеры напрямую — они выбирают их из предустановленных паков.</ru>
         <en>Stickers: images from custom sticker packs uploaded by administrators to Firebase Storage. Users do not upload stickers directly — they select from pre-installed packs.</en>
+    </bullet>
+    <bullet>
+        <ru>Каналы и обсуждения: посты каналов и комментарии к ним видны всем пользователям, вошедшим в Сервис. Комментировать пост могут подписчики канала; свой комментарий можно отредактировать или удалить.</ru>
+        <en>Channels and discussions: channel posts and comments on them are visible to all signed-in users of the Service. Channel subscribers can comment on posts; you can edit or delete your own comment.</en>
     </bullet>
 
     <section>
@@ -292,8 +296,8 @@
     <highlight>
         <title>POST_NOTIFICATIONS + POST_PROMOTED_NOTIFICATIONS</title>
         <description>
-            <ru>Доставка уведомлений о новых личных сообщениях, ответах на комментарии и системных событиях через Firebase Cloud Messaging, а также отображение уведомления работающей прогулки в развёрнутом виде на поддерживающих это версиях Android. Уведомления можно отключить в настройках операционной системы.</ru>
-            <en>Delivery of notifications about new private messages, comment replies, and system events via Firebase Cloud Messaging, plus display of the active walk notification in expanded form on Android versions that support it. Notifications can be disabled in your operating system settings.</en>
+            <ru>Доставка уведомлений о новых личных сообщениях, комментариях в вашем профиле, ответах на ваши комментарии и системных событиях через Firebase Cloud Messaging, а также отображение уведомления работающей прогулки в развёрнутом виде на поддерживающих это версиях Android. Уведомления можно отключить в настройках операционной системы.</ru>
+            <en>Delivery of notifications about new private messages, comments on your profile, replies to your comments, and system events via Firebase Cloud Messaging, plus display of the active walk notification in expanded form on Android versions that support it. Notifications can be disabled in your operating system settings.</en>
         </description>
     </highlight>
 
@@ -398,6 +402,10 @@
         <ru>История перемещений: мы не храним трек ваших перемещений. В базе данных хранится только последняя актуальная метка — при обновлении позиции старая запись перезаписывается.</ru>
         <en>Movement history: we do not store your movement track. The database only stores the latest marker — when the position is updated, the old record is overwritten.</en>
     </bullet>
+    <bullet>
+        <ru>Картографическая подложка: изображение карты ваш браузер загружает напрямую с серверов OpenFreeMap (слой «Тёмная») и OpenStreetMap (слои «Стандартная», «Полночь», «Синий неон»). Эти серверы получают ваш IP-адрес и координаты показываемой области карты, как любой сайт, с которого загружаются изображения. Данные вашей учётной записи им не передаются (см. раздел 7).</ru>
+        <en>Base map: your browser loads the map imagery directly from OpenFreeMap servers (the «Тёмная» / Dark layer) and OpenStreetMap servers (the «Стандартная», «Полночь» and «Синий неон» layers). These servers receive your IP address and the coordinates of the map area being shown, as any website you load images from does. Your account data is not passed to them (see section 7).</en>
+    </bullet>
 
     <alert severity="warning" icon="warning">
         <title>
@@ -458,8 +466,8 @@
     </subsection>
 
     <paragraph>
-        <ru>Сервис размещён в инфраструктуре Google Firebase в нескольких регионах. База данных Firestore находится в регионе europe-central2 (Варшава, Республика Польша); серверные функции (Cloud Functions) и база данных реального времени (Realtime Database) — в регионе europe-west1 (Бельгия). Польша и Бельгия являются сторонами Конвенции Совета Европы о защите физических лиц при автоматизированной обработке персональных данных и включены в перечень государств, на территории которых обеспечивается надлежащий уровень защиты прав субъектов персональных данных, определённый приказом директора Национального центра защиты персональных данных Республики Беларусь от 15 ноября 2021 г. № 14. К этой же категории относится Великобритания (сервис геокодирования OpenStreetMap Nominatim). Передача в такие государства осуществляется по общим правилам обработки без получения дополнительных разрешений. Файловое хранилище Firebase Storage размещено в США — см. пункт 7.2.</ru>
-        <en>The Service runs on Google Firebase infrastructure across several regions. The Firestore database is located in the europe-central2 region (Warsaw, Poland); server functions (Cloud Functions) and the Realtime Database are located in the europe-west1 region (Belgium). Poland and Belgium are parties to the Council of Europe Convention for the Protection of Individuals with regard to Automatic Processing of Personal Data and are included in the list of states providing an adequate level of protection of data subjects’ rights, determined by Order No. 14 of the Director of the National Personal Data Protection Center of the Republic of Belarus of 15 November 2021. The United Kingdom (OpenStreetMap Nominatim geocoding) falls into the same category. Transfers to such states follow the general processing rules without additional authorisation. The Firebase Storage file storage is located in the United States — see clause 7.2.</en>
+        <ru>Сервис размещён в инфраструктуре Google Firebase в нескольких регионах. База данных Firestore находится в регионе europe-central2 (Варшава, Республика Польша); серверные функции (Cloud Functions) и база данных реального времени (Realtime Database) — в регионе europe-west1 (Бельгия). Польша и Бельгия являются сторонами Конвенции Совета Европы о защите физических лиц при автоматизированной обработке персональных данных и включены в перечень государств, на территории которых обеспечивается надлежащий уровень защиты прав субъектов персональных данных, определённый приказом директора Национального центра защиты персональных данных Республики Беларусь от 15 ноября 2021 г. № 14. К этой же категории относятся Великобритания (OpenStreetMap Foundation: геокодирование Nominatim) и Германия (сервис DiceBear, который рисует аватары по умолчанию). Передача в такие государства осуществляется по общим правилам обработки без получения дополнительных разрешений. Файловое хранилище Firebase Storage размещено в США — см. пункт 7.2.</ru>
+        <en>The Service runs on Google Firebase infrastructure across several regions. The Firestore database is located in the europe-central2 region (Warsaw, Poland); server functions (Cloud Functions) and the Realtime Database are located in the europe-west1 region (Belgium). Poland and Belgium are parties to the Council of Europe Convention for the Protection of Individuals with regard to Automatic Processing of Personal Data and are included in the list of states providing an adequate level of protection of data subjects’ rights, determined by Order No. 14 of the Director of the National Personal Data Protection Center of the Republic of Belarus of 15 November 2021. The United Kingdom (OpenStreetMap Foundation: Nominatim geocoding) and Germany (DiceBear, which draws default avatars) fall into the same category. Transfers to such states follow the general processing rules without additional authorisation. The Firebase Storage file storage is located in the United States — see clause 7.2.</en>
     </paragraph>
 
     <subsection>
@@ -468,8 +476,8 @@
     </subsection>
 
     <paragraph>
-        <ru>Часть технических партнёров находится в Соединённых Штатах Америки: Vercel Inc. (хостинг веб-версии), Cloudflare, Inc. (защита от автоматизированных запросов), Cloudinary (хранение и оптимизация аватаров), Google Cloud Vision (автоматическая проверка изображений). В США также размещено файловое хранилище Firebase Storage: в нём хранятся медиафайлы из личных чатов, групп и каналов (изображения, голосовые сообщения), аватары групп и каналов, изображения к новостям и наборы стикеров. Кроме того, доступ к инфраструктуре Firebase может осуществляться контролирующей компанией группы Google, зарегистрированной в США. Соединённые Штаты Америки не включены в перечень государств, на территории которых обеспечивается надлежащий уровень защиты прав субъектов персональных данных.</ru>
-        <en>Some technical partners are located in the United States: Vercel Inc. (web hosting), Cloudflare, Inc. (bot protection), Cloudinary (avatar storage and optimisation), Google Cloud Vision (automated image screening). The Firebase Storage file storage is also located in the United States: it holds media files from private chats, groups and channels (images, voice messages), group and channel avatars, news images and sticker packs. In addition, Firebase infrastructure may be accessed by the controlling company of the Google group, registered in the United States. The United States is not included in the list of states providing an adequate level of protection of data subjects’ rights.</en>
+        <ru>Часть технических партнёров находится в Соединённых Штатах Америки: Vercel Inc. (хостинг веб-версии), Cloudflare, Inc. (защита от автоматизированных запросов; через её сеть доставляется картографическая подложка OpenFreeMap), Fastly, Inc. (доставка картографических тайлов OpenStreetMap), Cloudinary (хранение и оптимизация аватаров), Google Cloud Vision (автоматическая проверка изображений). В США также размещено файловое хранилище Firebase Storage: в нём хранятся медиафайлы из личных чатов, групп и каналов (изображения, голосовые сообщения), аватары групп и каналов, изображения к новостям и наборы стикеров. Кроме того, доступ к инфраструктуре Firebase может осуществляться контролирующей компанией группы Google, зарегистрированной в США. Соединённые Штаты Америки не включены в перечень государств, на территории которых обеспечивается надлежащий уровень защиты прав субъектов персональных данных.</ru>
+        <en>Some technical partners are located in the United States: Vercel Inc. (web hosting), Cloudflare, Inc. (bot protection; the OpenFreeMap base map is delivered through its network), Fastly, Inc. (delivery of OpenStreetMap map tiles), Cloudinary (avatar storage and optimisation), Google Cloud Vision (automated image screening). The Firebase Storage file storage is also located in the United States: it holds media files from private chats, groups and channels (images, voice messages), group and channel avatars, news images and sticker packs. In addition, Firebase infrastructure may be accessed by the controlling company of the Google group, registered in the United States. The United States is not included in the list of states providing an adequate level of protection of data subjects’ rights.</en>
     </paragraph>
 
     <alert severity="warning" icon="warning">
@@ -532,12 +540,26 @@
             <en>Automatic screening of uploaded avatars (web version only) for NSFW and CSAM content via the SafeSearch API. The image is sent for analysis and immediately deleted from Google's memory once the result is returned. Images are not permanently stored on Google Cloud Vision servers. A state without an adequate level of protection.</en>
         </description>
     </highlight>
+    <highlight>
+        <title>OpenFreeMap — США (сеть Cloudflare)</title>
+        <description>
+            <ru>Векторная картографическая подложка и шрифты подписей для слоя карты «Тёмная». Браузер загружает их напрямую; сервер получает IP-адрес и координаты показываемой области карты, данные учётной записи не передаются. Государство без надлежащего уровня защиты. Политика: openfreemap.org/privacy</ru>
+            <en>Vector base map and label fonts for the «Тёмная» (Dark) map layer. The browser loads them directly; the server receives the IP address and the coordinates of the map area being shown, no account data is passed. A state without an adequate level of protection. Policy: openfreemap.org/privacy</en>
+        </description>
+    </highlight>
 
     <highlight>
-        <title>OpenStreetMap Foundation / Nominatim — Великобритания</title>
+        <title>OpenStreetMap Foundation — Великобритания; тайлы — США (сеть Fastly)</title>
         <description>
-            <ru>Сервис геокодирования для определения названия района по GPS-координатам (только в автоматическом режиме карты). Политика OSM допускает кратковременное логирование запросов. Государство с надлежащим уровнем защиты. Политика: wiki.osmfoundation.org/wiki/Privacy_Policy</ru>
-            <en>Geocoding service used to determine the district name from GPS coordinates (automatic map mode only). OSM policy permits short-term request logging. A state with an adequate level of protection. Policy: wiki.osmfoundation.org/wiki/Privacy_Policy</en>
+            <ru>Сервис геокодирования Nominatim для определения названия района по GPS-координатам (только в автоматическом режиме карты) и картографические тайлы слоёв «Стандартная», «Полночь» и «Синий неон». Тайлы браузер загружает через сеть Fastly, Inc. (США); сервер получает IP-адрес и координаты показываемой области карты. Политика OSM допускает кратковременное логирование запросов. Nominatim — государство с надлежащим уровнем защиты, доставка тайлов — государство без надлежащего уровня защиты. Политика: osmfoundation.org/wiki/Privacy_Policy</ru>
+            <en>The Nominatim geocoding service used to determine the district name from GPS coordinates (automatic map mode only), and the map tiles of the «Стандартная», «Полночь» and «Синий неон» layers. The browser loads the tiles through the Fastly, Inc. network (United States); the server receives the IP address and the coordinates of the map area being shown. OSM policy permits short-term request logging. Nominatim — a state with an adequate level of protection; tile delivery — a state without an adequate level of protection. Policy: osmfoundation.org/wiki/Privacy_Policy</en>
+        </description>
+    </highlight>
+    <highlight>
+        <title>DiceBear — Германия</title>
+        <description>
+            <ru>Картинки аватаров по умолчанию для пользователей без своего аватара. Браузер запрашивает картинку по имени пользователя; сервис получает имя пользователя и IP-адрес. Государство с надлежащим уровнем защиты. Политика: dicebear.com/legal/privacy-policy</ru>
+            <en>Default avatar images for users without their own avatar. The browser requests the image by username; the service receives the username and the IP address. A state with an adequate level of protection. Policy: dicebear.com/legal/privacy-policy</en>
         </description>
     </highlight>
 

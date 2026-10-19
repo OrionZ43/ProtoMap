@@ -31,14 +31,14 @@ const DOCS = {
 		field: 'privacy_policy',
 		versionField: 'privacy_policy_version',
 		expectedId: 'privacy_policy',
-		version: '5.2'
+		version: '5.3'
 	},
 	tos: {
 		file: 'docs/аудит/terms_of_service_v5.xml',
 		field: 'terms_of_service',
 		versionField: 'terms_of_service_version',
 		expectedId: 'terms_of_service',
-		version: '5.1'
+		version: '5.2'
 	},
 	// Политика в отношении обработки персональных данных — отдельный документ
 	// по абзацу третьему пункта 3 статьи 17 Закона № 99-З, собранный по
@@ -49,7 +49,7 @@ const DOCS = {
 		field: 'personal_data_policy',
 		versionField: 'personal_data_policy_version',
 		expectedId: 'personal_data_policy',
-		version: '1.1'
+		version: '1.2'
 	}
 };
 

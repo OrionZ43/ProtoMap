@@ -8,8 +8,8 @@
 
     <alert severity="info" icon="info">
         <title>
-            <ru>Редакция 1.1 | Вступает в силу: 18.09.2026</ru>
-            <en>Revision 1.1 | Effective date: 18 September 2026</en>
+            <ru>Редакция 1.2 | Вступает в силу: 30.10.2026</ru>
+            <en>Revision 1.2 | Effective date: 30 October 2026</en>
         </title>
         <text>
             <ru>Политика действует в отношении всех персональных данных, которые обрабатывает оператор Сервиса ProtoMap: веб-сайта proto-map.vercel.app, мобильного приложения ProtoMap для Android, связанных с ними серверных функций, а также Telegram-бота ProtoMap в чате и канале сообщества ProtoMap.</ru>
@@ -143,8 +143,8 @@
     </subsection>
 
     <paragraph>
-        <ru>Оператор передаёт персональные данные на территорию Республики Польша и Королевства Бельгия в адрес Google (инфраструктура Firebase) — для хранения и обработки данных учётных записей, профилей, меток, сообщений, игровых данных и журнала согласий, а также на территорию Соединённого Королевства Великобритании и Северной Ирландии в адрес OpenStreetMap Foundation (сервис Nominatim) — координаты для определения названия района в автоматическом режиме карты. Эти государства включены в перечень государств, на территории которых обеспечивается надлежащий уровень защиты прав субъектов персональных данных, определённый приказом директора Национального центра защиты персональных данных Республики Беларусь от 15 ноября 2021 г. № 14. Правовое основание — согласие (статья 5 Закона).</ru>
-        <en>The Operator transfers personal data to the territory of the Republic of Poland and the Kingdom of Belgium to Google (Firebase infrastructure) — to store and process account, profile, marker, message, game and consent log data — and to the territory of the United Kingdom of Great Britain and Northern Ireland to the OpenStreetMap Foundation (the Nominatim service) — coordinates, to determine the district name in the map’s automatic mode. These states are included in the list of states providing an adequate level of protection of data subjects’ rights, determined by Order No. 14 of the Director of the National Personal Data Protection Center of the Republic of Belarus of 15 November 2021. The legal basis is consent (Article 5 of the Law).</en>
+        <ru>Оператор передаёт персональные данные на территорию Республики Польша и Королевства Бельгия в адрес Google (инфраструктура Firebase) — для хранения и обработки данных учётных записей, профилей, меток, сообщений, игровых данных и журнала согласий, а также на территорию Соединённого Королевства Великобритании и Северной Ирландии в адрес OpenStreetMap Foundation (сервис Nominatim) — координаты для определения названия района в автоматическом режиме карты, а также на территорию Федеративной Республики Германия в адрес DiceBear — имя пользователя для формирования аватара по умолчанию. Эти государства включены в перечень государств, на территории которых обеспечивается надлежащий уровень защиты прав субъектов персональных данных, определённый приказом директора Национального центра защиты персональных данных Республики Беларусь от 15 ноября 2021 г. № 14. Правовое основание — согласие (статья 5 Закона).</ru>
+        <en>The Operator transfers personal data to the territory of the Republic of Poland and the Kingdom of Belgium to Google (Firebase infrastructure) — to store and process account, profile, marker, message, game and consent log data — and to the territory of the United Kingdom of Great Britain and Northern Ireland to the OpenStreetMap Foundation (the Nominatim service) — coordinates, to determine the district name in the map’s automatic mode — and to the territory of the Federal Republic of Germany to DiceBear — the username, to generate a default avatar. These states are included in the list of states providing an adequate level of protection of data subjects’ rights, determined by Order No. 14 of the Director of the National Personal Data Protection Center of the Republic of Belarus of 15 November 2021. The legal basis is consent (Article 5 of the Law).</en>
     </paragraph>
 
     <subsection>
@@ -153,8 +153,8 @@
     </subsection>
 
     <paragraph>
-        <ru>Оператор передаёт персональные данные на территорию Соединённых Штатов Америки, которые не обеспечивают надлежащий уровень защиты прав субъектов персональных данных: Vercel Inc. — IP-адрес и технические параметры запросов для хостинга веб-версии и обезличенной аналитики производительности; Cloudflare, Inc. — IP-адрес и параметры запроса для защиты форм регистрации и входа; Cloudinary — аватары пользователей для их хранения и оптимизации; Google — медиафайлы из чатов, групп и каналов, аватары групп и каналов, изображения новостей и стикеры (хранилище Firebase Storage), аватары для автоматической проверки (Google Cloud Vision), а также данные учётных записей в объёме доступа группы компаний Google к инфраструктуре Firebase. Правовое основание — согласие субъекта персональных данных, данное после информирования о рисках (абзац второй пункта 1 статьи 9 Закона).</ru>
-        <en>The Operator transfers personal data to the territory of the United States of America, which does not provide an adequate level of protection of data subjects’ rights: Vercel Inc. — IP address and technical request parameters, for web hosting and depersonalised performance analytics; Cloudflare, Inc. — IP address and request parameters, to protect the registration and sign-in forms; Cloudinary — user avatars, for storage and optimisation; Google — media files from chats, groups and channels, group and channel avatars, news images and stickers (Firebase Storage), avatars for automated screening (Google Cloud Vision), and account data to the extent the Google group has access to Firebase infrastructure. The legal basis is the data subject’s consent given after being informed of the risks (Article 9(1), second paragraph, of the Law).</en>
+        <ru>Оператор передаёт персональные данные на территорию Соединённых Штатов Америки, которые не обеспечивают надлежащий уровень защиты прав субъектов персональных данных: Vercel Inc. — IP-адрес и технические параметры запросов для хостинга веб-версии и обезличенной аналитики производительности; Cloudflare, Inc. — IP-адрес и параметры запроса для защиты форм регистрации и входа; Cloudinary — аватары пользователей для их хранения и оптимизации; OpenFreeMap (через сеть Cloudflare, Inc.) — IP-адрес и координаты показываемой области карты при загрузке картографической подложки; OpenStreetMap Foundation (через сеть Fastly, Inc.) — IP-адрес и координаты показываемой области карты при загрузке картографических тайлов остальных слоёв; Google — медиафайлы из чатов, групп и каналов, аватары групп и каналов, изображения новостей и стикеры (хранилище Firebase Storage), аватары для автоматической проверки (Google Cloud Vision), а также данные учётных записей в объёме доступа группы компаний Google к инфраструктуре Firebase. Правовое основание — согласие субъекта персональных данных, данное после информирования о рисках (абзац второй пункта 1 статьи 9 Закона).</ru>
+        <en>The Operator transfers personal data to the territory of the United States of America, which does not provide an adequate level of protection of data subjects’ rights: Vercel Inc. — IP address and technical request parameters, for web hosting and depersonalised performance analytics; Cloudflare, Inc. — IP address and request parameters, to protect the registration and sign-in forms; Cloudinary — user avatars, for storage and optimisation; OpenFreeMap (through the Cloudflare, Inc. network) — IP address and the coordinates of the map area being shown, when loading the base map; OpenStreetMap Foundation (through the Fastly, Inc. network) — IP address and the coordinates of the map area being shown, when loading the map tiles of the other layers; Google — media files from chats, groups and channels, group and channel avatars, news images and stickers (Firebase Storage), avatars for automated screening (Google Cloud Vision), and account data to the extent the Google group has access to Firebase infrastructure. The legal basis is the data subject’s consent given after being informed of the risks (Article 9(1), second paragraph, of the Law).</en>
     </paragraph>
 
     <paragraph>
@@ -397,6 +397,28 @@
             <cell>
                 <ru>Только на время проверки (обрабатывает Cloudflare)</ru>
                 <en>Only for the duration of the check (processed by Cloudflare)</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>Показ картографической подложки и аватаров по умолчанию</ru>
+                <en>Showing the base map and default avatars</en>
+            </cell>
+            <cell>
+                <ru>Пользователи Сервиса и посетители сайта</ru>
+                <en>Users of the Service and website visitors</en>
+            </cell>
+            <cell>
+                <ru>IP-адрес, координаты показываемой области карты; имя пользователя — для аватара по умолчанию</ru>
+                <en>IP address, coordinates of the map area being shown; username — for a default avatar</en>
+            </cell>
+            <cell>
+                <ru>Договор (абзац пятнадцатый статьи 6 Закона)</ru>
+                <en>Contract (Article 6, fifteenth paragraph, of the Law)</en>
+            </cell>
+            <cell>
+                <ru>Оператором не хранятся; получатели обрабатывают их на время запроса по своим правилам</ru>
+                <en>Not stored by the Operator; the recipients process them for the duration of the request under their own rules</en>
             </cell>
         </row>
         <row>
@@ -709,8 +731,8 @@
                 <en>United Kingdom</en>
             </cell>
             <cell>
-                <ru>Определение названия района по координатам в автоматическом режиме карты</ru>
-                <en>Determining the district name from coordinates in the map’s automatic mode</en>
+                <ru>Определение названия района по координатам в автоматическом режиме карты; картографические тайлы слоёв «Стандартная», «Полночь», «Синий неон» (доставка — сеть Fastly, США)</ru>
+                <en>Determining the district name from coordinates in the map’s automatic mode; map tiles of the «Стандартная», «Полночь», «Синий неон» layers (delivered through the Fastly network, United States)</en>
             </cell>
         </row>
         <row>
@@ -729,6 +751,42 @@
             <cell>
                 <ru>Привязка аккаунта Telegram, доставка уведомлений и кодов двухфакторной аутентификации, верификация в Telegram-чате @proto_map, уведомления администратору о жалобах</ru>
                 <en>Linking a Telegram account, delivering notifications and two-factor authentication codes, verification in the @proto_map Telegram chat, notifying the administrator of reports</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>8</ru>
+                <en>8</en>
+            </cell>
+            <cell>
+                <ru>OpenFreeMap</ru>
+                <en>OpenFreeMap</en>
+            </cell>
+            <cell>
+                <ru>США (сеть Cloudflare)</ru>
+                <en>United States (Cloudflare network)</en>
+            </cell>
+            <cell>
+                <ru>Картографическая подложка и шрифты подписей для слоя карты «Тёмная»</ru>
+                <en>Base map and label fonts for the «Тёмная» (Dark) map layer</en>
+            </cell>
+        </row>
+        <row>
+            <cell>
+                <ru>9</ru>
+                <en>9</en>
+            </cell>
+            <cell>
+                <ru>DiceBear</ru>
+                <en>DiceBear</en>
+            </cell>
+            <cell>
+                <ru>Германия</ru>
+                <en>Germany</en>
+            </cell>
+            <cell>
+                <ru>Формирование аватаров по умолчанию</ru>
+                <en>Generating default avatars</en>
             </cell>
         </row>
     </table>
