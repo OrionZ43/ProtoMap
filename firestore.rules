@@ -24,6 +24,46 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isBanned', false) != true;
     }
 
+    // Реакции у постов и сообщений — словарь {uid: эмодзи}, одна на человека:
+    // каждый меняет только свою запись, а не весь словарь
+    function onlyOwnReactionChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+          && request.resource.data.get('reactions', {})
+               .diff(resource.data.get('reactions', {})).affectedKeys()
+               .hasOnly([request.auth.uid])
+          && (
+               !(request.auth.uid in request.resource.data.get('reactions', {}))
+               || (request.resource.data.reactions[request.auth.uid] is string
+                   && request.resource.data.reactions[request.auth.uid].size() <= 64)
+             );
+    }
+
+    // ── Комментарии каналов ─────────────────────────────────────────────────
+    // Комментарии к постам живут в технической группе канала (isTechnical),
+    // топик = пост. Группа приватная, подписчиков в memberUids никто не
+    // добавляет, поэтому доступ к ней даём через канал. Ссылки проверяем в
+    // обе стороны (group.linkedChannelId ↔ channel.linkedGroupId), как и
+    // функции в channelComments.ts: одной ссылке верить нельзя.
+
+    function commentsChannel(groupId) {
+      let g = get(/databases/$(database)/documents/groups/$(groupId)).data;
+      return g.get('isTechnical', false) == true
+          ? get(/databases/$(database)/documents/channels/$(g.linkedChannelId)).data
+          : null;
+    }
+
+    function isChannelCommentsGroup(groupId) {
+      let ch = commentsChannel(groupId);
+      return ch != null && ch.get('linkedGroupId', '') == groupId;
+    }
+
+    // Писать комментарии могут только подписчики канала и его владелец
+    function isChannelSubscriber(groupId) {
+      let ch = commentsChannel(groupId);
+      return isChannelCommentsGroup(groupId)
+          && (request.auth.uid in ch.get('subscriberUids', []) || ch.ownerUid == request.auth.uid);
+    }
+
     // =========================================================
     // 💬 РАЗДЕЛ 2: ЛИЧНЫЕ СООБЩЕНИЯ
     // =========================================================
@@ -379,16 +419,32 @@ service cloud.firestore {
 
       match /posts/{postId} {
         allow read: if isAuthenticated();
+
+        // Пост публикует только владелец канала. Раньше правило сверяло лишь
+        // author_uid/owner_uid с uid, а владельца проверял только клиент: из
+        // консоли браузера можно было постить в чужой канал, и триггер
+        // комментариев заводил под таким постом обсуждение.
+        // Поля — как пишут веб и приложение: время ставит сервер, без готовых реакций
         allow create: if isAuthenticated()
+                      && isNotBanned()
+                      && get(/databases/$(database)/documents/channels/$(channelId)).data.ownerUid == request.auth.uid
                       && request.resource.data.author_uid == request.auth.uid
-                      && request.resource.data.owner_uid == request.auth.uid;
+                      && request.resource.data.owner_uid == request.auth.uid
+                      && request.resource.data.createdAt == request.time
+                      && request.resource.data.get('reactions', {}) == {}
+                      && request.resource.data.get('is_deleted', false) == false;
+
         allow update: if isAuthenticated() && (
                         resource.data.owner_uid == request.auth.uid
-                        || request.resource.data.diff(resource.data).affectedKeys()
-                             .hasOnly(['reactions'])
+                        || (isNotBanned() && onlyOwnReactionChanged())
                       );
+
+        // Владелец канала удаляет любой пост в нём — в том числе чужие,
+        // успевшие появиться, пока create не проверял владельца
         allow delete: if isAuthenticated() && (
-                        resource.data.owner_uid == request.auth.uid || isAdmin()
+                        resource.data.owner_uid == request.auth.uid
+                        || get(/databases/$(database)/documents/channels/$(channelId)).data.ownerUid == request.auth.uid
+                        || isAdmin()
                       );
       }
 
@@ -519,8 +575,11 @@ service cloud.firestore {
 
       // ── Topics ──────────────────────────────────────────────────────────────
       match /topics/{topicId} {
-        allow read: if isAuthenticated()
-                    && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids;
+        // Обсуждения постов канала читает любой вошедший — как и сами посты
+        allow read: if isAuthenticated() && (
+                      request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids
+                      || isChannelCommentsGroup(groupId)
+                    );
 
         allow create: if isAuthenticated()
                       && isNotBanned()
@@ -550,8 +609,10 @@ service cloud.firestore {
 
         // ── Messages ──────────────────────────────────────────────────────────
         match /messages/{messageId} {
-          allow read: if isAuthenticated()
-                      && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids;
+          allow read: if isAuthenticated() && (
+                        request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids
+                        || isChannelCommentsGroup(groupId)
+                      );
 
           allow create: if isAuthenticated()
                         && isNotBanned()
@@ -563,13 +624,51 @@ service cloud.firestore {
                              || get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin'
                            );
 
+          // Комментарий к посту канала: только подписчики канала и его владелец.
+          // Поля — как пишет приложение (ответ Дениса 19.10.2026): время ставит
+          // сервер, тип из четырёх, без готовых реакций; имя — из профиля автора
+          // или пустое, пока профиль не загрузился, но не чужое.
+          allow create: if isAuthenticated()
+                        && isNotBanned()
+                        && request.resource.data.author_uid == request.auth.uid
+                        && isChannelSubscriber(groupId)
+                        && !get(/databases/$(database)/documents/groups/$(groupId)/topics/$(topicId)).data.get('isLocked', false)
+                        && request.resource.data.createdAt == request.time
+                        && request.resource.data.type in ['TEXT', 'IMAGE', 'VOICE', 'STICKER']
+                        && request.resource.data.get('text', '') is string
+                        && request.resource.data.get('text', '').size() <= 10000
+                        && request.resource.data.get('reactions', {}) == {}
+                        && request.resource.data.get('is_deleted', false) == false
+                        && (
+                             request.resource.data.get('author_username', '') == ''
+                             || request.resource.data.author_username == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('username', '')
+                           );
+
+          // Подписчик в обсуждении поста: своя реакция на любой комментарий, правка
+          // своего (edited_text + edited_at от сервера) и мягкое удаление своего.
+          // Превью топика и группы подписчикам по-прежнему закрыто — оно там не нужно.
+          allow update: if isAuthenticated()
+                        && isNotBanned()
+                        && isChannelSubscriber(groupId)
+                        && (
+                             onlyOwnReactionChanged()
+                             || (resource.data.author_uid == request.auth.uid
+                                 && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['edited_text', 'edited_at'])
+                                 && request.resource.data.edited_text is string
+                                 && request.resource.data.edited_text.size() <= 10000
+                                 && request.resource.data.edited_at == request.time)
+                             || (resource.data.author_uid == request.auth.uid
+                                 && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['is_deleted'])
+                                 && request.resource.data.is_deleted == true)
+                           );
+
           allow update: if isAuthenticated()
                         && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids
                         && (
                              (resource.data.author_uid == request.auth.uid
                               && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['author_uid', 'createdAt', 'created_at', 'type']))
                              ||
-                             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+                             onlyOwnReactionChanged()
                              ||
                              (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['is_deleted'])
                               && (
