@@ -1,5 +1,6 @@
 /**
- * Расшифровка голосовых сообщений и видеокружков через Gemini.
+ * Всё, что бот делает через Gemini: расшифровка голосовых и видеокружков
+ * и ответы на вопросы (features/ask.ts).
  *
  * Почему Gemini, а не Whisper: ключ `GEMINI_API_KEY` в проекте уже есть и уже
  * используется (перевод инцидентов Claude в telegramBot.ts), модель принимает
@@ -27,24 +28,34 @@ const MAX_DURATION_SEC = 300;
 const MAX_FILE_BYTES = 18 * 1024 * 1024;
 
 /**
- * Модель для расшифровки — специализированная, не универсальный flash.
+ * Модель расшифровки — `gemini-3.8-flash`.
  *
- * Имя проверено по списку доступных ключу моделей (команда `/models` в боте):
- * `gemini-3.1-flash`, который я взял сначала, не существует вовсе — Gemini
- * отвечал на него 404. Запросить список с машины разработчика нельзя, Gemini
- * блокирует запросы из Беларуси, поэтому список спрашивается у развёрнутой
- * функции.
+ * Стоит с 2026-10-14 по решению Ориона. До этого была `gemini-3.5-flash`, но
+ * Google убрал её из списков: адрес работает, а запросы на него сам
+ * перенаправляет на `gemini-3.6-flash` (ai.google.dev/gemini-api/docs/deprecations).
  *
- * Бесплатный тариф у неё есть — проверено по ai.google.dev/gemini-api/docs/pricing.
- * Запасные варианты, тоже с бесплатным тарифом: `gemini-3.5-flash`,
- * `gemini-2.5-flash`. НЕ брать `gemini-omni-flash-preview` — у него
- * бесплатного тарифа нет вовсе.
+ * Лимиты бесплатного тарифа считаются на проект, а не на ключ, и у каждой
+ * модели свои — всё, что сидит на одной модели, делит одну квоту. Цифры Google
+ * публикует только в AI Studio (aistudio.google.com/rate-limit). Какая квота
+ * кончилась и сколько в ней, пишет в лог ошибка 429 — см. quotaInfo.
+ *
+ * Имя сверяется по списку доступных ключу моделей (команда `/models` в боте):
+ * `gemini-3.1-flash`, который был взят самым первым, не существовал вовсе —
+ * Gemini отвечал на него 404. Запросить список с машины разработчика нельзя,
+ * Gemini блокирует запросы из Беларуси, поэтому список спрашивается у
+ * развёрнутой функции.
+ *
+ * Бесплатный тариф есть — проверено по ai.google.dev/gemini-api/docs/pricing.
+ * Запасной вариант с теми же параметрами запроса — `gemini-3.6-flash`. У моделей
+ * 2.5 «размышления» задаются другим полем (`thinkingBudget`), под них запрос
+ * пришлось бы менять. НЕ брать `gemini-omni-flash-preview` и `gemini-4-argon` —
+ * бесплатного тарифа у них нет.
  *
  * ⚠️ На бесплатном тарифе Google использует отправленное для улучшения своих
  * продуктов, и условия прямо допускают, что «human reviewers may read,
  * annotate, and process your API input and output». То есть голосовое может
  * послушать живой человек. Это и есть причина, по которой расшифровка включена
- * только в личном чате (TRANSCRIBE_CHATS в telegramBot.ts), а не в общем.
+ * только в личном чате (возможность `transcribe` в core/registry.ts), а не в общем.
  *
  * Переопределяется переменной окружения — сменить модель можно правкой
  * `functions/.env` без изменения кода.
@@ -74,7 +85,215 @@ const MAX_FILE_BYTES = 18 * 1024 * 1024;
  * ffmpeg, а тащить его в Cloud Functions (`ffmpeg-static` — под 70 МБ) ради
  * этого не стоит.
  */
-const MODEL = process.env.GEMINI_TRANSCRIBE_MODEL || 'gemini-3.5-flash';
+const MODEL = process.env.GEMINI_TRANSCRIBE_MODEL || 'gemini-3.8-flash';
+
+/**
+ * Модель для вопросов боту — `gemini-3.5-flash-lite`.
+ *
+ * Сначала вопросы шли на 3.8 вместе с расшифровкой, но квота бесплатного
+ * тарифа у 3.8 кончилась в первый же вечер, после нескольких десятков
+ * запросов. Google цифр не публикует; на его форуме разработчик пишет о 20
+ * запросах в день у 3.8 и 500 у Flash-Lite (не подтверждено Google, но с
+ * нашим 429 сходится). Вопросов в чате больше, чем голосовых, поэтому им —
+ * модель с большей квотой. «Размышления» `low` она принимает (по умолчанию у
+ * неё `minimal`).
+ */
+const ASK_MODEL = process.env.GEMINI_ASK_MODEL || 'gemini-3.5-flash-lite';
+
+/**
+ * «Размышления» — на самом низком уровне, который 3.8 принимает. По умолчанию
+ * `medium`, это лишние секунды на каждый ответ; `minimal` у 3.8 — ошибка 400.
+ *
+ * Температуры в запросах нет намеренно. Для моделей Gemini 3 Google советует
+ * оставлять её по умолчанию: ниже 1.0 возможны зацикливания, а в расшифровке
+ * это повторяющийся текст. Для 3.8 прямо сказано её убрать. Раньше стояла 0.1.
+ */
+const THINKING = { thinkingLevel: 'low' };
+
+/**
+ * Фильтры безопасности — на минимум. В чате люди ругаются и шутят как хотят:
+ * дефолтные пороги режут такое на выходе, и вместо текста приходит пустой
+ * ответ с finishReason. Эти четыре категории — единственные настраиваемые;
+ * PROHIBITED_CONTENT отключить нельзя ничем.
+ */
+const SAFETY_SETTINGS = [
+    'HARM_CATEGORY_HARASSMENT',
+    'HARM_CATEGORY_HATE_SPEECH',
+    'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+    'HARM_CATEGORY_DANGEROUS_CONTENT',
+].map((category) => ({ category, threshold: 'BLOCK_NONE' }));
+
+/** finishReason, которыми модель сообщает, что отвечать не стала. */
+const REFUSAL_REASONS = ['PROHIBITED_CONTENT', 'SAFETY', 'RECITATION', 'BLOCKLIST'];
+
+/**
+ * Текст ответа модели.
+ *
+ * Берём НЕ parts[0], а склеиваем все текстовые части. У моделей 3.x первой
+ * частью нередко идёт «размышление» (`thought: true`) с пустым или служебным
+ * текстом, а сам ответ лежит дальше. Жёсткое обращение к parts[0].text давало
+ * пустую строку на валидном ответе.
+ *
+ * `gemini-3.5-transcribe` кладёт результат в `audioTranscription`, а не
+ * в `text` — это специализированная модель со своей формой ответа.
+ * Проверено на живом ответе: parts = [{ audioTranscription: ... }],
+ * finishReason = STOP. Универсальные модели отдают `text`, поэтому
+ * поддерживаем оба варианта — иначе смена модели через
+ * GEMINI_TRANSCRIBE_MODEL молча перестанет работать.
+ */
+function candidateText(candidate: any): string {
+    const parts: any[] = candidate?.content?.parts ?? [];
+    return parts
+        .filter((p) => p?.thought !== true)
+        .map((p): string => {
+            if (typeof p?.text === 'string') return p.text;
+            if (typeof p?.audioTranscription === 'string') return p.audioTranscription;
+            if (typeof p?.audioTranscription?.text === 'string') return p.audioTranscription.text;
+            return '';
+        })
+        .join('')
+        .trim();
+}
+
+/** Человекочитаемое сообщение из тела ошибки Gemini, если оно там есть. */
+function errorMessage(body: string): string {
+    try {
+        const parsed = JSON.parse(body);
+        if (parsed?.error?.message) return String(parsed.error.message);
+    } catch { /* тело не JSON — показываем как есть */ }
+    return body.slice(0, 200);
+}
+
+/**
+ * Какая квота кончилась — из подробностей ошибки 429.
+ *
+ * В `message` у 429 только общая фраза «You exceeded your current quota».
+ * Сама квота лежит в `error.details`: `QuotaFailure.violations` с `quotaId`
+ * (у дневной в имени `PerDay`, например
+ * `GenerateRequestsPerDayPerProjectPerModel-FreeTier`) и `quotaValue` — размером
+ * квоты; рядом `RetryInfo.retryDelay`. При дневной квоте retryDelay бывает в
+ * секундах, но через секунды квота не вернётся — решаем по `quotaId`.
+ */
+function quotaInfo(body: string): { daily: boolean; text: string } | null {
+    try {
+        const details: any[] = JSON.parse(body)?.error?.details ?? [];
+        const violations: any[] = details
+            .filter((d) => String(d?.['@type']).endsWith('QuotaFailure'))
+            .flatMap((d) => d.violations ?? []);
+        if (violations.length === 0) return null;
+
+        const retry = details.find((d) => String(d?.['@type']).endsWith('RetryInfo'))?.retryDelay;
+        const text = violations
+            .map((v) => `${v.quotaId ?? v.quotaMetric ?? '?'} = ${v.quotaValue ?? '?'}`)
+            .join('; ') + (retry ? ` · повтор через ${retry}` : '');
+        return { daily: violations.some((v) => /PerDay/i.test(String(v.quotaId ?? ''))), text };
+    } catch {
+        return null;
+    }
+}
+
+/** Описание неудачного ответа для лога и для `/text`: код, модель, сообщение, квота. */
+function failureDetail(status: number, model: string, body: string): string {
+    const quota = status === 429 ? quotaInfo(body) : null;
+    return `HTTP ${status} · модель ${model} · ${errorMessage(body)}` + (quota ? ` · квота: ${quota.text}` : '');
+}
+
+/**
+ * Запасная модель — на случай, когда основная перегружена.
+ *
+ * В первый же вечер на 3.8 вопрос боту получил 503 «This model is currently
+ * experiencing high demand»: модель свежая, и спрос на неё скачет. Ждать, пока
+ * спадёт, человеку в чате некогда, а 3.6 принимает тот же запрос. Квоту это
+ * не трогает: запасная включается только на 503 и 500, не на 429.
+ */
+const FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.6-flash';
+
+/** Ответы, после которых есть смысл повторить: сервер перегружен или упал, а не отказал. */
+const RETRYABLE_STATUSES = [500, 503];
+
+/** Сколько ждать Gemini: одну попытку и всё вместе — с повтором и запасной моделью. */
+interface Budget {
+    attemptMs: number;
+    totalMs: number;
+}
+
+/**
+ * Вопрос боту обрабатывается, пока Telegram ждёт ответа вебхука, а Cloud Run
+ * обрывает такой запрос через 60 секунд. Без ограничения перегруженная 3.8
+ * держала запрос дольше минуты: Cloud Run обрывал вебхук, Telegram присылал
+ * то же сообщение снова, и бот ответил на один вопрос несколько раз.
+ * Две повисшие модели по 15 секунд укладываются в 40 с запасом.
+ */
+const ASK_BUDGET: Budget = { attemptMs: 15_000, totalMs: 40_000 };
+
+/**
+ * Расшифровка длинного голосового сама идёт десятки секунд, поэтому ждём
+ * дольше. Повторной доставки она не вызывает: transcribe.ts первым делом шлёт
+ * «печатает…» через ctx, и Telegram получает ответ вебхука сразу (журнал
+ * работ, 2026-10-05 (2), «Найдено, не исправлено»).
+ */
+const TRANSCRIBE_BUDGET: Budget = { attemptMs: 45_000, totalMs: 120_000 };
+
+/** Меньше этого на попытку не тратим — всё равно не успеет. */
+const MIN_ATTEMPT_MS = 3_000;
+
+/**
+ * POST generateContent: модель `primary`, при сбое — повтор через секунду, потом
+ * запасная модель тем же порядком, и всё это в пределах `budget`.
+ *
+ * Сетевой сбой (`fetch failed`) тоже повторяется: ловили его на запросе,
+ * который до и после проходил нормально, — разовый обрыв на холодном
+ * экземпляре Cloud Functions. Модель, не ответившая за `attemptMs`, второго
+ * шанса не получает: повисла — значит, сразу к запасной. 4xx не повторяются:
+ * ответ будет тот же, а 429 — это квота, через секунду она не вернётся.
+ *
+ * Возвращает последний полученный ответ — статус разбирает вызывающий — и
+ * модель, которая его дала. Если ответа не было ни одного, бросает последнюю
+ * ошибку: сетевую или TimeoutError.
+ */
+async function generate(
+    request: object,
+    apiKey: string,
+    tag: string,
+    budget: Budget,
+    primary: string,
+): Promise<{ response: any; model: string }> {
+    const payload = JSON.stringify(request);
+    const startedAt = Date.now();
+    const left = () => budget.totalMs - (Date.now() - startedAt);
+    let last: { response: any; model: string } | null = null;
+    let failure: unknown = null;
+
+    for (const model of [...new Set([primary, FALLBACK_MODEL])]) {
+        for (let attempt = 1; attempt <= 2 && left() >= MIN_ATTEMPT_MS; attempt++) {
+            try {
+                const response = await (globalThis as any).fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: payload,
+                        signal: AbortSignal.timeout(Math.min(budget.attemptMs, left())),
+                    }
+                );
+                last = { response, model };
+                if (!RETRYABLE_STATUSES.includes(response.status)) return last;
+                console.warn(`[${tag}] ${model}: HTTP ${response.status}, попытка ${attempt}/2`);
+            } catch (e) {
+                failure = e;
+                if ((e as any)?.name === 'TimeoutError') {
+                    console.warn(`[${tag}] ${model}: нет ответа за ${budget.attemptMs / 1000} с`);
+                    break;
+                }
+                console.warn(`[${tag}] ${model}: сетевой сбой, попытка ${attempt}/2:`, e);
+            }
+            if (attempt === 1) await new Promise((r) => setTimeout(r, 1000));
+        }
+    }
+
+    if (last) return last;
+    throw failure;
+}
 
 /**
  * Диагностика: список моделей, доступных ключу.
@@ -243,113 +462,38 @@ export async function transcribeVoice(
 
     const prompt = customPrompt || DEFAULT_PROMPT;
 
-    /**
-     * Один повтор при сетевом сбое.
-     *
-     * Ловили `fetch failed` на запросе, который до этого и после этого проходил
-     * нормально — то есть разовый обрыв соединения, а не отказ API (у отказа
-     * приходит осмысленный HTTP-код). На холодном инстансе Cloud Functions такое
-     * случается. Повторяем только сетевую ошибку: если Gemini ответил 4xx,
-     * повторять бессмысленно, ответ будет тот же.
-     */
-    const postWithRetry = async (): Promise<any> => {
-        let lastError: unknown;
-        for (let attempt = 1; attempt <= 2; attempt++) {
-            try {
-                return await doPost();
-            } catch (e) {
-                lastError = e;
-                console.warn(`[TRANSCRIBE] Сетевой сбой, попытка ${attempt}/2:`, e);
-                if (attempt < 2) await new Promise((r) => setTimeout(r, 600));
-            }
-        }
-        throw lastError;
+    const request = {
+        contents: [
+            {
+                parts: [
+                    { text: prompt },
+                    {
+                        inline_data: {
+                            mime_type: mimeType,
+                            data: buffer.toString('base64'),
+                        },
+                    },
+                ],
+            },
+        ],
+        generationConfig: { thinkingConfig: THINKING },
+        safetySettings: SAFETY_SETTINGS,
     };
 
-    const doPost = () =>
-        (globalThis as any).fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [
-                        {
-                            parts: [
-                                { text: prompt },
-                                {
-                                    inline_data: {
-                                        mime_type: mimeType,
-                                        data: buffer.toString('base64'),
-                                    },
-                                },
-                            ],
-                        },
-                    ],
-                    generationConfig: { temperature: 0.1 },
-                    // Расшифровываем живую речь из чата, где люди ругаются и
-                    // шутят как хотят. Дефолтные пороги режут такое на выходе,
-                    // и вместо текста приходит пустой ответ с finishReason.
-                    // Эти четыре категории — единственные настраиваемые;
-                    // PROHIBITED_CONTENT отключить нельзя ничем.
-                    safetySettings: [
-                        'HARM_CATEGORY_HARASSMENT',
-                        'HARM_CATEGORY_HATE_SPEECH',
-                        'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                        'HARM_CATEGORY_DANGEROUS_CONTENT',
-                    ].map((category) => ({ category, threshold: 'BLOCK_NONE' })),
-                }),
-            }
-        );
-
     try {
-        const response = await postWithRetry();
+        const { response, model } = await generate(request, apiKey, 'TRANSCRIBE', TRANSCRIBE_BUDGET, MODEL);
 
         if (!response.ok) {
             const body = await response.text().catch(() => '');
             console.error(`[TRANSCRIBE] Gemini HTTP ${response.status}: ${body.slice(0, 300)}`);
 
-            // Вытаскиваем человекочитаемое сообщение, если оно есть в JSON
-            let msg = body.slice(0, 200);
-            try {
-                const parsed = JSON.parse(body);
-                if (parsed?.error?.message) msg = parsed.error.message;
-            } catch { /* тело не JSON — показываем как есть */ }
-
-            return {
-                ok: false,
-                reason: 'api_failed',
-                detail: `HTTP ${response.status} · модель ${MODEL} · ${msg}`,
-            };
+            return { ok: false, reason: 'api_failed', detail: failureDetail(response.status, model, body) };
         }
 
         const data = await response.json();
         const candidate = data?.candidates?.[0];
-
-        // Берём НЕ parts[0], а склеиваем все текстовые части.
-        // У моделей 3.x первой частью нередко идёт «размышление» (`thought: true`)
-        // с пустым или служебным текстом, а сама расшифровка лежит дальше.
-        // Жёсткое обращение к parts[0].text давало пустую строку на валидном ответе.
         const parts: any[] = candidate?.content?.parts ?? [];
-
-        // `gemini-3.5-transcribe` кладёт результат в `audioTranscription`, а не
-        // в `text` — это специализированная модель со своей формой ответа.
-        // Проверено на живом ответе: parts = [{ audioTranscription: ... }],
-        // finishReason = STOP. Универсальные модели отдают `text`, поэтому
-        // поддерживаем оба варианта — иначе смена модели через
-        // GEMINI_TRANSCRIBE_MODEL молча перестанет работать.
-        const partText = (p: any): string => {
-            if (typeof p?.text === 'string') return p.text;
-            if (typeof p?.audioTranscription === 'string') return p.audioTranscription;
-            if (typeof p?.audioTranscription?.text === 'string') return p.audioTranscription.text;
-            return '';
-        };
-
-        const text = parts
-            .filter((p) => p?.thought !== true)
-            .map(partText)
-            .join('')
-            .trim();
+        const text = candidateText(candidate);
 
         if (!text) {
             // Диагностика: без неё «пусто» неотличимо от «модель отказалась».
@@ -362,9 +506,8 @@ export async function transcribeVoice(
             });
             console.warn(`[TRANSCRIBE] Пустой ответ: ${shape}`);
 
-            const refusals = ['PROHIBITED_CONTENT', 'SAFETY', 'RECITATION', 'BLOCKLIST'];
             const reason: TranscribeFailReason =
-                refusals.includes(String(candidate?.finishReason)) ? 'refused' : 'empty';
+                REFUSAL_REASONS.includes(String(candidate?.finishReason)) ? 'refused' : 'empty';
 
             return { ok: false, reason, detail: shape.slice(0, 300) };
         }
@@ -391,6 +534,71 @@ export async function transcribeVoice(
             ok: false,
             reason: 'api_failed',
             detail: `сеть · модель ${MODEL} · ${chain.join(' ← ')}`.slice(0, 350),
+        };
+    }
+}
+
+// ─── Вопросы боту ───────────────────────────────────────────────────────────────
+
+export type AskResult =
+    | { ok: true; text: string }
+    /**
+     * `limited` — лечится минутами: 429 по минутной квоте, 503 (модель перегружена
+     * и после повтора, и на запасной) или ни одна модель не ответила вовремя.
+     * `exhausted` — кончилась дневная квота модели, до сброса спрашивать бесполезно.
+     * `refused` — модель отказалась отвечать.
+     */
+    | { ok: false; reason: 'no_key' | 'limited' | 'exhausted' | 'refused' | 'empty' | 'api_failed'; detail?: string };
+
+/**
+ * Ответ на текстовый запрос; характер бота задаёт `persona` (системная
+ * инструкция).
+ *
+ * `maxOutputTokens` считает и «размышления»: на уровне `low` их немного, и 2048
+ * с запасом хватает на ответ в пару предложений. Упрётся — придёт finishReason
+ * MAX_TOKENS и пустой или обрезанный текст.
+ */
+export async function askGemini(persona: string, request: string): Promise<AskResult> {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        console.warn('[ASK] GEMINI_API_KEY не задан');
+        return { ok: false, reason: 'no_key' };
+    }
+
+    try {
+        const { response, model } = await generate({
+            systemInstruction: { parts: [{ text: persona }] },
+            contents: [{ role: 'user', parts: [{ text: request }] }],
+            generationConfig: { thinkingConfig: THINKING, maxOutputTokens: 2048 },
+            safetySettings: SAFETY_SETTINGS,
+        }, apiKey, 'ASK', ASK_BUDGET, ASK_MODEL);
+
+        if (!response.ok) {
+            const body = await response.text().catch(() => '');
+            const detail = failureDetail(response.status, model, body);
+            console.error(`[ASK] ${detail}`);
+            if (response.status === 429) {
+                return { ok: false, reason: quotaInfo(body)?.daily ? 'exhausted' : 'limited', detail };
+            }
+            return { ok: false, reason: response.status === 503 ? 'limited' : 'api_failed', detail };
+        }
+
+        const data = await response.json();
+        const candidate = data?.candidates?.[0];
+        const text = candidateText(candidate);
+        if (text) return { ok: true, text };
+
+        // Без кандидатов — заблокирован сам запрос, причина тогда в promptFeedback.
+        const why = String(candidate?.finishReason ?? data?.promptFeedback?.blockReason ?? '');
+        console.warn(`[ASK] Пустой ответ: ${why}`);
+        return { ok: false, reason: REFUSAL_REASONS.includes(why) ? 'refused' : 'empty', detail: why };
+    } catch (e) {
+        const timedOut = (e as any)?.name === 'TimeoutError';
+        console.error(`[ASK] ${timedOut ? 'Gemini не ответил вовремя' : 'Ошибка запроса к Gemini'}:`, e);
+        return {
+            ok: false,
+            reason: timedOut ? 'limited' : 'api_failed',
+            detail: e instanceof Error ? e.message : String(e),
         };
     }
 }

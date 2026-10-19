@@ -11,15 +11,15 @@
  * Что от чего зависит:
  *
  *   guards      — первым, до него не должно выполняться ничего
- *   channel     — до triggers: пост канала может быть текстом, а bot.on('text')
- *                 его перехватит; здесь же приветствие в комментариях, которое
- *                 обязано идти до капчи (в своём чате та не вызывает next())
- *   команды     — до triggers по той же причине: bot.on('text') ловит и команды
+ *   channel     — приветствие в обсуждении канала; вызывает next() всегда
+ *   команды     — до triggers: bot.on('text') ловит и команды
  *   age_gate    — после captcha: карантин (шаг 1 капчи) должен забанить
  *                 вошедшего раньше, чем ему зададут вопрос
  *   transcribe  — тоже команды, /text и /uwufier
  *   download    — тоже ловит текст (ищет ссылки), но вызывает next(),
  *                 поэтому обязан стоять до triggers
+ *   ask         — до banter: ставит ctx.state.asked, и banter не отвечает
+ *                 готовой фразой на вопрос, на который уже ответила нейросеть
  *   banter      — ловит текст, стикеры и любые сообщения, вызывает next()
  *                 всегда; до triggers по той же причине
  *   triggers    — ПОСЛЕДНИМ: bot.on('text') ловит любой текст
@@ -38,6 +38,7 @@ import * as captcha from "./features/captcha";
 import * as ageGate from "./features/ageGate";
 import * as transcribe from "./features/transcribe";
 import * as download from "./features/download";
+import * as ask from "./features/ask";
 import * as banter from "./features/banter";
 import * as triggers from "./features/triggers";
 
@@ -53,6 +54,7 @@ captcha.register(bot);
 ageGate.register(bot);
 transcribe.register(bot);
 download.register(bot);
+ask.register(bot);
 banter.register(bot);
 triggers.register(bot);
 
@@ -88,7 +90,10 @@ export const telegramWebhook = onRequest(
             await bot.handleUpdate(request.body, response);
         } catch (e) {
             console.error("[WEBHOOK] ❌ Error:", e);
-            response.status(200).send("Error handled");
+            // Ответ мог уйти раньше: в режиме webhook reply или если Cloud Run
+            // уже оборвал запрос по таймауту. Повторная отправка бросала бы
+            // ERR_HTTP_HEADERS_SENT поверх настоящей ошибки.
+            if (!response.headersSent) response.status(200).send("Error handled");
         }
     }
 );

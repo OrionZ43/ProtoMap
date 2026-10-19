@@ -45,6 +45,10 @@ export function register(bot: Telegraf): void {
                 ? `/text — Расшифровать голосовое или кружок (reply)\n` +
                   `/uwufier — То же, но няшно (reply)\n`
                 : '') +
+            (hasFeature(ctx.chat?.id, 'ask')
+                ? `Ориоша, [вопрос] — спросить нейросеть. Ответом на сообщение — она увидит и его. ` +
+                  `Вопрос и это сообщение уходят в Google Gemini\n`
+                : '') +
             (hasFeature(ctx.chat?.id, 'download')
                 ? `/spoiler [ссылка] — Скачать под спойлером\n` +
                   `/dlstatus — Жива ли качалка\n`

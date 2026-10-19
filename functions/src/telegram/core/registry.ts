@@ -32,11 +32,14 @@ import {
 // `banter` — только личный чат, по просьбе Ориона: подколы с матом в ответ на
 //   обращения к боту, реакции на медиа под спойлером, комментарии к стикерам
 //   и замечания за стикерный спам. В ProtoMap этому не место.
+//
+// `ask` — только личный чат, по тем же причинам, что и `transcribe`: вопрос и
+//   сообщение, на которое отвечают, уходят в Gemini на бесплатном тарифе, и их
+//   может прочитать сотрудник Google. Об этом сказано в /help; расширять —
+//   только вместе с предупреждением участников.
 
 export type Feature =
     | 'triggers' | 'captcha' | 'transcribe' | 'games' | 'moderation'
-    /** Комментарий-приглашение под каждым постом канала. */
-    | 'channel_promo'
     /** Подсказка вступившим, что это чат комментариев, а не чат сообщества. */
     | 'comments_greeting'
     /** Скачивание медиа по ссылкам из обычных источников. */
@@ -46,17 +49,18 @@ export type Feature =
     /** Вопрос «есть ли 18» на входе; «нет» или молчание пять минут — бан. */
     | 'age_gate'
     /** Ответы на обращения к боту (с матом), реакции на спойлеры, стикеры. */
-    | 'banter';
+    | 'banter'
+    /** Вопросы нейросети: «Ориоша, …» в начале сообщения. */
+    | 'ask';
 
 const CHAT_FEATURES: Record<number, Feature[]> = {
     [PROTOMAP_CHAT_ID]: ['triggers', 'captcha', 'games', 'moderation', 'download'],
-    [GAREM_CHAT_ID]:    ['transcribe', 'games', 'moderation', 'download', 'download_nsfw', 'age_gate', 'banter'],
+    [GAREM_CHAT_ID]:    ['transcribe', 'games', 'moderation', 'download', 'download_nsfw', 'age_gate', 'banter', 'ask'],
 
-    // В канале бот ничего не делает сам — он нужен там только чтобы иметь право
-    // читать. Вся работа с постами происходит в обсуждении: Telegram пересылает
-    // туда каждый пост, и ответ на эту пересылку становится комментарием.
+    // В канале бот ничего не делает. Комментарий-приглашение под постами убран
+    // 2026-10-18: через ссылку в личный чат приходили посторонние.
     [CHANNEL_ID]:       [],
-    [COMMENTS_CHAT_ID]: ['channel_promo', 'comments_greeting'],
+    [COMMENTS_CHAT_ID]: ['comments_greeting'],
 };
 
 export function hasFeature(chatId: number | undefined, feature: Feature): boolean {

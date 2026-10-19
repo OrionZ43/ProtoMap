@@ -143,7 +143,7 @@ For animations driven by an RTDB event queue, keep a local "visual state" that o
 
 ### Other subsystems
 
-- **Telegram bot** (`functions/src/telegram/`) — Telegraf webhook for community moderation, account linking, captcha, voice transcription and channel promotion. Webhook authenticity via `TG_WEBHOOK_SECRET`; verification deep links HMAC-signed with `TG_VERIFY_HMAC_SECRET`.
+- **Telegram bot** (`functions/src/telegram/`) — Telegraf webhook for community moderation, account linking, captcha, voice transcription, and — in the personal chat — the 18+ age check, banter and Gemini questions. Webhook authenticity via `TG_WEBHOOK_SECRET`; verification deep links HMAC-signed with `TG_VERIFY_HMAC_SECRET`.
 
   Layout: `core/` holds the Telegraf instance, chat constants, the chat→feature registry and the allowlist guard; each file in `features/` exports `register(bot)`; `index.ts` calls them **in an order that matters** and exports the webhook.
 

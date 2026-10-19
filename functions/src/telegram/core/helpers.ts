@@ -6,7 +6,39 @@
  * не смешивать с переездом по папкам.
  */
 
-import { db } from "./bot";
+import { db, bot, ORION_TG_ID, HRUMER_TG_ID } from "./bot";
+
+/**
+ * Орион ли это. Только по id: сравнение с именем или username открыло бы
+ * «режим создателя» любому, кто переименуется в Ориона.
+ */
+export function isOrion(userId: number | undefined): boolean {
+    return userId === ORION_TG_ID;
+}
+
+/** Хрумер ли это — парень Ориона. Тоже только по id. */
+export function isHrumer(userId: number | undefined): boolean {
+    return userId === HRUMER_TG_ID;
+}
+
+/** Кого бот любит: Ориона и Хрумера. Им — тёплые ответы и сердечки. */
+export function isLoved(userId: number | undefined): boolean {
+    return isOrion(userId) || isHrumer(userId);
+}
+
+/**
+ * «Печатает…» — через общий экземпляр бота, НЕ через ctx.
+ *
+ * sendChatAction входит в методы, которые Telegraf в режиме вебхука отправляет
+ * прямо в теле HTTP-ответа (см. telegram/index.ts). Вызванный через ctx, он
+ * закрыл бы ответ, и сама реплика уходила бы уже из функции, у которой
+ * Cloud Run забрал процессор.
+ */
+export async function sendTyping(chatId: number): Promise<void> {
+    try {
+        await bot.telegram.sendChatAction(chatId, 'typing');
+    } catch { /* без индикатора ответ всё равно уйдёт */ }
+}
 
 export async function isAdmin(ctx: any): Promise<boolean> {
     try {

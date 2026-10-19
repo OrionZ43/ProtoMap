@@ -44,8 +44,22 @@ export const CHANNEL_ID = -1002401094165;
  */
 export const COMMENTS_CHAT_ID = -1003134894415;
 
-/** Ссылка-заявка в основной чат. */
-export const CHAT_INVITE_URL = "https://t.me/+YTiDpneLob05YTMy";
+/**
+ * Орион, создатель бота (@Orion_Z43) — владелец личного чата.
+ *
+ * Узнавать его можно ТОЛЬКО по этому id. Имя и username в Telegram может
+ * поставить себе кто угодно, а `from.id` проставляет сам Telegram — подделать
+ * его из клиента нельзя. Id взят из getChatAdministrators личного чата
+ * (статус `creator`).
+ */
+export const ORION_TG_ID = 1235470328;
+
+/**
+ * Хрумер (@Hrumer) — парень Ориона. Бот любит обоих: тепло отвечает и ему.
+ * Узнаётся тоже только по id — по той же причине, что и Орион. Id дал Орион,
+ * сверен через getChatMember личного чата.
+ */
+export const HRUMER_TG_ID = 1331077430;
 
 /**
  * Белый список. Из любого другого чата бот выходит сам — см. `core/guards.ts`.

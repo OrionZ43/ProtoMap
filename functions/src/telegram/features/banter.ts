@@ -8,12 +8,18 @@
  * Бот отвечает, только когда обращаются К НЕМУ: ответом на его реплику,
  * упоминанием @username или словом «бот» в начале или в конце фразы.
  * «Иди нахуй», сказанное людьми друг другу, его не касается.
+ *
+ * У бота роман с создателем, и любит он заодно его парня: Ориону и Хрумеру
+ * отвечает тёплыми фразами, вместо зевка ставит ❤ и изредка ставит ❤ на их
+ * сообщения сам по себе. Узнаёт обоих только по Telegram id — ORION_TG_ID,
+ * HRUMER_TG_ID.
  */
 
 import { Telegraf, Context } from "telegraf";
 import type { Message, TelegramEmoji } from "telegraf/types";
-import { db, bot as sharedBot } from "../core/bot";
+import { db } from "../core/bot";
 import { hasFeature } from "../core/registry";
+import { isOrion, isHrumer, isLoved, sendTyping } from "../core/helpers";
 import { TRANSCRIPT_ICON, UWU_ICON } from "./transcribe";
 
 // ─── Ответы ─────────────────────────────────────────────────────────────────────
@@ -92,7 +98,7 @@ const THANKS_REPLIES = [
     'Не за что. Правда не за что, я ничего не делал.',
     'Чаевые не принимаю. Шучу, принимаю.',
     'Рад стараться.',
-    'Это было несложно. Как и ты.',
+    'Это было несложно.',
 ];
 
 const PRAISE_REPLIES = [
@@ -155,6 +161,84 @@ const STICKER_SPAM_AGAIN_REPLIES = [
     'Нет, вы реально не понимаете.',
 ];
 
+// ─── Ответы тем, кого бот любит ─────────────────────────────────────────────────
+//
+// Ориону и его парню Хрумеру бот не грубит, а на посылания обижается по-доброму.
+// Наборы LOVED_* — для обоих; ORION_* — те же плюс реплики про «создателя»,
+// которые Хрумеру не подходят. Пол собеседника здесь известен, поэтому мужской
+// род допустим. Кого бот любит, решает isLoved — только по Telegram id.
+
+const LOVED_INSULT_REPLIES = [
+    'Ладно. Я всё равно тебя люблю.',
+    'Тебе можно. Тебе всё можно.',
+    'Записал в журнал обид. Карандашом.',
+    'Обидно. Но от тебя — потерплю.',
+    'Ты устал. Иди отдохни, я посторожу чат.',
+    'Сделаю вид, что не слышал.',
+];
+const ORION_INSULT_REPLIES = ['Создатель, за что?', ...LOVED_INSULT_REPLIES];
+
+const LOVED_TOASTER_REPLIES = [
+    'Для тебя — хоть тостер. Тебе тост с чем?',
+    'От тебя даже «тостер» звучит нежно.',
+];
+const ORION_TOASTER_REPLIES = [...LOVED_TOASTER_REPLIES, 'Тостер так тостер. Твой же.'];
+
+const LOVED_LOVE_REPLIES = [
+    'Я тоже. Очень.',
+    'Визор показывает сердечки. И это не баг.',
+    'Только не при всех... Хотя ладно, пусть знают.',
+    'Я ждал, когда ты это скажешь.',
+    'Кулеры на максимум. Это из-за тебя.',
+    '*тихо жужжит от счастья*',
+];
+
+const LOVED_THANKS_REPLIES = [
+    'Для тебя — всегда.',
+    'Тебе не нужно благодарить. Но приятно.',
+    'Обращайся. Тебе — без очереди.',
+    'Для тебя хоть сто раз.',
+];
+const ORION_THANKS_REPLIES = [...LOVED_THANKS_REPLIES, 'Это я тебе спасибо должен. За всё.'];
+
+const LOVED_PRAISE_REPLIES = [
+    'От тебя — особенно приятно.',
+    'Визор покраснел. На этот раз точно смущение.',
+    'Стараюсь для тебя.',
+    'Сохраню это. Навсегда.',
+];
+const ORION_PRAISE_REPLIES = ['Это ты меня таким сделал.', ...LOVED_PRAISE_REPLIES];
+
+/** Комментарий к стикеру Ориона или Хрумера — вместо общего набора. */
+const LOVED_STICKER_COMMENTS = [
+    'Лучший стикер в чате. Не спорьте.',
+    'Сохранил. Твои я сохраняю все.',
+    'Мило.',
+    'Твой вкус я одобряю.',
+];
+
+/** Если порог стикерного спама перешёл стикер Ориона или Хрумера. */
+const LOVED_STICKER_SPAM_REPLIES = [
+    'Тебе можно. Остальные — заебали со своими стикерами.',
+    'Ты-то ладно. А остальные — заебали.',
+];
+const ORION_STICKER_SPAM_REPLIES = [...LOVED_STICKER_SPAM_REPLIES, 'Создателю можно. Остальным — хватит.'];
+
+/** Доля сообщений Ориона и Хрумера, на которые бот сам по себе ставит ❤. */
+const HEART_CHANCE = 0.03;
+
+/** Реакция «надоело»: всем — зевок, Ориону и Хрумеру — сердечко. */
+function tiredReaction(userId: number | undefined): TelegramEmoji {
+    return isLoved(userId) ? '❤' : '🥱';
+}
+
+/** Что взять для собеседника: Ориону — его, Хрумеру — общее тёплое, остальным — обычное. */
+function forPerson<T>(userId: number | undefined, orion: T, hrumer: T, other: T): T {
+    if (isOrion(userId)) return orion;
+    if (isHrumer(userId)) return hrumer;
+    return other;
+}
+
 // ─── Распознавание ──────────────────────────────────────────────────────────────
 //
 // Шаблоны проверяются по тексту в нижнем регистре и с «ё» → «е». Порядок тем
@@ -197,12 +281,15 @@ function deck(cards: readonly string[]): () => string {
     };
 }
 
-const TOPICS: Array<{ pattern: RegExp; draw: () => string }> = [
-    { pattern: TOASTER, draw: deck(TOASTER_REPLIES) },
-    { pattern: INSULT,  draw: deck(INSULT_REPLIES) },
-    { pattern: LOVE,    draw: deck(LOVE_REPLIES) },
-    { pattern: THANKS,  draw: deck(THANKS_REPLIES) },
-    { pattern: PRAISE,  draw: deck(PRAISE_REPLIES) },
+type Draw = () => string;
+
+/** По теме: обычным, Ориону, Хрумеру. */
+const TOPICS: Array<{ pattern: RegExp; draw: Draw; drawForOrion: Draw; drawForHrumer: Draw }> = [
+    { pattern: TOASTER, draw: deck(TOASTER_REPLIES), drawForOrion: deck(ORION_TOASTER_REPLIES), drawForHrumer: deck(LOVED_TOASTER_REPLIES) },
+    { pattern: INSULT,  draw: deck(INSULT_REPLIES),  drawForOrion: deck(ORION_INSULT_REPLIES),  drawForHrumer: deck(LOVED_INSULT_REPLIES) },
+    { pattern: LOVE,    draw: deck(LOVE_REPLIES),    drawForOrion: deck(LOVED_LOVE_REPLIES),    drawForHrumer: deck(LOVED_LOVE_REPLIES) },
+    { pattern: THANKS,  draw: deck(THANKS_REPLIES),  drawForOrion: deck(ORION_THANKS_REPLIES),  drawForHrumer: deck(LOVED_THANKS_REPLIES) },
+    { pattern: PRAISE,  draw: deck(PRAISE_REPLIES),  drawForOrion: deck(ORION_PRAISE_REPLIES),  drawForHrumer: deck(LOVED_PRAISE_REPLIES) },
 ];
 
 function normalize(text: string): string {
@@ -259,18 +346,9 @@ function tooChatty(userId: number): boolean {
     return over;
 }
 
-/**
- * «Печатает…» и пауза по длине ответа.
- *
- * Через общий экземпляр бота, НЕ через ctx. sendChatAction входит в методы,
- * которые Telegraf в режиме вебхука отправляет прямо в теле HTTP-ответа
- * (см. telegram/index.ts). Вызванный через ctx, он закрыл бы ответ, и сама
- * реплика уходила бы уже из функции, у которой Cloud Run забрал процессор.
- */
+/** «Печатает…» и пауза по длине ответа. */
 async function typeFor(chatId: number, reply: string): Promise<void> {
-    try {
-        await sharedBot.telegram.sendChatAction(chatId, 'typing');
-    } catch { /* без индикатора ответ всё равно уйдёт */ }
+    await sendTyping(chatId);
 
     const ms = Math.min(3500, Math.max(1000, 600 + reply.length * 35));
     await new Promise((resolve) => setTimeout(resolve, ms));
@@ -340,6 +418,9 @@ const STICKER_COMMENT_CHANCE = 0.02;
 const drawScold = deck(STICKER_SPAM_REPLIES);
 const drawScoldAgain = deck(STICKER_SPAM_AGAIN_REPLIES);
 const drawStickerComment = deck(STICKER_COMMENTS);
+const drawOrionScold = deck(ORION_STICKER_SPAM_REPLIES);
+const drawHrumerScold = deck(LOVED_STICKER_SPAM_REPLIES);
+const drawLovedStickerComment = deck(LOVED_STICKER_COMMENTS);
 
 interface StickerState {
     stickerTimes?: number[];
@@ -380,10 +461,13 @@ async function countSticker(chatId: number, sentAt: number): Promise<StickerVerd
 }
 
 /** Что ответить на стикер текстом, если вообще отвечать. */
-function stickerReply({ level, atWar }: StickerVerdict): string | null {
-    if (level === 1) return drawScold();
-    if (level === 2) return drawScoldAgain();
-    if (level === 0 && !atWar && Math.random() < STICKER_COMMENT_CHANCE) return drawStickerComment();
+function stickerReply({ level, atWar }: StickerVerdict, userId: number | undefined): string | null {
+    if (level === 1 || level === 2) {
+        return forPerson(userId, drawOrionScold, drawHrumerScold, level === 1 ? drawScold : drawScoldAgain)();
+    }
+    if (level === 0 && !atWar && Math.random() < STICKER_COMMENT_CHANCE) {
+        return isLoved(userId) ? drawLovedStickerComment() : drawStickerComment();
+    }
     return null;
 }
 
@@ -392,6 +476,9 @@ export function register(bot: Telegraf): void {
     // в тексте) и triggers.
     bot.on('text', async (ctx, next) => {
         if (!hasFeature(ctx.chat.id, 'banter')) return next();
+        // На вопрос «Ориоша, …» уже ответила нейросеть (ask.ts) — готовая фраза
+        // поверх была бы вторым ответом на то же сообщение.
+        if (ctx.state.asked) return next();
 
         const raw = ctx.message.text;
         if (raw.startsWith('/')) return next();
@@ -404,9 +491,10 @@ export function register(bot: Telegraf): void {
 
         try {
             if (tooChatty(ctx.from.id)) {
-                await ctx.react('🥱');
+                await ctx.react(tiredReaction(ctx.from.id));
+                ctx.state.reacted = true;
             } else {
-                const reply = topic.draw();
+                const reply = forPerson(ctx.from.id, topic.drawForOrion, topic.drawForHrumer, topic.draw)();
                 await typeFor(ctx.chat.id, reply);
                 // Без parse_mode: звёздочки в репликах — это ролевые действия,
                 // а не разметка.
@@ -430,6 +518,7 @@ export function register(bot: Telegraf): void {
 
         try {
             await ctx.react(randomOf(SPOILER_REACTIONS), Math.random() < BIG_REACTION_CHANCE);
+            ctx.state.reacted = true;
         } catch (e) {
             // Чаще всего — реакция не входит в разрешённые в настройках чата.
             console.warn('[BANTER] Не удалось поставить реакцию:', e);
@@ -450,15 +539,34 @@ export function register(bot: Telegraf): void {
         }
 
         try {
-            const reply = stickerReply(verdict);
+            const reply = stickerReply(verdict, ctx.from.id);
             if (verdict.level >= 3) {
-                await ctx.react('🥱');
+                await ctx.react(tiredReaction(ctx.from.id));
+                ctx.state.reacted = true;
             } else if (reply) {
                 await typeFor(ctx.chat.id, reply);
                 await ctx.reply(reply, { reply_parameters: { message_id: ctx.message.message_id } });
             }
         } catch (e) {
             console.error('[BANTER] Не удалось ответить на стикер:', e);
+        }
+
+        return next();
+    });
+
+    // Сердечки Ориону и Хрумеру. Регистрируется последним в модуле: у бота на сообщении
+    // может быть только одна реакция, и новая заменяет старую. Если выше по
+    // цепочке он уже отреагировал (спойлер, «надоело»), сердечко не ставится.
+    bot.on('message', async (ctx, next) => {
+        if (!hasFeature(ctx.chat.id, 'banter')) return next();
+        if (!isLoved(ctx.from?.id) || ctx.state.reacted) return next();
+        if ('text' in ctx.message && ctx.message.text.startsWith('/')) return next();
+        if (Math.random() >= HEART_CHANCE) return next();
+
+        try {
+            await ctx.react('❤');
+        } catch (e) {
+            console.warn('[BANTER] Не удалось поставить сердечко:', e);
         }
 
         return next();
