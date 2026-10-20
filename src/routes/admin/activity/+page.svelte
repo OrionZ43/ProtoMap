@@ -1,18 +1,30 @@
 <!-- src/routes/admin/activity/+page.svelte -->
+<!--
+    Журнал действий — компактной таблицей: одна строка на событие, описание
+    обычной фразой («Слоты, ставка 50», «Покупка: Лунная ночь»). Служебное
+    (автор записи, пометка, поля) — в раскрывающихся подробностях строки.
+-->
 <script lang="ts">
     import { t } from 'svelte-i18n';
-    import { fade } from 'svelte/transition';
     import type { PageData } from './$types';
 
     export let data: PageData;
 
-    const GROUPS = ['economy', 'moderation', 'profile', 'content', 'account', 'admin', 'map'];
+    type Row = PageData['rows'][number];
+    type Translate = (key: string, options?: { values?: Record<string, string | number> }) => string;
+
+    const GROUPS = ['economy', 'content', 'moderation', 'admin', 'profile', 'account', 'map'];
     const PERIODS = ['1', '7', '30', '180'];
 
-    const timeFormat = new Intl.DateTimeFormat('ru-RU', {
-        timeZone: 'Europe/Minsk', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-    });
+    const timeFormat = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Minsk', hour: '2-digit', minute: '2-digit' });
+    const dayFormat = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Minsk', day: '2-digit', month: '2-digit' });
     const nf = new Intl.NumberFormat('ru-RU');
+    const today = dayFormat.format(Date.now());
+
+    function when(at: number): string {
+        const day = dayFormat.format(at);
+        return day === today ? timeFormat.format(at) : `${day} ${timeFormat.format(at)}`;
+    }
 
     function signed(n: number): string {
         return `${n > 0 ? '+' : n < 0 ? '−' : ''}${nf.format(Math.abs(n))}`;
@@ -24,28 +36,85 @@
             user: data.filters.user || null,
             group: data.filters.group || null,
             alerts: data.filters.alerts ? '1' : null,
-            days: data.filters.days,
+            days: data.filters.days === '1' ? null : data.filters.days,
             ...params
         };
         const query = new URLSearchParams();
         for (const [k, v] of Object.entries(merged)) if (v) query.set(k, v);
-        return `/admin/activity?${query}`;
+        const s = query.toString();
+        return s ? `/admin/activity?${s}` : '/admin/activity';
     }
 
     // Журнал аудита Firestore по документу пользователя и минуте события — там
     // точный автор записи (functions/src/activity/notify.ts, auditLink).
-    function auditLink(r: { uid: string | null; at: number }): string | null {
+    function auditLink(r: Row): string | null {
         if (!r.uid) return null;
         const query = `protoPayload.serviceName="firestore.googleapis.com"\nprotoPayload.request.writes.update.name:"users/${r.uid}"`;
         const range = `${new Date(r.at - 120_000).toISOString()}/${new Date(r.at + 60_000).toISOString()}`;
         return `https://console.cloud.google.com/logs/query;query=${encodeURIComponent(query)};timeRange=${encodeURIComponent(range)}?project=protomap-1e1db`;
     }
 
-    // Незнакомый вид записи показываем как есть, а не сырым ключом перевода.
-    function kindLabel(kind: string, translate: (key: string) => string): string {
+    // Незнакомый вид показываем как есть, а не сырым ключом перевода.
+    function label(kind: string, tr: Translate): string {
         const key = `admin_activity.kinds.${kind}`;
-        const label = translate(key);
-        return label === key ? kind : label;
+        const s = tr(key);
+        return s === key ? kind : s;
+    }
+
+    function fieldNames(fields: string[], tr: Translate): string {
+        const names = fields.map((f) => {
+            const key = `admin_activity.field_names.${f.split('.')[0]}`;
+            const s = tr(key);
+            return s === key ? f : s;
+        });
+        return [...new Set(names)].join(', ');
+    }
+
+    // Виды, где деталь лежит в ref: ставка, день бонуса, множитель, месяц.
+    const WITH_REF = new Set(['slots', 'coinflip', 'crash_bet', 'crash_cashout', 'plinko', 'duel', 'daily_bonus', 'referral_prize']);
+    // Виды, где в записи текст сообщения или причина — показываем в кавычках.
+    const QUOTED = new Set(['profile_comment', 'profile_comment_deleted', 'chat', 'channel_created', 'channel_deleted',
+        'channel_post', 'channel_post_deleted', 'channel_comment', 'channel_comment_deleted', 'ban', 'report',
+        'news_added', 'news_removed', 'news_changed']);
+    // Виды, где текст — короткая деталь без кавычек: город, роль, цена.
+    const PLAIN = new Set(['location_added', 'location_moved', 'location_removed', 'role', 'shop_added', 'shop_changed']);
+
+    function describe(r: Row, tr: Translate, items: Record<string, string>): string {
+        const say = (key: string, values: Record<string, string> = {}) => tr(`admin_activity.say.${key}`, { values });
+        const item = (id: string | null | undefined) => (id ? items[id] ?? id : '?');
+
+        // Действия админки сайта: сайт сам пишет, что сделано («изменил баланс», «бан: …»).
+        if (r.group === 'admin' && r.kind.startsWith('admin_') && r.text) {
+            return r.text.charAt(0).toUpperCase() + r.text.slice(1);
+        }
+
+        let base: string;
+        if (r.kind === 'purchase') base = say('purchase', { item: item(r.itemsAdded[0] ?? r.ref) });
+        else if (r.kind === 'admin_items') base = say('admin_items', { count: r.ref ?? String(r.itemsAdded.length) });
+        else if (r.kind === 'admin_migrate') base = say(r.ref === 'out' ? 'admin_migrate_out' : 'admin_migrate_in');
+        else if (r.kind === 'profile') base = say('profile', { fields: fieldNames(r.fields, tr) });
+        else if (r.kind === 'username') base = say('username', { change: r.text ?? '' });
+        else if (r.kind.startsWith('shop_')) base = say(r.kind, { item: item(r.ref) });
+        else if (r.kind.startsWith('channel_') && r.kind !== 'channel_created' && r.kind !== 'channel_deleted') {
+            base = say(r.kind, { channel: r.ref ?? '?' });
+        } else if (WITH_REF.has(r.kind) && r.ref) base = say(r.kind, { ref: r.ref });
+        else base = label(r.kind, tr);
+
+        if (r.text && QUOTED.has(r.kind)) return `${base}: ${tr('admin_activity.quote', { values: { text: r.text } })}`;
+        if (r.text && PLAIN.has(r.kind)) return `${base}: ${r.text}`;
+        return base;
+    }
+
+    function authorText(r: Row, tr: Translate): string {
+        if (r.authorType === 'system') return tr('admin_activity.details.author_system');
+        if (r.authorType === 'direct') {
+            return tr('admin_activity.details.author_direct', { values: { who: [r.authType, r.authorId].filter(Boolean).join(' · ') } });
+        }
+        return tr('admin_activity.details.author_server');
+    }
+
+    function submitOnChange(e: Event) {
+        (e.currentTarget as HTMLSelectElement).form?.requestSubmit();
     }
 </script>
 
@@ -53,290 +122,260 @@
     <title>{$t('admin_activity.title')} | Overlord</title>
 </svelte:head>
 
-<div class="activity-wrapper" in:fade={{ duration: 300 }}>
-    <header class="page-header">
-        <h1 class="page-title">{$t('admin_activity.title')}</h1>
-        <p class="page-sub">{$t('admin_activity.subtitle')}</p>
+<div class="journal">
+    <header class="head">
+        <h1>{$t('admin_activity.title')}</h1>
+        <p>{$t('admin_activity.subtitle')}</p>
     </header>
 
-    <form class="filters glass" method="GET">
-        <label class="search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input name="user" value={data.filters.user} placeholder={$t('admin_activity.filters.user_placeholder')} autocomplete="off" />
-        </label>
-        <select name="group" value={data.filters.group}>
-            <option value="">{$t('admin_activity.filters.group_all')}</option>
+    <div class="toolbar">
+        <nav class="chips" aria-label={$t('admin_activity.title')}>
+            <a class="chip" class:active={!data.filters.group && !data.filters.alerts} href={link({ group: null, alerts: null, before: null })}>
+                {$t('admin_activity.filters.all')}
+            </a>
             {#each GROUPS as g}
-                <option value={g}>{$t(`admin_activity.groups.${g}`)}</option>
+                <a class="chip" class:active={data.filters.group === g && !data.filters.alerts} href={link({ group: g, alerts: null, before: null })}>
+                    {$t(`admin_activity.groups.${g}`)}
+                </a>
             {/each}
-        </select>
-        <select name="days" value={data.filters.days}>
-            {#each PERIODS as p}
-                <option value={p}>{$t(`admin_activity.periods.${p}`)}</option>
-            {/each}
-        </select>
-        <label class="check">
-            <input type="checkbox" name="alerts" value="1" checked={data.filters.alerts} />
-            <span>{$t('admin_activity.filters.alerts_only')}</span>
-        </label>
-        <button type="submit" class="btn">{$t('admin_activity.filters.apply')}</button>
-        <a href="/admin/activity" class="btn ghost">{$t('admin_activity.filters.reset')}</a>
-    </form>
+            <a class="chip chip-alert" class:active={data.filters.alerts} href={link({ alerts: '1', group: null, before: null })}>
+                {$t('admin_activity.filters.alerts')}
+                {#if data.alertsCount > 0}<span class="count">{data.alertsCount}</span>{/if}
+            </a>
+        </nav>
 
-    {#if data.indexBuilding}
-        <div class="notice glass">{$t('admin_activity.index_building')}</div>
-    {/if}
+        <form class="search-form" method="GET">
+            {#if data.filters.group}<input type="hidden" name="group" value={data.filters.group} />{/if}
+            {#if data.filters.alerts}<input type="hidden" name="alerts" value="1" />{/if}
+            <label class="search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input name="user" value={data.filters.user} placeholder={$t('admin_activity.filters.user_placeholder')}
+                    aria-label={$t('admin_activity.filters.user_placeholder')} autocomplete="off" />
+            </label>
+            <select name="days" value={data.filters.days} on:change={submitOnChange} aria-label={$t('admin_activity.filters.period')}>
+                {#each PERIODS as p}
+                    <option value={p}>{$t(`admin_activity.periods.${p}`)}</option>
+                {/each}
+            </select>
+        </form>
+    </div>
 
-    {#if data.userNotFound}
-        <div class="notice glass">{$t('admin_activity.user_not_found', { values: { query: data.filters.user } })}</div>
-    {/if}
+    {#if data.indexBuilding}<p class="note">{$t('admin_activity.index_building')}</p>{/if}
+    {#if data.userNotFound}<p class="note warn">{$t('admin_activity.user_not_found', { values: { query: data.filters.user } })}</p>{/if}
 
     {#if data.user}
-        <section class="summary glass">
-            <div class="summary-head">
-                <a class="summary-name" href={`/u/${data.user.uid}`}>{data.user.username}</a>
-                {#if data.user.isBanned}<span class="flag flag-direct">{$t('admin_activity.summary.banned')}</span>{/if}
-                <span class="summary-balance">{$t('admin_activity.summary.balance', { values: { value: nf.format(data.user.balance) } })}</span>
-            </div>
+        <div class="strip">
+            <a class="strip-name" href={`/u/${data.user.uid}`}>{data.user.username}</a>
+            {#if data.user.isBanned}<span class="pill pill-red">{$t('admin_activity.strip.banned')}</span>{/if}
+            <span>{$t('admin_activity.strip.balance', { values: { value: nf.format(data.user.balance) } })}</span>
             {#if data.summary}
-                <div class="stats">
-                    <div class="stat"><span>{$t('admin_activity.summary.games_won')}</span><b class="plus">{signed(data.summary.won)}</b></div>
-                    <div class="stat"><span>{$t('admin_activity.summary.games_lost')}</span><b class="minus">{signed(data.summary.lost)}</b></div>
-                    <div class="stat"><span>{$t('admin_activity.summary.games_net')}</span><b class:plus={data.summary.won + data.summary.lost > 0} class:minus={data.summary.won + data.summary.lost < 0}>{signed(data.summary.won + data.summary.lost)}</b></div>
-                    <div class="stat"><span>{$t('admin_activity.summary.shop', { values: { count: data.summary.purchases } })}</span><b>{nf.format(data.summary.shop)}</b></div>
-                    <div class="stat"><span>{$t('admin_activity.summary.bonuses')}</span><b>{signed(data.summary.bonuses)}</b></div>
-                    <div class="stat"><span>{$t('admin_activity.summary.admin')}</span><b>{signed(data.summary.admin)}</b></div>
-                    <div class="stat" class:danger={data.summary.direct > 0}><span>{$t('admin_activity.summary.direct')}</span><b>{data.summary.direct}</b></div>
-                    <div class="stat"><span>{$t('admin_activity.summary.unexplained')}</span><b>{data.summary.unexplained}</b></div>
-                    <div class="stat"><span>{$t('admin_activity.summary.comments')}</span><b>{data.summary.comments}</b></div>
-                    <div class="stat"><span>{$t('admin_activity.summary.chat')}</span><b>{data.summary.chat}</b></div>
-                    <div class="stat"><span>{$t('admin_activity.summary.channels')}</span><b>{data.summary.channels}</b></div>
-                </div>
-                {#if data.summary.truncated}<p class="hint">{$t('admin_activity.summary.truncated')}</p>{/if}
+                <span>{$t('admin_activity.strip.games')} <b class:plus={data.summary.won + data.summary.lost > 0} class:minus={data.summary.won + data.summary.lost < 0}>{signed(data.summary.won + data.summary.lost)}</b>
+                    <small>({signed(data.summary.won)} / {signed(data.summary.lost)})</small></span>
+                <span>{$t('admin_activity.strip.bonuses')} <b>{signed(data.summary.bonuses)}</b></span>
+                <span>{$t('admin_activity.strip.shop', { values: { count: data.summary.purchases } })} <b>{nf.format(data.summary.shop)}</b></span>
+                <span>{$t('admin_activity.strip.admin')} <b>{signed(data.summary.admin)}</b></span>
+                <span class:danger={data.summary.direct > 0}>{$t('admin_activity.strip.direct')} <b>{data.summary.direct}</b></span>
+                <span>{$t('admin_activity.strip.content', { values: { comments: data.summary.comments, chat: data.summary.chat, channels: data.summary.channels } })}</span>
             {/if}
-        </section>
+            <a class="strip-clear" href={link({ user: null, before: null })}>{$t('admin_activity.filters.clear_user')}</a>
+        </div>
+        {#if data.summary?.truncated}<p class="note">{$t('admin_activity.strip.truncated')}</p>{/if}
     {/if}
 
-    {#if data.top}
-        <section class="top glass">
-            <h2 class="section-title">{$t('admin_activity.top.title')}</h2>
-            <div class="top-cols">
-                <div>
-                    <h3>{$t('admin_activity.top.gainers')}</h3>
-                    {#each data.top.gainers as x}
-                        <a class="top-row" href={link({ user: x.uid, before: null })}><span>{x.name}</span><b class="plus">{signed(x.sum)}</b></a>
-                    {:else}
-                        <p class="hint">{$t('admin_activity.top.none')}</p>
-                    {/each}
-                </div>
-                <div>
-                    <h3>{$t('admin_activity.top.losers')}</h3>
-                    {#each data.top.losers as x}
-                        <a class="top-row" href={link({ user: x.uid, before: null })}><span>{x.name}</span><b class="minus">{signed(x.sum)}</b></a>
-                    {:else}
-                        <p class="hint">{$t('admin_activity.top.none')}</p>
-                    {/each}
-                </div>
-            </div>
-        </section>
+    {#if data.top && (data.top.gainers.length || data.top.losers.length)}
+        <div class="strip top">
+            <span class="muted">{$t('admin_activity.top.gainers')}</span>
+            {#each data.top.gainers as x}<a href={link({ user: x.uid, before: null })}>{x.name} <b class="plus">{signed(x.sum)}</b></a>{:else}<span class="muted">—</span>{/each}
+            <span class="sep"></span>
+            <span class="muted">{$t('admin_activity.top.losers')}</span>
+            {#each data.top.losers as x}<a href={link({ user: x.uid, before: null })}>{x.name} <b class="minus">{signed(x.sum)}</b></a>{:else}<span class="muted">—</span>{/each}
+        </div>
     {/if}
 
-    <section class="feed">
+    <div class="table">
         {#each data.rows as r (r.id)}
-            <article class="row glass" class:alert={r.alert} class:direct={r.flag === 'direct'}>
-                <time class="time">{timeFormat.format(r.at)}</time>
-                <div class="main">
-                    <div class="line">
-                        <span class="badge group-{r.group}">{$t(`admin_activity.groups.${r.group}`)}</span>
-                        <span class="kind">{kindLabel(r.kind, $t)}</span>
+            <details class="row" class:alert={r.alert} class:direct={r.flag === 'direct'}>
+                <summary>
+                    <time class="c-time" datetime={new Date(r.at).toISOString()}>{when(r.at)}</time>
+                    <span class="c-who">
                         {#if r.uid}
-                            <a class="who" href={link({ user: r.uid, before: null })}>{r.username ?? r.uid}</a>
+                            <a href={link({ user: r.uid, before: null })}>{r.username ?? r.uid}</a>
+                        {:else if r.authorType === 'direct'}
+                            <span class="muted">{$t('admin_activity.feed.unknown_author')}</span>
+                        {:else}
+                            <span class="muted">{$t('admin_activity.feed.system_actor')}</span>
                         {/if}
                         {#if r.target && r.target !== r.uid}
-                            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                            <span class="arrow" aria-hidden="true">›</span>
+                            <a href={link({ user: r.target, before: null })}>{r.targetName ?? r.target}</a>
+                        {/if}
+                    </span>
+                    <span class="c-what">
+                        {#if r.flag === 'direct'}<span class="pill pill-red">{$t('admin_activity.feed.direct_badge')}</span>{/if}
+                        {describe(r, $t, data.itemNames)}
+                    </span>
+                    <span class="c-delta" class:plus={(r.delta ?? 0) > 0} class:minus={(r.delta ?? 0) < 0}>
+                        {#if r.delta !== null && r.delta !== 0}{signed(r.delta)}{/if}
+                    </span>
+                    <span class="c-balance">
+                        {#if r.balance !== null && r.group === 'economy'}{nf.format(r.balance)}{/if}
+                    </span>
+                    <span class="c-mark">
+                        {#if r.alert}
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label={$t('admin_activity.feed.alert')}>
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
                             </svg>
-                            <a class="who" href={link({ user: r.target, before: null })}>{r.targetName ?? r.target}</a>
                         {/if}
-                    </div>
-                    <div class="details">
-                        {#if r.delta !== null}
-                            <span class="delta" class:plus={r.delta > 0} class:minus={r.delta < 0}>{signed(r.delta)} PC</span>
-                        {/if}
-                        {#if r.balance !== null && r.group === 'economy'}
-                            <span>{$t('admin_activity.feed.balance', { values: { value: nf.format(r.balance) } })}</span>
-                        {/if}
-                        {#if r.itemsAdded.length}
-                            <span>{$t('admin_activity.feed.items_added', { values: { list: r.itemsAdded.join(', ') } })}</span>
-                        {/if}
-                        {#if r.itemsRemoved.length}
-                            <span>{$t('admin_activity.feed.items_removed', { values: { list: r.itemsRemoved.join(', ') } })}</span>
-                        {/if}
-                        {#if r.shards}
-                            <span>{$t('admin_activity.feed.shards', { values: { value: signed(r.shards) } })}</span>
-                        {/if}
-                        {#if r.ref}<span class="ref">{r.ref}</span>{/if}
-                        {#if r.text}<span class="text">{r.text}</span>{/if}
-                        {#if r.fields.length}
-                            <span class="fields">{$t('admin_activity.feed.fields', { values: { list: r.fields.join(', ') } })}</span>
-                        {/if}
-                    </div>
-                </div>
-                <div class="meta">
-                    {#if r.alert}
-                        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label={$t('admin_activity.feed.alert')}>
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-                        </svg>
-                    {/if}
-                    {#if r.flag}<span class="flag flag-{r.flag}">{$t(`admin_activity.flags.${r.flag}`)}</span>{/if}
-                    <span class="author author-{r.authorType ?? 'server'}">{$t(`admin_activity.author.${r.authorType ?? 'server'}`)}</span>
-                    {#if r.authorType === 'direct'}
-                        <code class="author-id">{[r.authType, r.authorId].filter(Boolean).join(' · ')}</code>
+                    </span>
+                </summary>
+                <dl class="more">
+                    <dt>{$t('admin_activity.details.section')}</dt>
+                    <dd>{$t(`admin_activity.groups.${r.group}`)} · {label(r.kind, $t)}</dd>
+                    <dt>{$t('admin_activity.details.author')}</dt>
+                    <dd>{authorText(r, $t)}
                         {#if r.flag === 'direct' && auditLink(r)}
-                            <a class="audit" href={auditLink(r)} target="_blank" rel="noopener noreferrer">{$t('admin_activity.feed.audit')}</a>
+                            · <a href={auditLink(r)} target="_blank" rel="noopener noreferrer">{$t('admin_activity.details.audit')}</a>
                         {/if}
+                    </dd>
+                    {#if r.balance !== null && r.group === 'economy'}
+                        <dt>{$t('admin_activity.details.balance')}</dt><dd>{nf.format(r.balance)} PC</dd>
                     {/if}
-                </div>
-            </article>
+                    {#if r.itemsAdded.length || r.itemsRemoved.length}
+                        <dt>{$t('admin_activity.details.items')}</dt>
+                        <dd>
+                            {#if r.itemsAdded.length}+{r.itemsAdded.map((i) => data.itemNames[i] ?? i).join(', ')}{/if}
+                            {#if r.itemsRemoved.length} −{r.itemsRemoved.map((i) => data.itemNames[i] ?? i).join(', ')}{/if}
+                        </dd>
+                    {/if}
+                    {#if r.shards}<dt>{$t('admin_activity.details.shards')}</dt><dd>{signed(r.shards)}</dd>{/if}
+                    {#if r.ref}<dt>{$t('admin_activity.details.mark')}</dt><dd><code>{r.ref}</code></dd>{/if}
+                    {#if r.fields.length}<dt>{$t('admin_activity.details.fields')}</dt><dd><code>{r.fields.join(', ')}</code></dd>{/if}
+                    {#if r.text && !QUOTED.has(r.kind) && !PLAIN.has(r.kind)}<dt>{$t('admin_activity.details.text')}</dt><dd>{r.text}</dd>{/if}
+                    <dt>{$t('admin_activity.details.id')}</dt><dd><code>{r.id}</code></dd>
+                </dl>
+            </details>
         {:else}
-            <div class="empty glass">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
-                    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
-                </svg>
-                <span>{$t('admin_activity.feed.empty')}</span>
-            </div>
+            <p class="empty">{$t('admin_activity.feed.empty')}</p>
         {/each}
-    </section>
+    </div>
 
     {#if data.nextBefore}
-        <a class="btn more" href={link({ before: String(data.nextBefore) })}>{$t('admin_activity.feed.load_more')}</a>
+        <a class="more-link" href={link({ before: String(data.nextBefore) })}>{$t('admin_activity.feed.load_more')}</a>
     {/if}
 </div>
 
 <style>
-    .activity-wrapper { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; padding-bottom: 2rem; }
+    .journal { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.85rem; padding-bottom: 2rem; }
 
-    .page-title {
-        font-family: 'Chakra Petch', sans-serif; font-weight: 800; font-size: 2rem;
-        color: #fff; letter-spacing: 0.05em; margin: 0;
-    }
-    .page-sub { color: #94a3b8; margin: 0.35rem 0 0; font-size: 0.95rem; }
-
-    .glass {
-        background: rgba(15, 20, 30, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    }
+    .head h1 { font-family: 'Chakra Petch', sans-serif; font-weight: 800; font-size: 1.7rem; color: #fff; margin: 0; letter-spacing: 0.04em; }
+    .head p { color: #94a3b8; margin: 0.25rem 0 0; font-size: 0.9rem; }
 
     /* ── Фильтры ── */
-    .filters { display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 1rem; align-items: center; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: space-between; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .chip {
+        display: inline-flex; align-items: center; gap: 0.35rem;
+        padding: 0.3rem 0.7rem; border-radius: 999px; font-size: 0.82rem; font-weight: 600;
+        color: #94a3b8; text-decoration: none; border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(15, 20, 30, 0.6); transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .chip:hover { color: #e2e8f0; border-color: rgba(255, 255, 255, 0.25); }
+    .chip.active { color: #00f3ff; border-color: rgba(0, 243, 255, 0.5); background: rgba(0, 243, 255, 0.1); }
+    .chip-alert.active { color: #ff3b5c; border-color: rgba(255, 59, 92, 0.55); background: rgba(255, 0, 60, 0.12); }
+    .count { background: #ff003c; color: #fff; border-radius: 999px; padding: 0 0.4rem; font-size: 0.72rem; line-height: 1.3rem; }
+
+    .search-form { display: flex; gap: 0.4rem; }
     .search {
-        flex: 1 1 220px; display: flex; align-items: center; gap: 0.5rem;
-        background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px; padding: 0 0.75rem; color: #64748b;
+        display: flex; align-items: center; gap: 0.4rem; padding: 0 0.6rem; min-width: 210px;
+        background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #64748b;
     }
-    .search svg { width: 18px; height: 18px; flex-shrink: 0; }
-    .search input { flex: 1; background: transparent; border: 0; color: #e2e8f0; padding: 0.65rem 0; outline: none; min-width: 0; }
+    .search svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .search input { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: #e2e8f0; padding: 0.45rem 0; font-size: 0.88rem; }
     select {
-        background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px; color: #e2e8f0; padding: 0.6rem 0.75rem;
+        background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;
+        color: #e2e8f0; padding: 0.4rem 0.5rem; font-size: 0.88rem;
     }
-    .check { display: flex; align-items: center; gap: 0.4rem; color: #cbd5e1; font-size: 0.9rem; cursor: pointer; }
-    .btn {
-        font-family: 'Chakra Petch', monospace; font-weight: 700; letter-spacing: 0.05em;
-        padding: 0.6rem 1.1rem; border-radius: 10px; cursor: pointer; text-decoration: none;
-        background: rgba(0, 243, 255, 0.12); border: 1px solid rgba(0, 243, 255, 0.35); color: #00f3ff;
-        transition: background 0.2s;
+
+    .note { margin: 0; color: #94a3b8; font-size: 0.85rem; }
+    .note.warn { color: #fca5a5; }
+
+    /* ── Полоса итогов по человеку и топа за сутки ── */
+    .strip {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 1rem; padding: 0.6rem 0.85rem;
+        background: rgba(15, 20, 30, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px;
+        color: #cbd5e1; font-size: 0.85rem;
     }
-    .btn:hover { background: rgba(0, 243, 255, 0.22); }
-    .btn.ghost { background: transparent; border-color: rgba(255, 255, 255, 0.15); color: #94a3b8; }
-    .btn.more { align-self: center; }
+    .strip b { font-variant-numeric: tabular-nums; color: #e2e8f0; }
+    .strip small { color: #64748b; }
+    .strip .danger, .strip .danger b { color: #ff3b5c; }
+    .strip-name { font-family: 'Chakra Petch', sans-serif; font-weight: 800; font-size: 1.05rem; color: #fff; text-decoration: none; }
+    .strip-name:hover { color: #00f3ff; }
+    .strip-clear { margin-left: auto; color: #64748b; font-size: 0.8rem; }
+    .strip.top a { color: #e2e8f0; text-decoration: none; }
+    .strip.top a:hover { color: #00f3ff; }
+    .sep { width: 1px; height: 1rem; background: rgba(255, 255, 255, 0.12); }
+    .muted { color: #64748b; }
 
-    .notice { padding: 1rem; color: #fca5a5; }
-    .hint { color: #64748b; font-size: 0.85rem; margin: 0.5rem 0 0; }
+    .pill { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 0.05rem 0.4rem; border-radius: 5px; margin-right: 0.35rem; vertical-align: 1px; }
+    .pill-red { background: rgba(255, 0, 60, 0.2); color: #ff3b5c; }
 
-    /* ── Итоги по человеку ── */
-    .summary { padding: 1.25rem; }
-    .summary-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
-    .summary-name { font-family: 'Chakra Petch', sans-serif; font-size: 1.4rem; font-weight: 800; color: #fff; text-decoration: none; }
-    .summary-name:hover { color: #00f3ff; }
-    .summary-balance { color: #cbd5e1; margin-left: auto; }
-    .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.6rem; }
-    .stat {
-        display: flex; flex-direction: column; gap: 0.2rem; padding: 0.7rem 0.85rem;
-        background: rgba(0, 0, 0, 0.3); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05);
+    /* ── Таблица ── */
+    .table { display: flex; flex-direction: column; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; overflow: hidden; }
+    .row { border-bottom: 1px solid rgba(255, 255, 255, 0.05); background: rgba(15, 20, 30, 0.45); }
+    .row:last-child { border-bottom: 0; }
+    .row.alert { background: rgba(60, 5, 15, 0.45); }
+    summary {
+        display: grid; grid-template-columns: 6.2rem minmax(9rem, 14rem) minmax(0, 1fr) 6rem 6rem 1.4rem;
+        align-items: center; gap: 0.75rem; padding: 0.45rem 0.85rem; cursor: pointer; list-style: none;
+        font-size: 0.88rem; color: #cbd5e1;
     }
-    .stat span { color: #94a3b8; font-size: 0.8rem; }
-    .stat b { color: #e2e8f0; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
-    .stat.danger { border-color: rgba(255, 0, 60, 0.5); }
-    .stat.danger b { color: #ff3b5c; }
-
-    /* ── Топ за сутки ── */
-    .top { padding: 1.25rem; }
-    .section-title { font-family: 'Chakra Petch', sans-serif; color: #fff; margin: 0 0 0.75rem; font-size: 1.1rem; }
-    .top-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-    .top-cols h3 { color: #94a3b8; font-size: 0.85rem; font-weight: 600; margin: 0 0 0.4rem; }
-    .top-row {
-        display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.4rem 0.5rem;
-        border-radius: 8px; color: #e2e8f0; text-decoration: none;
-    }
-    .top-row:hover { background: rgba(255, 255, 255, 0.05); }
-    .top-row b { font-variant-numeric: tabular-nums; }
-
-    /* ── Лента ── */
-    .feed { display: flex; flex-direction: column; gap: 0.5rem; }
-    .row { display: grid; grid-template-columns: 92px 1fr auto; gap: 0.85rem; padding: 0.75rem 1rem; align-items: start; }
-    .row.alert { border-color: rgba(255, 0, 60, 0.45); }
-    .row.direct { background: rgba(60, 5, 15, 0.55); }
-    .time { color: #64748b; font-size: 0.8rem; font-variant-numeric: tabular-nums; padding-top: 0.15rem; }
-    .main { min-width: 0; }
-    .line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; }
-    .kind { color: #e2e8f0; font-weight: 600; }
-    .who { color: #00f3ff; text-decoration: none; }
-    .who:hover { text-decoration: underline; }
-    .arrow { width: 14px; height: 14px; color: #64748b; }
-    .details { display: flex; flex-wrap: wrap; gap: 0.35rem 0.85rem; margin-top: 0.3rem; color: #94a3b8; font-size: 0.85rem; }
-    .details .text { color: #cbd5e1; overflow-wrap: anywhere; }
-    .ref { font-family: monospace; color: #a5b4fc; }
-    .fields { font-family: monospace; font-size: 0.8rem; }
-    .delta { font-weight: 700; font-variant-numeric: tabular-nums; }
+    summary::-webkit-details-marker { display: none; }
+    summary:hover { background: rgba(255, 255, 255, 0.03); }
+    .row[open] summary { background: rgba(0, 243, 255, 0.05); }
+    .c-time { color: #64748b; font-variant-numeric: tabular-nums; font-size: 0.8rem; }
+    .c-who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .c-who a { color: #00f3ff; text-decoration: none; }
+    .c-who a:hover { text-decoration: underline; }
+    .arrow { color: #64748b; margin: 0 0.2rem; }
+    .c-what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e2e8f0; }
+    .c-delta, .c-balance { text-align: right; font-variant-numeric: tabular-nums; }
+    .c-delta { font-weight: 700; }
+    .c-balance { color: #64748b; font-size: 0.82rem; }
+    .c-mark svg { width: 16px; height: 16px; color: #ff3b5c; display: block; }
     .plus { color: #4ade80; }
     .minus { color: #f87171; }
 
-    .badge {
-        font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-        padding: 0.15rem 0.45rem; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.12); color: #cbd5e1;
+    .more {
+        display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0;
+        padding: 0.4rem 0.85rem 0.75rem 7.6rem; font-size: 0.82rem; color: #94a3b8;
     }
-    .group-economy { color: #facc15; border-color: rgba(250, 204, 21, 0.35); }
-    .group-moderation { color: #fb7185; border-color: rgba(251, 113, 133, 0.35); }
-    .group-admin { color: #c084fc; border-color: rgba(192, 132, 252, 0.35); }
-    .group-content { color: #67e8f9; border-color: rgba(103, 232, 249, 0.35); }
+    .more dt { color: #64748b; }
+    .more dd { margin: 0; color: #cbd5e1; overflow-wrap: anywhere; }
+    .more a { color: #00f3ff; }
+    .more code { font-size: 0.78rem; color: #a5b4fc; }
 
-    .meta { display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; }
-    .alert-icon { width: 18px; height: 18px; color: #ff3b5c; }
-    .flag { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 6px; }
-    .flag-direct { background: rgba(255, 0, 60, 0.2); color: #ff3b5c; }
-    .flag-unexplained { background: rgba(250, 204, 21, 0.15); color: #facc15; }
-    .flag-big { background: rgba(0, 243, 255, 0.12); color: #00f3ff; }
-    .author { font-size: 0.75rem; color: #64748b; }
-    .author-direct { color: #ff3b5c; font-weight: 700; }
-    .author-id { font-size: 0.7rem; color: #fca5a5; max-width: 220px; overflow-wrap: anywhere; text-align: right; }
-    .audit { font-size: 0.75rem; color: #00f3ff; }
-
-    .empty { display: flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 2rem; color: #64748b; }
-    .empty svg { width: 22px; height: 22px; }
+    .empty { margin: 0; padding: 1.5rem; text-align: center; color: #64748b; }
+    .more-link { align-self: center; color: #00f3ff; font-weight: 600; text-decoration: none; padding: 0.4rem 1rem; }
+    .more-link:hover { text-decoration: underline; }
 
     @media (max-width: 768px) {
-        .page-title { font-size: 1.5rem; }
-        .row { grid-template-columns: 1fr; gap: 0.4rem; }
-        .meta { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; }
-        .author-id { text-align: left; }
-        .top-cols { grid-template-columns: 1fr; }
-        .summary-balance { margin-left: 0; }
+        .head h1 { font-size: 1.35rem; }
+        .search { min-width: 0; flex: 1; }
+        .search-form { width: 100%; }
+        summary {
+            grid-template-columns: auto minmax(0, 1fr) auto auto;
+            grid-template-areas: 'time who delta mark' 'what what what what';
+            gap: 0.2rem 0.6rem;
+        }
+        .c-time { grid-area: time; }
+        .c-who { grid-area: who; }
+        .c-delta { grid-area: delta; }
+        .c-mark { grid-area: mark; }
+        .c-what { grid-area: what; white-space: normal; }
+        .c-balance { display: none; }
+        .more { padding-left: 0.85rem; }
     }
 </style>

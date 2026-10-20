@@ -81,7 +81,7 @@
         <div class="team-section">
             <h3 class="section-title">{$t('about_page.team_title')}</h3>
 
-            <div class="team-grid">
+            <div class="team-grid solo">
                 <div class="team-card">
                     <div class="card-visual">
                         <div class="avatar-glow orion"></div>
@@ -95,22 +95,6 @@
                         <div class="role text-cyber-yellow">{$t('about_page.role_architect')}</div>
                         <a href="https://t.me/Orion_Z43" target="_blank" class="name">Orion_Z43</a>
                         <p class="desc">{$t('about_page.desc_orion')}</p>
-                    </div>
-                </div>
-
-                <div class="team-card">
-                    <div class="card-visual">
-                        <div class="avatar-glow ipos"></div>
-                        <img
-                            src="https://res.cloudinary.com/dzkypodvd/image/upload/v1763932736/protomap_avatars/IubBQqbHINYegxaX5vNvhXT0oz22.webp"
-                            alt="iposdev"
-                            class="team-avatar"
-                        />
-                    </div>
-                    <div class="card-content">
-                        <div class="role text-purple-400">{$t('about_page.role_mobile')}</div>
-                        <a href="https://t.me/iposdev" target="_blank" class="name">iposdev</a>
-                        <p class="desc">{$t('about_page.desc_ipos')}</p>
                     </div>
                 </div>
             </div>
@@ -234,6 +218,7 @@
     }
 
     .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .team-grid.solo { grid-template-columns: minmax(0, 560px); justify-content: center; }
 
     .team-card {
         background: rgba(255,255,255,0.03); padding: 2rem; border-radius: 16px;
@@ -282,7 +267,6 @@
         animation: pulse-glow 3s infinite alternate;
     }
     .avatar-glow.orion { background: var(--cyber-yellow, #fcee0a); }
-    .avatar-glow.ipos { background: #a855f7; }
     .avatar-glow.zor { background: #00f0ff; }
     .avatar-glow.synth { background: #ff5500; }
 

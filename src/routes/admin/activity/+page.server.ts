@@ -111,8 +111,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     const groupParam = url.searchParams.get('group') ?? '';
     const group = GROUPS.includes(groupParam) ? groupParam : '';
     const alertsOnly = url.searchParams.get('alerts') === '1';
-    const daysParam = url.searchParams.get('days') ?? '7';
-    const days = PERIODS[daysParam] ?? 7;
+    const daysParam = url.searchParams.get('days') ?? '1';
+    const days = PERIODS[daysParam] ?? 1;
     const before = Number(url.searchParams.get('before')) || null;
 
     const col = firestoreAdmin.collection('activity_log');
@@ -218,6 +218,14 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         };
     }
 
+    // Счётчик на кнопке «Тревоги» и человеческие названия вещей для строк журнала.
+    const [alertsCount, shop] = await Promise.all([
+        indexed(async () => (await col.where('alert', '==', true).where('at', '>=', since).count().get()).data().count, 0, missing),
+        firestoreAdmin.collection('shop_items').get()
+    ]);
+    const itemNames: Record<string, string> = {};
+    for (const d of shop.docs) itemNames[d.id] = String(d.get('name') ?? d.id);
+
     return {
         rows,
         nextBefore,
@@ -226,6 +234,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         summary,
         top,
         indexBuilding,
-        filters: { user: userQuery, group, alerts: alertsOnly, days: PERIODS[daysParam] ? daysParam : '7' }
+        alertsCount,
+        itemNames,
+        filters: { user: userQuery, group, alerts: alertsOnly, days: PERIODS[daysParam] ? daysParam : '1' }
     };
 };
