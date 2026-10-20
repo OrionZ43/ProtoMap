@@ -5,6 +5,7 @@ import { purgeAccount } from './accountPurge';
 import { clearMapCache } from './mapCache';
 import { PLINKO_MIN_BET, PLINKO_MAX_BALLS, PLINKO_PRIZE_ITEM, PLINKO_PRIZE_SLOTS, plinkoMaxBet, plinkoPayout, dropBall, isPlinkoPrizeOpen, isPlinkoOpen } from './plinko';
 import { isOnSale } from './shopRules';
+import { econOp } from './activity/log';
 
 import { onRequest } from "firebase-functions/v2/https";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -22,6 +23,12 @@ export { enforceRetention } from './retention';
 export { getOrCreateReferralCode, claimReferral, getReferralStatus, finishReferralCampaign } from './referralFunctions';
 export { onChannelCommentWritten, onChannelPostCreated, onChannelPostDeleted, onChannelDeleted } from './channelComments';
 export { onChannelCommentReplyCreated } from './notifications';
+export {
+    activityOnUserWrite, activityOnAdminWrite, activityOnProfileComment, activityOnChatMessage,
+    activityOnChannelWrite, activityOnChannelPost, activityOnChannelComment, activityOnReport,
+    activityOnLocation, activityOnShopItem, activityOnNews,
+} from './activity/triggers';
+export { activityAlert, activityDigest } from './activity/notify';
 import { notifyProfileComment } from './notifications';
 import { auth } from "firebase-functions/v1";
 
@@ -609,7 +616,8 @@ export const purchaseShopItem = onCall({ cors: ALLOWED_ORIGINS }, async (request
 
             t.update(userRef, {
                 casino_credits: credits - price,
-                owned_items: FieldValue.arrayUnion(itemId)
+                owned_items: FieldValue.arrayUnion(itemId),
+                econ_op: econOp('purchase', itemId)
             });
         });
         return { data: { status: 'success', message: 'Покупка совершена!' } };
@@ -687,7 +695,8 @@ export const getDailyBonus = onCall(async (request) => {
             t.update(userRef, {
                 casino_credits: newBalance,
                 last_daily_bonus: FieldValue.serverTimestamp(),
-                daily_streak: dayToClaim
+                daily_streak: dayToClaim,
+                econ_op: econOp('daily_bonus', dayToClaim)
             });
 
             return {
@@ -781,7 +790,8 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
 
             t.update(userRef, {
                 casino_credits: FieldValue.increment(-bet),
-                last_crash_game: FieldValue.serverTimestamp()
+                last_crash_game: FieldValue.serverTimestamp(),
+                econ_op: econOp('crash_bet', bet)
             });
 
             t.set(bankRef, { bank_balance: bankBalance + bet }, { merge: true });
@@ -902,7 +912,10 @@ export const cashOutCrashGame = onCall(async (request) => {
             const cashOutAt = Math.min(claimed, serverMult);
             const winAmount = Math.floor(data.bet * cashOutAt);
 
-            t.update(userRef, { casino_credits: FieldValue.increment(winAmount) });
+            t.update(userRef, {
+                casino_credits: FieldValue.increment(winAmount),
+                econ_op: econOp('crash_cashout', `x${cashOutAt}`)
+            });
 
             t.update(gameRef, { status: 'cashed_out', winAmount, cashOutAt });
 
@@ -996,7 +1009,8 @@ export const synthesizeArtifact = onCall(async (request) => {
             t.update(userRef, {
                 glitch_shards: 0,
                 casino_credits: newBalance,
-                last_bonus_game: FieldValue.serverTimestamp()
+                last_bonus_game: FieldValue.serverTimestamp(),
+                econ_op: econOp('synthesize')
             });
 
             return {
@@ -1238,7 +1252,8 @@ export const playSlotMachine = onCall(
                 t.update(userRef, {
                     casino_credits: finalCalc,
                     last_game_played: admin.firestore.FieldValue.serverTimestamp(),
-                    glitch_shards: newShards
+                    glitch_shards: newShards,
+                    econ_op: econOp('slots', bet)
                 });
 
                 t.set(bankRef, { bank_balance: newBankBalance }, { merge: true });
@@ -1333,7 +1348,7 @@ export const playCoinFlip = onCall(async (request) => {
                 newBankBalance -= potentialWin;
             }
 
-            t.update(userRef, { casino_credits: finalBalance });
+            t.update(userRef, { casino_credits: finalBalance, econ_op: econOp('coinflip', bet) });
             t.set(bankRef, { bank_balance: newBankBalance }, { merge: true });
 
             return {
@@ -1424,9 +1439,11 @@ export const playPlinko = onCall(async (request) => {
                 if (isPlinkoPrizeOpen(prizeDoc.data(), owned, Date.now())) prizeIndex = hit;
             }
 
-            const userUpdate: { [field: string]: number | FieldValue } = { casino_credits: newBalance };
-            if (prizeIndex >= 0) userUpdate.owned_items = FieldValue.arrayUnion(PLINKO_PRIZE_ITEM);
-            t.update(userRef, userUpdate);
+            t.update(userRef, {
+                casino_credits: newBalance,
+                econ_op: econOp('plinko', `${balls}x${bet}`),
+                ...(prizeIndex >= 0 ? { owned_items: FieldValue.arrayUnion(PLINKO_PRIZE_ITEM) } : {})
+            });
             t.set(bankRef, { bank_balance: newBank }, { merge: true });
 
             console.log(`[PLINKO] ${uid} | ${balls}x${bet} | Win:${win} | Bank:${newBank}${prizeIndex >= 0 ? ' | Prize' : ''}`);
@@ -2368,7 +2385,8 @@ export const claimBirthdayBonus = onCall(async (request) => {
             // Выдаем баланс и ставим флаг аккаунта
             t.update(userRef, {
                 casino_credits: newBalance,
-                birthday_bonus_claimed: true
+                birthday_bonus_claimed: true,
+                econ_op: econOp('birthday')
             });
 
             // Запоминаем устройство

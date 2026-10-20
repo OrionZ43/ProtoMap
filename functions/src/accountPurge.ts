@@ -412,6 +412,26 @@ export async function purgeAccount(uid: string, opts: { dryRun: boolean }): Prom
 
     if (!dry && (report["метки: удалено"] ?? 0) > 0) await clearMapCache();
 
+    // ── Журнал действий: обезличить, срок дожить ─────────────────────────
+    // Это журнал безопасности: Политика держит такие 6 месяцев, их снимает
+    // TTL. Ник и тексты убираются, uid и цифры остаются — без профиля uid
+    // ни с кем не связать. Шаг после удаления профиля: удаление меток и
+    // комментариев выше само порождает записи журнала (activity/triggers.ts),
+    // и снять ник нужно и с них. Ник в них ищется по профилю — его больше нет,
+    // так что записи, пришедшие после этого шага, ника уже не получат.
+    const wa = new Writes(dry);
+    for (const [field, patch] of [
+        ["uid", { username: FieldValue.delete(), text: FieldValue.delete() }],
+        ["target", { targetName: FieldValue.delete() }],
+    ] as const) {
+        const snap = await db().collection("activity_log").where(field, "==", uid).get();
+        for (const d of snap.docs) {
+            await wa.update(d.ref, patch);
+            count("журнал действий: обезличено");
+        }
+    }
+    await wa.flush();
+
     // ── Учётная запись Auth — последней ───────────────────────────────────
     if (dry) {
         count("учётная запись Auth");

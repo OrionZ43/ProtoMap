@@ -2,9 +2,11 @@
  * Дуэли на ProtoCoins: /duel и обработка кнопки присоединения.
  */
 
+import * as crypto from "crypto";
 import { Telegraf, Markup } from "telegraf";
 import { db } from "../core/bot";
 import { getUserByTgId } from "../core/helpers";
+import { econOp } from "../../activity/log";
 
 export function register(bot: Telegraf): void {
     // ─── /duel ────────────────────────────────────────────────────────────────────
@@ -90,19 +92,21 @@ export function register(bot: Telegraf): void {
                 if ((iData.casino_credits || 0) < bet) throw new Error("Initiator broke");
                 if ((aData.casino_credits || 0) < bet) throw new Error("Acceptor broke");
 
-                const isInitiatorWin = Math.random() < 0.5;
+                // Ставка на PC — только криптографическая случайность (.claude/rules/economy.md).
+                const isInitiatorWin = crypto.randomInt(0, 2) === 0;
                 const pot   = bet * 2;
                 const tax   = Math.floor(pot * 0.1);
                 winAmount   = pot - tax;
+                const op    = () => econOp("duel", bet);
 
                 if (isInitiatorWin) {
                     winnerName = iData.username; loserName = aData.username;
-                    t.update(initiatorRef, { casino_credits: (iData.casino_credits || 0) - bet + winAmount });
-                    t.update(acceptorRef,  { casino_credits: (aData.casino_credits || 0) - bet });
+                    t.update(initiatorRef, { casino_credits: (iData.casino_credits || 0) - bet + winAmount, econ_op: op() });
+                    t.update(acceptorRef,  { casino_credits: (aData.casino_credits || 0) - bet, econ_op: op() });
                 } else {
                     winnerName = aData.username; loserName = iData.username;
-                    t.update(acceptorRef,  { casino_credits: (aData.casino_credits || 0) - bet + winAmount });
-                    t.update(initiatorRef, { casino_credits: (iData.casino_credits || 0) - bet });
+                    t.update(acceptorRef,  { casino_credits: (aData.casino_credits || 0) - bet + winAmount, econ_op: op() });
+                    t.update(initiatorRef, { casino_credits: (iData.casino_credits || 0) - bet, econ_op: op() });
                 }
             });
 

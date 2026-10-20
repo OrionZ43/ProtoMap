@@ -26,6 +26,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { FieldValue, DocumentData } from "firebase-admin/firestore";
+import { econOp } from "./activity/log";
 
 // ─── Shared db (admin инициализирован в index.ts) ─────────────────────────────
 const db = admin.firestore();
@@ -469,7 +470,7 @@ export const stepperClaim = onCall(async (request) => {
             const newClaimedBonusSteps  = dailyClaimedBonusSteps  + bonusBatches  * STEPS_PER_REWARD;
 
             // ── Запись ────────────────────────────────────────────────────────
-            t.update(userRef, { casino_credits: newBalance });
+            t.update(userRef, { casino_credits: newBalance, econ_op: econOp("stepper", earnedPc) });
 
             const claimedSteps = (normalBatches + bonusBatches) * STEPS_PER_REWARD;
             const totals       = computeStepTotals(sd, claimedSteps, now);

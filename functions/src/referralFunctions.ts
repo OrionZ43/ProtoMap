@@ -27,6 +27,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import fetch from "node-fetch";
+import { econOp } from "./activity/log";
 
 const db = admin.firestore();
 
@@ -196,12 +197,14 @@ export const claimReferral = onCall(
                 // Начисляем рефереру
                 t.update(referrerRef, {
                     casino_credits: (ru.casino_credits ?? 0) + REFERRAL_PC,
+                    econ_op:        econOp("referral"),
                 });
 
                 // Начисляем новичку
                 t.update(newUserRef, {
                     casino_credits:       (nu.casino_credits ?? 0) + NEW_USER_BONUS_PC,
                     referralBonusClaimed: true,
+                    econ_op:              econOp("referral_bonus"),
                 });
 
                 // Обновляем счётчики реферала
@@ -396,7 +399,10 @@ export const finishReferralCampaign = onCall(
                 const userRef  = db.collection("users").doc(winnerId);
                 const userSnap = await t.get(userRef);
                 if (!userSnap.exists) throw new Error("Winner not found");
-                t.update(userRef, { casino_credits: (userSnap.data()!.casino_credits ?? 0) + WINNER_PC });
+                t.update(userRef, {
+                    casino_credits: (userSnap.data()!.casino_credits ?? 0) + WINNER_PC,
+                    econ_op:        econOp("referral_prize", targetMonth),
+                });
                 t.set(campaignRef, {
                     status:      "finished",
                     winnerId,

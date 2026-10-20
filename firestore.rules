@@ -524,6 +524,20 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Журнал действий (functions/src/activity). Пишут триггеры и сервер сайта,
+    // читает админка сайта через Admin SDK. Клиенту — ни чтения, ни записи:
+    // в журнале чужие балансы и тексты.
+    match /activity_log/{entryId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // Копии аккаунтов и каналов перед баном или удалением — для возврата.
+    match /moderation_backups/{backupId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
     // =========================================================
     // 👥 РАЗДЕЛ 12: ГРУППЫ
     // =========================================================
