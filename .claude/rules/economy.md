@@ -42,11 +42,15 @@ bypasses rules entirely:
 
 Content collections are admin-writable, not user-writable: `shop_items`, `news`.
 
-`users/{uid}` is the subtle one: the owner can write parts of their own profile, so any
-economy field living there (`casino_credits`, `owned_items`, `daily_streak`,
-`last_daily_bonus`, `equipped_*`, `isBanned`) must be **explicitly excluded** from what the
-owner may set. When adding a field to the user document, decide which side of the boundary it
-is on *before* writing the rule. Default to server-only.
+`users/{uid}` is the subtle one: the owner can write parts of their own profile, so every
+field the server owns — economy (`casino_credits`, `owned_items`, `daily_streak`,
+`last_daily_bonus`), `equipped_*`, ban state, 2FA and Telegram, username, the profile fields
+functions validate, consent mirrors, cooldown stamps — is listed in `serverOwnedUserFields()`
+in `firestore.rules`, and neither the owner nor an admin may change any of them from a client.
+The rule is still a *denylist*: a field a function starts writing is client-writable until it
+is added to that list. That gap let owners switch off their own 2FA and re-claim a bonus until
+2026-10-20. When adding a field to the user document, decide which side of the boundary it is
+on *before* writing the rule. Default to server-only.
 
 ## The corresponding rule in function code
 

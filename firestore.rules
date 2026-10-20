@@ -111,6 +111,40 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      // Поля, которые пишет только сервер — функции и сайт через Admin SDK. За
+      // каждым стоит проверка, которую прямая запись обошла бы: баланс и вещи,
+      // бан, 2FA и Telegram, ник (уникальность, запретные слова, раз в 30 дней),
+      // профиль (длина, модерация аватара), надетые вещи (куплены ли), бонусы,
+      // античит шагомера, копии согласий, метки пауз антиспама.
+      //
+      // До 20.10.2026 здесь был короткий список запретов, а остальное владелец
+      // писал сам: снимал себе 2FA, сбрасывал флаг праздничного бонуса и получал
+      // его снова, надевал некупленную рамку, ставил аватаром любую картинку мимо
+      // модерации. Админам правило открывало вообще все поля — так 19.10.2026 и
+      // вписали 23 055 PC. Это заплатка: правильнее — список разрешённых полей,
+      // когда журнал записей Firestore покажет всё, что старое Android-приложение
+      // пишет напрямую (docs/CHANGELOG_CLAUDE.md, 20.10.2026).
+      function serverOwnedUserFields() {
+        return [
+          'casino_credits', 'glitch_shards', 'owned_items', 'daily_streak', 'last_daily_bonus', 'econ_op',
+          'role', 'email', 'createdAt', 'migratedAt', 'migratedFrom',
+          'isBanned', 'banReason', 'bannedAt', 'banCategory', 'bannedUntil',
+          'is2FAEnabled', 'telegram_id', 'telegram_username', 'telegram_chat_verified', 'telegram_chat_verified_at',
+          'username', 'last_username_change',
+          'avatar_url', 'about_me', 'status', 'socials', 'social_link',
+          'equipped_frame', 'equipped_bg', 'equipped_badge',
+          'birthday_bonus_claimed', 'referralBonusClaimed', 'stepperAnomalyFlag',
+          'consents_privacy_version', 'consents_tos_version', 'consents_updated_at',
+          'last_game_played', 'last_crash_game', 'last_bonus_game', 'last_chat_message',
+          'last_avatar_upload', 'last_location_update'
+        ];
+      }
+
+      // Поле нового документа: его нет или у него пустое значение по умолчанию.
+      function absentOr(field, allowed) {
+        return !(field in request.resource.data) || request.resource.data[field] in allowed;
+      }
+
       allow create: if request.auth != null
         && request.auth.uid == userId
         && 'username'  in request.resource.data
@@ -125,24 +159,62 @@ service cloud.firestore {
         && !('role' in request.resource.data)
         && (!('owned_items'      in request.resource.data) || (request.resource.data.owned_items is list && request.resource.data.owned_items.size() == 0))
         && (!('isBanned'         in request.resource.data) || request.resource.data.isBanned         == false)
-        && (!('last_daily_bonus' in request.resource.data) || request.resource.data.last_daily_bonus == null);
+        && (!('last_daily_bonus' in request.resource.data) || request.resource.data.last_daily_bonus == null)
+        // Серверные поля при создании — только пустые: иначе аккаунт можно сразу
+        // завести с некупленной рамкой, чужим telegram_id или аватаром мимо
+        // модерации. Аватар — пустой или фото Google: его потом переносит в
+        // Cloudinary migrateExternalAvatar. Уникальность ника правила проверить
+        // не могут — это закроет перенос создания документа на сервер.
+        && absentOr('is2FAEnabled', [false])
+        && absentOr('telegram_id', [null])
+        && absentOr('telegram_username', [null])
+        && absentOr('telegram_chat_verified', [false])
+        && absentOr('telegram_chat_verified_at', [null])
+        && absentOr('birthday_bonus_claimed', [false])
+        && absentOr('referralBonusClaimed', [false])
+        && absentOr('stepperAnomalyFlag', [null, false, 0])
+        && absentOr('equipped_frame', [null, ''])
+        && absentOr('equipped_bg', [null, ''])
+        && absentOr('equipped_badge', [null, ''])
+        && absentOr('last_username_change', [null])
+        && absentOr('banReason', [null, ''])
+        && absentOr('bannedAt', [null])
+        && absentOr('banCategory', [null])
+        && absentOr('bannedUntil', [null])
+        && absentOr('consents_privacy_version', [null])
+        && absentOr('consents_tos_version', [null])
+        && absentOr('consents_updated_at', [null])
+        && absentOr('econ_op', [null])
+        && absentOr('migratedAt', [null])
+        && absentOr('migratedFrom', [null])
+        && absentOr('social_link', [null, ''])
+        && absentOr('last_game_played', [null])
+        && absentOr('last_crash_game', [null])
+        && absentOr('last_bonus_game', [null])
+        && absentOr('last_chat_message', [null])
+        && absentOr('last_avatar_upload', [null])
+        && absentOr('last_location_update', [null])
+        && (!('socials' in request.resource.data) || request.resource.data.socials == null
+            || (request.resource.data.socials is map && request.resource.data.socials.size() == 0))
+        && (!('avatar_url' in request.resource.data) || request.resource.data.avatar_url == ''
+            || (request.resource.data.avatar_url is string
+                && request.resource.data.avatar_url.matches('https://lh[0-9]+[.]googleusercontent[.]com/.*')))
+        && (!('about_me' in request.resource.data)
+            || (request.resource.data.about_me is string && request.resource.data.about_me.size() <= 500))
+        && (!('status' in request.resource.data)
+            || (request.resource.data.status is string && request.resource.data.status.size() <= 100));
 
+      // Токен уведомлений и подпись резервной копии — даже забаненному владельцу.
       allow update: if isOwner(userId)
               && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['fcmToken', 'lastBackupSignature']);
 
-      allow update: if isAdmin() || (
-                      isOwner(userId)
-                      && isNotBanned()
-                      && !(request.resource.data.diff(resource.data).affectedKeys()
-                           .hasAny([
-                             'casino_credits', 'last_daily_bonus', 'role',
-                             'isBanned', 'banReason', 'bannedAt',
-                             'owned_items', 'email', 'daily_streak',
-                             'glitch_shards', 'createdAt'
-                           ]))
-                      && (!('lastBackupSignature' in request.resource.data) || request.resource.data.lastBackupSignature is string)
-                    );
+      // Остальное владелец меняет сам, кроме серверных полей. Админам отдельного
+      // права нет: админка сайта пишет через сервер, правила ей не нужны.
+      allow update: if isOwner(userId)
+                    && isNotBanned()
+                    && !(request.resource.data.diff(resource.data).affectedKeys().hasAny(serverOwnedUserFields()))
+                    && (!('lastBackupSignature' in request.resource.data) || request.resource.data.lastBackupSignature is string);
 
       allow delete: if isSuperAdmin();
 

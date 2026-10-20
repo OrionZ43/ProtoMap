@@ -77,7 +77,35 @@ CLAUDE.md.
 
 ---
 
-## 3. `audioManager` preloads ten sound files that aren't in the repo
+## 3. `users/{userId}` update rule is a denylist; usernames aren't unique on create
+
+**Where:** `firestore.rules`, `match /users/{userId}` — `serverOwnedUserFields()` and the
+`create` rule.
+
+**What:** Since 2026-10-20 the owner may change any field of their user document *except* the
+43 server-owned ones. That closes every hole found that day, but it is still a denylist: a
+field a function starts writing tomorrow is client-writable until someone adds it to the list.
+The right shape is an allowlist (`affectedKeys().hasOnly([...])`), and it needs the full set of
+fields the old Android app (`by.iposdev.protomap`) writes directly. Over the first 5 hours of
+the Data Access log, clients changed only `fcmToken`; rare actions (blocking a user —
+`blocked_uids`, beta and stepper consent flags) may not have shown up yet.
+
+Separately, the `create` rule can't check that a username is unique or not reserved: the site
+checks availability client-side, so a modified client can register with someone else's nickname.
+
+**Verified:** Firebase Rules API (`projects.test`), 30 allow/deny cases against the live
+ruleset `984e426d` — all pass; the same cases against the previous ruleset passed 11 of 30.
+
+**Do:** After a week of Data Access logs (enabled 2026-10-20), list every field clients write
+to `users/{uid}` — principal `service-779680752096@firebase-rules.iam.gserviceaccount.com`,
+`request.writes[].updateMask.fieldPaths` — and switch the owner update rule to `hasOnly`.
+Move the first username and document creation into a callable (the Android session proposed
+`setInitialUsername`); drop the client `create` only after the site uses it and the old app is
+retired.
+
+---
+
+## 4. `audioManager` preloads ten sound files that aren't in the repo
 
 **Where:** `src/lib/client/audioManager.ts:33-45` (the `soundFiles` map) and the
 `preload: true` loop at line 56.
