@@ -55,6 +55,14 @@
             username: 'Eridan_Pallas',
             color: '#00e5ff',
             avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1769693430/protomap_avatars/I8DIGaxnO8MCveHTq8xloFNmJst1.webp'
+        },
+        {
+            // Автор мобильного приложения. Профиль на сайте закрыт, поэтому ссылка — на Telegram.
+            id: 'ipos',
+            username: 'iposdev',
+            color: '#a855f7',
+            avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1763932736/protomap_avatars/IubBQqbHINYegxaX5vNvhXT0oz22.webp',
+            href: 'https://t.me/iposdev'
         }
     ];
 
@@ -106,7 +114,7 @@
             <h3 class="section-title">{$t('about_page.testers_title')}</h3>
             <div class="testers-grid">
                 {#each testers as tester}
-                    <a href={getProfileLink(tester.username)} class="tester-card" target="_blank">
+                    <a href={tester.href ?? getProfileLink(tester.username)} class="tester-card" target="_blank" rel={tester.href ? 'noopener noreferrer' : undefined}>
                         <img
                             src={tester.avatar.includes('http') ? tester.avatar : `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(tester.username)}`}
                             alt={tester.username}

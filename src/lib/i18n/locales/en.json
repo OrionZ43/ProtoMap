@@ -234,6 +234,10 @@
 			"eridan": {
 				"role": "CHIEF IDEOLOGIST",
 				"desc": "Inspects every pixel. If there's a flaw, he'll find it. If there is no flaw, he'll invent one."
+			},
+			"ipos": {
+				"role": "EX-MOBILE DEV",
+				"desc": "Would still be a MOBILE DEV, but decided to check whether the project rules apply to developers. They do."
 			}
 		}
 	},
