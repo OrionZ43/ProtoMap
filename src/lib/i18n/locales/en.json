@@ -209,10 +209,6 @@
 				"role": "BUG HUNTER",
 				"desc": "Found more bugs than lines of code. Developer's nightmare."
 			},
-			"kuraga": {
-				"role": "SECURITY HAZARD",
-				"desc": "Single-handedly flooded our Google Cloud logs and forced a rewrite."
-			},
 			"artho": {
 				"role": "VOLUNTEER #1",
 				"desc": "Voluntarily signed the soul contract. There is no escape."

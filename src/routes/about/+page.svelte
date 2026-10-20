@@ -15,12 +15,6 @@
             avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1766635490/protomap_avatars/Jjsi5AbW5iaRWN8b2JvejR73GHq2.webp'
         },
         {
-            id: 'kuraga',
-            username: 'kuraga',
-            color: '#ff003c',
-            avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1765912349/protomap_avatars/t3KN8N2O6HWmHh2eK2DV9gNkIjO2.webp'
-        },
-        {
             id: 'artho',
             username: 'ARTHO',
             color: '#39ff14',
