@@ -855,5 +855,137 @@
 				"You are my sunshine."
 			]
 		}
+	},
+	"admin_nav": {
+		"dashboard": "DASHBOARD",
+		"activity": "ACTIVITY",
+		"news": "NEWS",
+		"users": "USERS",
+		"roadmap": "ROADMAP",
+		"exit": "EXIT",
+		"exit_god_mode": "EXIT GOD MODE"
+	},
+	"admin_activity": {
+		"title": "Activity log",
+		"subtitle": "Everything that happens in ProtoMap: balances, content, moderation and admin actions. Entries are kept for 180 days.",
+		"filters": {
+			"user_placeholder": "Username or uid",
+			"group_all": "All sections",
+			"alerts_only": "Alerts only",
+			"apply": "Show",
+			"reset": "Reset"
+		},
+		"periods": {
+			"1": "Last day",
+			"7": "Last week",
+			"30": "Last month",
+			"180": "Last 180 days"
+		},
+		"groups": {
+			"economy": "Economy",
+			"moderation": "Moderation",
+			"profile": "Profiles",
+			"content": "Content",
+			"account": "Accounts",
+			"admin": "Admin",
+			"map": "Map"
+		},
+		"user_not_found": "User “{query}” not found",
+		"summary": {
+			"balance": "Current balance: {value} PC",
+			"banned": "banned",
+			"games_won": "Won in games",
+			"games_lost": "Lost in games",
+			"games_net": "Games net",
+			"shop": "Spent in the shop · purchases: {count}",
+			"bonuses": "Bonuses",
+			"admin": "Admin adjustments",
+			"direct": "Direct writes",
+			"unexplained": "Unexplained",
+			"comments": "Comments",
+			"chat": "Chat messages",
+			"channels": "Channel posts and comments",
+			"truncated": "More than 2000 entries in this period — totals use the latest 2000."
+		},
+		"top": {
+			"title": "Last 24 hours",
+			"gainers": "Biggest gains",
+			"losers": "Biggest losses",
+			"none": "Nobody"
+		},
+		"feed": {
+			"empty": "No entries",
+			"load_more": "Older",
+			"balance": "balance {value}",
+			"items_added": "items: +{list}",
+			"items_removed": "items: −{list}",
+			"shards": "shards {value}",
+			"fields": "fields: {list}",
+			"alert": "Alert"
+		},
+		"flags": {
+			"direct": "direct write",
+			"unexplained": "unexplained",
+			"big": "large"
+		},
+		"author": {
+			"server": "server",
+			"system": "platform",
+			"direct": "direct"
+		},
+		"kinds": {
+			"slots": "Slots",
+			"coinflip": "Coin flip",
+			"crash_bet": "Crash: bet",
+			"crash_cashout": "Crash: cash-out",
+			"plinko": "Plinko",
+			"synthesize": "Artifact synthesis",
+			"duel": "Telegram duel",
+			"daily_bonus": "Daily bonus",
+			"birthday": "Birthday bonus",
+			"purchase": "Purchase",
+			"referral": "Referral",
+			"referral_bonus": "Newcomer bonus",
+			"referral_prize": "Contest prize",
+			"stepper": "Step counter",
+			"admin_credits": "Balance adjustment",
+			"admin_items": "Items granted",
+			"admin_migrate": "Account transfer",
+			"direct": "Direct write",
+			"server_unknown": "Server, unmarked",
+			"created": "Account created",
+			"deleted": "Account deleted",
+			"ban": "Ban",
+			"unban": "Unban",
+			"report": "Report",
+			"role": "Role change",
+			"admins_added": "Admin added",
+			"admins_removed": "Admin removed",
+			"admins_changed": "Admin changed",
+			"shop_added": "Item added",
+			"shop_removed": "Item removed",
+			"shop_changed": "Item changed",
+			"news_added": "News published",
+			"news_removed": "News removed",
+			"news_changed": "News edited",
+			"admin_ban": "Ban from admin panel",
+			"admin_unban": "Unban from admin panel",
+			"admin_verify_email": "Email verified manually",
+			"username": "Username change",
+			"profile": "Profile edited",
+			"profile_comment": "Profile comment",
+			"profile_comment_deleted": "Comment deleted",
+			"chat": "Chat message",
+			"channel_created": "Channel created",
+			"channel_deleted": "Channel deleted",
+			"channel_post": "Channel post",
+			"channel_post_deleted": "Post deleted",
+			"channel_comment": "Channel comment",
+			"channel_comment_deleted": "Channel comment deleted",
+			"location_added": "Map pin added",
+			"location_moved": "Map pin moved",
+			"location_removed": "Map pin removed"
+		},
+		"index_building": "The index for this filter is still building — for a few minutes after a deploy some data may be missing."
 	}
 }

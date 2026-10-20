@@ -5,6 +5,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { ADMIN_UIDS } from '$env/static/private';
 import { FieldValue } from 'firebase-admin/firestore';
+import { econOp, logAdminAction } from '$lib/server/activity';
 
 const adminList = ADMIN_UIDS ? ADMIN_UIDS.split(',') : [];
 
@@ -89,7 +90,12 @@ export const actions: Actions = {
         if (targetUid === locals.user!.uid) return fail(403, { message: 'Нельзя изменять собственный баланс.' });
         try {
             await firestoreAdmin.collection('users').doc(targetUid).update({
-                casino_credits: FieldValue.increment(amount)
+                casino_credits: FieldValue.increment(amount),
+                econ_op: econOp('admin_credits', amount)
+            });
+            await logAdminAction({
+                kind: 'admin_credits', by: locals.user!.uid, byName: locals.user!.username,
+                target: targetUid, text: 'изменил баланс', delta: amount
             });
             return { actionSuccess: true, message: `Баланс изменен на ${amount > 0 ? '+' : ''}${amount} PC` };
         } catch (e) {
@@ -110,7 +116,12 @@ export const actions: Actions = {
         ];
         try {
             await firestoreAdmin.collection('users').doc(targetUid).update({
-                owned_items: FieldValue.arrayUnion(...allItems)
+                owned_items: FieldValue.arrayUnion(...allItems),
+                econ_op: econOp('admin_items', allItems.length)
+            });
+            await logAdminAction({
+                kind: 'admin_items', by: locals.user!.uid, byName: locals.user!.username,
+                target: targetUid, text: `выдал все рамки и фоны (${allItems.length})`
             });
             return { actionSuccess: true, message: 'Выдан полный пакет кастомизации.' };
         } catch (e) {
@@ -127,6 +138,10 @@ export const actions: Actions = {
         try {
             await authAdmin.updateUser(targetUid, { emailVerified: true });
             console.log(`[ADMIN] Email verified for uid=${targetUid} by admin=${locals.user!.uid}`);
+            await logAdminAction({
+                kind: 'admin_verify_email', by: locals.user!.uid, byName: locals.user!.username,
+                target: targetUid, text: 'подтвердил почту вручную'
+            });
             return { actionSuccess: true, message: 'EMAIL ВЕРИФИЦИРОВАН ПРИНУДИТЕЛЬНО.' };
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : String(e);
@@ -158,6 +173,10 @@ export const actions: Actions = {
                 bannedAt:    FieldValue.serverTimestamp()
             });
             console.log(`[ADMIN] Banned uid=${targetUid} reason="${reason}" category=${category} by admin=${locals.user!.uid}`);
+            await logAdminAction({
+                kind: 'admin_ban', by: locals.user!.uid, byName: locals.user!.username,
+                target: targetUid, text: `бан: ${reason || 'без причины'}`
+            });
             return { actionSuccess: true, message: 'СУБЪЕКТ ИЗОЛИРОВАН (TOKEN REVOKED).' };
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : String(e);
@@ -177,6 +196,10 @@ export const actions: Actions = {
                 banReason:   FieldValue.delete(),
                 banCategory: FieldValue.delete(),
                 bannedAt:    FieldValue.delete()
+            });
+            await logAdminAction({
+                kind: 'admin_unban', by: locals.user!.uid, byName: locals.user!.username,
+                target: targetUid, text: 'разбан'
             });
             return { actionSuccess: true, message: 'СУБЪЕКТ ВОССТАНОВЛЕН В ПРАВАХ.' };
         } catch (e) {
@@ -214,7 +237,8 @@ export const actions: Actions = {
                     daily_streak:   Math.max(s.daily_streak || 0, tg.daily_streak || 0),
                     avatar_url:     tg.avatar_url || s.avatar_url,
                     migratedFrom:   sourceUid,
-                    migratedAt:     FieldValue.serverTimestamp()
+                    migratedAt:     FieldValue.serverTimestamp(),
+                    econ_op:        econOp('admin_migrate', 'in')
                 });
 
                 t.update(sourceRef, {
@@ -223,7 +247,8 @@ export const actions: Actions = {
                     isBanned:       true,
                     banReason:      `MIGRATED TO: ${targetUid}`,
                     username:       `MIGRATED_${s.username}`,
-                    status:         'ACCOUNT_TRANSFER_COMPLETE'
+                    status:         'ACCOUNT_TRANSFER_COMPLETE',
+                    econ_op:        econOp('admin_migrate', 'out')
                 });
             });
 
@@ -235,6 +260,10 @@ export const actions: Actions = {
             }
 
             console.log(`[ADMIN] Migrated ${sourceUid} -> ${targetUid} by admin=${locals.user!.uid}`);
+            await logAdminAction({
+                kind: 'admin_migrate', by: locals.user!.uid, byName: locals.user!.username,
+                target: targetUid, text: `перенос аккаунта ${sourceUid} → ${targetUid}`
+            });
             return { actionSuccess: true, message: `Миграция успешна! ${sourceUid} → ${targetUid}` };
 
         } catch (e) {

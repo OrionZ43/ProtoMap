@@ -1,6 +1,7 @@
 <script lang="ts">
     import "../../app.css";
     import { page } from '$app/stores';
+    import { t } from 'svelte-i18n';
 
     $: path = $page.url.pathname;
 </script>
@@ -25,34 +26,39 @@
         <nav class="nav-links">
             <a href="/admin" class="nav-item" class:active={path === '/admin'}>
                 <div class="nav-indicator"></div>
-                <span class="icon">⚡</span>
-                <span class="label">DASHBOARD</span>
+                <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg></span>
+                <span class="label">{$t('admin_nav.dashboard')}</span>
+            </a>
+            <a href="/admin/activity" class="nav-item" class:active={path.includes('/activity')}>
+                <div class="nav-indicator"></div>
+                <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg></span>
+                <span class="label">{$t('admin_nav.activity')}</span>
             </a>
             <a href="/admin/news" class="nav-item" class:active={path.includes('/news')}>
                 <div class="nav-indicator"></div>
-                <span class="icon">📡</span>
-                <span class="label">NEWS</span>
+                <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2" /><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14" /></svg></span>
+                <span class="label">{$t('admin_nav.news')}</span>
             </a>
             <a href="/admin/users" class="nav-item" class:active={path.includes('/users')}>
                 <div class="nav-indicator"></div>
-                <span class="icon">🧬</span>
-                <span class="label">USERS</span>
+                <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg></span>
+                <span class="label">{$t('admin_nav.users')}</span>
             </a>
             <a href="/admin/tracker" class="nav-item" class:active={path.includes('/tracker')}>
                 <div class="nav-indicator"></div>
-                <span class="icon">🗺️</span>
-                <span class="label">ROADMAP</span>
+                <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" /><line x1="8" y1="2" x2="8" y2="18" /><line x1="16" y1="6" x2="16" y2="22" /></svg></span>
+                <span class="label">{$t('admin_nav.roadmap')}</span>
             </a>
              <!-- Кнопка выхода для мобилок (вместо отдельного блока) -->
              <a href="/" class="nav-item mobile-only text-red-500">
-                <span class="icon">❌</span>
-                <span class="label">EXIT</span>
+                <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></span>
+                <span class="label">{$t('admin_nav.exit')}</span>
             </a>
         </nav>
 
         <!-- Футер (Только ПК) -->
         <div class="bottom-actions desktop-only">
-            <a href="/" class="exit-btn">EXIT GOD MODE</a>
+            <a href="/" class="exit-btn">{$t('admin_nav.exit_god_mode')}</a>
         </div>
     </aside>
 
@@ -137,6 +143,9 @@
         background: rgba(255, 255, 255, 0.03);
         color: #e2e8f0;
     }
+
+    .icon { display: inline-flex; }
+    .icon svg { width: 20px; height: 20px; }
 
     .nav-item.active {
         background: rgba(0, 243, 255, 0.1);

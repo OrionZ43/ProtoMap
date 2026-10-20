@@ -855,5 +855,137 @@
 				"You are my sunshine."
 			]
 		}
+	},
+	"admin_nav": {
+		"dashboard": "DASHBOARD",
+		"activity": "ACTIVITY",
+		"news": "NEWS",
+		"users": "USERS",
+		"roadmap": "ROADMAP",
+		"exit": "EXIT",
+		"exit_god_mode": "EXIT GOD MODE"
+	},
+	"admin_activity": {
+		"title": "Летопись деяний",
+		"subtitle": "Всё, что творится в ProtoMap: казна, грамоты, суд и приказ. Летопись хранится 180 дней.",
+		"filters": {
+			"user_placeholder": "Ник или uid",
+			"group_all": "Все разделы",
+			"alerts_only": "Только тревоги",
+			"apply": "Показать",
+			"reset": "Сбросить"
+		},
+		"periods": {
+			"1": "За сутки",
+			"7": "За неделю",
+			"30": "За месяц",
+			"180": "За 180 дней"
+		},
+		"groups": {
+			"economy": "Экономика",
+			"moderation": "Модерация",
+			"profile": "Профили",
+			"content": "Контент",
+			"account": "Аккаунты",
+			"admin": "Админка",
+			"map": "Карта"
+		},
+		"user_not_found": "Пользователь «{query}» не найден",
+		"summary": {
+			"balance": "Баланс сейчас: {value} PC",
+			"banned": "забанен",
+			"games_won": "Выиграно в играх",
+			"games_lost": "Проиграно в играх",
+			"games_net": "Итог игр",
+			"shop": "Потрачено в магазине · покупок: {count}",
+			"bonuses": "Бонусы",
+			"admin": "Правки админки",
+			"direct": "Записи в обход сервера",
+			"unexplained": "Без пометки",
+			"comments": "Комментарии",
+			"chat": "Сообщения в чате",
+			"channels": "Посты и комментарии в каналах",
+			"truncated": "Записей за период больше 2000 — итоги посчитаны по последним 2000."
+		},
+		"top": {
+			"title": "За сутки",
+			"gainers": "Больше всех прибавили",
+			"losers": "Больше всех убавили",
+			"none": "Никого"
+		},
+		"feed": {
+			"empty": "Записей нет",
+			"load_more": "Дальше",
+			"balance": "баланс {value}",
+			"items_added": "вещи: +{list}",
+			"items_removed": "вещи: −{list}",
+			"shards": "осколки {value}",
+			"fields": "поля: {list}",
+			"alert": "Тревога"
+		},
+		"flags": {
+			"direct": "в обход сервера",
+			"unexplained": "без пометки",
+			"big": "крупно"
+		},
+		"author": {
+			"server": "сервер",
+			"system": "платформа",
+			"direct": "напрямую"
+		},
+		"kinds": {
+			"slots": "Слоты",
+			"coinflip": "Монетка",
+			"crash_bet": "Краш: ставка",
+			"crash_cashout": "Краш: выигрыш",
+			"plinko": "Плинко",
+			"synthesize": "Синтез артефакта",
+			"duel": "Дуэль в Telegram",
+			"daily_bonus": "Ежедневный бонус",
+			"birthday": "Бонус в день рождения",
+			"purchase": "Покупка",
+			"referral": "Реферал",
+			"referral_bonus": "Бонус новичку",
+			"referral_prize": "Приз конкурса",
+			"stepper": "Шагомер",
+			"admin_credits": "Правка баланса",
+			"admin_items": "Выдача предметов",
+			"admin_migrate": "Перенос аккаунта",
+			"direct": "Запись в обход сервера",
+			"server_unknown": "Сервер без пометки",
+			"created": "Аккаунт создан",
+			"deleted": "Аккаунт удалён",
+			"ban": "Бан",
+			"unban": "Разбан",
+			"report": "Жалоба",
+			"role": "Смена роли",
+			"admins_added": "Добавлен админ",
+			"admins_removed": "Убран админ",
+			"admins_changed": "Изменён админ",
+			"shop_added": "Товар добавлен",
+			"shop_removed": "Товар убран",
+			"shop_changed": "Товар изменён",
+			"news_added": "Новость опубликована",
+			"news_removed": "Новость удалена",
+			"news_changed": "Новость изменена",
+			"admin_ban": "Бан из админки",
+			"admin_unban": "Разбан из админки",
+			"admin_verify_email": "Почта подтверждена вручную",
+			"username": "Смена ника",
+			"profile": "Профиль изменён",
+			"profile_comment": "Комментарий в профиле",
+			"profile_comment_deleted": "Комментарий удалён",
+			"chat": "Сообщение в чате",
+			"channel_created": "Канал создан",
+			"channel_deleted": "Канал удалён",
+			"channel_post": "Пост в канале",
+			"channel_post_deleted": "Пост удалён",
+			"channel_comment": "Комментарий в канале",
+			"channel_comment_deleted": "Комментарий в канале удалён",
+			"location_added": "Метка на карте",
+			"location_moved": "Метка перенесена",
+			"location_removed": "Метка удалена"
+		},
+		"index_building": "Указатель к сему отбору ещё строится — первые минуты после выкатки часть летописи может не показываться."
 	}
 }
