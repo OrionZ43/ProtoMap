@@ -9,7 +9,8 @@
 import { firestoreAdmin } from '$lib/server/firebase.admin';
 import { error, redirect } from '@sveltejs/kit';
 import { ADMIN_UIDS } from '$env/static/private';
-import { Timestamp, type Query, type DocumentData } from 'firebase-admin/firestore';
+import { Timestamp, type Query } from 'firebase-admin/firestore';
+import { toRow, type ActivityRow } from '$lib/server/activityRows';
 import type { PageServerLoad } from './$types';
 
 const adminList = ADMIN_UIDS ? ADMIN_UIDS.split(',') : [];
@@ -22,58 +23,6 @@ const DAY = 86_400_000;
 const GAMES = new Set(['slots', 'coinflip', 'crash_bet', 'crash_cashout', 'plinko', 'synthesize', 'duel']);
 const BONUSES = new Set(['daily_bonus', 'birthday', 'referral', 'referral_bonus', 'referral_prize', 'stepper']);
 const ADMIN_ECON = new Set(['admin_credits', 'admin_items', 'admin_migrate']);
-
-export interface ActivityRow {
-    id: string;
-    at: number;
-    group: string;
-    kind: string;
-    uid: string | null;
-    username: string | null;
-    target: string | null;
-    targetName: string | null;
-    delta: number | null;
-    balance: number | null;
-    itemsAdded: string[];
-    itemsRemoved: string[];
-    shards: number | null;
-    fields: string[];
-    text: string | null;
-    ref: string | null;
-    authorType: string | null;
-    authorId: string | null;
-    authType: string | null;
-    flag: string | null;
-    alert: boolean;
-}
-
-function toRow(id: string, d: DocumentData): ActivityRow {
-    const str = (v: unknown) => (typeof v === 'string' && v ? v : null);
-    const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
-    return {
-        id,
-        at: d.at?.toMillis?.() ?? 0,
-        group: String(d.group ?? ''),
-        kind: String(d.kind ?? ''),
-        uid: str(d.uid),
-        username: str(d.username),
-        target: str(d.target),
-        targetName: str(d.targetName),
-        delta: n(d.delta),
-        balance: n(d.balance),
-        itemsAdded: Array.isArray(d.items?.added) ? d.items.added.map(String) : [],
-        itemsRemoved: Array.isArray(d.items?.removed) ? d.items.removed.map(String) : [],
-        shards: n(d.shards),
-        fields: Array.isArray(d.fields) ? d.fields.map(String) : [],
-        text: str(d.text),
-        ref: str(d.ref),
-        authorType: str(d.author?.type),
-        authorId: str(d.author?.id),
-        authType: str(d.author?.authType),
-        flag: str(d.flag),
-        alert: d.alert === true
-    };
-}
 
 /** Код gRPC FAILED_PRECONDITION: запросу нужен индекс, которого ещё нет (или он строится). */
 const FAILED_PRECONDITION = 9;
@@ -219,8 +168,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     }
 
     // Счётчик на кнопке «Тревоги» и человеческие названия вещей для строк журнала.
+    // Сортировка нужна и подсчёту: индекс (alert, at) построен по убыванию at,
+    // без orderBy запрос требует другого индекса и падал — счётчик молча был 0.
     const [alertsCount, shop] = await Promise.all([
-        indexed(async () => (await col.where('alert', '==', true).where('at', '>=', since).count().get()).data().count, 0, missing),
+        indexed(async () => (await col.where('alert', '==', true).where('at', '>=', since).orderBy('at', 'desc').count().get()).data().count, 0, missing),
         firestoreAdmin.collection('shop_items').get()
     ]);
     const itemNames: Record<string, string> = {};

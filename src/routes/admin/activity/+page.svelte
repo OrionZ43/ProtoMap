@@ -6,12 +6,13 @@
 -->
 <script lang="ts">
     import { t } from 'svelte-i18n';
+    import { describeEntry as describe, kindLabel as label, QUOTED, PLAIN } from '$lib/admin/describe';
+    import type { Translate } from '$lib/admin/day';
     import type { PageData } from './$types';
 
     export let data: PageData;
 
     type Row = PageData['rows'][number];
-    type Translate = (key: string, options?: { values?: Record<string, string | number> }) => string;
 
     const GROUPS = ['economy', 'content', 'moderation', 'admin', 'profile', 'account', 'map'];
     const PERIODS = ['1', '7', '30', '180'];
@@ -52,57 +53,6 @@
         const query = `protoPayload.serviceName="firestore.googleapis.com"\nprotoPayload.request.writes.update.name:"users/${r.uid}"`;
         const range = `${new Date(r.at - 120_000).toISOString()}/${new Date(r.at + 60_000).toISOString()}`;
         return `https://console.cloud.google.com/logs/query;query=${encodeURIComponent(query)};timeRange=${encodeURIComponent(range)}?project=protomap-1e1db`;
-    }
-
-    // Незнакомый вид показываем как есть, а не сырым ключом перевода.
-    function label(kind: string, tr: Translate): string {
-        const key = `admin_activity.kinds.${kind}`;
-        const s = tr(key);
-        return s === key ? kind : s;
-    }
-
-    function fieldNames(fields: string[], tr: Translate): string {
-        const names = fields.map((f) => {
-            const key = `admin_activity.field_names.${f.split('.')[0]}`;
-            const s = tr(key);
-            return s === key ? f : s;
-        });
-        return [...new Set(names)].join(', ');
-    }
-
-    // Виды, где деталь лежит в ref: ставка, день бонуса, множитель, месяц.
-    const WITH_REF = new Set(['slots', 'coinflip', 'crash_bet', 'crash_cashout', 'plinko', 'duel', 'daily_bonus', 'referral_prize']);
-    // Виды, где в записи текст сообщения или причина — показываем в кавычках.
-    const QUOTED = new Set(['profile_comment', 'profile_comment_deleted', 'chat', 'channel_created', 'channel_deleted',
-        'channel_post', 'channel_post_deleted', 'channel_comment', 'channel_comment_deleted', 'ban', 'report',
-        'news_added', 'news_removed', 'news_changed']);
-    // Виды, где текст — короткая деталь без кавычек: город, роль, цена.
-    const PLAIN = new Set(['location_added', 'location_moved', 'location_removed', 'role', 'shop_added', 'shop_changed']);
-
-    function describe(r: Row, tr: Translate, items: Record<string, string>): string {
-        const say = (key: string, values: Record<string, string> = {}) => tr(`admin_activity.say.${key}`, { values });
-        const item = (id: string | null | undefined) => (id ? items[id] ?? id : '?');
-
-        // Действия админки сайта: сайт сам пишет, что сделано («изменил баланс», «бан: …»).
-        if (r.group === 'admin' && r.kind.startsWith('admin_') && r.text) {
-            return r.text.charAt(0).toUpperCase() + r.text.slice(1);
-        }
-
-        let base: string;
-        if (r.kind === 'purchase') base = say('purchase', { item: item(r.itemsAdded[0] ?? r.ref) });
-        else if (r.kind === 'admin_items') base = say('admin_items', { count: r.ref ?? String(r.itemsAdded.length) });
-        else if (r.kind === 'admin_migrate') base = say(r.ref === 'out' ? 'admin_migrate_out' : 'admin_migrate_in');
-        else if (r.kind === 'profile') base = say('profile', { fields: fieldNames(r.fields, tr) });
-        else if (r.kind === 'username') base = say('username', { change: r.text ?? '' });
-        else if (r.kind.startsWith('shop_')) base = say(r.kind, { item: item(r.ref) });
-        else if (r.kind.startsWith('channel_') && r.kind !== 'channel_created' && r.kind !== 'channel_deleted') {
-            base = say(r.kind, { channel: r.ref ?? '?' });
-        } else if (WITH_REF.has(r.kind) && r.ref) base = say(r.kind, { ref: r.ref });
-        else base = label(r.kind, tr);
-
-        if (r.text && QUOTED.has(r.kind)) return `${base}: ${tr('admin_activity.quote', { values: { text: r.text } })}`;
-        if (r.text && PLAIN.has(r.kind)) return `${base}: ${r.text}`;
-        return base;
     }
 
     function authorText(r: Row, tr: Translate): string {

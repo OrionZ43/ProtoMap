@@ -109,6 +109,10 @@
     // На /messages есть своя полноценная страница чата — не монтируем плавающий
     // виджет, иначе два DM-движка (страница + ChatWidget) конфликтуют и вешают вкладку.
     $: isMessagesPage = $page.url.pathname.startsWith('/messages');
+    // Админка — отдельное приложение со своей шапкой (src/routes/admin/+layout.svelte):
+    // навбар, футер, сезонные эффекты, заставку и виджет чата сайта на ней не рисуем.
+    // Окна (Modal), согласия и баннеры документов остаются — админка ими пользуется.
+    $: isAdminPage = $page.url.pathname.startsWith('/admin');
 
     $: seoData    = $page.data.seoData;
     $: hasCustomSeo = !!seoData;
@@ -158,7 +162,7 @@
         class:no-scroll-container={isMapPage}
     >
         <!-- Сезонные эффекты частиц -->
-        {#if seasonActiveInSession}
+        {#if seasonActiveInSession && !isAdminPage}
             {#if themeState === 'winter' || themeState === 'newyear'}
                 <Snowfall />
             {:else if themeState === 'anniversary'}
@@ -168,7 +172,7 @@
             {/if}
         {/if}
 
-        {#if !isBanned}
+        {#if !isBanned && !isAdminPage}
             <div class="side-panel left z-10">
                 <div class="v-text">{$t(`season.side.${themeState}.left`)}</div>
             </div>
@@ -178,7 +182,7 @@
         {/if}
 
         <div class="relative z-20 flex flex-col flex-grow">
-            {#if !isBanned}
+            {#if !isBanned && !isAdminPage}
                 <Navbar />
             {/if}
 
@@ -188,7 +192,7 @@
         </div>
 
         <div class="hidden lg:block">
-            {#if !isMapPage && !isBanned}
+            {#if !isMapPage && !isBanned && !isAdminPage}
                 <Footer />
             {/if}
         </div>
@@ -204,18 +208,20 @@
         {/if}
 
         {#if !isBanned}
-            {#if !isMessagesPage}
+            {#if !isMessagesPage && !isAdminPage}
                 <ChatWidget />
             {/if}
             <CookieBanner />
-            <SplashModal />
+            {#if !isAdminPage}
+                <SplashModal />
+            {/if}
             <!-- Уведомление о новой редакции документов. Было импортировано, но
                  не отрисовано, то есть не показывалось никому. Стоит после
                  гейта: пока согласие не дано, показывать нечего — гейт и так
                  перекрывает экран. -->
             <LegalUpdateBanner versions={$page.data.legalVersions} />
 
-            {#if !isMessagesPage}
+            {#if !isMessagesPage && !isAdminPage}
                 <button
                     class="chat-trigger-btn"
                     class:hidden={$chat.isOpen}

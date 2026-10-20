@@ -27,3 +27,9 @@ if (!getApps().length) {
 
 export const firestoreAdmin = admin.firestore();
 export const authAdmin = admin.auth();
+
+/**
+ * Realtime Database (europe-west1). Адрес — явно: в initializeApp он не задан.
+ * Функция, а не константа: при сборке без секретов база не нужна и не создаётся.
+ */
+export const rtdbAdmin = () => admin.app().database('https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app');

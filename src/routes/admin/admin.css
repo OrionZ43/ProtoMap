@@ -1,0 +1,432 @@
+/*
+ * Админка: общий вид по макету «Бриф + Бенто». Подключается в
+ * src/routes/admin/+layout.svelte.
+ *
+ * Все селекторы — внутри .adm: CSS, загруженный однажды, остаётся на странице
+ * и после перехода из админки на сайт, и не должен его задевать.
+ */
+
+.adm {
+	--bg: #0a0a0c;
+	--text: #f3f3f6;
+	--soft: #cbcbd5;
+	--muted: rgba(243, 243, 246, 0.6);
+	--dim: rgba(243, 243, 246, 0.38);
+	--line: rgba(255, 255, 255, 0.07);
+	--line-strong: rgba(255, 255, 255, 0.13);
+	--yellow: #fcee0a;
+	--amber: #ffb020;
+	--violet: #8b6cff;
+	--green: #5be49b;
+	--red: #ff6b81;
+	--display: 'Unbounded', sans-serif;
+	--body: 'Onest', system-ui, sans-serif;
+
+	position: relative;
+	min-height: 100vh;
+	color: var(--text);
+	font: 15px/1.55 var(--body);
+	-webkit-font-smoothing: antialiased;
+	background:
+		radial-gradient(760px 440px at 8% -10%, rgba(252, 238, 10, 0.1), transparent 70%),
+		radial-gradient(640px 480px at 100% 6%, rgba(139, 108, 255, 0.13), transparent 70%),
+		var(--bg);
+}
+
+/* Лёгкое зерно поверх фона. */
+.adm::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	opacity: 0.5;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+}
+
+.adm-wrap {
+	position: relative;
+	z-index: 1;
+	max-width: 1440px;
+	margin: 0 auto;
+	padding: 22px 32px 56px;
+}
+
+.adm .adm-i {
+	width: 18px;
+	height: 18px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.8;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	flex-shrink: 0;
+}
+
+/* ── Шапка ─────────────────────────────────────────────────────────────── */
+
+.adm-top {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.adm-logo {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font: 500 15px var(--display);
+	color: var(--text);
+	text-decoration: none;
+}
+
+.adm-mark {
+	width: 32px;
+	height: 32px;
+	border-radius: 10px;
+	background: var(--yellow);
+	display: grid;
+	place-items: center;
+}
+
+.adm-mark svg {
+	width: 22px;
+	height: 22px;
+}
+
+.adm-pills {
+	margin: 0 auto;
+	display: flex;
+	gap: 4px;
+	padding: 5px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid var(--line);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+}
+
+.adm-pills a {
+	padding: 7px 16px;
+	border-radius: 999px;
+	font-weight: 500;
+	font-size: 14px;
+	color: var(--muted);
+	text-decoration: none;
+	white-space: nowrap;
+	transition: color 0.2s ease, background 0.2s ease;
+}
+
+.adm-pills a:hover {
+	color: var(--text);
+}
+
+.adm-pills a.on {
+	background: var(--text);
+	color: #0a0a0c;
+}
+
+.adm-tools {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.adm-round {
+	width: 38px;
+	height: 38px;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	border: 1px solid var(--line);
+	background: rgba(255, 255, 255, 0.03);
+	color: var(--soft);
+	text-decoration: none;
+	transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.adm-round:hover {
+	color: var(--text);
+	border-color: var(--line-strong);
+}
+
+.adm-me {
+	width: 38px;
+	height: 38px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, var(--yellow), var(--amber));
+	color: #000;
+	display: grid;
+	place-items: center;
+	font: 600 14px var(--display);
+}
+
+.adm-main {
+	display: block;
+}
+
+/* ── Плитки главной (src/lib/components/admin/Tile.svelte) ──────────────── */
+
+/* Ячейка сетки: держит место, пока плитка разрастается или раскрыта в карточку. */
+.adm .tile-cell {
+	position: relative;
+	min-width: 0;
+	min-height: 0;
+}
+
+/*
+ * Пока плитка разрастается, ячейка поднимается над соседями и отбрасывает
+ * тень. Тень — фильтром на ячейке, а не box-shadow на плитке: плитку растит
+ * clip-path, и свою тень он обрезал бы — она появлялась бы рывком после
+ * анимации. drop-shadow берётся от уже обрезанной плитки и растёт вместе с ней.
+ */
+.adm .tile-cell.peeking-cell {
+	z-index: 30;
+	filter: drop-shadow(0 28px 34px rgba(0, 0, 0, 0.5));
+}
+
+.adm .tile {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	min-width: 0;
+	width: 100%;
+	height: 100%;
+	padding: 18px 20px;
+	border-radius: 24px;
+	border: 1px solid var(--line);
+	background: var(--tile-bg) no-repeat, var(--tile-base);
+	color: var(--text);
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+	overflow: hidden;
+	transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.adm .tile:hover {
+	transform: translateY(-2px);
+	border-color: var(--line-strong);
+	box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+}
+
+.adm .tile:focus-visible {
+	outline: 2px solid var(--yellow);
+	outline-offset: 3px;
+}
+
+/* Содержимое плитки — точка отсчёта для значков и графиков внутри неё. */
+.adm .tile-main {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+}
+
+/* Значок «раскрыть» — при наведении и фокусе; живёт в .tile-main, чтобы не прыгать при разрастании. */
+.adm .tile-more {
+	position: absolute;
+	top: -4px;
+	right: -6px;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	background: rgba(255, 255, 255, 0.08);
+	color: var(--text);
+	opacity: 0;
+	transform: scale(0.85);
+	transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.adm .tile-more svg {
+	width: 14px;
+	height: 14px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.adm .tile:hover .tile-more,
+.adm .tile:focus-visible .tile-more {
+	opacity: 1;
+	transform: none;
+}
+
+/*
+ * Превью при наведении: плитка выходит из ячейки поверх соседних, становится
+ * шире и выше. Знакомая часть (.tile-main) остаётся прежнего размера и на
+ * прежнем месте — открывается только новая область. Градиент фона растягивается
+ * на всю разросшуюся плитку вместе с ней (анимация background-size в Tile.svelte),
+ * поэтому раскрытая плитка того же цвета, что и свёрнутая. Растёт вверх —
+ * превью сверху (column-reverse), растёт влево — знакомая часть прижата вправо.
+ */
+.adm .tile.peeking {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: max(100%, 380px);
+	height: auto;
+	min-height: 100%;
+	transform: translateY(-2px);
+	border-color: var(--line-strong);
+	box-shadow: none;
+	background: var(--tile-bg) var(--peek-pos, top left) / 100% 100% no-repeat, var(--tile-base);
+}
+
+.adm .tile.peeking.anchor-right {
+	left: auto;
+	right: 0;
+}
+
+.adm .tile.peeking.anchor-bottom {
+	top: auto;
+	bottom: 0;
+	flex-direction: column-reverse;
+}
+
+.adm .tile.peeking .tile-main {
+	flex: none;
+	width: calc(var(--cell-w) - 42px);
+	height: calc(var(--cell-h) - 38px);
+}
+
+.adm .tile.peeking.anchor-right .tile-main {
+	align-self: flex-end;
+}
+
+.adm .tile-peek {
+	margin-top: 14px;
+	padding-top: 12px;
+	border-top: 1px solid var(--line);
+}
+
+.adm .tile.anchor-bottom .tile-peek {
+	margin: 0 0 14px;
+	padding: 0 0 12px;
+	border-top: 0;
+	border-bottom: 1px solid var(--line);
+}
+
+/* Место раскрытой плитки, пока открыта её карточка. */
+.adm .tile-slot {
+	cursor: default;
+	background: transparent;
+	border: 1px dashed var(--line-strong);
+	box-shadow: none;
+	transform: none;
+}
+
+@media (hover: none) {
+	.adm .tile-more {
+		opacity: 0.7;
+		transform: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.adm .tile,
+	.adm .tile:hover,
+	.adm .tile.peeking {
+		transition: none;
+		transform: none;
+	}
+}
+
+/*
+ * Цвета плиток: --tile-bg — градиент (всегда картинка, даже однотонный),
+ * --tile-base — основной цвет под ним. Карточка (Sheet.svelte) берёт те же
+ * два значения — она того же цвета, что плитка, из которой раскрылась.
+ */
+.adm .t-people {
+	--tile-bg: linear-gradient(135deg, #0f3332, #0b2221);
+	--tile-base: #0b2221;
+}
+.adm .t-teal {
+	--tile-bg: linear-gradient(150deg, #0e2a2b, #0a1b1c);
+	--tile-base: #0a1b1c;
+}
+.adm .t-graphite {
+	--tile-bg: linear-gradient(#131317, #131317);
+	--tile-base: #131317;
+}
+.adm .t-money {
+	--tile-bg: linear-gradient(150deg, #122a1b, #0b1a11);
+	--tile-base: #0b1a11;
+}
+.adm .t-gold {
+	--tile-bg: linear-gradient(150deg, #2a2210, #19140a);
+	--tile-base: #19140a;
+}
+.adm .t-shop {
+	--tile-bg: linear-gradient(150deg, #2e1713, #1c0e0b);
+	--tile-base: #1c0e0b;
+}
+.adm .t-violet {
+	--tile-bg: linear-gradient(150deg, #1f1836, #141022);
+	--tile-base: #141022;
+}
+.adm .t-plum {
+	--tile-bg: linear-gradient(150deg, #2a1424, #190c16);
+	--tile-base: #190c16;
+}
+.adm .t-red {
+	--tile-bg: linear-gradient(150deg, #2a1216, #1a0b0e);
+	--tile-base: #1a0b0e;
+}
+.adm .t-curve {
+	--tile-bg: linear-gradient(#111115, #111115);
+	--tile-base: #111115;
+}
+.adm .t-season {
+	--tile-bg: radial-gradient(420px 200px at 100% 0%, rgba(255, 138, 40, 0.22), transparent 70%);
+	--tile-base: #141009;
+	border-color: rgba(255, 160, 60, 0.14);
+}
+/* Внимание: тёмная, с тёплым свечением — жёлтый только акцентом. */
+.adm .t-alert {
+	--tile-bg: radial-gradient(360px 240px at 100% 0%, rgba(252, 238, 10, 0.16), transparent 65%);
+	--tile-base: #131209;
+	border-color: rgba(252, 238, 10, 0.16);
+}
+.adm .tile.t-alert .label {
+	color: rgba(252, 238, 10, 0.75);
+}
+.adm .t-alert.calm {
+	--tile-bg: radial-gradient(360px 240px at 100% 0%, rgba(91, 228, 155, 0.1), transparent 65%);
+	--tile-base: #0e130f;
+	border-color: rgba(91, 228, 155, 0.14);
+}
+.adm .tile.t-alert.calm .label {
+	color: rgba(91, 228, 155, 0.75);
+}
+
+/* На узком экране вкладки уходят под логотип и прокручиваются вбок. */
+@media (max-width: 980px) {
+	.adm-top {
+		flex-wrap: wrap;
+	}
+	.adm-tools {
+		margin-left: auto;
+	}
+	.adm-pills {
+		order: 3;
+		flex-basis: 100%;
+		margin: 6px 0 0;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+	.adm-pills::-webkit-scrollbar {
+		display: none;
+	}
+}
+
+@media (max-width: 600px) {
+	.adm-wrap {
+		padding: 16px 16px 48px;
+	}
+}
