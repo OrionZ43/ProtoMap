@@ -6,6 +6,7 @@ import { clearMapCache } from './mapCache';
 import { PLINKO_MIN_BET, PLINKO_MAX_BALLS, PLINKO_PRIZE_ITEM, PLINKO_PRIZE_SLOTS, plinkoMaxBet, plinkoPayout, dropBall, isPlinkoPrizeOpen, isPlinkoOpen } from './plinko';
 import { isOnSale } from './shopRules';
 import { econOp } from './activity/log';
+import { dayKey as minskDayKey, dayStart as minskDayStart, latestBrief, makeBrief } from './activity/brief';
 
 import { onRequest } from "firebase-functions/v2/https";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -2499,3 +2500,30 @@ async function resolveUniqueUsername(base: string): Promise<string> {
     return `u_${db.collection("users").doc().id.substring(0, 12)}`;
 }
 export { toggle2FA, send2FACode, verify2FACode } from './twoFactorAuth';
+
+// ===================================================================
+// Сводка дня от Gemini для главной админки (src/routes/admin/+page.svelte):
+// по кнопке «Обновить» и сама, когда последней сводке больше часа. Что уходит
+// в Gemini и как хранится — activity/brief.ts.
+// ===================================================================
+export const refreshAdminBrief = onCall({ timeoutSeconds: 120 }, async (request) => {
+    if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+    await assertNotBanned(request);
+    assertEmailVerified(request.auth);
+
+    const uid = request.auth.uid;
+    if (!(await db.collection('admins').doc(uid).get()).exists) {
+        throw new HttpsError('permission-denied', 'Только для админов.');
+    }
+
+    const now = Date.now();
+    // Сводку только что написали (вторая вкладка, двойной щелчок) — отдаём её, не тратя запрос к Gemini.
+    const last = await latestBrief(minskDayKey(now));
+    if (last && last.scope === 'today' && now - last.at < 2 * 60_000) return last;
+
+    await checkGlobalRateLimit(uid, 'admin_brief', 10, 60 * 60 * 1000);
+    const brief = await makeBrief(minskDayStart(now), now, 'today');
+    if (!brief) throw new HttpsError('unavailable', 'Gemini не ответил — попробуйте позже.');
+    return brief;
+});

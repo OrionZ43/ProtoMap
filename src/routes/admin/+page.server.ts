@@ -108,6 +108,19 @@ export const load: PageServerLoad = async ({ locals }) => {
     const lastDay = Timestamp.fromMillis(now - DAY);
     const weekAgo = Timestamp.fromMillis(now - WEEK * DAY);
 
+    // Сводка дня от Gemini — пишут её функции (functions/src/activity/brief.ts):
+    // в 21:00 вместе с дайджестом и по просьбе этой страницы (refreshAdminBrief).
+    const brief = await safe('сводка Gemini', async () => {
+        const b = (await firestoreAdmin.collection('admin_daily').doc(dayKey(now)).get()).get('brief');
+        if (!b || typeof b.ru !== 'string') return null;
+        return {
+            ru: b.ru as string,
+            en: typeof b.en === 'string' ? (b.en as string) : (b.ru as string),
+            at: (b.at?.toMillis?.() as number | undefined) ?? 0,
+            scope: (b.scope === 'day' ? 'day' : 'today') as 'day' | 'today'
+        };
+    }, null);
+
     const [todayRows, pastWeek, visits, newWeek, total, newcomerDocs, alertsCount, alerts, feed, bank, shop] = await Promise.all([
         safe('журнал за сегодня', () => entriesBetween(todayStart), [] as ActivityRow[]),
         safe('итоги прошлых дней',
@@ -214,6 +227,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     return {
         now,
         name: locals.user.username ?? '',
+        brief,
         today,
         week,
         people: {

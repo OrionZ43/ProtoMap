@@ -7,7 +7,8 @@
     (Tile.svelte → Sheet.svelte). Данные — +page.server.ts, подсчёты — $lib/admin/day.
 -->
 <script lang="ts">
-    import { tick } from 'svelte';
+    import { onMount, tick } from 'svelte';
+    import { fade } from 'svelte/transition';
     import { t, locale } from 'svelte-i18n';
     import { composeBrief, curvePath, minskHour, segments } from '$lib/admin/day';
     import { describeEntry, kindLabel } from '$lib/admin/describe';
@@ -64,7 +65,33 @@
     $: hour = minskHour(data.now);
     $: part = hour < 5 ? 'night' : hour < 12 ? 'morning' : hour < 18 ? 'day' : hour < 23 ? 'evening' : 'night';
     $: greeting = segments($t(`admin_home.greeting.${part}`, { values: { name: data.name } }));
-    $: brief = segments(composeBrief({
+
+    // ── Сводка: от Gemini (functions/src/activity/brief.ts), пока её нет — по шаблону ──
+    // Старше часа или нет совсем — страница сама просит свежую.
+    const BRIEF_STALE = 60 * 60_000;
+    let ai = data.brief;
+    let briefState: 'idle' | 'loading' | 'failed' = 'idle';
+
+    async function refreshBrief() {
+        if (briefState === 'loading') return;
+        briefState = 'loading';
+        try {
+            const [{ functions }, { httpsCallable }] = await Promise.all([import('$lib/firebase'), import('firebase/functions')]);
+            const res = await httpsCallable(functions, 'refreshAdminBrief')();
+            ai = res.data as typeof ai;
+            briefState = 'idle';
+        } catch (e) {
+            console.warn('[admin] Сводка Gemini не получилась:', e);
+            briefState = 'failed';
+        }
+    }
+
+    onMount(() => {
+        if (!ai || Date.now() - ai.at > BRIEF_STALE) refreshBrief();
+    });
+
+    $: aiText = ai ? ($locale?.startsWith('en') ? ai.en : ai.ru) : null;
+    $: brief = segments(aiText ?? composeBrief({
         visited: data.people.visited,
         online: data.people.online,
         stats: data.today,
@@ -124,10 +151,25 @@
 <section class="hero">
     <div class="date">{dateLine} · {f.clock(data.now)}</div>
     <h1>{#each greeting as p}{#if p.mark}<b>{p.text}</b>{:else}{p.text}{/if}{/each}</h1>
-    <p class="brief">{#each brief as p}{#if p.mark}<mark>{p.text}</mark>{:else}{p.text}{/if}{/each}</p>
-    <div class="by">
-        <svg class="adm-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /></svg>
-        {$t('admin_home.brief.source')}
+    {#key aiText ?? 'template'}
+        <p class="brief" in:fade={{ duration: 450 }}>{#each brief as p}{#if p.mark}<mark>{p.text}</mark>{:else}{p.text}{/if}{/each}</p>
+    {/key}
+    <div class="by" aria-live="polite">
+        {#if ai && aiText}
+            <span class="ai">
+                <svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z" /><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" /></svg>
+                {$t('admin_home.brief.ai_by')}
+            </span>
+            <span>{$t(ai.scope === 'day' ? 'admin_home.brief.ai_day' : 'admin_home.brief.ai_today', { values: { time: f.when(ai.at, data.now) } })}</span>
+        {:else}
+            <svg class="adm-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /></svg>
+            {$t('admin_home.brief.source')}
+        {/if}
+        <button type="button" class="refresh" on:click={refreshBrief} disabled={briefState === 'loading'}>
+            <svg class="adm-i" class:spin={briefState === 'loading'} viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36" /><path d="M21 3v6h-6" /></svg>
+            {briefState === 'loading' ? $t('admin_home.brief.writing') : $t('admin_home.brief.refresh')}
+        </button>
+        {#if briefState === 'failed'}<span class="failed">{$t('admin_home.brief.failed')}</span>{/if}
     </div>
 </section>
 
@@ -630,7 +672,17 @@
     h1 b { font-weight: 500; }
     .brief { margin: 0; max-width: 1000px; font-size: 18.5px; line-height: 1.6; color: var(--soft); }
     .brief mark { color: var(--text); background: linear-gradient(transparent 63%, rgba(252, 238, 10, .26) 63%); padding: 0 2px; }
-    .by { display: flex; align-items: center; gap: 8px; margin-top: 12px; color: var(--muted); font-size: 13px; }
+    .by { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; margin-top: 14px; color: var(--muted); font-size: 13px; }
+    .ai { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 5px 9px; border-radius: 999px; color: #d9d0ff; background: rgba(139, 108, 255, .14); border: 1px solid rgba(139, 108, 255, .28); }
+    .ai .star { width: 15px; height: 15px; fill: #b8a6ff; }
+    .refresh { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; transition: color .2s ease, border-color .2s ease; }
+    .refresh:hover:not(:disabled) { color: var(--text); border-color: var(--line-strong); }
+    .refresh:disabled { cursor: default; color: #b8a6ff; }
+    .refresh .adm-i { width: 14px; height: 14px; }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .failed { color: var(--dim); }
+    @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
 
     /* ── Разделы ── */
     .board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); gap: 28px; align-items: start; }

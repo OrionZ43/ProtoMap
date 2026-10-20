@@ -253,6 +253,12 @@ const ASK_BUDGET: Budget = { attemptMs: 30_000, totalMs: 50_000 };
  */
 const TRANSCRIBE_BUDGET: Budget = { attemptMs: 45_000, totalMs: 120_000 };
 
+/**
+ * Служебные тексты (сводка админки, functions/src/activity/brief.ts) никто не
+ * ждёт в вебхуке: сводку просит страница или расписание, поэтому времени больше.
+ */
+const SERVICE_BUDGET: Budget = { attemptMs: 45_000, totalMs: 100_000 };
+
 /** Меньше этого на попытку не тратим — всё равно не успеет. */
 const MIN_ATTEMPT_MS = 3_000;
 
@@ -568,6 +574,64 @@ export type AskResult =
      * `refused` — модель отказалась отвечать.
      */
     | { ok: false; reason: 'no_key' | 'limited' | 'exhausted' | 'refused' | 'empty' | 'api_failed'; detail?: string };
+
+export type JsonResult =
+    | { ok: true; data: any; model: string }
+    | { ok: false; reason: 'no_key' | 'http' | 'empty' | 'bad_json' | 'timeout' | 'api_failed'; detail?: string };
+
+/**
+ * Ответ строго в виде JSON по схеме — для служебных текстов (сводка админки,
+ * functions/src/activity/brief.ts). Модель и «размышления» — как у вопросов
+ * боту (ASK_MODEL, ASK_THINKING), время — SERVICE_BUDGET.
+ *
+ * Схема — подмножество OpenAPI, которое принимает Gemini (`responseSchema`):
+ * так модель не завернёт ответ в ```json и не добавит пояснений.
+ */
+export async function generateJson(system: string, user: string, schema: object, tag: string): Promise<JsonResult> {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        console.warn(`[${tag}] GEMINI_API_KEY не задан`);
+        return { ok: false, reason: 'no_key' };
+    }
+
+    const startedAt = Date.now();
+    try {
+        const { response, model } = await generate({
+            systemInstruction: { parts: [{ text: system }] },
+            contents: [{ role: 'user', parts: [{ text: user }] }],
+            generationConfig: {
+                thinkingConfig: ASK_THINKING,
+                maxOutputTokens: 8192,
+                responseMimeType: 'application/json',
+                responseSchema: schema,
+            },
+            safetySettings: SAFETY_SETTINGS,
+        }, apiKey, tag, SERVICE_BUDGET, ASK_MODEL);
+
+        if (!response.ok) {
+            const body = await response.text().catch(() => '');
+            const detail = failureDetail(response.status, model, body);
+            console.error(`[${tag}] ${detail}`);
+            return { ok: false, reason: 'http', detail };
+        }
+
+        const data = await response.json();
+        const text = candidateText(data?.candidates?.[0]);
+        const usage = data?.usageMetadata;
+        console.log(`[${tag}] ${model}: ${((Date.now() - startedAt) / 1000).toFixed(1)} с · размышления ` +
+            `${usage?.thoughtsTokenCount ?? 0} · ответ ${usage?.candidatesTokenCount ?? '?'} ток.`);
+        if (!text) return { ok: false, reason: 'empty', detail: String(data?.candidates?.[0]?.finishReason ?? '') };
+        try {
+            return { ok: true, data: JSON.parse(text), model };
+        } catch {
+            return { ok: false, reason: 'bad_json', detail: text.slice(0, 200) };
+        }
+    } catch (e) {
+        const timedOut = (e as any)?.name === 'TimeoutError';
+        console.error(`[${tag}] ${timedOut ? 'Gemini не ответил вовремя' : 'Ошибка запроса к Gemini'}:`, e);
+        return { ok: false, reason: timedOut ? 'timeout' : 'api_failed', detail: e instanceof Error ? e.message : String(e) };
+    }
+}
 
 /**
  * Ответ на текстовый запрос; характер бота задаёт `persona` (системная

@@ -1046,7 +1046,13 @@
 			"purchases_top": ", mostly “{item}”",
 			"alerts": "[[{count, plural, one {# alert} other {# alerts}}]] in the last 24 hours — check the journal",
 			"alerts_none": "No alerts in the last 24 hours",
-			"source": "Compiled from today’s activity journal"
+			"source": "Compiled from today’s activity journal",
+			"ai_by": "Summary by Gemini",
+			"ai_today": "today · {time}",
+			"ai_day": "last 24 hours · {time}",
+			"refresh": "Refresh",
+			"writing": "Gemini is writing…",
+			"failed": "Gemini didn’t answer — this is the template summary"
 		},
 		"tiles": {
 			"attention": "Needs attention",

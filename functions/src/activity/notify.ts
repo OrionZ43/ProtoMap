@@ -16,6 +16,7 @@ import * as admin from "firebase-admin";
 import {Timestamp} from "firebase-admin/firestore";
 import {ORION_TG_ID} from "../telegram/core/bot";
 import {ACTIVITY, FIRESTORE_REGION} from "./log";
+import {briefHtml, makeBrief} from "./brief";
 
 const db = () => admin.firestore();
 
@@ -287,16 +288,36 @@ export function digestText(entries: Doc[], bank: number | null): string {
   ].join("\n");
 }
 
-/** Каждый вечер — что было за сутки. */
+/**
+ * Сводку Gemini — под заголовок дайджеста, курсивом.
+ * @param {string} digest текст дайджеста (первая строка — заголовок)
+ * @param {string} brief сводка Gemini
+ * @return {string} HTML
+ */
+export function withBrief(digest: string, brief: string): string {
+  const [title, ...rest] = digest.split("\n");
+  return [title, `<i>${briefHtml(brief)}</i>`, "", ...rest].join("\n");
+}
+
+/**
+ * Каждый вечер — что было за сутки. Сверху — сводка Gemini (brief.ts); она же
+ * ложится на главную админки. Не ответил Gemini — дайджест уходит без неё.
+ */
 export const activityDigest = onSchedule(
-  {schedule: "every day 21:00", timeZone: "Europe/Minsk", secrets: ["TELEGRAM_BOT_TOKEN"]},
+  {schedule: "every day 21:00", timeZone: "Europe/Minsk", secrets: ["TELEGRAM_BOT_TOKEN"], timeoutSeconds: 180},
   async () => {
-    const since = Timestamp.fromMillis(Date.now() - 86_400_000);
-    const [snap, bankDoc] = await Promise.all([
+    const now = Date.now();
+    const since = Timestamp.fromMillis(now - 86_400_000);
+    const [snap, bankDoc, brief] = await Promise.all([
       db().collection(ACTIVITY).where("at", ">=", since).orderBy("at").get(),
       db().collection("system").doc("casino_stats").get(),
+      makeBrief(now - 86_400_000, now, "day").catch((e) => {
+        console.error("[DIGEST] Сводка Gemini не получилась:", e);
+        return null;
+      }),
     ]);
     const bank = Number(bankDoc.get("bank_balance"));
-    await sendToOrion(digestText(snap.docs.map((d) => d.data()), Number.isFinite(bank) ? bank : null));
+    const digest = digestText(snap.docs.map((d) => d.data()), Number.isFinite(bank) ? bank : null);
+    await sendToOrion(brief ? withBrief(digest, brief.ru) : digest);
   }
 );
