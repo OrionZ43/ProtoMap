@@ -95,20 +95,36 @@ const MODEL = process.env.GEMINI_TRANSCRIBE_MODEL || 'gemini-3.8-flash';
  * запросов. Google цифр не публикует; на его форуме разработчик пишет о 20
  * запросах в день у 3.8 и 500 у Flash-Lite (не подтверждено Google, но с
  * нашим 429 сходится). Вопросов в чате больше, чем голосовых, поэтому им —
- * модель с большей квотой. «Размышления» `low` она принимает (по умолчанию у
- * неё `minimal`).
+ * модель с большей квотой. «Размышления» она принимает на всех уровнях, от
+ * `minimal` (её умолчание) до `high` — см. ASK_THINKING.
  */
 const ASK_MODEL = process.env.GEMINI_ASK_MODEL || 'gemini-3.5-flash-lite';
 
 /**
- * «Размышления» — на самом низком уровне, который 3.8 принимает. По умолчанию
- * `medium`, это лишние секунды на каждый ответ; `minimal` у 3.8 — ошибка 400.
+ * «Размышления» расшифровки — на самом низком уровне, который 3.8 принимает.
+ * По умолчанию `medium`, это лишние секунды на каждое голосовое; `minimal`
+ * у 3.8 — ошибка 400.
  *
  * Температуры в запросах нет намеренно. Для моделей Gemini 3 Google советует
  * оставлять её по умолчанию: ниже 1.0 возможны зацикливания, а в расшифровке
  * это повторяющийся текст. Для 3.8 прямо сказано её убрать. Раньше стояла 0.1.
  */
-const THINKING = { thinkingLevel: 'low' };
+const TRANSCRIBE_THINKING = { thinkingLevel: 'low' };
+
+/**
+ * «Размышления» вопросов — `high`, самый высокий уровень. На `low` бот заметно
+ * тупил, и Орион попросил, чтобы он думал больше (2026-10-20).
+ *
+ * Уровень — потолок, а не норма: на «привет» модель думает мало, на задачку —
+ * дольше. Платим временем ответа, а не квотой: дневная квота бесплатного
+ * тарифа считает запросы, токены размышлений её не тратят. Если ответы станут
+ * долгими — `medium`; сколько уходит на каждый ответ, пишет в журнал askGemini.
+ *
+ * Flash-Lite и запасная 3.6 принимают все четыре уровня, от `minimal` до `high`
+ * (таблица «Controlling thinking», ai.google.dev/gemini-api/docs/thinking).
+ * Переопределяется переменной `GEMINI_ASK_THINKING`.
+ */
+const ASK_THINKING = { thinkingLevel: process.env.GEMINI_ASK_THINKING || 'high' };
 
 /**
  * Фильтры безопасности — на минимум. В чате люди ругаются и шутят как хотят:
@@ -222,9 +238,12 @@ interface Budget {
  * обрывает такой запрос через 60 секунд. Без ограничения перегруженная 3.8
  * держала запрос дольше минуты: Cloud Run обрывал вебхук, Telegram присылал
  * то же сообщение снова, и бот ответил на один вопрос несколько раз.
- * Две повисшие модели по 15 секунд укладываются в 40 с запасом.
+ *
+ * На `high` (ASK_THINKING) трудный вопрос думается дольше, поэтому попытке
+ * дано 30 секунд, а всему вместе — 50. Последние десять секунд до обрыва —
+ * на холодный старт экземпляра и отправку ответа.
  */
-const ASK_BUDGET: Budget = { attemptMs: 15_000, totalMs: 40_000 };
+const ASK_BUDGET: Budget = { attemptMs: 30_000, totalMs: 50_000 };
 
 /**
  * Расшифровка длинного голосового сама идёт десятки секунд, поэтому ждём
@@ -476,7 +495,7 @@ export async function transcribeVoice(
                 ],
             },
         ],
-        generationConfig: { thinkingConfig: THINKING },
+        generationConfig: { thinkingConfig: TRANSCRIBE_THINKING },
         safetySettings: SAFETY_SETTINGS,
     };
 
@@ -554,9 +573,10 @@ export type AskResult =
  * Ответ на текстовый запрос; характер бота задаёт `persona` (системная
  * инструкция).
  *
- * `maxOutputTokens` считает и «размышления»: на уровне `low` их немного, и 2048
- * с запасом хватает на ответ в пару предложений. Упрётся — придёт finishReason
- * MAX_TOKENS и пустой или обрезанный текст.
+ * `maxOutputTokens` считает и «размышления». На `high` их может набраться
+ * несколько тысяч, и прежних 2048 (стояли при `low`) не хватило бы: упрётся —
+ * придёт finishReason MAX_TOKENS и пустой ответ. Длину самого ответа держит
+ * характер («одно-три предложения»), а не этот потолок.
  */
 export async function askGemini(persona: string, request: string): Promise<AskResult> {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -565,11 +585,12 @@ export async function askGemini(persona: string, request: string): Promise<AskRe
         return { ok: false, reason: 'no_key' };
     }
 
+    const startedAt = Date.now();
     try {
         const { response, model } = await generate({
             systemInstruction: { parts: [{ text: persona }] },
             contents: [{ role: 'user', parts: [{ text: request }] }],
-            generationConfig: { thinkingConfig: THINKING, maxOutputTokens: 2048 },
+            generationConfig: { thinkingConfig: ASK_THINKING, maxOutputTokens: 8192 },
             safetySettings: SAFETY_SETTINGS,
         }, apiKey, 'ASK', ASK_BUDGET, ASK_MODEL);
 
@@ -586,11 +607,19 @@ export async function askGemini(persona: string, request: string): Promise<AskRe
         const data = await response.json();
         const candidate = data?.candidates?.[0];
         const text = candidateText(candidate);
-        if (text) return { ok: true, text };
+        // Цена размышлений: без этой строки успешный ответ в журнале не виден
+        // вовсе, и подбирать ASK_THINKING было бы не по чему.
+        const usage = data?.usageMetadata;
+        const cost = `${((Date.now() - startedAt) / 1000).toFixed(1)} с · размышления ` +
+            `${usage?.thoughtsTokenCount ?? 0} · ответ ${usage?.candidatesTokenCount ?? '?'} ток.`;
+        if (text) {
+            console.log(`[ASK] ${model}: ${cost}`);
+            return { ok: true, text };
+        }
 
         // Без кандидатов — заблокирован сам запрос, причина тогда в promptFeedback.
         const why = String(candidate?.finishReason ?? data?.promptFeedback?.blockReason ?? '');
-        console.warn(`[ASK] Пустой ответ: ${why}`);
+        console.warn(`[ASK] Пустой ответ: ${why} · ${model}: ${cost}`);
         return { ok: false, reason: REFUSAL_REASONS.includes(why) ? 'refused' : 'empty', detail: why };
     } catch (e) {
         const timedOut = (e as any)?.name === 'TimeoutError';
