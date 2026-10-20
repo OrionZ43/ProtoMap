@@ -96,6 +96,24 @@ function who(uid: unknown, name: unknown): string {
 }
 
 /**
+ * Ссылка на журнал аудита Firestore по документу пользователя и минуте
+ * события. Триггер знает автора записи не всегда точно: запись из приложения
+ * может прийти от служебного аккаунта правил Firebase, а uid человека в
+ * журнале аудита лежит в thirdPartyPrincipal.
+ * @param {Doc} e запись журнала
+ * @return {string | null} ссылка или null
+ */
+export function auditLink(e: Doc): string | null {
+  const at = e.at?.toDate ? e.at.toDate().getTime() : null;
+  if (!e.uid || at === null) return null;
+  const query = "protoPayload.serviceName=\"firestore.googleapis.com\"\n" +
+    `protoPayload.request.writes.update.name:"users/${e.uid}"`;
+  const range = `${new Date(at - 120_000).toISOString()}/${new Date(at + 60_000).toISOString()}`;
+  return "https://console.cloud.google.com/logs/query;query=" + encodeURIComponent(query) +
+    ";timeRange=" + encodeURIComponent(range) + "?project=protomap-1e1db";
+}
+
+/**
  * Текст уведомления по записи журнала.
  * @param {Doc} e запись
  * @return {string} HTML для Telegram
@@ -134,6 +152,8 @@ export function alertText(e: Doc): string {
 
   const author = authorLine(e.author);
   if (author) lines.push(author);
+  const audit = e.flag === "direct" ? auditLink(e) : null;
+  if (audit) lines.push(`<a href="${audit}">Кто именно — журнал аудита</a>`);
   lines.push(`${at} · <a href="${SITE}/admin/activity?alerts=1">журнал</a>`);
   return lines.join("\n");
 }

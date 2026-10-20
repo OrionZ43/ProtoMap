@@ -921,7 +921,8 @@
 			"items_removed": "items: −{list}",
 			"shards": "shards {value}",
 			"fields": "fields: {list}",
-			"alert": "Alert"
+			"alert": "Alert",
+			"audit": "who exactly — audit log"
 		},
 		"flags": {
 			"direct": "direct write",

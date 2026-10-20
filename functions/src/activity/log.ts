@@ -82,16 +82,34 @@ export interface Entry {
 }
 
 /**
+ * Наши сервисные аккаунты: функции (compute), сайт (firebase-adminsdk),
+ * функции 1-го поколения (App Engine).
+ *
+ * Сервер узнаём по почте, а не по authType. Типы firebase-functions обещают
+ * для записи через Admin SDK authType "service_account", а на живых событиях
+ * (20.10.2026: бонус от getDailyBonus, правка баланса из админки сайта) он
+ * приходил как "unknown" с почтой сервисного аккаунта в authId — и всё
+ * серверное помечалось записью в обход сервера.
+ */
+const OWN_SERVICE_ACCOUNTS = new RegExp(
+  "^(?:[a-z0-9-]+@protomap-1e1db\\.iam\\.gserviceaccount\\.com" +
+  "|779680752096-compute@developer\\.gserviceaccount\\.com" +
+  "|protomap-1e1db@appspot\\.gserviceaccount\\.com)$");
+
+/**
  * Автор записи по контексту авторизации события Firestore.
+ * Сервер — только наш сервисный аккаунт; чужой сервисный аккаунт с правом
+ * записи в базу — тоже повод разобраться, поэтому он «напрямую».
  * @param {string | undefined} authType тип принципала из события
  * @param {string | undefined} authId идентификатор принципала из события
  * @return {Author} классификация автора
  */
 export function authorOf(authType?: string, authId?: string): Author {
   const type = String(authType ?? "unknown");
-  if (type === "service_account") return {type: "server", authType: type, id: authId ?? null};
-  if (type === "system") return {type: "system", authType: type, id: authId ?? null};
-  return {type: "direct", authType: type, id: authId ?? null};
+  const id = authId ?? null;
+  if (type === "system") return {type: "system", authType: type, id};
+  if (id !== null && OWN_SERVICE_ACCOUNTS.test(id)) return {type: "server", authType: type, id};
+  return {type: "direct", authType: type, id};
 }
 
 /**
@@ -266,6 +284,9 @@ export function describeUserChange(uid: string, before: Data, after: Data, autho
     const big = Math.abs(delta) >= BIG_DELTA;
     const kind = direct ? "direct" : marked ? String(op?.kind) : "server_unknown";
     const flag = direct ? "direct" : !marked && author.type === "server" ? "unexplained" : big ? "big" : null;
+    // Правку из админки сайт присылает своей записью с тревогой
+    // (src/lib/server/activity.ts) — второе уведомление о ней не нужно.
+    const fromAdminPanel = marked && String(op?.kind).startsWith("admin_");
     const rest = changed.filter((f) => !ECONOMY_FIELDS.includes(f));
     return {
       group: "economy", kind, uid, username,
@@ -275,7 +296,7 @@ export function describeUserChange(uid: string, before: Data, after: Data, autho
       fields: rest.length ? rest : null,
       ref: marked ? op?.ref ?? null : null,
       author, flag,
-      alert: direct || big,
+      alert: direct || (big && !fromAdminPanel),
     };
   }
 

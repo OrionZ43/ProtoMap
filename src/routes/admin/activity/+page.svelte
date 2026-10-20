@@ -32,6 +32,15 @@
         return `/admin/activity?${query}`;
     }
 
+    // Журнал аудита Firestore по документу пользователя и минуте события — там
+    // точный автор записи (functions/src/activity/notify.ts, auditLink).
+    function auditLink(r: { uid: string | null; at: number }): string | null {
+        if (!r.uid) return null;
+        const query = `protoPayload.serviceName="firestore.googleapis.com"\nprotoPayload.request.writes.update.name:"users/${r.uid}"`;
+        const range = `${new Date(r.at - 120_000).toISOString()}/${new Date(r.at + 60_000).toISOString()}`;
+        return `https://console.cloud.google.com/logs/query;query=${encodeURIComponent(query)};timeRange=${encodeURIComponent(range)}?project=protomap-1e1db`;
+    }
+
     // Незнакомый вид записи показываем как есть, а не сырым ключом перевода.
     function kindLabel(kind: string, translate: (key: string) => string): string {
         const key = `admin_activity.kinds.${kind}`;
@@ -186,6 +195,9 @@
                     <span class="author author-{r.authorType ?? 'server'}">{$t(`admin_activity.author.${r.authorType ?? 'server'}`)}</span>
                     {#if r.authorType === 'direct'}
                         <code class="author-id">{[r.authType, r.authorId].filter(Boolean).join(' · ')}</code>
+                        {#if r.flag === 'direct' && auditLink(r)}
+                            <a class="audit" href={auditLink(r)} target="_blank" rel="noopener noreferrer">{$t('admin_activity.feed.audit')}</a>
+                        {/if}
                     {/if}
                 </div>
             </article>
@@ -314,6 +326,7 @@
     .author { font-size: 0.75rem; color: #64748b; }
     .author-direct { color: #ff3b5c; font-weight: 700; }
     .author-id { font-size: 0.7rem; color: #fca5a5; max-width: 220px; overflow-wrap: anywhere; text-align: right; }
+    .audit { font-size: 0.75rem; color: #00f3ff; }
 
     .empty { display: flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 2rem; color: #64748b; }
     .empty svg { width: 22px; height: 22px; }

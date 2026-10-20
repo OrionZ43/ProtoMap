@@ -921,7 +921,8 @@
 			"items_removed": "вещи: −{list}",
 			"shards": "осколки {value}",
 			"fields": "поля: {list}",
-			"alert": "Тревога"
+			"alert": "Тревога",
+			"audit": "кто именно — журнал аудита"
 		},
 		"flags": {
 			"direct": "в обход сервера",
