@@ -571,7 +571,7 @@
                     {#if partnerPresence.state === 'online'}
                         <div class="presence-indicator online">[ ONLINE ]</div>
                     {:else if partnerPresence.last_changed}
-                        <div class="presence-indicator offline">Был(а) в сети: {formatRelativeTime(partnerPresence.last_changed)}</div>
+                        <div class="presence-indicator offline">{$t('profile.last_seen', { values: { time: formatRelativeTime(partnerPresence.last_changed) } })}</div>
                     {/if}
                 {/if}
 
@@ -590,7 +590,7 @@
                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                             <circle cx="12" cy="10" r="3" />
                         </svg>
-                        Открыть на карте
+                        {$t('profile.open_on_map')}
                     </a>
                 {/if}
 
@@ -657,7 +657,7 @@
                                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                             </svg>
-                            <span>НАПИСАТЬ</span>
+                            <span>{$t('profile.write')}</span>
                         </button>
                     {/if}
                 </div>
@@ -673,7 +673,7 @@
         </div>
 
         <div class="comments-container max-w-4xl mx-auto mt-12 pb-32">
-    <h4 class="font-display text-2xl text-cyber-yellow mb-6 text-center tracking-widest">// КОММЕНТАРИИ</h4>
+    <h4 class="font-display text-2xl text-cyber-yellow mb-6 text-center tracking-widest">// {$t('profile.comments_title')}</h4>
 
     {#if $userStore.user && data.blockedViewer}
         <p class="blocked-note mb-8">{$t('blocklist.you_are_blocked')}</p>
@@ -681,7 +681,7 @@
         <form on:submit|preventDefault={handleAddComment} class="comment-input-box cyber-panel p-4 mb-8">
             {#if replyingToId}
                 <div class="reply-badge" transition:slide>
-                    <span>Ответ для: <strong class="text-white">{replyingToName}</strong></span>
+                    <span>{$t('profile.reply_to')}: <strong class="text-white">{replyingToName}</strong></span>
                     <button type="button" on:click={cancelReply} class="text-red-400 hover:text-white ml-2">✕</button>
                 </div>
             {/if}
@@ -694,7 +694,7 @@
                     <textarea
                         name="commentText"
                         bind:value={commentText}
-                        placeholder={replyingToId ? `Ответ для @${replyingToName}...` : $t('profile.comment_placeholder')}
+                        placeholder={replyingToId ? $t('profile.reply_placeholder', { values: { name: replyingToName } }) : $t('profile.comment_placeholder')}
                         class="input-field w-full"
                         rows="2"
                     ></textarea>
@@ -1560,9 +1560,9 @@
         display: inline-flex;
         align-items: center;
         gap: 0.55rem;
-        font-family: 'Chakra Petch', 'Russo One', monospace;
+        font-family: var(--font-display); /* русская подпись — Russo One, только Regular */
         font-size: 0.95rem;
-        font-weight: 700;
+        font-weight: 400;
         letter-spacing: 0.18em;
         color: var(--cyber-yellow, #fcee0a);
         background: transparent;

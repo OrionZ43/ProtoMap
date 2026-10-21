@@ -206,7 +206,7 @@
                 {/if}
             </div>
             <!-- Сообщения -->
-            <a href="/messages" class="icon-btn messages-btn" title="Сообщения">
+            <a href="/messages" class="icon-btn messages-btn" title={$t('menu.messages')}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
@@ -333,7 +333,7 @@
 
                 <a href="/messages" class="mobile-link text-cyber-cyan border-l-cyan-400">
                     <svg class="ml-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    Сообщения
+                    {$t('menu.messages')}
                     {#if $totalUnread > 0}
                         <span class="ml-badge">{$totalUnread > 99 ? '99+' : $totalUnread}</span>
                     {/if}

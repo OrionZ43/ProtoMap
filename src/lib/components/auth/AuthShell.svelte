@@ -1,5 +1,6 @@
 <script lang="ts">
     import NetworkCanvas from './NetworkCanvas.svelte';
+    import { t } from 'svelte-i18n';
 
     /**
      * Общий каркас страниц входа и регистрации.
@@ -36,11 +37,11 @@
             {#if protogens !== null}
                 <p class="showcase__count font-display">{protogens}</p>
                 <p class="showcase__caption">
-                    {protogens === 1 ? 'протоген уже на карте' : 'протогенов уже на карте'}
+                    {$t('auth.showcase_protogens', { values: { count: protogens } })}
                 </p>
             {:else}
                 <p class="showcase__caption showcase__caption--solo">
-                    Интерактивная карта сообщества
+                    {$t('auth.showcase_tagline')}
                 </p>
             {/if}
         </div>

@@ -1,6 +1,7 @@
 <script lang="ts">
     import { tick, onMount, onDestroy } from 'svelte';
     import { chat } from '$lib/stores';
+    import { t } from 'svelte-i18n';
     import { AudioManager } from '$lib/client/audioManager';
     import GlobalChat    from '$lib/components/chat/GlobalChat.svelte';
     import DMInbox       from '$lib/components/chat/DMInbox.svelte';
@@ -78,36 +79,36 @@
     <!-- ══ ХЕДЕР С ВКЛАДКАМИ ══════════════════════════════════════════════ -->
     <div class="widget-header">
         <div class="tabs">
-            <button class="tab" class:active={activeTab === 'global'} on:click={() => switchTab('global')} title="Общий чат">
+            <button class="tab" class:active={activeTab === 'global'} on:click={() => switchTab('global')} title={$t('chat.global_title')}>
                 <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
                     <path fill-rule="evenodd" d="M4.848 2.771A49.144 49.144 0 0112 2.25c2.43 0 4.817.178 7.152.52 1.978.292 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.678-3.348 3.97a48.901 48.901 0 01-3.476.383.39.39 0 00-.297.17l-2.755 4.133a.75.75 0 01-1.248 0l-2.755-4.133a.39.39 0 00-.297-.17 48.9 48.9 0 01-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.74c0-1.946 1.37-3.68 3.348-3.97z" clip-rule="evenodd"/>
                 </svg>
-                <span>ЧАТ</span>
+                <span>{$t('chat.tab_global')}</span>
                 {#if $chat.hasUnread && activeTab !== 'global'}
                     <span class="tab-dot"></span>
                 {/if}
             </button>
 
-            <button class="tab" class:active={activeTab === 'dm'} on:click={() => switchTab('dm')} title="Личные сообщения">
+            <button class="tab" class:active={activeTab === 'dm'} on:click={() => switchTab('dm')} title={$t('chat.dm_title')}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
-                <span>ЛИЧКИ</span>
+                <span>{$t('chat.tab_dm')}</span>
                 {#if dmUnread > 0}
                     <span class="tab-badge">{dmUnread > 9 ? '9+' : dmUnread}</span>
                 {/if}
             </button>
 
-            <button class="tab" class:active={activeTab === 'channels'} on:click={() => switchTab('channels')} title="Каналы">
+            <button class="tab" class:active={activeTab === 'channels'} on:click={() => switchTab('channels')} title={$t('chat.channels_title')}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                     <path d="M22 8.35V20a2 2 0 01-2 2H4a2 2 0 01-2-2V8.35A2 2 0 012.61 7l8-5a2 2 0 012.78 0l8 5A2 2 0 0122 8.35z"/>
                     <path d="M15 22v-4a5 5 0 00-6 0v4"/>
                 </svg>
-                <span>КАНАЛЫ</span>
+                <span>{$t('chat.tab_channels')}</span>
             </button>
         </div>
 
-        <button on:click={closeWidget} class="close-btn" aria-label="Закрыть">×</button>
+        <button on:click={closeWidget} class="close-btn" aria-label={$t('modal.close')}>×</button>
     </div>
 
     <!-- ══ КОНТЕНТ ВКЛАДОК ════════════════════════════════════════════════ -->

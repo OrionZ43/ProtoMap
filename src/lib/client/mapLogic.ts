@@ -4,13 +4,16 @@ import { maplibreGL } from '@maplibre/maplibre-gl-leaflet';
 import type { ExpressionSpecification, StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import darkMatterStyle from '$lib/client/darkMatterStyle.json';
-import { locale } from 'svelte-i18n';
+import { locale, t } from 'svelte-i18n';
 import { get } from 'svelte/store';
 import { auth, functions } from '$lib/firebase';
 import { userStore, type UserProfile } from '$lib/stores';
 import { httpsCallable } from "firebase/functions";
 import { modal } from '$lib/stores/modalStore';
 import { AudioManager } from '$lib/client/audioManager';
+
+// Подписи попапа — из локалей; попап собирается после загрузки словаря
+const tr = (key: string) => get(t)(key);
 
 type MarkerUserData = {
     username: string;
@@ -36,13 +39,13 @@ function createCyberPopup(userData: MarkerUserData, city: string, isOwner: boole
 
     const statusHTML = userData.status
         ? `<p class="popup-status">"${escapeHtml(userData.status)}"</p>`
-        : '<p class="popup-status-empty">//: Статус не установлен</p>';
+        : `<p class="popup-status-empty">${escapeHtml(tr('map_popup.no_status'))}</p>`;
 
     const signalStrength = 90 + Math.floor(Math.random() * 10);
-    const zoneStatus = ["СТАБИЛЬНО", "СИНХРОНИЗАЦИЯ", "НОРМА"][Math.floor(Math.random() * 3)];
+    const zoneStatus = tr(['map_popup.zone_stable', 'map_popup.zone_sync', 'map_popup.zone_normal'][Math.floor(Math.random() * 3)]);
 
     const deleteButtonHTML = isOwner
-        ? `<button class="popup-delete-btn" data-username="${escapeHtml(userData.username)}">Удалить</button>`
+        ? `<button class="popup-delete-btn" data-username="${escapeHtml(userData.username)}">${escapeHtml(tr('map_popup.delete'))}</button>`
         : '';
 
     const html = `
@@ -56,21 +59,21 @@ function createCyberPopup(userData: MarkerUserData, city: string, isOwner: boole
 
             <div class="location-data">
                 <div class="data-item">
-                    <span class="data-label">ЛОКАЦИЯ</span>
+                    <span class="data-label">${escapeHtml(tr('map_popup.location'))}</span>
                     <span class="data-value">${escapeHtml(city)}</span>
                 </div>
                 <div class="data-item">
-                    <span class="data-label">СИГНАЛ</span>
+                    <span class="data-label">${escapeHtml(tr('map_popup.signal'))}</span>
                     <span class="data-value">${signalStrength}%</span>
                 </div>
                 <div class="data-item">
-                    <span class="data-label">СТАТУС ЗОНЫ</span>
-                    <span class="data-value text-green-400">${zoneStatus}</span>
+                    <span class="data-label">${escapeHtml(tr('map_popup.zone_status'))}</span>
+                    <span class="data-value text-green-400">${escapeHtml(zoneStatus)}</span>
                 </div>
             </div>
 
             <div class="popup-actions">
-                <a href="${profileUrl}" target="_blank" class="popup-profile-btn">Профиль</a>
+                <a href="${profileUrl}" target="_blank" class="popup-profile-btn">${escapeHtml(tr('map_popup.profile'))}</a>
                 ${deleteButtonHTML}
             </div>
         </div>

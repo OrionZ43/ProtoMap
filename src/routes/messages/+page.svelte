@@ -3,6 +3,7 @@
 	import { onMount, onDestroy, tick } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { goto } from '$app/navigation';
+	import { t } from 'svelte-i18n';
 	import { page } from '$app/stores';
 	import { userStore, chat } from '$lib/stores';
 	import {
@@ -426,7 +427,7 @@
 				>
 					<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
 				</svg>
-				<span>ЛИЧКИ</span>
+				<span>{$t('chat.tab_dm')}</span>
 				{#if $totalUnread > 0}
 					<span class="tab-badge">{$totalUnread > 9 ? '9+' : $totalUnread}</span>
 				{/if}
@@ -445,7 +446,7 @@
 					/>
 					<path d="M15 22v-4a5 5 0 00-6 0v4" />
 				</svg>
-				<span>КАНАЛЫ</span>
+				<span>{$t('chat.tab_channels')}</span>
 			</button>
 		</div>
 
@@ -463,7 +464,7 @@
 					<circle cx="11" cy="11" r="8" />
 					<path d="M21 21l-4.35-4.35" />
 				</svg>
-				<input class="search" placeholder="Поиск диалога" bind:value={searchQuery} />
+				<input class="search" placeholder={$t('chat.search_dialog')} bind:value={searchQuery} />
 			</div>
 
 			<ChatList
@@ -635,7 +636,7 @@
 					{packs}
 					{isSending}
 					{uploadProgress}
-					placeholder={isFav ? 'Заметка себе...' : 'Написать...'}
+					placeholder={isFav ? $t('chat.note_placeholder') : $t('chat.write_placeholder')}
 					onSend={sendText}
 					onImage={sendImage}
 					onVoice={sendVoice}

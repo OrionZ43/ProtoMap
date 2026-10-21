@@ -19,7 +19,8 @@
 		"lang": "LANGUAGE / ЯЗЫК",
 		"seasonal": "SEASONAL FX",
 		"security": "SECURITY",
-		"referral": "Referrals"
+		"referral": "Referrals",
+		"messages": "Messages"
 	},
 	"ui": {
 		"balance": "Balance",
@@ -97,7 +98,9 @@
 			"age_hint": "Below the age of 16, consent to the processing of personal data is given by a legal representative (Article 5(9) of Law No. 99-Z), so registration is available from the age of 16.",
 			"policy_more": "Processing purposes, retention periods and data recipients are listed in the",
 			"policy_link": "Personal Data Processing Policy"
-		}
+		},
+		"showcase_protogens": "{count, plural, one {protogen already on the map} other {protogens already on the map}}",
+		"showcase_tagline": "Interactive community map"
 	},
 	"security": {
 		"2fa_label": "TWO-FACTOR AUTHENTICATION:",
@@ -149,7 +152,27 @@
 		"login_req": "Login to chat.",
 		"reply": "Reply",
 		"load_more": "LOAD PREVIOUS SIGNALS",
-		"no_more": "REACHED THE BEGINNING"
+		"no_more": "REACHED THE BEGINNING",
+		"tab_global": "CHAT",
+		"tab_dm": "DMS",
+		"tab_channels": "CHANNELS",
+		"global_title": "Global chat",
+		"dm_title": "Direct messages",
+		"channels_title": "Channels",
+		"search_dialog": "Search conversations",
+		"write_placeholder": "Write a message...",
+		"note_placeholder": "Note to self..."
+	},
+	"map_popup": {
+		"location": "LOCATION",
+		"signal": "SIGNAL",
+		"zone_status": "ZONE STATUS",
+		"zone_stable": "STABLE",
+		"zone_sync": "SYNCING",
+		"zone_normal": "NOMINAL",
+		"profile": "Profile",
+		"delete": "Delete",
+		"no_status": "//: No status set"
 	},
 	"cookie": {
 		"text": "We use cookies to save your session and settings. By staying on the site, you agree to our",
@@ -594,7 +617,11 @@
 			"harassment": "Harassment/Threats",
 			"other": "Other"
 		},
-		"menu": "Actions"
+		"menu": "Actions",
+		"write": "MESSAGE",
+		"open_on_map": "Show on map",
+		"last_seen": "Last seen: {time}",
+		"reply_placeholder": "Reply to @{name}..."
 	},
 	"edit_profile": {
 		"title": "EDIT PROFILE",
