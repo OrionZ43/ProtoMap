@@ -510,43 +510,6 @@
 
     <div class="profile-container cyber-panel pb-12 {data.profile.equipped_bg ? 'themed ' + data.profile.equipped_bg + '-theme' : ''}" style="opacity: {$containerOpacity}">
 
-            {#if $userStore.user && !isOwner}
-                <!-- Действия с профилем: чёрный список и жалоба в одном меню -->
-                <div class="profile-menu">
-                    <button
-                        class="profile-menu-btn"
-                        class:open={menuOpen}
-                        on:click|stopPropagation={() => (menuOpen = !menuOpen)}
-                        title={$t('profile.menu')}
-                        aria-label={$t('profile.menu')}
-                        aria-haspopup="menu"
-                        aria-expanded={menuOpen}
-                    >
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" /></svg>
-                    </button>
-                    {#if menuOpen}
-                        <div class="profile-menu-list" role="menu" transition:fade={{ duration: 120 }}>
-                            <button
-                                role="menuitem"
-                                class="profile-menu-item"
-                                disabled={blockBusy}
-                                on:click={() => { menuOpen = false; iBlocked ? handleUnblock() : handleBlock(); }}
-                            >
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M5.6 5.6l12.8 12.8" /></svg>
-                                <span>{iBlocked ? $t('blocklist.unblock') : $t('blocklist.block')}</span>
-                            </button>
-                            <button
-                                role="menuitem"
-                                class="profile-menu-item danger"
-                                on:click={() => { menuOpen = false; handleReportProfile(); }}
-                            >
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
-                                <span>{$t('profile.report_btn')}</span>
-                            </button>
-                        </div>
-                    {/if}
-                </div>
-            {/if}
 
             <div class="corner-bg top-left"></div>
             <div class="corner-bg top-right"></div>
@@ -555,6 +518,43 @@
 
             <div class="top-bar">
                 <span class="pl-6">{$t('profile.user_id')}: {data.profile.uid.substring(0, 18).toUpperCase()}...</span>
+                {#if $userStore.user && !isOwner}
+                    <!-- Действия с профилем: чёрный список и жалоба в одном меню -->
+                    <div class="profile-menu">
+                        <button
+                            class="profile-menu-btn"
+                            class:open={menuOpen}
+                            on:click|stopPropagation={() => (menuOpen = !menuOpen)}
+                            title={$t('profile.menu')}
+                            aria-label={$t('profile.menu')}
+                            aria-haspopup="menu"
+                            aria-expanded={menuOpen}
+                        >
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" /></svg>
+                        </button>
+                        {#if menuOpen}
+                            <div class="profile-menu-list" role="menu" transition:fade={{ duration: 120 }}>
+                                <button
+                                    role="menuitem"
+                                    class="profile-menu-item"
+                                    disabled={blockBusy}
+                                    on:click={() => { menuOpen = false; iBlocked ? handleUnblock() : handleBlock(); }}
+                                >
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M5.6 5.6l12.8 12.8" /></svg>
+                                    <span>{iBlocked ? $t('blocklist.unblock') : $t('blocklist.block')}</span>
+                                </button>
+                                <button
+                                    role="menuitem"
+                                    class="profile-menu-item danger"
+                                    on:click={() => { menuOpen = false; handleReportProfile(); }}
+                                >
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                                    <span>{$t('profile.report_btn')}</span>
+                                </button>
+                            </div>
+                        {/if}
+                    </div>
+                {/if}
             </div>
 
             <div class="profile-header">
@@ -836,10 +836,17 @@
     .bottom-left { bottom: -30px; left: -30px; }
     .bottom-right { bottom: -30px; right: -30px; }
 
+    /* Над полосой — внутренний отступ карточки (p-1, с sm — p-2), поэтому сверху
+       отступ полосы меньше нижнего ровно на его величину: иначе ID и кнопка «⋮»
+       выглядят прижатыми к линии снизу. Строка — 16px, верхний отступ — 4px. */
     .top-bar {
-        @apply relative flex items-center justify-between p-2 text-xs uppercase tracking-widest text-cyber-yellow/70;
+        @apply relative flex items-center justify-between px-2 text-xs uppercase tracking-widest text-cyber-yellow/70;
         border-bottom: 1px solid var(--border-color);
-        padding-right: 3.5rem;
+        padding-top: 4px;
+        padding-bottom: 8px;
+    }
+    @media (min-width: 640px) {
+        .top-bar { padding-bottom: 12px; }
     }
 
     .profile-header, .profile-content, .profile-actions { animation: content-fade-in 0.5s ease-out both; }
@@ -921,13 +928,22 @@
     .comment-actions { @apply mt-2; }
     .action-btn { @apply text-xs text-gray-500 hover:text-red-400 transition-colors; }
 
-    /* Меню действий с профилем: чёрный список и жалоба */
+    /* Меню действий с профилем: чёрный список и жалоба. Стоит в полосе USER ID
+       обычным элементом ряда: кнопка 24px в строке высотой 16px с отступами по 8px,
+       поэтому margin -4px — полоса не растёт, а кнопка встаёт ровно посередине. */
     .profile-menu {
-        @apply absolute top-1 right-2 z-30;
+        position: relative;
+        z-index: 30;
+        flex-shrink: 0;
+        margin: -4px 0;
     }
     .profile-menu-btn {
-        @apply p-2 rounded-full;
-        display: block;
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border-radius: 50%;
         color: #9ca3af;
         transition: color 0.2s ease, background-color 0.2s ease;
     }
@@ -941,14 +957,14 @@
     }
     .profile-menu-btn svg {
         display: block;
-        width: 24px;
-        height: 24px;
+        width: 18px;
+        height: 18px;
         fill: currentColor;
     }
     .profile-menu-list {
         position: absolute;
-        top: calc(100% + 4px);
-        right: 0;
+        top: calc(100% + 10px);
+        right: -4px;
         min-width: 210px;
         padding: 6px;
         background: #0d0e12;
@@ -993,7 +1009,8 @@
 
     .top-bar::before {
         content: '';
-        @apply absolute top-1/2 left-2 w-2 h-2 rounded-full bg-cyber-yellow;
+        @apply absolute left-2 w-2 h-2 rounded-full bg-cyber-yellow;
+        top: 12px; /* центр строки: верхний отступ 4px + половина строки 16px */
         transform: translateY(-50%);
         box-shadow: 0 0 5px var(--cyber-yellow);
     }
