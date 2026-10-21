@@ -1283,8 +1283,10 @@ export const playCoinFlip = onCall(async (request) => {
             if (maxBet < MIN_BET) {
                 throw new HttpsError('failed-precondition', 'Банк казино почти пуст — монетка откроется, когда он пополнится.', { reason: 'bank_limit' });
             }
+            // Сам потолок не называем: банк из него восстанавливается
+            // (банк ≈ 19 × потолок), а сумму банка игрокам не показываем.
             if (bet > maxBet) {
-                throw new HttpsError('invalid-argument', `Сейчас ставка до ${maxBet} PC.`, { reason: 'bet_too_high', maxBet });
+                throw new HttpsError('invalid-argument', 'Ставка слишком большая для банка казино. Попробуйте меньше.', { reason: 'bet_too_high' });
             }
 
             // ✅ ИСПРАВЛЕНО: crypto.randomInt вместо Math.random()
