@@ -208,7 +208,9 @@ export const load: PageServerLoad = async ({ params, setHeaders, locals }) => {
         type: 'profile'
     };
 
-    setHeaders({ 'Cache-Control': 'public, max-age=60' });
+    // Вошедшему отдаём его собственное iBlocked — такой ответ кешировать нельзя:
+    // после разблокировки страница получала бы из кеша старое «заблокирован»
+    setHeaders({ 'Cache-Control': viewerUid ? 'private, no-store' : 'public, max-age=60' });
 
     /**
      * Есть ли у пользователя метка на карте.

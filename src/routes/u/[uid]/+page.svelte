@@ -56,7 +56,7 @@
     import WatermelonInteractive from '$lib/components/WatermelonInteractive.svelte';
     // [ЭТАП 6] Кэш никнеймов
     import { usernameCache, getUsername, getAvatarUrl } from '$lib/stores/usernameCache';
-    import { myBlocked, blockUser, unblockUser } from '$lib/stores/blocklist';
+    import { myBlocked, blocklistReady, blockUser, unblockUser } from '$lib/stores/blocklist';
 
     export let data: PageData;
     export let form: ActionData;
@@ -193,10 +193,15 @@
 
     $: isOwner = $userStore.user && $userStore.user.uid === data.profile.uid;
 
-    // Чёрный список (src/lib/stores/blocklist.ts): живой список, а до его
-    // загрузки — то, что сказал сервер.
-    $: iBlocked = $myBlocked.has(data.profile.uid) || data.iBlocked;
+    // Чёрный список (src/lib/stores/blocklist.ts): до первого снимка живого
+    // списка — то, что сказал сервер, потом только живой список. Раньше они
+    // складывались через «или», и после разблокировки старый серверный ответ
+    // держал «заблокирован» до перезагрузки страницы.
+    $: iBlocked = $blocklistReady ? $myBlocked.has(data.profile.uid) : data.iBlocked;
     let blockBusy = false;
+
+    // Меню действий с профилем: жалоба и чёрный список в одном месте
+    let menuOpen = false;
 
     function handleBlock() {
         modal.confirm(
@@ -206,7 +211,6 @@
                 blockBusy = true;
                 try {
                     await blockUser(data.profile.uid);
-                    await invalidateAll();
                 } catch (e: any) {
                     modal.error(translate('ui.error'), e.message);
                 } finally {
@@ -220,7 +224,6 @@
         blockBusy = true;
         try {
             await unblockUser(data.profile.uid);
-            await invalidateAll();
         } catch (e: any) {
             modal.error(translate('ui.error'), e.message);
         } finally {
@@ -477,6 +480,8 @@
     <link rel="canonical" href={data.seoData.url} />
 </svelte:head>
 
+<svelte:window on:click={() => (menuOpen = false)} on:keydown={(e) => e.key === 'Escape' && (menuOpen = false)} />
+
 {#if showCinematicIntro}
     <CinematicLoader
         username={data.profile.username}
@@ -506,20 +511,41 @@
     <div class="profile-container cyber-panel pb-12 {data.profile.equipped_bg ? 'themed ' + data.profile.equipped_bg + '-theme' : ''}" style="opacity: {$containerOpacity}">
 
             {#if $userStore.user && !isOwner}
-                <!-- Чёрный список — рядом с жалобой (src/lib/stores/blocklist.ts) -->
-                <button
-                    on:click={iBlocked ? handleUnblock : handleBlock}
-                    class="block-icon-btn"
-                    class:active={iBlocked}
-                    disabled={blockBusy}
-                    title={iBlocked ? $t('blocklist.unblock') : $t('blocklist.block')}
-                    aria-label={iBlocked ? $t('blocklist.unblock') : $t('blocklist.block')}
-                >
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M5.6 5.6l12.8 12.8" /></svg>
-                </button>
-                <button on:click={handleReportProfile} class="report-icon-btn" title={$t('profile.report_btn')}>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
-                </button>
+                <!-- Действия с профилем: чёрный список и жалоба в одном меню -->
+                <div class="profile-menu">
+                    <button
+                        class="profile-menu-btn"
+                        class:open={menuOpen}
+                        on:click|stopPropagation={() => (menuOpen = !menuOpen)}
+                        title={$t('profile.menu')}
+                        aria-label={$t('profile.menu')}
+                        aria-haspopup="menu"
+                        aria-expanded={menuOpen}
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" /></svg>
+                    </button>
+                    {#if menuOpen}
+                        <div class="profile-menu-list" role="menu" transition:fade={{ duration: 120 }}>
+                            <button
+                                role="menuitem"
+                                class="profile-menu-item"
+                                disabled={blockBusy}
+                                on:click={() => { menuOpen = false; iBlocked ? handleUnblock() : handleBlock(); }}
+                            >
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M5.6 5.6l12.8 12.8" /></svg>
+                                <span>{iBlocked ? $t('blocklist.unblock') : $t('blocklist.block')}</span>
+                            </button>
+                            <button
+                                role="menuitem"
+                                class="profile-menu-item danger"
+                                on:click={() => { menuOpen = false; handleReportProfile(); }}
+                            >
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                                <span>{$t('profile.report_btn')}</span>
+                            </button>
+                        </div>
+                    {/if}
+                </div>
             {/if}
 
             <div class="corner-bg top-left"></div>
@@ -790,17 +816,6 @@
         to { opacity: 1; transform: translateY(0); }
     }
 
-    @keyframes report-pulse {
-      0%, 100% {
-        transform: scale(1);
-        opacity: 0.7;
-      }
-      50% {
-        transform: scale(1.1);
-        opacity: 1;
-      }
-    }
-
     .profile-container {
         @apply max-w-2xl mx-auto my-10 p-1 sm:p-2 rounded-none shadow-2xl relative;
         padding-bottom: 2rem !important;
@@ -906,21 +921,74 @@
     .comment-actions { @apply mt-2; }
     .action-btn { @apply text-xs text-gray-500 hover:text-red-400 transition-colors; }
 
-    .report-icon-btn {
-        @apply absolute top-1 right-2 z-20 p-2 rounded-full;
-        color: var(--cyber-red, #ff003c);
-        animation: report-pulse 2.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
-        transition: all 0.2s ease-in-out;
+    /* Меню действий с профилем: чёрный список и жалоба */
+    .profile-menu {
+        @apply absolute top-1 right-2 z-30;
     }
-    .report-icon-btn:hover {
-        background-color: rgba(255, 0, 60, 0.25);
-        color: #ff4d6d;
-        transform: scale(1.2);
-        animation-play-state: paused;
-        box-shadow: 0 0 15px var(--cyber-red, #ff003c);
+    .profile-menu-btn {
+        @apply p-2 rounded-full;
+        display: block;
+        color: #9ca3af;
+        transition: color 0.2s ease, background-color 0.2s ease;
     }
-    .report-icon-btn:focus-visible {
-        @apply outline-none ring-2 ring-offset-2 ring-offset-black ring-red-500;
+    .profile-menu-btn:hover,
+    .profile-menu-btn.open {
+        color: var(--cyber-yellow, #fcee0a);
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+    .profile-menu-btn:focus-visible {
+        @apply outline-none ring-2 ring-offset-2 ring-offset-black ring-gray-400;
+    }
+    .profile-menu-btn svg {
+        display: block;
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+    }
+    .profile-menu-list {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        min-width: 210px;
+        padding: 6px;
+        background: #0d0e12;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 10px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+    }
+    .profile-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 9px 12px;
+        border-radius: 6px;
+        background: transparent;
+        color: #e5e7eb;
+        font-size: 0.9rem;
+        text-align: left;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+    .profile-menu-item:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.06);
+    }
+    .profile-menu-item.danger {
+        color: #f87171;
+    }
+    .profile-menu-item:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .profile-menu-item svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
     }
 
     .top-bar::before {
@@ -1531,37 +1599,6 @@
         gap: 0.75rem;
     }
 
-    /* Блокировка — слева от жалобы (та 40px шириной: p-2 + иконка 24px), без пульсации */
-    .block-icon-btn {
-        @apply absolute top-1 z-20 p-2 rounded-full;
-        right: 3.25rem;
-        color: #9ca3af;
-        transition: all 0.2s ease-in-out;
-    }
-    .block-icon-btn:hover:not(:disabled) {
-        background-color: rgba(255, 255, 255, 0.08);
-        color: #f87171;
-        transform: scale(1.15);
-    }
-    .block-icon-btn.active {
-        color: var(--cyber-yellow, #fcee0a);
-    }
-    .block-icon-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-    .block-icon-btn:focus-visible {
-        @apply outline-none ring-2 ring-offset-2 ring-offset-black ring-gray-400;
-    }
-    .block-icon-btn svg {
-        display: block;
-        width: 24px;
-        height: 24px;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 1.5;
-        stroke-linecap: round;
-    }
 
     .blocked-note {
         width: 100%;

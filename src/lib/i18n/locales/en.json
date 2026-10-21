@@ -586,7 +586,8 @@
 			"impersonation": "Impersonation",
 			"harassment": "Harassment/Threats",
 			"other": "Other"
-		}
+		},
+		"menu": "Actions"
 	},
 	"edit_profile": {
 		"title": "EDIT PROFILE",

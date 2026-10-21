@@ -18,6 +18,12 @@ import { db } from '$lib/firebase';
 import { userStore } from '$lib/stores';
 
 export const myBlocked = writable<Set<string>>(new Set());
+/**
+ * Пришёл ли первый снимок списка. До него страницы опираются на то, что
+ * сказал сервер, после — только на живой список: серверный ответ может быть
+ * старым (разблокировал — а страница всё ещё «заблокирован»).
+ */
+export const blocklistReady = writable(false);
 
 let unsubscribe: (() => void) | null = null;
 let subscribedUid: string | null = null;
@@ -30,10 +36,14 @@ if (browser) {
         unsubscribe = null;
         subscribedUid = uid;
         myBlocked.set(new Set());
+        blocklistReady.set(false);
         if (!uid) return;
         unsubscribe = onSnapshot(
             collection(db, 'users', uid, 'blocked'),
-            (snap) => myBlocked.set(new Set(snap.docs.map((d) => d.id))),
+            (snap) => {
+                myBlocked.set(new Set(snap.docs.map((d) => d.id)));
+                blocklistReady.set(true);
+            },
             () => myBlocked.set(new Set())
         );
     });
