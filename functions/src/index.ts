@@ -479,6 +479,17 @@ export const checkUsername = onRequest({ cors: false }, async (request, response
     }
 });
 
+// Тип предмета — из магазина (shop_items.type: frame | background), у предметов
+// вне магазина — по приставке id. До 21.10.2026 слот не проверялся, и фон
+// можно было надеть как рамку.
+async function shopItemType(id: string): Promise<string | null> {
+    const type = (await db.collection('shop_items').doc(id).get()).get('type');
+    if (typeof type === 'string') return type;
+    if (id.startsWith('frame_')) return 'frame';
+    if (id.startsWith('bg_')) return 'background';
+    return null;
+}
+
 export const updateEquippedItems = onCall({ cors: ALLOWED_ORIGINS }, async (request) => {
     if (request.app == undefined) {
         throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
@@ -503,12 +514,18 @@ export const updateEquippedItems = onCall({ cors: ALLOWED_ORIGINS }, async (requ
             if (equipped_frame !== null && !userData.owned_items?.includes(equipped_frame)) {
                 throw new HttpsError('permission-denied', 'Нет прав на эту рамку.');
             }
+            if (equipped_frame !== null && (await shopItemType(equipped_frame)) !== 'frame') {
+                throw new HttpsError('invalid-argument', 'Это не рамка.', { reason: 'wrong_slot' });
+            }
             updates.equipped_frame = equipped_frame;
         }
 
         if (equipped_bg !== undefined) {
             if (equipped_bg !== null && !userData.owned_items?.includes(equipped_bg)) {
                 throw new HttpsError('permission-denied', 'Нет прав на этот фон.');
+            }
+            if (equipped_bg !== null && (await shopItemType(equipped_bg)) !== 'background') {
+                throw new HttpsError('invalid-argument', 'Это не фон.', { reason: 'wrong_slot' });
             }
             updates.equipped_bg = equipped_bg;
         }
@@ -786,18 +803,40 @@ async function runGameLoopRTDB(gameId: string, crashPoint: number) {
 
     const fsGameRef = db.collection('crash_games').doc(gameId);
 
+    // Игрок забрал выигрыш — cashOutCrashGame ставит s: 'done'. Дальше цикл не
+    // пишет ни множитель, ни «bang». До 21.10.2026 он продолжал расти в RTDB и
+    // ставил в Firestore status: 'crashed' поверх 'cashed_out'.
+    let cashedOut = false;
+    const stateRef = gameRef.child('s');
+    const onState = stateRef.on('value', (snap) => {
+        if (snap.val() === 'done') cashedOut = true;
+    });
+
     const startTime = Date.now();
     let current = 1.00;
 
     const interval = setInterval(async () => {
+        if (cashedOut) {
+            clearInterval(interval);
+            stateRef.off('value', onState);
+            setTimeout(() => gameRef.remove(), 5000);
+            return;
+        }
         const t = (Date.now() - startTime) / 1000;
         current = Math.exp(CRASH_SPEED * t);
         if (current >= crashPoint) {
             clearInterval(interval);
+            stateRef.off('value', onState);
 
-            await gameRef.update({ m: crashPoint, s: 'bang' });
-
-            await fsGameRef.update({ status: 'crashed', finalMultiplier: crashPoint });
+            // В транзакциях: выход мог случиться в ту же долю секунды
+            await gameRef.transaction((cur) =>
+                cur?.s === 'done' ? undefined : { ...(cur ?? {}), m: crashPoint, s: 'bang' });
+            await db.runTransaction(async (tx) => {
+                const game = await tx.get(fsGameRef);
+                if (game.get('status') === 'active') {
+                    tx.update(fsGameRef, { status: 'crashed', finalMultiplier: crashPoint });
+                }
+            });
 
             setTimeout(() => gameRef.remove(), 5000);
         } else {
