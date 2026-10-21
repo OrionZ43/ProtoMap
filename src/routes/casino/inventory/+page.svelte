@@ -197,7 +197,7 @@
                         </div>
                         {#if selectedBg}
                             <button class="unequip-text-btn" on:click={() => selectItem(null, 'background')}>
-                                Unequip Background
+                                {$t('inventory.unequip_bg')}
                             </button>
                         {/if}
                     {:else}
