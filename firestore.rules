@@ -413,8 +413,12 @@ service cloud.firestore {
       allow read:  if true;
       allow write: if isAdmin();
     }
+    // В документе раунда лежит точка краша. До 21.10.2026 владелец раунда мог
+    // его читать: модифицированный клиент узнавал точку сразу после старта и
+    // забирал выигрыш перед самым крашем в каждом раунде. Клиенты следят за
+    // раундом через RTDB (crash_games/{id}: m, s), этот документ им не нужен.
     match /crash_games/{gameId} {
-      allow read:  if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow read:  if false;
       allow write: if false;
     }
     match /reports/{reportId} {

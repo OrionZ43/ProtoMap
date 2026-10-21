@@ -510,7 +510,7 @@
 	"crash": {
 		"title": "Data Uplink",
 		"mechanics_title": "UPLINK PROTOCOL",
-		"mechanics_text": "**How to Play:**\n1. Place your bet and initiate the uplink\n2. The multiplier starts at **1.00x** and grows exponentially\n3. Cash out **BEFORE** the connection crashes to secure your profit\n4. If you don't cash out in time, you lose everything\n\n**Risk Factor:**\nThe crash point is cryptographically random (6% instant crash, 94% variable)\n\n**Max Multiplier:** 50.00x (capped)\n**Cooldown:** 5 seconds between games\n**Rate Limit:** 50 games per hour\n\n**Bank Protection:**\nIf potential payout exceeds 90% of casino reserves, the crash point is adjusted downward to protect system liquidity."
+		"mechanics_text": "**How to Play:**\n1. Place your bet and initiate the uplink\n2. The multiplier starts at **1.00x** and grows exponentially\n3. Cash out **BEFORE** the connection crashes to secure your profit\n4. If you don't cash out in time, you lose everything\n\n**Risk Factor:**\nThe crash point is cryptographically random: about one round in eight (around 12%) crashes instantly at 1.00x, the rest at a random point\n\n**Max Multiplier:** 50.00x (capped)\n**Cooldown:** 5 seconds between games\n**Rate Limit:** 50 games per hour\n\n**Bank Protection:**\nIf potential payout exceeds 90% of casino reserves, the crash point is adjusted downward to protect system liquidity."
 	},
 	"plinko": {
 		"title": "Plinko",
