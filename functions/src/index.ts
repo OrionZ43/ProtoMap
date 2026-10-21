@@ -26,6 +26,7 @@ export { enforceRetention } from './retention';
 export { getOrCreateReferralCode, claimReferral, getReferralStatus, finishReferralCampaign } from './referralFunctions';
 export { onChannelCommentWritten, onChannelPostCreated, onChannelPostDeleted, onChannelDeleted } from './channelComments';
 export { onChannelCommentReplyCreated } from './notifications';
+export { createGroupInvite, joinGroupByInvite } from './groups';
 export {
     activityOnUserWrite, activityOnAdminWrite, activityOnProfileComment, activityOnChatMessage,
     activityOnChannelWrite, activityOnChannelPost, activityOnChannelComment, activityOnReport,
