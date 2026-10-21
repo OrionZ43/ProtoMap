@@ -48,6 +48,23 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/users/$(other)/blocked/$(request.auth.uid));
     }
 
+    // Заблокированный в личке может только обнулить свой счётчик непрочитанного
+    // и погасить свой «печатает»: иначе значок непрочитанного в его списке
+    // чатов застревал бы навсегда. Собеседнику это ничего не отправляет.
+    function onlyOwnUnreadReset() {
+      let me = request.auth.uid;
+      let unreadNow = request.resource.data.get('unreadCount', {});
+      let unreadWas = resource.data.get('unreadCount', {});
+      let typingNow = request.resource.data.get('typing', {});
+      let typingWas = resource.data.get('typing', {});
+      // Своё значение либо не меняется, либо становится нулём / false
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unreadCount', 'typing'])
+          && unreadNow.diff(unreadWas).affectedKeys().hasOnly([me])
+          && (unreadNow.get(me, 0) == 0 || unreadNow.get(me, 0) == unreadWas.get(me, 0))
+          && typingNow.diff(typingWas).affectedKeys().hasOnly([me])
+          && (typingNow.get(me, false) == false || typingNow.get(me, false) == typingWas.get(me, false));
+    }
+
     // Отметка о прочтении в личке: read_by — словарь {uid: время}, каждый
     // ставит только свою
     function onlyOwnReadMarkChanged() {
@@ -96,7 +113,7 @@ service cloud.firestore {
       allow write: if isAuthenticated()
                    && chatId.matches('.*_.*')
                    && request.auth.uid in chatId.split('_')
-                   && !blockedByChatPartner(chatId);
+                   && (!blockedByChatPartner(chatId) || onlyOwnUnreadReset());
 
       match /messages/{messageId} {
         allow read: if isAuthenticated() && (
@@ -110,16 +127,18 @@ service cloud.firestore {
         // Своё сообщение участник правит и удаляет (кроме автора, времени и
         // типа), в чужом — только своя реакция и своя отметка о прочтении.
         // До 21.10.2026 он мог переписать и чужое: текст, медиа, «удалено».
+        // Свою отметку о прочтении ставит и заблокированный: иначе непрочитанное
+        // в его списке чатов не гасло бы никогда. Остальное ему закрыто.
         allow update: if isAuthenticated()
                       && chatId.matches('.*_.*')
                       && request.auth.uid in chatId.split('_')
                       && request.resource.data.author_uid == resource.data.author_uid
-                      && !blockedByChatPartner(chatId)
                       && (
-                           (resource.data.author_uid == request.auth.uid
-                            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['author_uid', 'createdAt', 'created_at', 'type']))
-                           || onlyOwnReactionChanged()
-                           || onlyOwnReadMarkChanged()
+                           onlyOwnReadMarkChanged()
+                           || (!blockedByChatPartner(chatId)
+                               && ((resource.data.author_uid == request.auth.uid
+                                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['author_uid', 'createdAt', 'created_at', 'type']))
+                                   || onlyOwnReactionChanged()))
                          );
         allow delete: if isAuthenticated() && (
             resource.data.author_uid == request.auth.uid || isAdmin()
