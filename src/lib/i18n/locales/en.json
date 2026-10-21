@@ -1154,5 +1154,16 @@
 			"activity_groups": "By journal section",
 			"open_journal": "Open the journal"
 		}
+	},
+	"blocklist": {
+		"title": "Block list",
+		"desc": "These people can't message you or comment on your profile, and see your profile without your avatar, bio and links. Shared chats work as usual.",
+		"empty": "Nobody here.",
+		"block": "Block",
+		"unblock": "Unblock",
+		"confirm_title": "Block {username}?",
+		"confirm_text": "They won't be able to message you or comment on your profile, and will see your profile without your avatar, bio and links. Shared chats stay as they are.",
+		"you_are_blocked": "You're on this user's block list",
+		"you_blocked": "You blocked this user"
 	}
 }

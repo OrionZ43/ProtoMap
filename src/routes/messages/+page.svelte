@@ -37,6 +37,8 @@
 	import ChatList from '$lib/components/chat/ChatList.svelte';
 	import MessageBubble from '$lib/components/chat/MessageBubble.svelte';
 	import Composer from '$lib/components/chat/Composer.svelte';
+	import BlockedNotice from '$lib/components/chat/BlockedNotice.svelte';
+	import { myBlocked, isBlockedBy } from '$lib/stores/blocklist';
 	import { stickerStore } from '$lib/stores/stickerStore';
 	import { scrollToBottom } from '$lib/utils/scroll';
 	import { avatarFor, dayLabel, needsDaySeparator, previewFor } from '$lib/utils/chatFormat';
@@ -53,6 +55,19 @@
 	$: packs = $stickerStore.packs;
 	$: isFav = Boolean($activeChat) && $activeChat?.partner.uid === $userStore.user?.uid;
 	$: partnerOnline = Boolean($activeChat) && presence[$activeChat?.partner.uid ?? ''] === 'online';
+
+	// Чёрный список: собеседник заблокировал меня (проверка при смене чата) или я
+	// его (живой список) — вместо поля ввода плашка.
+	$: partnerUid = $activeChat?.partner.uid ?? null;
+	let blockedMe = false;
+	let blockCheckedFor: string | null = null;
+	$: if (partnerUid !== blockCheckedFor) {
+		const uid = partnerUid;
+		blockCheckedFor = uid;
+		blockedMe = false;
+		if (uid) isBlockedBy(uid).then((v) => { if (blockCheckedFor === uid) blockedMe = v; });
+	}
+	$: iBlocked = partnerUid ? $myBlocked.has(partnerUid) : false;
 
 	$: query = searchQuery.trim().toLowerCase();
 	$: filteredChats = query
@@ -231,6 +246,15 @@
 	}
 
 	// ── Отправка ────────────────────────────────────────────────────────────
+	// Отказ в доступе при отправке: возможно, собеседник только что заблокировал —
+	// перепроверяем, и вместо поля ввода появится плашка.
+	async function recheckBlock(err: unknown) {
+		const code = (err as { code?: string })?.code ?? '';
+		if (partnerUid && (code === 'permission-denied' || code === 'storage/unauthorized')) {
+			blockedMe = await isBlockedBy(partnerUid);
+		}
+	}
+
 	async function sendText(text: string) {
 		if (isSending || !text) return;
 		isSending = true;
@@ -238,6 +262,7 @@
 			await write({ type: 'TEXT', text });
 		} catch (err) {
 			console.error('[Messages] отправка не удалась:', err);
+			recheckBlock(err);
 		} finally {
 			isSending = false;
 		}
@@ -271,6 +296,7 @@
 			});
 		} catch (err) {
 			console.error('[Messages] загрузка изображения:', err);
+			recheckBlock(err);
 		} finally {
 			isSending = false;
 			uploadProgress = 0;
@@ -300,6 +326,7 @@
 			);
 		} catch (err) {
 			console.error('[Messages] загрузка голосового:', err);
+			recheckBlock(err);
 		} finally {
 			isSending = false;
 		}
@@ -310,6 +337,7 @@
 			await write({ type: 'STICKER', text: '', sticker_pack_id: packId, sticker_id: filename });
 		} catch (err) {
 			console.error('[Messages] отправка стикера:', err);
+			recheckBlock(err);
 		}
 	}
 
@@ -600,17 +628,21 @@
 				</div>
 			{/if}
 
-			<Composer
-				{packs}
-				{isSending}
-				{uploadProgress}
-				placeholder={isFav ? 'Заметка себе...' : 'Написать...'}
-				onSend={sendText}
-				onImage={sendImage}
-				onVoice={sendVoice}
-				onSticker={sendSticker}
-				onTyping={handleTyping}
-			/>
+			{#if partnerUid && (blockedMe || iBlocked)}
+				<BlockedNotice {partnerUid} {blockedMe} />
+			{:else}
+				<Composer
+					{packs}
+					{isSending}
+					{uploadProgress}
+					placeholder={isFav ? 'Заметка себе...' : 'Написать...'}
+					onSend={sendText}
+					onImage={sendImage}
+					onVoice={sendVoice}
+					onSticker={sendSticker}
+					onTyping={handleTyping}
+				/>
+			{/if}
 		{/if}
 	</main>
 </div>

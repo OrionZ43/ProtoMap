@@ -9,6 +9,8 @@
 	import { modal } from '$lib/stores/modalStore';
 	import { t } from 'svelte-i18n';
 	import { get } from 'svelte/store'; // Нужно для перевода в JS
+	import { myBlocked, unblockUser } from '$lib/stores/blocklist';
+	import { usernameCache, getUsername } from '$lib/stores/usernameCache';
 
 	export let data;
 
@@ -96,6 +98,21 @@
 			);
 		} catch (e: any) {
 			modal.error(translate('ui.error'), e.message);
+		}
+	}
+
+	// --- ЧЁРНЫЙ СПИСОК (src/lib/stores/blocklist.ts) ---
+	$: blockedList = [...$myBlocked];
+	let unblocking: string | null = null;
+
+	async function unblock(uid: string) {
+		unblocking = uid;
+		try {
+			await unblockUser(uid);
+		} catch (e: any) {
+			modal.error(translate('ui.error'), e.message);
+		} finally {
+			unblocking = null;
 		}
 	}
 
@@ -238,6 +255,26 @@
 						>
 					</div>
 				{/if}
+			{/if}
+		</section>
+
+		<!-- ЧЁРНЫЙ СПИСОК -->
+		<section class="sec-card">
+			<h3 class="sec-title text-cyber-yellow">{$t('blocklist.title')}</h3>
+			<p class="desc">{$t('blocklist.desc')}</p>
+			{#if blockedList.length === 0}
+				<p class="desc">{$t('blocklist.empty')}</p>
+			{:else}
+				<ul class="blocked-list">
+					{#each blockedList as uid (uid)}
+						<li class="blocked-row">
+							<a href="/u/{uid}" class="blocked-name">{getUsername($usernameCache, uid, '…')}</a>
+							<button class="unblock-btn" on:click={() => unblock(uid)} disabled={unblocking === uid}>
+								{$t('blocklist.unblock')}
+							</button>
+						</li>
+					{/each}
+				</ul>
 			{/if}
 		</section>
 
@@ -439,6 +476,51 @@
 	.sec-card.danger {
 		border-color: rgba(255, 0, 60, 0.3);
 		background: rgba(255, 0, 60, 0.05);
+	}
+
+	/* ЧЁРНЫЙ СПИСОК */
+	.blocked-list {
+		list-style: none;
+		margin: 0.75rem 0 0;
+		padding: 0;
+	}
+	.blocked-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1rem;
+		padding: 0.5rem 0;
+		border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+	}
+	.blocked-name {
+		color: #fff;
+		text-decoration: none;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.blocked-name:hover {
+		color: var(--cyber-yellow);
+	}
+	.unblock-btn {
+		flex-shrink: 0;
+		padding: 0.3rem 0.8rem;
+		background: transparent;
+		color: var(--cyber-yellow);
+		border: 1px solid var(--cyber-yellow);
+		font-family: 'Chakra Petch', monospace;
+		font-size: 0.75rem;
+		font-weight: bold;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+	.unblock-btn:hover:not(:disabled) {
+		background: var(--cyber-yellow);
+		color: #000;
+	}
+	.unblock-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	/* CODE BOX */

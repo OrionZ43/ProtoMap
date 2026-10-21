@@ -24,6 +24,7 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import {getMessaging} from "firebase-admin/messaging";
+import {isBlockedBy} from "./blocklist";
 
 const db = () => admin.firestore();
 
@@ -77,18 +78,24 @@ export type PushStatus =
  * channelId в data — id канала ProtoMap (channel_comment_reply). До
  * 21.10.2026 сюда же поверх писался id канала уведомлений Android, и тап по
  * пушу не открывал пост. Канал уведомлений приложения выбирают сами.
+ *
+ * fromUid — кто вызвал пуш: от того, кого получатель внёс в чёрный список,
+ * пуши не приходят никакие.
  * @param {string} uid получатель
  * @param {Record<string, string>} data полезная нагрузка
+ * @param {string} fromUid кто вызвал пуш
  * @return {Promise<PushStatus>} итог отправки
  */
 export async function sendPushToUser(
   uid: string,
   data: Record<string, string>,
+  fromUid?: string,
 ): Promise<PushStatus> {
   try {
     const userRef = db().collection("users").doc(uid);
     const user = await userRef.get();
     if (!user.exists || user.get("isBanned") === true) return "skipped";
+    if (fromUid && await isBlockedBy(uid, fromUid)) return "skipped";
 
     const privateRef = userRef.collection("private").doc("data");
     const candidates: [FirebaseFirestore.DocumentReference, unknown][] = [
@@ -173,7 +180,7 @@ export async function notifyProfileComment(
         type: "profile_comment_reply",
         title: `${ev.authorName} ответил(а) на ваш комментарий`,
         body: base.text,
-      }));
+      }, ev.authorUid));
     }
 
     // Владелец профиля, если он не автор и уже не получил пуш об ответе
@@ -183,7 +190,7 @@ export async function notifyProfileComment(
         type: "profile_comment",
         title: `${ev.authorName} оставил(а) комментарий в профиле`,
         body: base.text,
-      }));
+      }, ev.authorUid));
     }
 
     await Promise.all(sends);
@@ -252,6 +259,6 @@ export const onChannelCommentReplyCreated = onDocumentCreated(
       text,
       title: `${actorName} ответил(а) на ваш комментарий`,
       body: text,
-    });
+    }, authorUid);
   }
 );

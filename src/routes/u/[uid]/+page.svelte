@@ -56,6 +56,7 @@
     import WatermelonInteractive from '$lib/components/WatermelonInteractive.svelte';
     // [ЭТАП 6] Кэш никнеймов
     import { usernameCache, getUsername, getAvatarUrl } from '$lib/stores/usernameCache';
+    import { myBlocked, blockUser, unblockUser } from '$lib/stores/blocklist';
 
     export let data: PageData;
     export let form: ActionData;
@@ -75,8 +76,9 @@
 
     // Реактивная подписка на статус профиля
     $: {
-        if (browser && rtdb && data?.profile?.uid) {
-            if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; }
+        if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; partnerPresence = null; }
+        // Тому, кого владелец заблокировал, «в сети» не показываем
+        if (browser && rtdb && data?.profile?.uid && !data.blockedViewer) {
             const statusRef = ref(rtdb, `status/${data.profile.uid}`);
             const cb = onValue(statusRef, (snap) => {
                 if (snap.exists()) {
@@ -190,6 +192,41 @@
     }
 
     $: isOwner = $userStore.user && $userStore.user.uid === data.profile.uid;
+
+    // Чёрный список (src/lib/stores/blocklist.ts): живой список, а до его
+    // загрузки — то, что сказал сервер.
+    $: iBlocked = $myBlocked.has(data.profile.uid) || data.iBlocked;
+    let blockBusy = false;
+
+    function handleBlock() {
+        modal.confirm(
+            translate('blocklist.confirm_title', { values: { username: data.profile.username } }),
+            translate('blocklist.confirm_text'),
+            async () => {
+                blockBusy = true;
+                try {
+                    await blockUser(data.profile.uid);
+                    await invalidateAll();
+                } catch (e: any) {
+                    modal.error(translate('ui.error'), e.message);
+                } finally {
+                    blockBusy = false;
+                }
+            }
+        );
+    }
+
+    async function handleUnblock() {
+        blockBusy = true;
+        try {
+            await unblockUser(data.profile.uid);
+            await invalidateAll();
+        } catch (e: any) {
+            modal.error(translate('ui.error'), e.message);
+        } finally {
+            blockBusy = false;
+        }
+    }
     $: socials = data.profile.socials || {};
     $: hasSocials = Object.values(socials).some(link => !!link);
 
@@ -573,13 +610,28 @@
                 </div>
             {:else if $userStore.user}
                 <div class="profile-actions">
-                    <button class="write-btn" on:click={openDM}>
-                        <svg class="write-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                        </svg>
-                        <span>НАПИСАТЬ</span>
-                    </button>
+                    {#if data.blockedViewer}
+                        <p class="blocked-note">{$t('blocklist.you_are_blocked')}</p>
+                    {:else if !iBlocked}
+                        <button class="write-btn" on:click={openDM}>
+                            <svg class="write-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            <span>НАПИСАТЬ</span>
+                        </button>
+                    {/if}
+                    {#if iBlocked}
+                        <button class="block-btn" on:click={handleUnblock} disabled={blockBusy}>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8.5 12.5l2.5 2.5 4.5-5" /></svg>
+                            <span>{$t('blocklist.unblock')}</span>
+                        </button>
+                    {:else}
+                        <button class="block-btn" on:click={handleBlock} disabled={blockBusy}>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M5.6 5.6l12.8 12.8" /></svg>
+                            <span>{$t('blocklist.block')}</span>
+                        </button>
+                    {/if}
                 </div>
             {/if}
 
@@ -595,7 +647,9 @@
         <div class="comments-container max-w-4xl mx-auto mt-12 pb-32">
     <h4 class="font-display text-2xl text-cyber-yellow mb-6 text-center tracking-widest">// КОММЕНТАРИИ</h4>
 
-    {#if $userStore.user}
+    {#if $userStore.user && data.blockedViewer}
+        <p class="blocked-note mb-8">{$t('blocklist.you_are_blocked')}</p>
+    {:else if $userStore.user}
         <form on:submit|preventDefault={handleAddComment} class="comment-input-box cyber-panel p-4 mb-8">
             {#if replyingToId}
                 <div class="reply-badge" transition:slide>
@@ -1465,5 +1519,57 @@
     }
 
     .write-btn span { position: relative; z-index: 1; }
+
+    /* Чёрный список: вторая кнопка — тише «Написать», надпись — вместо неё */
+    .profile-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .block-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-family: 'Chakra Petch', monospace;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        color: #9ca3af;
+        background: transparent;
+        border: 1px solid #4b5563;
+        padding: 0.55rem 1.1rem;
+        cursor: pointer;
+        transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .block-btn:hover:not(:disabled) {
+        color: #f87171;
+        border-color: #f87171;
+    }
+
+    .block-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .block-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .blocked-note {
+        width: 100%;
+        color: #9ca3af;
+        font-size: 0.9rem;
+        text-align: center;
+    }
 
 </style>

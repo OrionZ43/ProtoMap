@@ -38,6 +38,16 @@ service cloud.firestore {
              );
     }
 
+    // Чёрный список: users/{кто}/blocked/{кого}. Если собеседник по личке
+    // заблокировал пишущего, тот не пишет ни сообщений, ни сам документ чата
+    // (иначе поднимал бы чат в списке и крутил счётчик). Пара — из id чата.
+    function blockedByChatPartner(chatId) {
+      let ids = chatId.split('_');
+      let other = ids[0] == request.auth.uid ? ids[1] : ids[0];
+      return other != request.auth.uid
+          && exists(/databases/$(database)/documents/users/$(other)/blocked/$(request.auth.uid));
+    }
+
     // Отметка о прочтении в личке: read_by — словарь {uid: время}, каждый
     // ставит только свою
     function onlyOwnReadMarkChanged() {
@@ -85,7 +95,8 @@ service cloud.firestore {
       );
       allow write: if isAuthenticated()
                    && chatId.matches('.*_.*')
-                   && request.auth.uid in chatId.split('_');
+                   && request.auth.uid in chatId.split('_')
+                   && !blockedByChatPartner(chatId);
 
       match /messages/{messageId} {
         allow read: if isAuthenticated() && (
@@ -94,7 +105,8 @@ service cloud.firestore {
         allow create: if isAuthenticated()
                       && chatId.matches('.*_.*')
                       && request.auth.uid in chatId.split('_')
-                      && request.resource.data.author_uid == request.auth.uid;
+                      && request.resource.data.author_uid == request.auth.uid
+                      && !blockedByChatPartner(chatId);
         // Своё сообщение участник правит и удаляет (кроме автора, времени и
         // типа), в чужом — только своя реакция и своя отметка о прочтении.
         // До 21.10.2026 он мог переписать и чужое: текст, медиа, «удалено».
@@ -102,6 +114,7 @@ service cloud.firestore {
                       && chatId.matches('.*_.*')
                       && request.auth.uid in chatId.split('_')
                       && request.resource.data.author_uid == resource.data.author_uid
+                      && !blockedByChatPartner(chatId)
                       && (
                            (resource.data.author_uid == request.auth.uid
                             && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['author_uid', 'createdAt', 'created_at', 'type']))
@@ -241,6 +254,22 @@ service cloud.firestore {
                     && (!('lastBackupSignature' in request.resource.data) || request.resource.data.lastBackupSignature is string);
 
       allow delete: if isSuperAdmin();
+
+      // Чёрный список (решение Ориона 21.10.2026, «как в Telegram»): кого
+      // заблокировали, тот не пишет в личку, не комментирует профиль и не видит
+      // аватар, описание и ссылки. Ведёт владелец; тот, кого заблокировали,
+      // может прочитать только свою запись — так клиенты прямо говорят ему
+      // «Вы в чёрном списке», не дожидаясь отказа при отправке.
+      match /blocked/{blockedUid} {
+        allow get:    if isOwner(userId) || (isAuthenticated() && request.auth.uid == blockedUid);
+        allow list:   if isOwner(userId);
+        allow create: if isOwner(userId)
+                      && blockedUid != userId
+                      && request.resource.data.keys().hasOnly(['createdAt'])
+                      && request.resource.data.createdAt == request.time;
+        allow update: if false;
+        allow delete: if isOwner(userId);
+      }
 
       match /comments/{commentId} {
         allow get:  if true;

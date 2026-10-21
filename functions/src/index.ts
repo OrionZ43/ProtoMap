@@ -9,6 +9,7 @@ import { betTier } from './casinoLimits';
 import { econOp } from './activity/log';
 import { dayKey as minskDayKey, dayStart as minskDayStart, latestBrief, makeBrief } from './activity/brief';
 import { assertNotBanned, assertEmailVerified, checkGlobalRateLimit } from './guards';
+import { isBlockedBy, BLOCKED_MESSAGE } from './blocklist';
 
 import { onRequest } from "firebase-functions/v2/https";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -166,8 +167,6 @@ export const sendPrivateChatNotification = onCall(async (request) => {
         db.collection('users').doc(recipientUid).get(),
     ]);
     if (!recipient.exists) throw new HttpsError('not-found', 'Recipient not found.');
-    const blocked: unknown = recipient.get('blocked_uids');
-    if (Array.isArray(blocked) && blocked.includes(uid)) return { status: 'skipped' };
 
     let bodyText: string;
     switch (String(messageType ?? '').toUpperCase()) {
@@ -193,13 +192,14 @@ export const sendPrivateChatNotification = onCall(async (request) => {
     // Только data, без блока notification: уведомление строит клиент. Иначе
     // в фоне его рисует система — тап не открывает чат, а заглушённые чаты
     // и открытый сейчас чат не учитываются. title/body клиент читает из data.
+    // От того, кого получатель заблокировал, пуш не уходит (sendPushToUser)
     const status = await sendPushToUser(recipientUid, {
         chatId,
         partnerUid: uid,
         type: 'private_message',
         title: senderName,
         body: bodyText,
-    });
+    }, uid);
     return { status };
 });
 
@@ -361,6 +361,11 @@ export const addComment = onCall(async (request) => {
     // Каждый комментарий — ещё и пуш владельцу профиля: без лимита спам
     // в комментариях становится спамом уведомлениями.
     await checkGlobalRateLimit(uid, 'comment', 5, 60 * 1000);
+
+    // Владелец профиля внёс автора в чёрный список — комментировать нельзя
+    if (await isBlockedBy(String(profileUid), uid)) {
+        throw new HttpsError('failed-precondition', BLOCKED_MESSAGE, { reason: 'blocked' });
+    }
 
     const authorRef = db.collection('users').doc(uid);
     const profileRef = db.collection('users').doc(profileUid);

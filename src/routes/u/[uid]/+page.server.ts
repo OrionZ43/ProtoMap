@@ -59,7 +59,7 @@ function getOgImageUrl(uid: string): string {
     return `https://proto-map.vercel.app/api/og/profile?uid=${uid}`;
 }
 
-export const load: PageServerLoad = async ({ params, setHeaders }) => {
+export const load: PageServerLoad = async ({ params, setHeaders, locals }) => {
     const paramId = params.uid;
     let uid = paramId;
     let userDoc;
@@ -87,6 +87,50 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
     }
 
     const userProfileData = userDoc.data()!;
+
+    // Чёрный список (users/{кто}/blocked/{кого}). Тому, кого владелец профиля
+    // заблокировал, показываем только ник — без аватара, рамки, фона,
+    // описания, ссылок, метки и комментариев (решение Ориона, «как в
+    // Telegram»). Это не защита данных: страница открыта и без входа, — а
+    // то, чего ждёт заблокировавший. iBlocked — заблокировал ли его сам зритель.
+    const viewerUid = locals.user?.uid ?? null;
+    let blockedViewer = false;
+    let iBlocked = false;
+    if (viewerUid && viewerUid !== userDoc.id) {
+        const [theyBlockedMe, iBlockedThem] = await Promise.all([
+            userDoc.ref.collection('blocked').doc(viewerUid).get(),
+            firestoreAdmin.collection('users').doc(viewerUid).collection('blocked').doc(userDoc.id).get()
+        ]);
+        blockedViewer = theyBlockedMe.exists;
+        iBlocked = iBlockedThem.exists;
+    }
+
+    if (blockedViewer) {
+        setHeaders({ 'Cache-Control': 'private, no-store' });
+        return {
+            hasLocation: false,
+            blockedViewer,
+            iBlocked,
+            profile: {
+                uid: userDoc.id,
+                username: userProfileData.username,
+                avatar_url: null,
+                about_me: '',
+                status: null,
+                socials: {},
+                equipped_frame: null,
+                equipped_bg: null
+            },
+            comments: [] as Comment[],
+            seoData: {
+                title: `${userProfileData.username} | ProtoMap`,
+                description: `Профиль пользователя ${userProfileData.username} на карте протогенов ProtoMap`,
+                image: getOgImageUrl(uid),
+                url: `https://proto-map.vercel.app/u/${uid}`,
+                type: 'profile'
+            }
+        };
+    }
 
     // Загружаем комментарии
     const commentsRef = userDoc.ref
@@ -190,6 +234,8 @@ export const load: PageServerLoad = async ({ params, setHeaders }) => {
 
     return {
         hasLocation,
+        blockedViewer,
+        iBlocked,
         profile: {
             uid: userDoc.id,
             username: userProfileData.username,
