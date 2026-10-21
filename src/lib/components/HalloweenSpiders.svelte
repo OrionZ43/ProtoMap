@@ -432,15 +432,17 @@
         lastScrollY = y;
     }
 
+    // Паутинка медленно растворяется, потом исчезает совсем
+    function fadeWeb(id: number) {
+        woven = woven.map((w) => (w.id === id ? { ...w, fading: true } : w));
+        later(() => { woven = woven.filter((w) => w.id !== id); }, 2400);
+    }
+
     function addWoven(x: number) {
         woven = [...woven, { id: nextWebId++, x, lines: wovenLines(rnd), fading: false }];
-        // Старые паутинки медленно растворяются, чтобы шапка не заросла
+        // Старые паутинки растворяются, чтобы шапка не заросла
         const alive = woven.filter((w) => !w.fading);
-        if (alive.length > MAX_WOVEN) {
-            const oldest = alive[0].id;
-            woven = woven.map((w) => (w.id === oldest ? { ...w, fading: true } : w));
-            later(() => { woven = woven.filter((w) => w.id !== oldest); }, 2400);
-        }
+        if (alive.length > MAX_WOVEN) fadeWeb(alive[0].id);
     }
 
     function weave() {
@@ -450,12 +452,21 @@
         weaver = 1 - weaver;
         // Новое место — недалеко от дома и не поверх уже сплетённых
         const reach = mobile ? 140 : 420;
+        const fits = (c: number) => Math.abs(c - s.homeX) > 50 && Math.abs(c - s.homeX) <= reach;
         let x = -1;
         for (let i = 0; i < 12 && x < 0; i++) {
             const c = clamp(s.homeX + (rnd() - 0.5) * 2 * reach, 70, width - 70);
-            if (Math.abs(c - s.homeX) > 50 && woven.every((w) => w.fading || Math.abs(w.x - c) > 70)) x = c;
+            if (fits(c) && woven.every((w) => w.fading || Math.abs(w.x - c) > 70)) x = c;
         }
-        if (x < 0) return;
+        // На телефоне шесть паутинок под шапкой не помещаются: без этого паучки
+        // сплели бы четыре и больше не плели. Самую старую из досягаемых
+        // растворяем и плетём новую на её месте.
+        if (x < 0) {
+            const old = woven.find((w) => !w.fading && fits(w.x));
+            if (!old) return;
+            fadeWeb(old.id);
+            x = old.x;
+        }
         weaving = { s, x, phase: 'go', until: 0 };
         s.tx = x;
         s.tl = 16;
