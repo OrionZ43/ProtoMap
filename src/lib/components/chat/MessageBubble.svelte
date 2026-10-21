@@ -9,6 +9,7 @@
 	(приём), голосовые разворачиваются во всю ширину пузыря.
 -->
 <script lang="ts">
+	import { t } from 'svelte-i18n';
 	import VoiceMessage from '$lib/components/chat/VoiceMessage.svelte';
 	import ImageLightbox from '$lib/components/chat/ImageLightbox.svelte';
 	import { getStickerUrl, type StickerPack } from '$lib/stores/stickerStore';
@@ -115,11 +116,11 @@
 			class:voice={T === 'VOICE'}
 		>
 			{#if msg.is_deleted}
-				<span class="deleted">Сообщение удалено</span>
+				<span class="deleted">{$t('chat.msg_deleted')}</span>
 			{:else if T === 'STICKER' && msg.sticker_pack_id && msg.sticker_id}
 				<img
 					src={sticker(msg.sticker_pack_id, msg.sticker_id)}
-					alt="Стикер"
+					alt={$t('chat.sticker_alt')}
 					class="sticker-img"
 					loading="lazy"
 				/>
@@ -129,9 +130,9 @@
 					<button
 						class="img-btn"
 						on:click={() => (lightboxOpen = true)}
-						aria-label="Открыть изображение"
+						aria-label={$t('chat.open_image')}
 					>
-						<img src={imageSrc} alt="Изображение" class="chat-img" loading="lazy" />
+						<img src={imageSrc} alt={$t('chat.img_title')} class="chat-img" loading="lazy" />
 					</button>
 					<ImageLightbox
 						src={imageSrc}
@@ -139,7 +140,7 @@
 						onClose={() => (lightboxOpen = false)}
 					/>
 				{:else}
-					<span class="muted">Изображение недоступно</span>
+					<span class="muted">{$t('chat.image_unavailable')}</span>
 				{/if}
 			{:else if T === 'VOICE'}
 				<div use:whenVisible class="voice-slot">
@@ -149,7 +150,7 @@
 						{:else if msg.text}
 							<VoiceMessage src="data:audio/aac;base64,{msg.text}" {isOwn} wide={!compact} />
 						{:else}
-							<span class="muted">Голосовое недоступно</span>
+							<span class="muted">{$t('chat.voice_unavailable')}</span>
 						{/if}
 					{:else}
 						<div class="voice-skeleton">
@@ -176,7 +177,7 @@
 
 		{#if hovered && myUid}
 			<div class="tools" class:own={isOwn}>
-				<button class="tool-btn" on:click={togglePanel} aria-label="Поставить реакцию">
+				<button class="tool-btn" on:click={togglePanel} aria-label={$t('chat.react')}>
 					<svg
 						viewBox="0 0 24 24"
 						fill="none"
@@ -194,7 +195,7 @@
 					</svg>
 				</button>
 				{#if msg.text && !msg.is_deleted && T === 'TEXT'}
-					<button class="tool-btn" on:click={copyText} aria-label="Скопировать текст">
+					<button class="tool-btn" on:click={copyText} aria-label={$t('chat.copy_text')}>
 						{#if copied}
 							<svg
 								viewBox="0 0 24 24"

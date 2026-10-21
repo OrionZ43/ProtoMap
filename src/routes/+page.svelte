@@ -21,12 +21,12 @@
 </script>
 
 <svelte:head>
-    <title>ProtoMap — ProtoMap - Карта протогенов</title>
+    <title>ProtoMap — Карта протогенов</title>
     <meta name="description" content="Интерактивная карта протогенов с казино, чатом и профилями" />
 
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://proto-map.vercel.app/" />
-    <meta property="og:title" content="ProtoMap — ProtoMap - Карта протогенов" />
+    <meta property="og:title" content="ProtoMap — Карта протогенов" />
     <meta property="og:description" content="Интерактивная карта протогенов с казино, чатом и профилями" />
     <meta property="og:image" content="https://proto-map.vercel.app/api/og?page=map" />
     <meta property="og:image:width" content="1200" />

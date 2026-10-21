@@ -2,6 +2,7 @@
 <!-- Общий стикер-пикер: раньше существовал двумя копиями — в DMInbox и на
      странице /messages. Паки берём из глобального stickerStore. -->
 <script lang="ts">
+	import { t } from 'svelte-i18n';
 	import { getStickerUrl, type StickerPack } from '$lib/stores/stickerStore';
 
 	export let packs: StickerPack[] = [];
@@ -37,7 +38,7 @@
 				</button>
 			{/each}
 		{:else}
-			<p class="empty">Стикеры не загрузились</p>
+			<p class="empty">{$t('chat.stickers_failed')}</p>
 		{/if}
 	</div>
 </div>

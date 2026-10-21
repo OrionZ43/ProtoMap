@@ -251,15 +251,15 @@
                             {#if msg.replyTo}
                                 <div class="reply-quote">
                                     <strong>{msg.replyTo.author_username}:</strong>
-                                    {#if msg.replyToImage}<span class="text-cyber-cyan italic">[Изображение]</span>
-                                    {:else if msg.replyToVoiceMessage}<span class="text-cyber-yellow italic">[Голосовое]</span>
+                                    {#if msg.replyToImage}<span class="text-cyber-cyan italic">[{$t('chat.img_title')}]</span>
+                                    {:else if msg.replyToVoiceMessage}<span class="text-cyber-yellow italic">[{$t('chat.voice_title')}]</span>
                                     {:else}{msg.replyTo.text}{/if}
                                 </div>
                             {/if}
                             {#if msg.image}
-                                <div class="mobile-exclusive image"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg></div><div class="info"><span class="title">ИЗОБРАЖЕНИЕ</span><span class="subtitle">Доступно в приложении</span></div></div>
+                                <div class="mobile-exclusive image"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg></div><div class="info"><span class="title">{$t('chat.media_image')}</span><span class="subtitle">{$t('chat.app_only')}</span></div></div>
                             {:else if msg.voiceMessage}
-                                <div class="mobile-exclusive voice"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg></div><div class="info"><span class="title">ГОЛОСОВОЕ</span><span class="subtitle">Доступно в приложении</span></div></div>
+                                <div class="mobile-exclusive voice"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg></div><div class="info"><span class="title">{$t('chat.media_voice')}</span><span class="subtitle">{$t('chat.app_only')}</span></div></div>
                             {:else}
                                 <p class="message-text">{msg.text}</p>
                             {/if}
@@ -282,7 +282,7 @@
         <div class="input-wrapper">
             {#if replyingTo}
                 <div class="replying-to-banner">
-                    <span>Ответ на: <span class="font-bold">{replyingTo.author_username}</span></span>
+                    <span>{$t('chat.reply_to')}: <span class="font-bold">{replyingTo.author_username}</span></span>
                     <button on:click={() => replyingTo = null}>&times;</button>
                 </div>
             {/if}

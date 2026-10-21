@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { t } from 'svelte-i18n';
 	import { page } from '$app/stores';
 </script>
 
 <svelte:head>
-	<title>404: Сигнал потерян | ProtoMap</title>
+	<title>{$page.status}: {$t('error_page.title')} | ProtoMap</title>
 </svelte:head>
 
 <div class="error-container">
@@ -19,11 +20,11 @@
         </div>
 
         <h1 class="glitch" data-text="404: NODE NOT FOUND">404: NODE NOT FOUND</h1>
-        <p class="subtitle">Сигнал потерян. Запрашиваемый узел не отвечает или не существует в этом секторе сети.</p>
-        <p class="error-details">Код ошибки: {$page.status} // URL: {$page.url.pathname}</p>
+        <p class="subtitle">{$t('error_page.text')}</p>
+        <p class="error-details">{$t('error_page.code')}: {$page.status} // URL: {$page.url.pathname}</p>
 
         <a href="/" class="return-btn font-display">
-            <span>&lt;</span> ВЕРНУТЬСЯ НА ГЛАВНУЮ КАРТУ
+            <span>&lt;</span> {$t('error_page.back')}
         </a>
     </div>
 </div>

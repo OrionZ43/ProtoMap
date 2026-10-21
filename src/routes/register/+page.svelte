@@ -533,7 +533,7 @@
 
 <AuthShell
 	title={$t('auth.register_title')}
-	subtitle="Три коротких шага"
+	subtitle={$t('auth.register_subtitle')}
 	protogens={data?.protogens ?? null}
 >
 	<div style="opacity: {$opacity}">
@@ -558,7 +558,7 @@
 					<div class="nav">
 						<span></span>
 						<NeonButton type="button" disabled={!step1Filled} on:click={() => (step = 2)}>
-							Далее
+							{$t('auth.next')}
 						</NeonButton>
 					</div>
 				</div>
@@ -636,9 +636,9 @@
 					</div>
 
 					<div class="nav">
-						<button type="button" class="back" on:click={() => (step = 1)}>← Назад</button>
+						<button type="button" class="back" on:click={() => (step = 1)}>← {$t('auth.back')}</button>
 						<NeonButton type="button" disabled={!allConsentsGiven} on:click={() => (step = 3)}>
-							Далее
+							{$t('auth.next')}
 						</NeonButton>
 					</div>
 				</div>
@@ -646,7 +646,7 @@
 
 			{#if step === 3}
 				<div class="step" in:fade={{ duration: 150 }}>
-					<p class="step__hint">Последний шаг — подтверди, что ты не робот.</p>
+					<p class="step__hint">{$t('auth.captcha_hint')}</p>
 
 					<div class="form-group flex justify-center">
 						<CyberTurnstile
@@ -657,7 +657,7 @@
 					</div>
 
 					<div class="nav">
-						<button type="button" class="back" on:click={() => (step = 2)}>← Назад</button>
+						<button type="button" class="back" on:click={() => (step = 2)}>← {$t('auth.back')}</button>
 						<NeonButton
 							type="submit"
 							disabled={loading || googleLoading || !allConsentsGiven || !turnstileVerified}
@@ -675,7 +675,7 @@
 			on:click={() => handleGoogleLogin()}
 			disabled={googleLoading || loading || !allConsentsGiven || !turnstileVerified || !appCheckReady}
 			type="button"
-			title={appCheckReady ? 'Войти/Зарегистрироваться с Google' : 'Подготовка...'}
+			title={appCheckReady ? $t('auth.google_title') : $t('auth.preparing')}
 			class="google-btn"
 		>
 			{#if !appCheckReady}

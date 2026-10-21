@@ -406,7 +406,7 @@
 	}
 </script>
 
-<svelte:head><title>Сообщения | ProtoMap</title></svelte:head>
+<svelte:head><title>{$t('menu.messages')} | ProtoMap</title></svelte:head>
 
 <div
 	class="page"
@@ -473,8 +473,8 @@
 				{presence}
 				showFavorites={Boolean($userStore.user) && !query}
 				favoritesActive={isFav}
-				emptyTitle={query ? 'Ничего не найдено' : 'Личных чатов пока нет'}
-				emptyHint={query ? 'Попробуй другое имя' : 'Открой профиль пользователя и напиши ему'}
+				emptyTitle={query ? $t('chat.search_empty') : $t('chat.no_dms')}
+				emptyHint={query ? $t('chat.search_empty_hint') : $t('chat.no_dms_hint')}
 				onOpen={handleOpenChat}
 				onFavorites={openFavorites}
 			/>
@@ -494,8 +494,8 @@
 						<circle cx="5" cy="19" r="1.4" fill="currentColor" stroke="none" />
 					</svg>
 				</div>
-				<p class="side-note-title">Режим каналов</p>
-				<p class="side-note-hint">Выбери канал справа</p>
+				<p class="side-note-title">{$t('chat.channels_mode')}</p>
+				<p class="side-note-hint">{$t('chat.pick_channel')}</p>
 			</div>
 		{/if}
 	</aside>
@@ -504,7 +504,7 @@
 	<main class="panel main">
 		{#if activeTab === 'channels'}
 			<div class="dm-header">
-				<button class="back-btn" on:click={back} aria-label="Назад">
+				<button class="back-btn" on:click={back} aria-label={$t('chat.back')}>
 					<svg
 						viewBox="0 0 24 24"
 						fill="none"
@@ -514,7 +514,7 @@
 						height="18"><path d="M15 18l-6-6 6-6" /></svg
 					>
 				</button>
-				<span class="partner-name">Каналы</span>
+				<span class="partner-name">{$t('chat.channels_title')}</span>
 			</div>
 			<ChannelsFeed />
 		{:else if !$activeChat}
@@ -533,12 +533,12 @@
 						<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
 					</svg>
 				</div>
-				<p class="ph-title">Диалог не выбран</p>
-				<p class="ph-hint">Выбери переписку слева или начни новую через профиль на карте</p>
+				<p class="ph-title">{$t('chat.no_dialog')}</p>
+				<p class="ph-hint">{$t('chat.no_dialog_hint')}</p>
 			</div>
 		{:else}
 			<div class="dm-header">
-				<button class="back-btn" on:click={back} aria-label="Назад">
+				<button class="back-btn" on:click={back} aria-label={$t('chat.back')}>
 					<svg
 						viewBox="0 0 24 24"
 						fill="none"
@@ -558,8 +558,8 @@
 						</svg>
 					</div>
 					<div class="header-text">
-						<span class="partner-name">Избранное</span>
-						<span class="partner-sub">Заметки, которые видишь только ты</span>
+						<span class="partner-name">{$t('chat.favorites')}</span>
+						<span class="partner-sub">{$t('chat.favorites_desc')}</span>
 					</div>
 				{:else}
 					<div class="avatar-wrap {$activeChat.partner.frameId || ''}">
@@ -575,25 +575,23 @@
 							{$activeChat.partner.username}
 						</a>
 						{#if $partnerTyping}
-							<span class="partner-sub typing">печатает…</span>
+							<span class="partner-sub typing">{$t('chat.typing')}</span>
 						{:else if partnerOnline}
-							<span class="partner-sub online">в сети</span>
+							<span class="partner-sub online">{$t('chat.online')}</span>
 						{:else}
-							<span class="partner-sub">не в сети</span>
+							<span class="partner-sub">{$t('chat.offline')}</span>
 						{/if}
 					</div>
 				{/if}
 
-				<button class="close-btn" on:click={handleCloseChat} aria-label="Закрыть диалог">×</button>
+				<button class="close-btn" on:click={handleCloseChat} aria-label={$t('chat.close_dialog')}>×</button>
 			</div>
 
 			<div class="messages-window" bind:this={messagesWindow} on:scroll={onListScroll}>
 				{#if $messages.length === 0}
 					<div class="empty-thread">
 						<p class="empty-hint">
-							{isFav
-								? 'Здесь пусто — сохрани себе первую заметку.'
-								: 'Сообщений пока нет — напиши первым.'}
+							{isFav ? $t('chat.favorites_empty') : $t('chat.no_messages')}
 						</p>
 					</div>
 				{/if}

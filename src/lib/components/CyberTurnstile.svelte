@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from 'svelte-i18n';
     import { onMount, createEventDispatcher } from 'svelte';
 
     export let siteKey: string;
@@ -68,7 +69,7 @@
     <div bind:this={container} class="cf-turnstile-placeholder">
         {#if !isLoaded}
             <div class="loading">
-                <span>Загрузка проверки...</span>
+                <span>{$t('ui.loading_check')}</span>
             </div>
         {/if}
     </div>

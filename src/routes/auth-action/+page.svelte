@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from 'svelte-i18n';
     import { onMount } from 'svelte';
     import { page } from '$app/stores';
     import { goto } from '$app/navigation';
@@ -30,6 +31,6 @@
 
 <div class="min-h-screen bg-black flex items-center justify-center">
     <p class="text-cyber-cyan font-mono animate-pulse">
-        > ИДЕНТИФИКАЦИЯ ПРОТОКОЛА...
+        > {$t('auth.action_loading')}
     </p>
 </div>

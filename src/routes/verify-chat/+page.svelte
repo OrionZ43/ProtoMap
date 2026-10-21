@@ -1,6 +1,8 @@
 <!-- src/routes/verify-chat/+page.svelte -->
 <script lang="ts">
+    import { t } from 'svelte-i18n';
     import { onMount } from 'svelte';
+    import { get } from 'svelte/store';
     import { page } from '$app/stores';
     import { fade } from 'svelte/transition';
     import { tweened } from 'svelte/motion';
@@ -31,7 +33,7 @@
 
         if (!tgId || !sig) {
             state    = 'error';
-            errorMsg = 'Некорректная ссылка. Попробуй снова через бота.';
+            errorMsg = get(t)('verify_chat.err_link');
             return;
         }
 
@@ -50,7 +52,7 @@
         script.onload  = () => renderWidget();
         script.onerror = () => {
             state    = 'error';
-            errorMsg = 'Не удалось загрузить проверку Cloudflare. Обнови страницу.';
+            errorMsg = get(t)('verify_chat.err_turnstile_load');
         };
         document.head.appendChild(script);
     }
@@ -79,12 +81,12 @@
             });
             const data = await res.json();
             if (!res.ok || !data.success) {
-                throw new Error(data.error ?? 'Ошибка верификации.');
+                throw new Error(data.error ?? get(t)('verify_chat.err_generic'));
             }
             state = 'success';
         } catch (e: any) {
             state    = 'error';
-            errorMsg = e.message ?? 'Ошибка сервера. Попробуй снова.';
+            errorMsg = e.message ?? get(t)('verify_chat.err_server');
             // Сбрасываем виджет чтобы можно было попробовать снова
             if (widgetId && (window as any).turnstile) {
                 (window as any).turnstile.reset(widgetId);
@@ -94,12 +96,12 @@
 
     function onTurnstileError() {
         state    = 'error';
-        errorMsg = 'Ошибка Cloudflare Turnstile. Обнови страницу.';
+        errorMsg = get(t)('verify_chat.err_turnstile');
     }
 </script>
 
 <svelte:head>
-    <title>// ВЕРИФИКАЦИЯ | ProtoMap</title>
+    <title>// {$t('verify_chat.title')} | ProtoMap</title>
 </svelte:head>
 
 <div class="page-wrap" style="opacity: {$opacity}">
@@ -115,18 +117,15 @@
             {:else if state === 'error'}
                 <span class="icon-err">✕</span>
             {:else}
-                <span class="icon-shield">🛡</span>
+                <svg class="icon-shield" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
             {/if}
         </div>
 
         <div class="card-header-tag">// PERIMETER CHECK</div>
 
         {#if state === 'idle' || state === 'loading'}
-            <h1 class="card-title">ВЕРИФИКАЦИЯ</h1>
-            <p class="card-desc">
-                Пройди проверку Cloudflare — это займёт секунду.<br>
-                После этого ты получишь полный доступ к чату <strong>@proto_map</strong>.
-            </p>
+            <h1 class="card-title">{$t('verify_chat.title')}</h1>
+            <p class="card-desc">{@html $t('verify_chat.desc')}</p>
 
             <!-- Turnstile виджет -->
             <div class="turnstile-wrap" class:loading={state === 'loading'}>
@@ -134,31 +133,28 @@
                 {#if state === 'loading'}
                     <div class="turnstile-overlay" in:fade={{ duration: 200 }}>
                         <div class="spinner"></div>
-                        <span>Проверяем...</span>
+                        <span>{$t('verify_chat.checking')}</span>
                     </div>
                 {/if}
             </div>
 
         {:else if state === 'success'}
-            <h1 class="card-title title-ok">ДОСТУП ОТКРЫТ</h1>
-            <p class="card-desc">
-                Верификация пройдена. Ты подтверждён как живой участник. 🎉<br><br>
-                Вернись в чат <strong>@proto_map</strong> — бот уже разблокировал тебя.
-            </p>
+            <h1 class="card-title title-ok">{$t('verify_chat.success_title')}</h1>
+            <p class="card-desc">{@html $t('verify_chat.success_desc')}</p>
             <a href="https://t.me/proto_map" target="_blank" rel="noopener" class="btn-back">
-                ← ВЕРНУТЬСЯ В ЧАТ
+                ← {$t('verify_chat.back')}
             </a>
 
         {:else if state === 'error'}
-            <h1 class="card-title title-err">ОШИБКА</h1>
+            <h1 class="card-title title-err">{$t('verify_chat.error_title')}</h1>
             <p class="card-desc err-text">{errorMsg}</p>
             <button class="btn-retry" on:click={() => { state = 'idle'; loadTurnstile(); }}>
-                ПОПРОБОВАТЬ СНОВА
+                {$t('verify_chat.retry')}
             </button>
         {/if}
 
         <div class="card-footer">
-            Защищено <span class="cf-badge">Cloudflare Turnstile</span> · ProtoMap Anti-Raid System
+            {$t('verify_chat.protected_by')} <span class="cf-badge">Cloudflare Turnstile</span> · ProtoMap Anti-Raid System
         </div>
     </div>
 </div>

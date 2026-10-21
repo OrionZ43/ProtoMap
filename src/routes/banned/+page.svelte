@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import type { PageData } from './$types';
+    import { t } from 'svelte-i18n';
 
     export let data: PageData;
 
@@ -21,7 +22,7 @@
 </script>
 
 <svelte:head>
-    <title>ДОСТУП ЗАБЛОКИРОВАН | ProtoMap</title>
+    <title>{$t('banned.page_title')} | ProtoMap</title>
 </svelte:head>
 
 <div class="jail-cell">
@@ -45,23 +46,23 @@
         </svg>
 
         <h1 class="glitch-text" data-text="CRITICAL ERROR">CRITICAL ERROR</h1>
-        <h2 class="sub-title">ВАШ АККАУНТ ЗАМОРОЖЕН</h2>
+        <h2 class="sub-title">{$t('banned.sub_header')}</h2>
 
         <div class="terminal-box">
-            <p class="terminal-line">> Идентификатор субъекта: <span class="uid">{data.uid}</span></p>
-            <p class="terminal-line">> Статус: <span class="red">ИСКЛЮЧЕН ИЗ СЕТИ</span></p>
-            <p class="terminal-line">> Причина: <span class="reason">{displayedReason}</span><span class="cursor">_</span></p>
+            <p class="terminal-line">> {$t('banned.uid_label')}: <span class="uid">{data.uid}</span></p>
+            <p class="terminal-line">> {$t('banned.status_label')}: <span class="red">{$t('banned.status_value')}</span></p>
+            <p class="terminal-line">> {$t('banned.reason_label')}: <span class="reason">{displayedReason}</span><span class="cursor">_</span></p>
             {#if data.bannedUntil}
-                <p class="terminal-line">> Дата амнистии: <span class="yellow">{new Date(data.bannedUntil.seconds * 1000).toLocaleDateString()}</span></p>
+                <p class="terminal-line">> {$t('banned.amnesty_label')}: <span class="yellow">{new Date(data.bannedUntil.seconds * 1000).toLocaleDateString()}</span></p>
             {:else}
-                <p class="terminal-line">> Дата амнистии: <span class="red">НИКОГДА</span></p>
+                <p class="terminal-line">> {$t('banned.amnesty_label')}: <span class="red">{$t('banned.never')}</span></p>
             {/if}
         </div>
 
         <div class="appeal-section">
             {#if data.appealable}
-                <p class="appeal-text">Считаете это ошибкой? Ваши мольбы могут быть услышаны здесь:</p>
-                <a href="https://t.me/Orion_Z43" class="appeal-btn">ПОДАТЬ АПЕЛЛЯЦИЮ</a>
+                <p class="appeal-text">{$t('banned.appeal_text')}</p>
+                <a href="https://t.me/Orion_Z43" class="appeal-btn">{$t('banned.appeal_btn')}</a>
             {:else}
                 <!--
                     Блокировка по пункту 2.3 Соглашения (безопасность детей).
@@ -69,9 +70,7 @@
                     на такие случаи не распространяется — кнопку не показываем.
                 -->
                 <p class="appeal-text final">
-                    Блокировка применена по пункту 2.3 Пользовательского соглашения
-                    (безопасность детей). Решение является окончательным и обжалованию
-                    не подлежит.
+                    {$t('banned.final_text')}
                 </p>
             {/if}
         </div>

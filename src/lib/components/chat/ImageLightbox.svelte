@@ -8,6 +8,7 @@
 	оригинал» оставлена: иногда нужен именно исходник в полном размере.
 -->
 <script lang="ts">
+	import { t } from 'svelte-i18n';
 	import { onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 
@@ -48,7 +49,7 @@
 	<div class="backdrop" on:click={onClose} transition:fade={{ duration: 140 }}>
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 		<div class="frame" on:click={(e) => e.stopPropagation()}>
-			<img {src} alt="Изображение из переписки" class="pic" />
+			<img {src} alt={$t('chat.lightbox_alt')} class="pic" />
 
 			<div class="bar">
 				<a class="orig" href={src} target="_blank" rel="noopener noreferrer">
@@ -66,12 +67,12 @@
 						<polyline points="15 3 21 3 21 9" />
 						<line x1="10" y1="14" x2="21" y2="3" />
 					</svg>
-					Открыть оригинал
+					{$t('chat.open_original')}
 				</a>
 			</div>
 		</div>
 
-		<button class="close" on:click={onClose} aria-label="Закрыть просмотр">
+		<button class="close" on:click={onClose} aria-label={$t('chat.close_view')}>
 			<svg
 				viewBox="0 0 24 24"
 				fill="none"

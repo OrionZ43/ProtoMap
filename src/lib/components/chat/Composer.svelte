@@ -12,6 +12,7 @@
 	Blob.
 -->
 <script lang="ts">
+	import { t } from 'svelte-i18n';
 	import { onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import StickerPicker from '$lib/components/chat/StickerPicker.svelte';
@@ -157,8 +158,8 @@
 	<div class="input-row">
 		<button
 			class="tool-btn"
-			title="Изображение"
-			aria-label="Отправить изображение"
+			title={$t('chat.img_title')}
+			aria-label={$t('chat.img_send')}
 			on:click={() => fileInputEl.click()}
 			disabled={isSending || isRecording}
 		>
@@ -186,8 +187,8 @@
 		<button
 			class="tool-btn"
 			class:active={showStickers}
-			title="Стикеры"
-			aria-label="Стикеры"
+			title={$t('chat.stickers')}
+			aria-label={$t('chat.stickers')}
 			on:click={() => (showStickers = !showStickers)}
 			disabled={isRecording}
 		>
@@ -230,14 +231,14 @@
 				<button
 					class="stop-rec-btn"
 					on:click={stopRecording}
-					title="Остановить запись"
-					aria-label="Остановить запись"
+					title={$t('chat.stop_recording')}
+					aria-label={$t('chat.stop_recording')}
 				>
 					<div class="stop-square"></div>
 				</button>
 			</div>
 		{:else if messageText.trim()}
-			<button class="send-btn" on:click={submit} disabled={isSending} aria-label="Отправить">
+			<button class="send-btn" on:click={submit} disabled={isSending} aria-label={$t('chat.send')}>
 				<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
 					<path
 						d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"
@@ -249,8 +250,8 @@
 				class="tool-btn mic-btn"
 				on:click={toggleRecording}
 				disabled={isSending}
-				title="Голосовое"
-				aria-label="Записать голосовое"
+				title={$t('chat.voice_title')}
+				aria-label={$t('chat.voice_record')}
 			>
 				<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
 					<path

@@ -56,7 +56,7 @@
         class="legal-banner"
         role="dialog"
         aria-live="polite"
-        aria-label="Обновление юридических документов"
+        aria-label={$t('legal.banner.aria_label')}
         transition:slide={{ duration: 320 }}
     >
         <!-- Animated corner accents -->

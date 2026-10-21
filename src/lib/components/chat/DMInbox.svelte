@@ -1,5 +1,6 @@
 <!-- src/lib/components/chat/DMInbox.svelte -->
 <script lang="ts">
+    import { t } from 'svelte-i18n';
     import { onMount, onDestroy, tick } from 'svelte';
     import { db } from '$lib/firebase';
     import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -446,7 +447,7 @@
 {#if view === 'inbox'}
     {#if !$userStore.user}
         <div class="empty-state">
-            <p><a href="/login" class="link">Войди</a> чтобы видеть сообщения</p>
+            <p><a href="/login" class="link">{$t('chat.login_link')}</a>{$t('chat.login_to_see')}</p>
         </div>
     {:else}
         <ChatList {chats} onOpen={openChat} onFavorites={openFavorites} />
@@ -456,7 +457,7 @@
 {:else if view === 'chat' && activeChat}
     {@const isFavorites = activeChat.partner.uid === $userStore.user?.uid}
     <div class="dm-header">
-        <button class="back-btn" on:click={backToInbox} title="К списку диалогов" aria-label="К списку диалогов">
+        <button class="back-btn" on:click={backToInbox} title={$t('chat.back_to_list')} aria-label={$t('chat.back_to_list')}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         {#if isFavorites}
@@ -465,7 +466,7 @@
                     <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z"/>
                 </svg>
             </div>
-            <span class="dm-partner-name">Избранное</span>
+            <span class="dm-partner-name">{$t('chat.favorites')}</span>
         {:else}
             <div class="avatar-wrap small">
                 <img src={avatarFor(activeChat.partner.username, activeChat.partner.avatarUrl)}
@@ -478,7 +479,7 @@
     <!-- Лента сообщений -->
     <div class="messages-window" bind:this={messagesWindow}>
         {#if messages.length === 0}
-            <div class="empty-state"><p class="empty-hint">Напишите первое сообщение</p></div>
+            <div class="empty-state"><p class="empty-hint">{$t('chat.write_first')}</p></div>
         {:else}
             {#each messages as msg, idx (msg.id)}
                 {#if needsDaySeparator(msg.createdAt, messages[idx - 1]?.createdAt)}
@@ -520,7 +521,7 @@
             {isSending}
             {uploadProgress}
             compact
-            placeholder={isFavorites ? 'Заметка себе…' : 'Написать…'}
+            placeholder={isFavorites ? $t('chat.note_placeholder') : $t('chat.write_placeholder')}
             onSend={sendMessage}
             onImage={handleFileSelect}
             onVoice={_uploadVoice}

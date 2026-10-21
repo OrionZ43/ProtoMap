@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { t } from 'svelte-i18n';
     /** Индикатор шага мастера регистрации. */
 
     export let total: number;
@@ -15,13 +16,13 @@
     $: steps = Array.from({ length: total }, (_, i) => i + 1);
 </script>
 
-<div class="dots" role="group" aria-label="Шаг {current} из {total}">
+<div class="dots" role="group" aria-label={$t('auth.step_of', { values: { current, total } })}>
     {#each steps as s}
         {#if onGoTo && s < current}
             <button
                 type="button"
                 class="dot dot--done"
-                aria-label="Вернуться к шагу {s}"
+                aria-label={$t('auth.step_back', { values: { step: s } })}
                 on:click={() => onGoTo?.(s)}
             ></button>
         {:else}
@@ -34,7 +35,7 @@
         {/if}
     {/each}
 
-    <span class="label font-display">шаг {current} из {total}</span>
+    <span class="label font-display">{$t('auth.step_of', { values: { current, total } })}</span>
 </div>
 
 <style>

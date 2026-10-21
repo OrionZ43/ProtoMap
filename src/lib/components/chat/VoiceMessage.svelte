@@ -1,5 +1,6 @@
 <!-- src/lib/components/chat/VoiceMessage.svelte -->
 <script lang="ts">
+    import { t } from 'svelte-i18n';
     import { onMount, onDestroy } from 'svelte';
 
     export let src: string;
@@ -96,7 +97,7 @@
 ></audio>
 
 <div class="vc" class:own={isOwn} class:wide>
-    <button class="play-btn" on:click={togglePlay} aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}>
+    <button class="play-btn" on:click={togglePlay} aria-label={isPlaying ? $t('chat.pause') : $t('chat.play')}>
         {#if isPlaying}
             <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17">
                 <rect x="6" y="4" width="4" height="16" rx="1.5"/>

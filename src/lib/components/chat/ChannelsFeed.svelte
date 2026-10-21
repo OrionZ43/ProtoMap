@@ -1,5 +1,6 @@
 <!-- src/lib/components/chat/ChannelsFeed.svelte -->
 <script lang="ts">
+	import { t } from 'svelte-i18n';
 	import { onMount, onDestroy, tick } from 'svelte';
 	import { db } from '$lib/firebase';
 	import {
@@ -362,8 +363,8 @@
 						<circle cx="5" cy="19" r="1.4" fill="currentColor" stroke="none" />
 					</svg>
 				</div>
-				<p class="empty-title">Каналов пока нет</p>
-				<p class="empty-hint">Каналы появятся здесь когда их создадут пользователи</p>
+				<p class="empty-title">{$t('chat.no_channels')}</p>
+				<p class="empty-hint">{$t('chat.no_channels_hint')}</p>
 			</div>
 		{:else}
 			{#each channels as ch (ch.id)}
@@ -412,7 +413,7 @@
 		</div>
 		<div class="ch-feed-title">
 			<span class="ch-name">{activeChannel.name}</span>
-			<span class="ch-sub-count-sm">{activeChannel.subscriberCount} подписчиков</span>
+			<span class="ch-sub-count-sm">{$t('chat.subscribers', { values: { count: activeChannel.subscriberCount ?? 0 } })}</span>
 		</div>
 
 		<!-- SECURITY: Кнопка подписки скрыта для владельца — он не может подписаться на свой канал -->
@@ -422,7 +423,7 @@
 				class:subbed={activeChannel.isSubscribed}
 				disabled={isSubscribing}
 				on:click|stopPropagation={() => toggleSubscribe(activeChannel!)}
-				title={activeChannel.isSubscribed ? 'Отписаться' : 'Подписаться'}
+				title={activeChannel.isSubscribed ? $t('chat.unsubscribe') : $t('chat.subscribe')}
 			>
 				{activeChannel.isSubscribed ? '✓' : '+'}
 			</button>
@@ -438,7 +439,7 @@
 	>
 		{#if posts.filter((p) => !p.is_deleted).length === 0}
 			<div class="empty-state">
-				<p class="empty-hint">Постов пока нет</p>
+				<p class="empty-hint">{$t('chat.no_posts')}</p>
 			</div>
 		{:else}
 			{#each posts as post (post.id)}
@@ -464,7 +465,7 @@
 						{/if}
 
 						{#if post.edited_text && post.type === 'TEXT'}
-							<span class="edited-mark">изменено</span>
+							<span class="edited-mark">{$t('chat.edited')}</span>
 						{/if}
 
 						<div class="reactions-row">
@@ -485,7 +486,7 @@
 										on:click|stopPropagation={() => {
 											openReactPanel = openReactPanel === post.id ? null : post.id;
 										}}
-										title="Добавить реакцию"
+										title={$t('chat.add_reaction')}
 									>
 										<svg
 						viewBox="0 0 24 24"
@@ -532,7 +533,7 @@
 				<textarea
 					bind:value={newPostText}
 					on:keydown={handlePostKeydown}
-					placeholder="Новый пост... (Ctrl+Enter для отправки)"
+					placeholder={$t('chat.new_post_placeholder')}
 					disabled={isPosting}
 					class="input-field"
 					class:over-limit={isOverLimit}
@@ -549,7 +550,7 @@
 				on:click={publishPost}
 				disabled={isPosting || !newPostText.trim() || isOverLimit}
 				class="send-btn"
-				title="Опубликовать"
+				title={$t('chat.publish')}
 			>
 				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
 					<path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/>

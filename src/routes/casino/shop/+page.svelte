@@ -122,7 +122,7 @@
     <div class="bg-blur-2"></div>
 
     <div class="market-header">
-        <img src="/casino/orioncasino.png" alt="Торговец Орион" class="dealer-art"/>
+        <img src="/casino/orioncasino.png" alt={$t('shop.dealer_alt')} class="dealer-art"/>
         <div class="dealer-dialogue">
             <p>{dealerMessage}</p>
         </div>

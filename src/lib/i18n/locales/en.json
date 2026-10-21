@@ -34,7 +34,8 @@
 		"send_report": "Submit Report",
 		"success": "Success",
 		"error": "Error",
-		"confirm_delete": "Are you sure? This cannot be undone."
+		"confirm_delete": "Are you sure? This cannot be undone.",
+		"loading_check": "Loading check..."
 	},
 	"modal": {
 		"ok": "OK",
@@ -55,6 +56,22 @@
 		"error_expired": "Link expired.",
 		"error_generic": "Critical verification failure.",
 		"btn_return": "RETURN TO SYSTEM"
+	},
+	"verify_chat": {
+		"title": "VERIFICATION",
+		"desc": "Pass the Cloudflare check — it takes a second.<br>After that you’ll get full access to the <strong>@proto_map</strong> chat.",
+		"checking": "Checking...",
+		"success_title": "ACCESS GRANTED",
+		"success_desc": "Verification passed. You’re confirmed as a real member.<br><br>Go back to the <strong>@proto_map</strong> chat — the bot has already unlocked you.",
+		"back": "BACK TO THE CHAT",
+		"error_title": "ERROR",
+		"retry": "TRY AGAIN",
+		"protected_by": "Protected by",
+		"err_link": "Invalid link. Try again via the bot.",
+		"err_turnstile_load": "Couldn’t load the Cloudflare check. Refresh the page.",
+		"err_generic": "Verification error.",
+		"err_server": "Server error. Try again.",
+		"err_turnstile": "Cloudflare Turnstile error. Refresh the page."
 	},
 	"auth": {
 		"login_title": "AUTHENTICATION",
@@ -100,7 +117,16 @@
 			"policy_link": "Personal Data Processing Policy"
 		},
 		"showcase_protogens": "{count, plural, one {protogen already on the map} other {protogens already on the map}}",
-		"showcase_tagline": "Interactive community map"
+		"showcase_tagline": "Interactive community map",
+		"next": "Next",
+		"back": "Back",
+		"register_subtitle": "Three short steps",
+		"captcha_hint": "Last step — confirm you’re not a robot.",
+		"google_title": "Sign in / sign up with Google",
+		"preparing": "Preparing...",
+		"step_of": "Step {current} of {total}",
+		"step_back": "Back to step {step}",
+		"action_loading": "IDENTIFYING PROTOCOL..."
 	},
 	"security": {
 		"2fa_label": "TWO-FACTOR AUTHENTICATION:",
@@ -161,7 +187,65 @@
 		"channels_title": "Channels",
 		"search_dialog": "Search conversations",
 		"write_placeholder": "Write a message...",
-		"note_placeholder": "Note to self..."
+		"note_placeholder": "Note to self...",
+		"img_title": "Image",
+		"img_send": "Send an image",
+		"stickers": "Stickers",
+		"stop_recording": "Stop recording",
+		"send": "Send",
+		"voice_title": "Voice message",
+		"voice_record": "Record a voice message",
+		"msg_deleted": "Message deleted",
+		"sticker_alt": "Sticker",
+		"open_image": "Open image",
+		"image_unavailable": "Image unavailable",
+		"voice_unavailable": "Voice message unavailable",
+		"react": "Add a reaction",
+		"copy_text": "Copy text",
+		"lightbox_alt": "Image from the conversation",
+		"open_original": "Open original",
+		"close_view": "Close viewer",
+		"stickers_failed": "Stickers failed to load",
+		"favorites": "Saved messages",
+		"favorites_hint": "Notes, links and files for yourself",
+		"online_title": "Online",
+		"media_image": "IMAGE",
+		"media_voice": "VOICE MESSAGE",
+		"app_only": "Available in the app",
+		"reply_to": "Replying to",
+		"no_channels": "No channels yet",
+		"no_channels_hint": "Channels will appear here once users create them",
+		"subscribers": "{count, plural, one {# subscriber} other {# subscribers}}",
+		"subscribe": "Subscribe",
+		"unsubscribe": "Unsubscribe",
+		"no_posts": "No posts yet",
+		"edited": "edited",
+		"add_reaction": "Add a reaction",
+		"new_post_placeholder": "New post... (Ctrl+Enter to send)",
+		"publish": "Publish",
+		"login_link": "Log in",
+		"login_to_see": " to see your messages",
+		"back_to_list": "Back to conversations",
+		"write_first": "Write the first message",
+		"pause": "Pause",
+		"play": "Play",
+		"search_empty": "Nothing found",
+		"search_empty_hint": "Try another name",
+		"no_dms": "No direct messages yet",
+		"no_dms_hint": "Open someone’s profile and message them",
+		"channels_mode": "Channels mode",
+		"pick_channel": "Pick a channel on the right",
+		"back": "Back",
+		"no_dialog": "No conversation selected",
+		"no_dialog_hint": "Pick a conversation on the left or start a new one from a profile on the map",
+		"favorites_desc": "Notes only you can see",
+		"typing": "typing…",
+		"online": "online",
+		"offline": "offline",
+		"close_dialog": "Close conversation",
+		"favorites_empty": "It’s empty here — save your first note.",
+		"no_messages": "No messages yet — be the first to write.",
+		"open": "Open chat"
 	},
 	"map_popup": {
 		"location": "LOCATION",
@@ -303,7 +387,14 @@
 		"amnesty_label": "Amnesty Date",
 		"never": "NEVER",
 		"appeal_text": "Think this is a mistake? Your pleas might be heard here:",
-		"appeal_btn": "FILE AN APPEAL"
+		"appeal_btn": "FILE AN APPEAL",
+		"final_text": "The block was applied under clause 2.3 of the Terms of Service (child safety). The decision is final and cannot be appealed."
+	},
+	"error_page": {
+		"title": "Signal lost",
+		"text": "Signal lost. The requested node isn’t responding or doesn’t exist in this sector of the network.",
+		"code": "Error code",
+		"back": "BACK TO THE MAIN MAP"
 	},
 	"news_page": {
 		"title": "NETWORK NEWS",
@@ -465,7 +556,8 @@
 				"> Enjoy your new pixels."
 			]
 		},
-		"until": "Until {date}"
+		"until": "Until {date}",
+		"dealer_alt": "Orion the trader"
 	},
 	"coin": {
 		"title": "Orion's Table",
@@ -813,7 +905,8 @@
 			"link_privacy": "Privacy Policy",
 			"link_tos": "Terms of Service",
 			"accept": "ACCEPT",
-			"accept_aria": "Accept the updated documents"
+			"accept_aria": "Accept the updated documents",
+			"aria_label": "Legal documents update"
 		},
 		"gate": {
 			"title": "Documents updated",

@@ -13,6 +13,7 @@
 	раздувается на всю строку.
 -->
 <script lang="ts">
+	import { t } from 'svelte-i18n';
 	import { avatarFor, fmtRelative, previewKind } from '$lib/utils/chatFormat';
 	import type { DMChat } from '$lib/stores/dmStore';
 
@@ -44,9 +45,9 @@
 			</div>
 			<div class="info">
 				<div class="top">
-					<span class="name fav-name">Избранное</span>
+					<span class="name fav-name">{$t('chat.favorites')}</span>
 				</div>
-				<span class="preview">Заметки, ссылки, файлы для себя</span>
+				<span class="preview">{$t('chat.favorites_hint')}</span>
 			</div>
 		</button>
 	{/if}
@@ -57,7 +58,7 @@
 			<div class="avatar-wrap {c.partner.frameId || ''}">
 				<img src={avatarFor(c.partner.username, c.partner.avatarUrl)} alt="" class="avatar" />
 				{#if presence[c.partner.uid] === 'online'}
-					<span class="online-dot" title="В сети"></span>
+					<span class="online-dot" title={$t('chat.online_title')}></span>
 				{/if}
 				{#if c.unread > 0}
 					<span class="unread">{c.unread > 99 ? '99+' : c.unread}</span>
