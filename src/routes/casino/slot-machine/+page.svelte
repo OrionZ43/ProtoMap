@@ -645,7 +645,7 @@
     .machine-frame { background: rgba(20, 20, 25, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 1.5rem; padding: 2rem; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
     .machine-header { text-align: center; margin-bottom: 2rem; }
     .machine-title { font-size: 3rem; color: #fff; margin: 0; animation: glitch-text 0.2s infinite; }
-    .jackpot-ticker { font-family: 'Chakra Petch', monospace; color: #ff003c; display: inline-block; padding: 0.2rem 1rem; border: 1px solid #ff003c; box-shadow: 0 0 10px #ff003c; margin-top: 0.5rem; }
+    .jackpot-ticker { font-family: 'Chakra Petch', 'Russo One', monospace; color: #ff003c; display: inline-block; padding: 0.2rem 1rem; border: 1px solid #ff003c; box-shadow: 0 0 10px #ff003c; margin-top: 0.5rem; }
 
     .reels-window-rim { padding: 10px; background: rgba(0,0,0,0.3); border-radius: 1rem; box-shadow: inset 0 0 20px #000; margin-bottom: 2rem; }
     .reels-window { display: flex; gap: 10px; height: 250px; background: rgba(0,0,0,0.5); border-radius: 0.5rem; overflow: hidden; position: relative; box-shadow: inset 0 0 50px rgba(0,0,0,0.8); }
@@ -662,9 +662,9 @@
     .static-symbol.bounce { animation: bounce-stop 0.4s ease-out; }
 
     .symbol { width: 70%; height: 70%; object-fit: contain; filter: drop-shadow(0 0 10px var(--glow-color)) drop-shadow(0 0 20px var(--glow-color)); opacity: 1; transform: scale(1); }
-    .placeholder-symbol { font-size: 5rem; color: #333; font-family: 'Chakra Petch', monospace; }
+    .placeholder-symbol { font-size: 5rem; color: #333; font-family: 'Chakra Petch', 'Russo One', monospace; }
 
-    .win-display { text-align: center; font-family: 'Chakra Petch', monospace; font-size: 2.5rem; color: var(--cyber-yellow); margin-bottom: 2rem; opacity: 0; height: 3.5rem; transition: opacity 0.3s; }
+    .win-display { text-align: center; font-family: 'Chakra Petch', 'Russo One', monospace; font-size: 2.5rem; color: var(--cyber-yellow); margin-bottom: 2rem; opacity: 0; height: 3.5rem; transition: opacity 0.3s; }
     .win-display.visible { opacity: 1; animation: win-pulse 1s infinite; }
     .win-display.loss { color: #ff003c; animation-name: none; }
 
@@ -672,9 +672,9 @@
     .control-panel { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
     .panel-display { text-align: center; }
     .panel-display .label { display: block; font-size: 0.8rem; color: #888; text-transform: uppercase; }
-    .panel-display .value { display: block; font-size: 1.8rem; color: #fff; text-shadow: 0 0 5px #00f0ff; font-family: 'Chakra Petch', monospace; }
+    .panel-display .value { display: block; font-size: 1.8rem; color: #fff; text-shadow: 0 0 5px #00f0ff; font-family: 'Chakra Petch', 'Russo One', monospace; }
 
-    .bet-control { text-align: center; font-family: 'Chakra Petch', monospace; }
+    .bet-control { text-align: center; font-family: 'Chakra Petch', 'Russo One', monospace; }
     .bet-control label { display: block; color: #888; font-size: 0.8rem; margin-bottom: 0.5rem; }
     .bet-input-wrapper { display: flex; justify-content: center; }
     .bet-input-wrapper input { background: transparent; border: none; color: #fff; text-align: center; font-size: 1.8rem; width: 100px; font-family: inherit; }
@@ -686,7 +686,7 @@
     .spin-button { width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #ff5500, #cc3300); border: 2px solid rgba(255,255,255,0.2); box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.5), 0 0 40px rgba(255, 102, 0, 0.4); cursor: pointer; position: relative; transition: transform 0.1s, box-shadow 0.1s; }
     .spin-button:active:not(:disabled) { transform: scale(0.95); box-shadow: 0 5px 10px rgba(0,0,0,0.5); }
     .spin-button:disabled { filter: grayscale(1) brightness(0.5); cursor: not-allowed; }
-    .spin-text { font-family: 'Chakra Petch', monospace; font-weight: bold; font-size: 1.8rem; color: #fff; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+    .spin-text { font-family: 'Chakra Petch', 'Russo One', monospace; font-weight: bold; font-size: 1.8rem; color: #fff; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
 
     .paytable-container { width: 100%; max-width: 900px; margin-top: 2rem; position: relative; z-index: 2; color: #fff; }
     .paytable-title { text-align: center; text-transform: uppercase; letter-spacing: 0.2em; color: #888; margin-bottom: 1rem; }
@@ -694,7 +694,7 @@
     .combo { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
     .icons { display: flex; gap: 0.25rem; }
     .icons img { width: 24px; height: 24px; }
-    .multiplier { font-family: 'Chakra Petch', monospace; font-size: 1.2rem; color: #fff; font-weight: bold; }
+    .multiplier { font-family: 'Chakra Petch', 'Russo One', monospace; font-size: 1.2rem; color: #fff; font-weight: bold; }
     .combo.jackpot .multiplier { color: var(--cyber-yellow); animation: win-pulse 2s infinite; }
     .combo.loss .multiplier { color: #ff003c; }
 
@@ -703,7 +703,7 @@
         width: 100%; margin: 1rem 0; padding: 0 1rem;
     }
     .meter-label {
-        display: flex; justify-content: space-between; font-family: 'Chakra Petch', monospace;
+        display: flex; justify-content: space-between; font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 0.8rem; color: #666; margin-bottom: 4px; font-weight: bold;
     }
     .meter-label .count.ready { color: #bd00ff; text-shadow: 0 0 5px #bd00ff; animation: pulse-text 1s infinite; }
@@ -726,7 +726,7 @@
     .synthesize-btn {
         width: 100%; margin-top: 10px; padding: 0.8rem;
         background: #bd00ff; color: #fff; font-weight: 900;
-        font-family: 'Chakra Petch', monospace; border: 2px solid #fff;
+        font-family: 'Chakra Petch', 'Russo One', monospace; border: 2px solid #fff;
         border-radius: 4px; cursor: pointer;
         animation: glitch-skew 2s infinite; /* Твоя существующая анимация глитча */
         box-shadow: 0 0 20px #bd00ff;
@@ -859,7 +859,7 @@
     /* === КОНТЕНТ ВНУТРИ === */
     .tooltip-title {
         color: var(--cyber-yellow);
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-weight: bold;
         margin-bottom: 0.5rem;
         font-size: 0.9rem;

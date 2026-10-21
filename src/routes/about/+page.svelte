@@ -214,13 +214,13 @@
     .intro-text { text-align: center; max-width: 90%; margin: 0 auto 3rem auto; font-weight: 300; }
 
     .section-title {
-        font-family: 'Chakra Petch', monospace; font-size: 1.5rem; font-weight: bold;
+        font-family: 'Chakra Petch', 'Russo One', monospace; font-size: 1.5rem; font-weight: bold;
         color: var(--cyber-yellow, #fcee0a); margin-bottom: 2rem;
         text-align: center; letter-spacing: 0.1em;
         text-shadow: 0 0 10px rgb(var(--cyber-yellow-rgb) / 0.3);
     }
     .section-subtitle {
-        font-family: 'Chakra Petch', monospace; font-size: 0.9rem; font-weight: bold;
+        font-family: 'Chakra Petch', 'Russo One', monospace; font-size: 0.9rem; font-weight: bold;
         color: #64748b; margin-bottom: 1.5rem; text-align: center; letter-spacing: 0.1em;
         text-transform: uppercase;
     }
@@ -262,7 +262,7 @@
         width: 50px; height: 50px; border-radius: 50%; border: 2px solid #555; object-fit: cover; flex-shrink: 0;
     }
     .tester-info { display: flex; flex-direction: column; overflow: hidden; }
-    .tester-name { font-weight: bold; font-size: 0.9rem; font-family: 'Chakra Petch', monospace; }
+    .tester-name { font-weight: bold; font-size: 0.9rem; font-family: 'Chakra Petch', 'Russo One', monospace; }
     .tester-role { font-size: 0.6rem; color: #666; font-weight: bold; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
     .tester-desc { font-size: 0.75rem; color: #9ca3af; line-height: 1.2; }
 
@@ -280,7 +280,7 @@
 
     @keyframes pulse-glow { 0% { opacity: 0.3; transform: scale(0.9); } 100% { opacity: 0.7; transform: scale(1.1); } }
 
-    .role { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.15em; margin-bottom: 0.5rem; font-family: 'Chakra Petch', monospace; }
+    .role { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.15em; margin-bottom: 0.5rem; font-family: 'Chakra Petch', 'Russo One', monospace; }
     .text-purple-400 { color: #c084fc; }
 
     .name { display: block; font-size: 1.8rem; font-weight: 800; color: #fff; text-decoration: none; margin-bottom: 0.5rem; transition: color 0.2s; }
@@ -294,7 +294,7 @@
         display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem;
         padding: 1rem 2.5rem; background: transparent;
         border: 2px solid var(--cyber-cyan, #00f0ff); color: var(--cyber-cyan, #00f0ff);
-        font-family: 'Chakra Petch', monospace; font-weight: bold; letter-spacing: 0.1em;
+        font-family: 'Chakra Petch', 'Russo One', monospace; font-weight: bold; letter-spacing: 0.1em;
         transition: all 0.2s; text-decoration: none;
     }
     .join-btn:hover { background: var(--cyber-cyan, #00f0ff); color: #000; box-shadow: 0 0 20px var(--cyber-cyan, #00f0ff); transform: scale(1.05); }

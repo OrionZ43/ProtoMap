@@ -472,7 +472,7 @@
 		border-radius: 4px;
 		font-size: 0.75rem;
 		font-weight: bold;
-		font-family: 'Chakra Petch', monospace;
+		font-family: 'Chakra Petch', 'Russo One', monospace;
 	}
 	.status-badge.success {
 		background: rgba(57, 255, 20, 0.1);
@@ -545,7 +545,7 @@
 		background: rgba(255, 255, 255, 0.1);
 		color: #fff;
 		border: 1px solid rgba(255, 255, 255, 0.2);
-		font-family: 'Chakra Petch', monospace;
+		font-family: 'Chakra Petch', 'Russo One', monospace;
 		font-weight: bold;
 		cursor: pointer;
 		transition: all 0.2s;

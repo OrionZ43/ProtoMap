@@ -247,7 +247,7 @@
     }
     .bullet-arrow {
         flex-shrink: 0;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-weight: 900;
         font-size: 0.8rem;
         color: var(--cyber-yellow, #fcee0a);
@@ -386,7 +386,7 @@
         text-align: left;
         vertical-align: bottom;
         padding: 0.65rem 0.75rem;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 0.66rem;
         font-weight: 700;
         letter-spacing: 0.1em;
@@ -443,7 +443,7 @@
             content: attr(data-label);
             display: block;
             margin-bottom: 0.2rem;
-            font-family: 'Chakra Petch', monospace;
+            font-family: 'Chakra Petch', 'Russo One', monospace;
             font-size: 0.6rem;
             font-weight: 700;
             letter-spacing: 0.12em;

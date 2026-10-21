@@ -235,7 +235,7 @@
     .dealer-dialogue {
         background: rgba(10,10,10,0.7); border: 1px solid var(--border-color);
         padding: 0.5rem 1.5rem; display: inline-block; margin-top: -1.5rem;
-        position: relative; font-family: 'Chakra Petch', monospace; color: #ddd;
+        position: relative; font-family: 'Chakra Petch', 'Russo One', monospace; color: #ddd;
         max-width: 90%;
     }
 
@@ -254,7 +254,7 @@
 
     .actions-group { display: flex; gap: 1rem; }
     .panel-btn {
-        padding: 0.75rem 1.5rem; font-family: 'Chakra Petch', monospace; font-weight: bold;
+        padding: 0.75rem 1.5rem; font-family: 'Chakra Petch', 'Russo One', monospace; font-weight: bold;
         color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 0.05em;
         text-decoration: none; text-align: center;
         background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
@@ -283,7 +283,7 @@
         border: 1px solid rgba(255, 255, 255, 0.2);
         color: #888;
         padding: 0.8rem 2rem;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-weight: bold;
         font-size: 1rem;
         cursor: pointer;
@@ -401,7 +401,7 @@
         width: 100%;
         text-align: center;
         color: #666;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         margin-top: 2rem;
         grid-column: 1 / -1;
     }

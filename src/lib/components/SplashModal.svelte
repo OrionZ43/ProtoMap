@@ -174,7 +174,7 @@
         justify-content: center;
         gap: 0.6rem;
         margin-bottom: 1.5rem;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 0.58rem;
         letter-spacing: 0.25em;
         color: rgba(57,255,20,0.6);
@@ -240,7 +240,7 @@
 
     /* ── Текст ────────────────────────────────────────────────────── */
     .title {
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 1.15rem;
         font-weight: 900;
         color: #fff;
@@ -281,7 +281,7 @@
         padding: 0.85rem 1.5rem;
         background: #39ff14;
         color: #000;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-weight: 900;
         font-size: 0.8rem;
         letter-spacing: 0.12em;
@@ -303,7 +303,7 @@
         background: transparent;
         border: none;
         color: rgba(255,255,255,0.3);
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 0.72rem;
         letter-spacing: 0.1em;
         cursor: pointer;
@@ -319,7 +319,7 @@
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 0.52rem;
         letter-spacing: 0.2em;
         color: rgba(57,255,20,0.45);

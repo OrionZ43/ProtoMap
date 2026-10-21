@@ -265,7 +265,7 @@
         align-items: center;
         gap: 0.3rem;
         white-space: nowrap;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.06em;

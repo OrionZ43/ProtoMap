@@ -53,7 +53,7 @@
     color: #ff9d00 !important;
     text-transform: uppercase;
     text-shadow: 0 0 10px rgba(255, 140, 0, 0.6) !important;
-    font-family: 'Chakra Petch', sans-serif !important;
+    font-family: 'Chakra Petch', 'Russo One', sans-serif !important;
 }
 .profile-container.bg_carbon-theme h4 { color: #888 !important; letter-spacing: 0.2em; }
 .profile-container.bg_carbon-theme .top-bar { border-color: rgba(255, 140, 0, 0.2) !important; }

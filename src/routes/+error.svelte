@@ -46,7 +46,7 @@
         width: 100vw; height: 100vh;
         background-color: #050a05;
         color: var(--cyber-red, #ff3300);
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         display: flex;
         align-items: center;
         justify-content: center;

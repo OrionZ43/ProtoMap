@@ -28,7 +28,7 @@
         bottom: 1rem;
         left: 1rem;
         z-index: 40;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 0.75rem;
         color: rgba(255, 255, 255, 0.3);
         display: flex;

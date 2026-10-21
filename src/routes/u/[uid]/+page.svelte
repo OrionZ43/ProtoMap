@@ -884,7 +884,7 @@
         flex-shrink: 0;
     }
 
-    .presence-indicator { font-family: 'Chakra Petch', monospace; font-size: 0.85rem; margin-top: 0.25rem; }
+    .presence-indicator { font-family: 'Chakra Petch', 'Russo One', monospace; font-size: 0.85rem; margin-top: 0.25rem; }
     .presence-indicator.online { color: #39ff14; text-shadow: 0 0 8px #39ff14; font-weight: bold; }
     .presence-indicator.offline { color: #94a3b8; }
 
@@ -1063,7 +1063,7 @@
         color: #39ff14;
         font-size: 0.7rem; font-weight: bold;
         padding: 4px 8px; border-radius: 4px;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         cursor: help;
         box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
     }
@@ -1074,7 +1074,7 @@
         color: var(--cyber-yellow);
         font-size: 0.7rem; font-weight: bold;
         padding: 4px 10px; border-radius: 4px;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         cursor: pointer; transition: all 0.2s;
         animation: blink-border 2s infinite;
     }
@@ -1099,7 +1099,7 @@
     color: #39ff14;
     font-size: 0.7rem; font-weight: bold;
     padding: 4px 8px; border-radius: 4px;
-    font-family: 'Chakra Petch', monospace;
+    font-family: 'Chakra Petch', 'Russo One', monospace;
     cursor: help;
     box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
 }
@@ -1177,7 +1177,7 @@
     }
 
     .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
-    .author-name { font-weight: bold; color: #fff; font-family: 'Chakra Petch', sans-serif; }
+    .author-name { font-weight: bold; color: #fff; font-family: 'Chakra Petch', 'Russo One', sans-serif; }
     .group:hover .author-name { color: var(--cyber-yellow); }
     .time { color: #555; font-size: 0.75rem; margin-left: 0.5rem; }
 
@@ -1329,7 +1329,7 @@
     }
 
     .author-name {
-        font-family: 'Chakra Petch', sans-serif;
+        font-family: 'Chakra Petch', 'Russo One', sans-serif;
         font-weight: 700;
         font-size: 1rem;
         color: #fff;
@@ -1497,7 +1497,7 @@
 
     .input-field::placeholder {
         color: #555;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         letter-spacing: 0.05em;
     }
 
@@ -1521,7 +1521,7 @@
         font-size: 0.85rem;
         color: var(--cyber-cyan);
         border-radius: 4px;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         animation: slide-in 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
     }
 
@@ -1560,7 +1560,7 @@
         display: inline-flex;
         align-items: center;
         gap: 0.55rem;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 0.95rem;
         font-weight: 700;
         letter-spacing: 0.18em;

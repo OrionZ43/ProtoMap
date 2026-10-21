@@ -95,7 +95,7 @@
     .panel-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.2rem; }
 
     .setting-row { display: flex; justify-content: space-between; align-items: center; }
-    .label { font-family: 'Chakra Petch', monospace; font-weight: bold; color: #ccc; font-size: 0.9rem; }
+    .label { font-family: 'Chakra Petch', 'Russo One', monospace; font-weight: bold; color: #ccc; font-size: 0.9rem; }
 
     .separator { border: 0; border-top: 1px dashed rgba(255,255,255,0.1); margin: 0.5rem 0; }
 
@@ -109,7 +109,7 @@
     .panel-footer { padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; }
     .save-btn {
         width: 100%; padding: 0.8rem; background: transparent; border: 1px solid var(--cyber-cyan);
-        color: var(--cyber-cyan); font-weight: bold; font-family: 'Chakra Petch', monospace;
+        color: var(--cyber-cyan); font-weight: bold; font-family: 'Chakra Petch', 'Russo One', monospace;
         text-transform: uppercase; transition: all 0.2s; cursor: pointer;
     }
     .save-btn:hover { background: var(--cyber-cyan); color: #000; box-shadow: 0 0 15px var(--cyber-cyan); }

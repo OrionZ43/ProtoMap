@@ -437,7 +437,7 @@
 
     .seasonal-phrase-container {
         display: block; font-size: 0.7rem; line-height: 1.3; color: #6b7280;
-        max-width: 150px; font-family: 'Chakra Petch', monospace;
+        max-width: 150px; font-family: 'Chakra Petch', 'Russo One', monospace;
     }
     .seasonal-phrase-container a:hover { color: #67e8f9; }
     @media (min-width: 1024px) {
@@ -460,8 +460,8 @@
     .nav-tab {
         position: relative; padding: 0 0.8rem; height: 100%;
         display: flex; align-items: center;
-        font-family: 'Chakra Petch', monospace; font-size: 0.8rem;
-        font-weight: 700; letter-spacing: 0.05em; color: #94a3b8; transition: color 0.3s; text-transform: uppercase;
+        font-family: var(--font-display); font-size: 0.8rem;
+        font-weight: 400; letter-spacing: 0.05em; color: #94a3b8; transition: color 0.3s; text-transform: uppercase;
         white-space: nowrap;
     }
     .nav-tab:hover { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
@@ -486,7 +486,7 @@
         display: flex; align-items: center; gap: 0.5rem;
         background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1);
         padding: 0.3rem 0.8rem; border-radius: 6px; color: #e2e8f0;
-        transition: all 0.2s; font-family: 'Chakra Petch', monospace;
+        transition: all 0.2s; font-family: 'Chakra Petch', 'Russo One', monospace;
     }
     .balance-pill:hover { border-color: var(--cyber-yellow); box-shadow: 0 0 10px rgb(var(--cyber-yellow-rgb) / 0.1); }
     .balance-pill.mobile { padding: 0.2rem 0.6rem; background: rgba(0,0,0,0.4); }
@@ -501,7 +501,7 @@
         border-radius: 99px; transition: all 0.2s; cursor: pointer;
     }
     .user-pill:hover, .user-pill.active { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.3); }
-    .username { font-family: 'Chakra Petch', monospace; font-weight: 600; font-size: 0.9rem; color: #e2e8f0; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .username { font-family: 'Chakra Petch', 'Russo One', monospace; font-weight: 600; font-size: 0.9rem; color: #e2e8f0; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .chevron { color: #64748b; transition: transform 0.2s; }
     .chevron.rotate { transform: rotate(180deg); }
 
@@ -515,7 +515,7 @@
         border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px;
         box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6); z-index: 100; overflow: hidden; transform-origin: top right;
     }
-    .dropdown-header { padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'Chakra Petch', monospace; }
+    .dropdown-header { padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'Chakra Petch', 'Russo One', monospace; }
     .dropdown-item { display: flex; align-items: center; width: 100%; padding: 0.75rem 1rem; font-size: 0.9rem; color: #cbd5e1; transition: all 0.2s; text-align: left; font-family: 'Inter', sans-serif; }
     .dropdown-item:hover { background: rgba(255, 255, 255, 0.05); color: #fff; padding-left: 1.25rem; }
     .dropdown-item .icon { width: 18px; height: 18px; margin-right: 10px; opacity: 0.7; }
@@ -572,7 +572,7 @@
         border: 1px solid var(--cyber-cyan);
         border-radius: 8px;
         color: var(--cyber-cyan);
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-weight: bold;
         text-transform: uppercase;
         cursor: pointer;

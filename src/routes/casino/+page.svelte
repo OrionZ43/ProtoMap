@@ -357,7 +357,7 @@
 
     .header { text-align: center; margin-bottom: 3rem; position: relative; z-index: 2; }
     .title { font-size: 4rem; color: #fff; text-shadow: 0 0 15px #fff; }
-    .subtitle { color: var(--text-muted-color); font-family: 'Chakra Petch', monospace; }
+    .subtitle { color: var(--text-muted-color); font-family: 'Chakra Petch', 'Russo One', monospace; }
 
     .user-panel {
         width: 100%; max-width: 900px;
@@ -375,7 +375,7 @@
     .actions-group { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: flex-end; width: 100%; }
     .panel-btn {
         padding: 0.75rem 1.5rem;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-weight: bold;
         color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 0.05em; text-decoration: none; text-align: center;
         background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
@@ -402,7 +402,7 @@
     }
 
     .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .cal-title { font-family: 'Chakra Petch', monospace; font-weight: bold; color: #fff; letter-spacing: 0.1em; }
+    .cal-title { font-family: 'Chakra Petch', 'Russo One', monospace; font-weight: bold; color: #fff; letter-spacing: 0.1em; }
 
     .status-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-family: 'Inter', sans-serif; }
     .status-badge.ready { background: rgba(57, 255, 20, 0.2); color: #39ff14; border: 1px solid #39ff14; animation: pulse-green 2s infinite; }
@@ -427,7 +427,7 @@
         overflow: hidden;
     }
 
-    .day-num { font-size: 0.6rem; color: #555; position: absolute; top: 4px; left: 6px; font-family: 'Chakra Petch', monospace; z-index: 20; }
+    .day-num { font-size: 0.6rem; color: #555; position: absolute; top: 4px; left: 6px; font-family: 'Chakra Petch', 'Russo One', monospace; z-index: 20; }
     .reward-val { font-size: 0.9rem; font-weight: bold; color: #ccc; }
 
     .day-cell.claimed {
@@ -508,7 +508,7 @@
     .reward-text .sub-label {
         font-size: 0.5rem;
         color: #aaa;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         margin-top: 2px;
         white-space: nowrap;
         overflow: hidden;
@@ -557,7 +557,7 @@
     .new-badge {
         position: absolute; top: 10px; right: 10px;
         background: #ff003c; color: #fff;
-        font-family: 'Chakra Petch', monospace; font-weight: 900; font-size: 0.8rem;
+        font-family: 'Chakra Petch', 'Russo One', monospace; font-weight: 900; font-size: 0.8rem;
         padding: 2px 8px; border-radius: 4px;
         box-shadow: 0 0 10px #ff003c;
         z-index: 10;

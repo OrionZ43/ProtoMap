@@ -83,7 +83,7 @@
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
         background: #000; color: #ff003c;
         display: flex; align-items: center; justify-content: center;
-        font-family: 'Chakra Petch', monospace; overflow: hidden;
+        font-family: 'Chakra Petch', 'Russo One', monospace; overflow: hidden;
     }
 
     .scanlines {

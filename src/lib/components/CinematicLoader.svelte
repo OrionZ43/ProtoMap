@@ -265,7 +265,7 @@
         --primary-color: #00ff41;
         --secondary-color: #00ff41;
 
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         display: flex; align-items: center; justify-content: center; z-index: 9999;
         overflow: hidden; perspective: 1000px;
     }
@@ -375,7 +375,7 @@
         position: fixed; bottom: 5rem; left: 2rem;
         background: rgba(0,0,0,0.5); border: 2px solid rgba(255, 255, 255, 0.2);
         color: rgba(255, 255, 255, 0.5); padding: 0.8rem 1.5rem; font-weight: bold;
-        font-family: 'Chakra Petch', monospace; cursor: pointer; transition: all 0.2s; z-index: 10000;
+        font-family: 'Chakra Petch', 'Russo One', monospace; cursor: pointer; transition: all 0.2s; z-index: 10000;
     }
     .skip-btn:hover { border-color: var(--primary-color); color: var(--primary-color); box-shadow: 0 0 15px var(--primary-color); }
 

@@ -39,7 +39,7 @@
          --font-tech    — ТОЛЬКО латиница и цифры: время, частоты, UID;
          --font-body    — основной текст. */
     --font-display: 'Russo One', 'Chakra Petch', sans-serif;
-    --font-tech: 'Chakra Petch', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    --font-tech: 'Chakra Petch', 'Russo One', ui-monospace, 'Cascadia Mono', Consolas, monospace;
     --font-body: 'Inter', sans-serif;
 }
 
@@ -327,7 +327,7 @@ body {
     display: flex;
     align-items: center;
     padding: 8px 12px;
-    font-family: 'Chakra Petch', sans-serif;
+    font-family: 'Chakra Petch', 'Russo One', sans-serif;
     color: #b0c4de;
     transition: all 0.2s ease-in-out;
 }
@@ -392,7 +392,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-family: 'Chakra Petch', sans-serif;
+    font-family: 'Chakra Petch', 'Russo One', sans-serif;
     font-weight: 700;
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.2);

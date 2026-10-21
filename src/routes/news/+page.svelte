@@ -84,7 +84,7 @@
     .page-container { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; min-height: 100vh; }
     .header { text-align: center; margin-bottom: 3rem; }
     .title { font-size: 3rem; margin-bottom: 0.5rem; }
-    .subtitle { color: var(--text-muted-color); font-family: 'Chakra Petch', monospace; }
+    .subtitle { color: var(--text-muted-color); font-family: var(--font-display); }
     .news-feed { display: flex; flex-direction: column; gap: 2rem; }
     .news-card { background: rgba(10, 15, 20, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.5rem; overflow: hidden; transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s; }
     .news-card:hover { transform: translateY(-5px); border-color: var(--cyber-yellow); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 15px rgb(var(--cyber-yellow-rgb) / 0.2); }
@@ -94,11 +94,11 @@
     .image-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(10,15,20,1), transparent); opacity: 0.6; }
     .card-content { padding: 1.5rem; }
     .meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.85rem; }
-    .date { color: var(--text-muted-color); font-family: 'Chakra Petch', monospace; }
+    .date { color: var(--text-muted-color); font-family: var(--font-display); }
     .tags { display: flex; gap: 0.5rem; }
-    .tag { color: var(--cyber-cyan); background: rgba(0, 240, 255, 0.1); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(0, 240, 255, 0.2); font-family: 'Chakra Petch', monospace; }
+    .tag { color: var(--cyber-cyan); background: rgba(0, 240, 255, 0.1); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(0, 240, 255, 0.2); font-family: 'Chakra Petch', 'Russo One', monospace; }
     .post-title { font-size: 1.8rem; color: #fff; margin-bottom: 1rem; line-height: 1.2; }
-    .empty-state { text-align: center; color: #666; padding: 4rem; font-family: 'Chakra Petch', monospace; }
+    .empty-state { text-align: center; color: #666; padding: 4rem; font-family: 'Chakra Petch', 'Russo One', monospace; }
 
     /* === МАГИЯ MARKDOWN СТИЛЕЙ === */
     /* Используем :global(), чтобы стили применились к HTML, который сгенерировал marked */
@@ -134,7 +134,7 @@
 
     .markdown-body :global(h3), .markdown-body :global(h4) {
         color: #fff;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         margin-top: 2rem;
         margin-bottom: 0.5rem;
         text-transform: uppercase;

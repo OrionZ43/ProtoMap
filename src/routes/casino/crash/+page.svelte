@@ -583,7 +583,7 @@
         border-bottom: 1px solid rgba(255,255,255,0.05);
     }
     .game-title {
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 1.8rem;
         color: var(--cyber-cyan);
         text-transform: uppercase;
@@ -667,7 +667,7 @@
 
     .tooltip-title {
         color: var(--cyber-yellow);
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-weight: bold;
         margin-bottom: 0.5rem;
         font-size: 0.9rem;
@@ -734,7 +734,7 @@
     }
 
     .big-multiplier {
-        font-size: 4rem; font-weight: 900; font-family: 'Chakra Petch', sans-serif;
+        font-size: 4rem; font-weight: 900; font-family: 'Chakra Petch', 'Russo One', sans-serif;
         transition: color 0.2s, text-shadow 0.2s;
         line-height: 1;
     }
@@ -760,7 +760,7 @@
         flex: 1; min-width: 0;
         background: #0a0c10; border: 1px solid #333; color: #fff;
         text-align: center; font-size: 1.2rem; font-weight: bold;
-        border-left: none; border-right: none; font-family: 'Chakra Petch', monospace;
+        border-left: none; border-right: none; font-family: 'Chakra Petch', 'Russo One', monospace;
     }
     .cyber-input:focus { outline: none; border-color: var(--cyber-cyan); }
 
@@ -798,7 +798,7 @@
     .abort-btn:hover { background: #ffd700; }
 
     .btn-content { display: flex; flex-direction: column; align-items: center; line-height: 1.1; color: #000; z-index: 2; }
-    .btn-content .big { font-size: 2rem; font-weight: 900; font-family: 'Chakra Petch', monospace; letter-spacing: 0.05em; }
+    .btn-content .big { font-size: 2rem; font-weight: 900; font-family: 'Chakra Petch', 'Russo One', monospace; letter-spacing: 0.05em; }
     .btn-content .small { font-size: 0.9rem; font-weight: bold; opacity: 0.7; }
 
     .footer-status {

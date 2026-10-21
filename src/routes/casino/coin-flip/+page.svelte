@@ -286,7 +286,7 @@
         z-index: 20;
     }
     .game-title {
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 2rem;
         color: var(--cyber-yellow);
         text-transform: uppercase;
@@ -370,7 +370,7 @@
 
     .tooltip-title {
         color: var(--cyber-yellow);
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-weight: bold;
         margin-bottom: 0.5rem;
         font-size: 0.9rem;
@@ -415,7 +415,7 @@
         background: rgba(10,10,10,0.8); backdrop-filter: blur(5px);
         border: 1px solid rgba(255,255,255,0.1); padding: 0.5rem 1.5rem;
         display: inline-block; margin-top: -2.5rem; position: relative;
-        font-family: 'Chakra Petch', monospace; border-radius: 4px;
+        font-family: 'Chakra Petch', 'Russo One', monospace; border-radius: 4px;
         box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     }
     .coin-zone { display: flex; align-items: center; justify-content: center; perspective: 1200px; position: relative; }
@@ -438,7 +438,7 @@
     .back { transform: rotateY(180deg); }
 
     .result-feedback {
-        position: absolute; font-family: 'Chakra Petch', monospace;
+        position: absolute; font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 5rem; font-weight: bold; opacity: 0;
         animation: result-show 2s ease-out forwards;
         text-transform: uppercase; pointer-events: none;
@@ -455,7 +455,7 @@
     }
     .balance-display { text-align: center; }
     .balance-display .label { display: block; font-size: 0.8rem; color: #888; text-transform: uppercase; }
-    .balance-display .value { display: block; font-size: 1.8rem; color: #fff; text-shadow: 0 0 5px var(--cyber-yellow); font-family: 'Chakra Petch', monospace; }
+    .balance-display .value { display: block; font-size: 1.8rem; color: #fff; text-shadow: 0 0 5px var(--cyber-yellow); font-family: 'Chakra Petch', 'Russo One', monospace; }
 
     .bet-control { display: flex; align-items: center; gap: 0.5rem; }
     .bet-control input {
@@ -473,7 +473,7 @@
 
     .choices { display: flex; gap: 1.5rem; }
     .choice-btn {
-        padding: 1rem 2.5rem; font-family: 'Chakra Petch', monospace;
+        padding: 1rem 2.5rem; font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 1.5rem; font-weight: bold; border: 2px solid;
         background: transparent; color: #fff; transition: all 0.2s;
         cursor: pointer; display: flex; align-items: center; gap: 0.5rem;

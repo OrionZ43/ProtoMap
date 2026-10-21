@@ -235,7 +235,7 @@
     }
     .header { text-align: center; padding: 2rem; border-bottom: 1px solid rgba(255, 255, 255, 0.15); }
     .title { font-size: 3rem; color: #fff; text-shadow: 0 0 15px #fff; }
-    .subtitle { color: var(--text-muted-color); font-family: 'Chakra Petch', monospace; }
+    .subtitle { color: var(--text-muted-color); font-family: 'Chakra Petch', 'Russo One', monospace; }
 
     /* TABS */
     .inv-tabs {
@@ -247,7 +247,7 @@
         padding: 1rem;
         background: transparent;
         color: #666;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-weight: bold;
         font-size: 1rem;
         cursor: pointer;
@@ -332,7 +332,7 @@
         position: absolute; top: 0.3rem; right: 0.3rem;
         background: var(--cyber-yellow); color: #000;
         font-size: 0.6rem; padding: 1px 5px; border-radius: 3px;
-        font-family: 'Chakra Petch', monospace; font-weight: bold;
+        font-family: 'Chakra Petch', 'Russo One', monospace; font-weight: bold;
     }
 
     .empty-state {
@@ -348,7 +348,7 @@
 
     .panel-btn {
         width: 100%;
-        padding: 0.75rem 1.5rem; font-family: 'Chakra Petch', monospace; font-weight: bold;
+        padding: 0.75rem 1.5rem; font-family: 'Chakra Petch', 'Russo One', monospace; font-weight: bold;
         color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 0.05em;
         text-decoration: none; text-align: center;
         background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));

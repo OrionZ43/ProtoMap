@@ -219,7 +219,7 @@
     .icon-shield { filter: grayscale(0.3); }
 
     .card-header-tag {
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: .65rem;
         color: var(--cc);
         letter-spacing: .3em;
@@ -228,7 +228,7 @@
     }
 
     .card-title {
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: 1.6rem;
         font-weight: 900;
         color: #fff;
@@ -267,7 +267,7 @@
         align-items: center;
         justify-content: center;
         gap: .5rem;
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: .75rem;
         color: var(--cc);
         letter-spacing: .1em;
@@ -284,7 +284,7 @@
 
     /* Кнопки */
     .btn-back, .btn-retry {
-        font-family: 'Chakra Petch', monospace;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
         font-size: .8rem;
         letter-spacing: .14em;
         padding: .65rem 1.75rem;
