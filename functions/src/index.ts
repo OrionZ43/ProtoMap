@@ -554,7 +554,7 @@ export const purchaseShopItem = onCall({ cors: ALLOWED_ORIGINS }, async (request
             if (!isOnSale(itemId, itemData, Date.now())) throw new HttpsError('failed-precondition', 'Этот предмет сейчас не продаётся.');
             if (userData.owned_items?.includes(itemId)) throw new HttpsError('already-exists', 'Уже куплено.');
             const credits = Number(userData.casino_credits ?? 0);
-            if (!Number.isFinite(credits) || credits < price) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
+            if (!Number.isFinite(credits) || credits < price) throw new HttpsError('failed-precondition', 'Недостаточно средств.', { reason: 'insufficient_funds' });
 
             t.update(userRef, {
                 casino_credits: credits - price,
@@ -765,7 +765,7 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
 
     } catch (e: any) {
         if (e.message === "No money") {
-             throw new HttpsError('failed-precondition', 'Недостаточно средств.');
+             throw new HttpsError('failed-precondition', 'Недостаточно средств.', { reason: 'insufficient_funds' });
         }
         if (e.code === 'resource-exhausted') {
             throw e;
@@ -1034,7 +1034,7 @@ export const playSlotMachine = onCall(
 
                 let bankBalance = bankDoc.exists ? (bankDoc.data() as CasinoStats)?.bank_balance || 0 : 0;
 
-                if (credits < bet) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
+                if (credits < bet) throw new HttpsError('failed-precondition', 'Недостаточно средств.', { reason: 'insufficient_funds' });
 
                 // ===================================================================
                 // 🎲 ГЕНЕРАЦИЯ РЕЗУЛЬТАТА
@@ -1270,7 +1270,7 @@ export const playCoinFlip = onCall(async (request) => {
             const credits = data.casino_credits ?? 100;
             let bankBalance = bankDoc.exists ? (bankDoc.data()?.bank_balance || 0) : 0;
 
-            if (credits < bet) throw new HttpsError('failed-precondition', 'Недостаточно средств.');
+            if (credits < bet) throw new HttpsError('failed-precondition', 'Недостаточно средств.', { reason: 'insufficient_funds' });
 
             const WIN_MULTIPLIER = 1.95;
             const potentialWin = Math.floor(bet * WIN_MULTIPLIER);
@@ -1281,7 +1281,7 @@ export const playCoinFlip = onCall(async (request) => {
             // Сам банк в тексте не называем.
             if (profit > (bankBalance * 0.9)) {
                 console.log(`[COIN] Bank low (${bankBalance}). Rejecting bet ${bet}.`);
-                throw new HttpsError('failed-precondition', 'Банк казино сейчас не покроет такой выигрыш. Попробуйте ставку меньше.');
+                throw new HttpsError('failed-precondition', 'Банк казино сейчас не покроет такой выигрыш. Попробуйте ставку меньше.', { reason: 'bank_limit' });
             }
 
             // ✅ ИСПРАВЛЕНО: crypto.randomInt вместо Math.random()
@@ -1356,16 +1356,16 @@ export const playPlinko = onCall(async (request) => {
             // Сам банк игроку не отдаём: ни в ответе, ни в тексте ошибки.
             const maxBet = plinkoMaxBet(bank);
             if (maxBet < PLINKO_MIN_BET) {
-                throw new HttpsError('failed-precondition', 'Банк казино почти пуст — Плинко откроется, когда он пополнится.');
+                throw new HttpsError('failed-precondition', 'Банк казино почти пуст — Плинко откроется, когда он пополнится.', { reason: 'bank_limit' });
             }
             if (bet > maxBet) {
-                throw new HttpsError('invalid-argument', `Сейчас ставка до ${maxBet} PC за шарик.`);
+                throw new HttpsError('invalid-argument', `Сейчас ставка до ${maxBet} PC за шарик.`, { reason: 'bet_too_high', maxBet });
             }
 
             const stake = bet * balls;
             // NaN в балансе проходит любое сравнение «<» как false и утёк бы в банк.
             if (!Number.isFinite(credits) || credits < stake) {
-                throw new HttpsError('failed-precondition', 'Недостаточно средств.');
+                throw new HttpsError('failed-precondition', 'Недостаточно средств.', { reason: 'insufficient_funds' });
             }
 
             const drops = Array.from({ length: balls }, () => {
