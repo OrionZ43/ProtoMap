@@ -173,12 +173,9 @@ protection there (5 digits, 3 attempts, 5 minutes, one per minute).
 
 ---
 
-## 8. Channels: open questions
+## 8. Channels: subscriber lists are visible to members
 
-- `subscriberUids` on `channels/{id}` and `channels/{id}/subscribers/*` are readable by any
-  signed-in user — who follows which channel is public to members. The site checks its own
-  subscription with `uid in subscriberUids`, so hiding the list needs a different shape (for
-  example, only `subscribers/{uid}` readable by its owner). Orion decides.
-- Two technical comment groups (`isTechnical`) point to channels that no longer exist; none of
-  the 5 live channels has `linkedGroupId`, so comments under posts are off everywhere. The two
-  orphan groups have no topics and can be deleted (backup first).
+`subscriberUids` on `channels/{id}` and `channels/{id}/subscribers/*` are readable by any
+signed-in user — who follows which channel is public to members. The site checks its own
+subscription with `uid in subscriberUids`, so hiding the list needs a different shape (for
+example, only `subscribers/{uid}` readable by its owner). Orion, 2026-10-21: leave as is for now.
