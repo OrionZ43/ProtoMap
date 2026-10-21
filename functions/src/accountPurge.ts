@@ -15,8 +15,9 @@
  * - то, что относится только к этому человеку, удаляется целиком;
  * - журнал согласий обезличивается и доживает свой срок (п. 7 ст. 5 Закона).
  *
- * Группы Android-приложения (`groups`, `group_invites`) не трогаются: их схема
- * живёт в репозитории Дениса — очистку групп делать на его стороне.
+ * Группы и журнал устройств пишет Android-приложение. До 21.10.2026 очистка их
+ * не трогала и откладывала на его репозиторий, но вести его больше некому —
+ * теперь они чистятся здесь, по тем же правилам.
  *
  * `dryRun` только считает и ничего не меняет — так работает enforceRetention,
  * пока не выставлен RETENTION_APPLY.
@@ -30,7 +31,7 @@ import {
     FieldValue,
     type DocumentData,
     type DocumentReference,
-    type QuerySnapshot,
+    type QueryDocumentSnapshot,
 } from "firebase-admin/firestore";
 import { v2 as cloudinary } from "cloudinary";
 import { anonymizeConsentsOnDelete } from "./consents";
@@ -137,13 +138,13 @@ function configureCloudinary(): boolean {
  * первым, и удаление ударило бы по чужому сообщению.
  */
 async function scrubMessages(
-    snap: QuerySnapshot,
+    docs: QueryDocumentSnapshot[],
     w: Writes,
     media: Set<string>,
     count: (key: string, n?: number) => void,
     label: string
 ): Promise<void> {
-    for (const d of snap.docs) {
+    for (const d of docs) {
         const m = d.data();
         const file = m.forward_info ? null : userMediaFile(m.media_url);
         if (file) media.add(file);
@@ -195,7 +196,7 @@ export async function purgeAccount(uid: string, opts: { dryRun: boolean }): Prom
         }
 
         const mine = await chat.ref.collection("messages").where("author_uid", "==", uid).get();
-        await scrubMessages(mine, w, media, count, "личка: сообщений обезличено");
+        await scrubMessages(mine.docs, w, media, count, "личка: сообщений обезличено");
         await w.update(chat.ref, {
             [`participants.${uid}`]: { username: DELETED, avatarUrl: null, frameId: null },
             [`unreadCount.${uid}`]: FieldValue.delete(),
@@ -210,7 +211,7 @@ export async function purgeAccount(uid: string, opts: { dryRun: boolean }): Prom
     for (const ch of channels.docs) {
         const c = ch.data();
         const posts = await ch.ref.collection("posts").where("author_uid", "==", uid).get();
-        await scrubMessages(posts, w, media, count, "каналы: постов обезличено");
+        await scrubMessages(posts.docs, w, media, count, "каналы: постов обезличено");
 
         const patch: DocumentData = {};
         if (c.ownerUid === uid) {
@@ -231,6 +232,96 @@ export async function purgeAccount(uid: string, opts: { dryRun: boolean }): Prom
 
         const sub = ch.ref.collection("subscribers").doc(uid);
         if ((await sub.get()).exists) await w.delete(sub);
+    }
+
+    // ── Группы и обсуждения постов каналов ────────────────────────────────
+    // Обсуждения постов живут в служебных группах каналов, комментаторы в
+    // memberUids не попадают — поэтому перебор всех групп, а не поиск по
+    // участию. Групп мало, это дешевле индекса коллекционной группы messages.
+    // Группа, где человек владелец, остаётся участникам без владельца — как
+    // канал выше.
+    const groups = await db().collection("groups").get();
+    for (const g of groups.docs) {
+        const gd = g.data();
+        const topics = await g.ref.collection("topics").get();
+        for (const t of topics.docs) {
+            const msgs = await t.ref.collection("messages").get();
+            const mine = msgs.docs.filter((m) => m.get("author_uid") === uid);
+            await scrubMessages(mine, w, media, count, "группы: сообщений обезличено");
+
+            // Ответы других людей хранят имя того, кому отвечали
+            const mineIds = new Set(mine.map((m) => m.id));
+            for (const m of msgs.docs) {
+                if (m.get("author_uid") !== uid && mineIds.has(m.get("reply_to_id"))) {
+                    await w.update(m.ref, { reply_to_username: DELETED });
+                    count("группы: имя в ответах обезличено");
+                }
+            }
+        }
+
+        const patch: DocumentData = {};
+        if (gd.ownerUid === uid) {
+            const avatar = userMediaFile(gd.avatarUrl);
+            if (avatar) {
+                media.add(avatar);
+                patch.avatarUrl = null;
+            }
+            patch.ownerUid = null;
+            count("группы: владелец снят");
+        }
+        if (Array.isArray(gd.memberUids) && gd.memberUids.includes(uid)) {
+            patch.memberUids = FieldValue.arrayRemove(uid);
+            patch.memberCount = FieldValue.increment(-1);
+            count("группы: участие снято");
+        }
+        if (gd.inviteCreatedBy === uid) patch.inviteCreatedBy = null;
+        if (Object.keys(patch).length > 0) await w.update(g.ref, patch);
+
+        const member = g.ref.collection("members").doc(uid);
+        if ((await member.get()).exists) {
+            await w.delete(member);
+            count("группы: карточка участника удалена");
+        }
+    }
+
+    // Приглашение ведёт в группу, а не к человеку: ссылка остаётся рабочей,
+    // снимается только автор.
+    const invites = await db().collection("group_invites").where("createdBy", "==", uid).get();
+    for (const d of invites.docs) {
+        await w.update(d.ref, { createdBy: null });
+        count("приглашения в группы: автор снят");
+    }
+
+    // ── Журнал устройств старого Android-приложения ───────────────────────
+    // Документ на устройство (id — ANDROID_ID): последний вошедший и история
+    // входов, где бывают записи разных людей, — с почтой, версией системы и
+    // отпечатком сборки. Записи человека убираются; устройство, где больше
+    // никого нет, удаляется целиком. По полю внутри массива записей не найти,
+    // поэтому перебор — устройств десятки.
+    const millis = (v: unknown) => (v as { toMillis?: () => number })?.toMillis?.() ?? 0;
+    const devices = await db().collection("auth_logs").get();
+    for (const d of devices.docs) {
+        const history: DocumentData[] = Array.isArray(d.get("login_history")) ? d.get("login_history") : [];
+        const others = history.filter((e) => e?.uid !== uid);
+        if (others.length === history.length && d.get("last_uid") !== uid) continue;
+
+        if (others.length === 0) {
+            await w.delete(d.ref);
+            count("журнал устройств: удалено");
+            continue;
+        }
+        const last = others.reduce((a, b) => (millis(b.timestamp) > millis(a.timestamp) ? b : a));
+        await w.update(d.ref, {
+            login_history: others,
+            last_uid: last.uid ?? null,
+            last_email: last.email ?? null,
+            last_app_version: last.app_version ?? null,
+            last_os_version: last.os_version ?? null,
+            last_fingerprint: last.fingerprint ?? null,
+            last_security_level: last.security_level ?? null,
+            last_seen: last.timestamp ?? null,
+        });
+        count("журнал устройств: записи убраны");
     }
 
     // ── Общий чат ─────────────────────────────────────────────────────────
