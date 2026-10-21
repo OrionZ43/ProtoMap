@@ -506,6 +506,17 @@
     <div class="profile-container cyber-panel pb-12 {data.profile.equipped_bg ? 'themed ' + data.profile.equipped_bg + '-theme' : ''}" style="opacity: {$containerOpacity}">
 
             {#if $userStore.user && !isOwner}
+                <!-- Чёрный список — рядом с жалобой (src/lib/stores/blocklist.ts) -->
+                <button
+                    on:click={iBlocked ? handleUnblock : handleBlock}
+                    class="block-icon-btn"
+                    class:active={iBlocked}
+                    disabled={blockBusy}
+                    title={iBlocked ? $t('blocklist.unblock') : $t('blocklist.block')}
+                    aria-label={iBlocked ? $t('blocklist.unblock') : $t('blocklist.block')}
+                >
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M5.6 5.6l12.8 12.8" /></svg>
+                </button>
                 <button on:click={handleReportProfile} class="report-icon-btn" title={$t('profile.report_btn')}>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
                 </button>
@@ -612,24 +623,15 @@
                 <div class="profile-actions">
                     {#if data.blockedViewer}
                         <p class="blocked-note">{$t('blocklist.you_are_blocked')}</p>
-                    {:else if !iBlocked}
+                    {:else if iBlocked}
+                        <p class="blocked-note">{$t('blocklist.you_blocked')}</p>
+                    {:else}
                         <button class="write-btn" on:click={openDM}>
                             <svg class="write-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                             </svg>
                             <span>НАПИСАТЬ</span>
-                        </button>
-                    {/if}
-                    {#if iBlocked}
-                        <button class="block-btn" on:click={handleUnblock} disabled={blockBusy}>
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8.5 12.5l2.5 2.5 4.5-5" /></svg>
-                            <span>{$t('blocklist.unblock')}</span>
-                        </button>
-                    {:else}
-                        <button class="block-btn" on:click={handleBlock} disabled={blockBusy}>
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M5.6 5.6l12.8 12.8" /></svg>
-                            <span>{$t('blocklist.block')}</span>
                         </button>
                     {/if}
                 </div>
@@ -1529,40 +1531,36 @@
         gap: 0.75rem;
     }
 
-    .block-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45rem;
-        font-family: 'Chakra Petch', monospace;
-        font-size: 0.8rem;
-        font-weight: 600;
-        letter-spacing: 0.12em;
+    /* Блокировка — слева от жалобы (та 40px шириной: p-2 + иконка 24px), без пульсации */
+    .block-icon-btn {
+        @apply absolute top-1 z-20 p-2 rounded-full;
+        right: 3.25rem;
         color: #9ca3af;
-        background: transparent;
-        border: 1px solid #4b5563;
-        padding: 0.55rem 1.1rem;
-        cursor: pointer;
-        transition: color 0.2s ease, border-color 0.2s ease;
+        transition: all 0.2s ease-in-out;
     }
-
-    .block-btn:hover:not(:disabled) {
+    .block-icon-btn:hover:not(:disabled) {
+        background-color: rgba(255, 255, 255, 0.08);
         color: #f87171;
-        border-color: #f87171;
+        transform: scale(1.15);
     }
-
-    .block-btn:disabled {
+    .block-icon-btn.active {
+        color: var(--cyber-yellow, #fcee0a);
+    }
+    .block-icon-btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
     }
-
-    .block-btn svg {
-        width: 16px;
-        height: 16px;
+    .block-icon-btn:focus-visible {
+        @apply outline-none ring-2 ring-offset-2 ring-offset-black ring-gray-400;
+    }
+    .block-icon-btn svg {
+        display: block;
+        width: 24px;
+        height: 24px;
         fill: none;
         stroke: currentColor;
-        stroke-width: 1.8;
+        stroke-width: 1.5;
         stroke-linecap: round;
-        stroke-linejoin: round;
     }
 
     .blocked-note {
