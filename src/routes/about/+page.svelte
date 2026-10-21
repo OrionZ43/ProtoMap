@@ -10,49 +10,57 @@
     const testers = [
         {
             id: 'kess',
+            uid: 'Jjsi5AbW5iaRWN8b2JvejR73GHq2',
             username: 'Кесс Мирун',
             color: '#a855f7',
             avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1766635490/protomap_avatars/Jjsi5AbW5iaRWN8b2JvejR73GHq2.webp'
         },
         {
             id: 'artho',
+            uid: 'KRyygW2X1NQnMdzGp7aUzBt1kYt1',
             username: 'ARTHO',
             color: '#39ff14',
             avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1764673819/protomap_avatars/KRyygW2X1NQnMdzGp7aUzBt1kYt1.webp'
         },
         {
             id: 'sarevus',
+            uid: '42VXz0odbXObACimwupWb179HO42',
             username: 'sarevus',
             color: '#ffffff',
             avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1764612207/protomap_avatars/42VXz0odbXObACimwupWb179HO42.webp'
         },
         {
             id: 'jokl',
+            uid: 'Wg5wynJ63tYHXi9sHbk0g5qODI43',
             username: 'джокл',
             color: '#ffd700',
             avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1750097263/protomap_avatars/Wg5wynJ63tYHXi9sHbk0g5qODI43.webp'
         },
         {
             id: 'mikhail',
+            uid: 'UJQAvOKcO9Zwo4e7Nsy2kGdj0kv1',
             username: 'Anchor_play',
             color: '#00f3ff',
             avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1763604687/protomap_avatars/UJQAvOKcO9Zwo4e7Nsy2kGdj0kv1.webp'
         },
         {
             id: 'bogdan',
+            uid: 'D6e7GrJFSZWYfcAyYV9TFXpXnUi1',
             username: 'Nexus',
             color: '#ff5500',
             avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1750888278/protomap_avatars/D6e7GrJFSZWYfcAyYV9TFXpXnUi1.webp'
         },
         {
             id: 'moro',
+            uid: 'XXRqoTdjFZZYeouRKTFisxjEcZv1',
             username: 'Moro (morovec)',
             color: '#ff0055',
             avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1769692656/protomap_avatars/XXRqoTdjFZZYeouRKTFisxjEcZv1.webp'
         },
         {
             id: 'eridan',
-            username: 'Eridan_Pallas',
+            uid: 'I8DIGaxnO8MCveHTq8xloFNmJst1',
+            username: 'Eridan_Hjalmard',
             color: '#00e5ff',
             avatar: 'https://res.cloudinary.com/dzkypodvd/image/upload/v1769693430/protomap_avatars/I8DIGaxnO8MCveHTq8xloFNmJst1.webp'
         },
@@ -66,8 +74,9 @@
         }
     ];
 
-    function getProfileLink(username: string) {
-        return `/profile/${encodeURIComponent(username)}`;
+    // Ссылка — по uid: ник можно сменить, и ссылка по нику ломается (так было у Eridan)
+    function getProfileLink(uid: string) {
+        return `/u/${uid}`;
     }
 </script>
 
@@ -114,7 +123,7 @@
             <h3 class="section-title">{$t('about_page.testers_title')}</h3>
             <div class="testers-grid">
                 {#each testers as tester}
-                    <a href={tester.href ?? getProfileLink(tester.username)} class="tester-card" target="_blank" rel={tester.href ? 'noopener noreferrer' : undefined}>
+                    <a href={tester.href ?? getProfileLink(tester.uid ?? '')} class="tester-card" target="_blank" rel={tester.href ? 'noopener noreferrer' : undefined}>
                         <img
                             src={tester.avatar.includes('http') ? tester.avatar : `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(tester.username)}`}
                             alt={tester.username}
