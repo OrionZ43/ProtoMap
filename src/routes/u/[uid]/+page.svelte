@@ -919,14 +919,6 @@
     .input-field:focus { @apply outline-none border-cyber-yellow; box-shadow: 0 1px 0 var(--cyber-yellow, #fcee0a); }
 
     .error-message-small { @apply text-red-400 text-sm mt-1; }
-    .comments-list { @apply mt-6 space-y-6; }
-    .comment-card { @apply flex items-start gap-4; }
-    .comment-header { @apply flex items-baseline gap-3 mb-1; }
-    .comment-author { @apply font-bold text-white hover:text-cyber-yellow transition-colors; }
-    .comment-time { @apply text-xs text-gray-500; }
-    .comment-text { @apply whitespace-pre-wrap text-gray-300; }
-    .comment-actions { @apply mt-2; }
-    .action-btn { @apply text-xs text-gray-500 hover:text-red-400 transition-colors; }
 
     /* Меню действий с профилем: чёрный список и жалоба. Стоит в полосе USER ID
        обычным элементом ряда: кнопка 24px в строке высотой 16px с отступами по 8px,
@@ -1152,28 +1144,11 @@
     z-index: -1;
     pointer-events: none;
 }
-.cyber-glass {
-        background: rgba(20, 25, 30, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(5px);
-        border-radius: 8px;
-        transition: border-color 0.2s;
-    }
-    .cyber-glass:hover { border-color: rgba(255, 255, 255, 0.15); }
-
-    .comment-card { padding: 1rem; position: relative; }
     .comment-card.reply {
         margin-top: 0.5rem;
         background: rgba(255, 255, 255, 0.03);
         border-left: 2px solid rgba(255, 255, 255, 0.1);
         border-radius: 0 8px 8px 0;
-    }
-
-    .replies-branch {
-        margin-left: 2rem; /* Отступ ветки */
-        border-left: 1px dashed rgba(255, 255, 255, 0.1); /* Линия ветки */
-        padding-left: 1rem;
-        margin-top: 0.5rem;
     }
 
     .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
