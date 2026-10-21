@@ -2312,12 +2312,13 @@ export const setInitialUsername = onCall(async (request) => {
             throw new HttpsError('already-exists', 'Этот никнейм уже занят.', { reason: 'taken' });
         }
 
-        if (!snap.exists) {
-            t.create(userRef, {
+        if (!hasUsername(snap)) {
+            // Слиянием: в документе без ника уже могут быть отметки согласий
+            t.set(userRef, {
                 ...initialProfile(username, typeof picture === 'string' ? picture : undefined),
                 _created_by: 'setInitialUsername',
                 username_chosen_at: FieldValue.serverTimestamp(),
-            });
+            }, { merge: true });
             return;
         }
 
@@ -2439,7 +2440,7 @@ export const onUserCreated = runWith({ timeoutSeconds: 180 }).auth.user().onCrea
     // ── Шаг 1: Даём клиенту создать профиль самому ──────────────────
     await new Promise((resolve) => setTimeout(resolve, SAFETY_NET_DELAY_MS));
     const userRef = db.collection("users").doc(uid);
-    if ((await userRef.get()).exists) {
+    if (hasUsername(await userRef.get())) {
         console.log(`[SafetyNet] Document already exists for uid=${uid}, skipping.`);
         return null;
     }
@@ -2483,22 +2484,34 @@ export const onUserCreated = runWith({ timeoutSeconds: 180 }).auth.user().onCrea
     };
 
     try {
-        // create, а не set: если клиент всё-таки успел, его профиль не трогаем.
+        // В транзакции: если клиент всё-таки успел создать профиль, его не
+        // трогаем. Документ без ника дополняем, не стирая того, что в нём есть.
         // admin SDK обходит Firestore Rules — нам не нужен auth-контекст клиента
-        await userRef.create(newDoc);
-        console.log(`[SafetyNet] ✅ Profile created for uid=${uid}, username="${username}"`);
+        const created = await db.runTransaction(async (t) => {
+            if (hasUsername(await t.get(userRef))) return false;
+            t.set(userRef, newDoc, { merge: true });
+            return true;
+        });
+        console.log(created
+            ? `[SafetyNet] ✅ Profile created for uid=${uid}, username="${username}"`
+            : `[SafetyNet] Client created the profile meanwhile for uid=${uid}, skipping.`);
     } catch (err) {
-        if ((err as { code?: number }).code === 6) {
-            // ALREADY_EXISTS: клиент создал профиль между проверкой и записью.
-            console.log(`[SafetyNet] Client created the profile meanwhile for uid=${uid}, skipping.`);
-            return null;
-        }
         // Логируем, но не бросаем — триггер не должен крашить Auth flow
         console.error(`[SafetyNet] ❌ Failed to create profile for uid=${uid}:`, err);
     }
 
     return null;
 });
+
+// Профиль считается созданным, когда в нём есть ник. Документ без ника бывает:
+// recordConsents пишет отметки согласий слиянием и, если его позвали раньше
+// создания профиля, создаёт документ из одних этих полей. Такой документ
+// триггер и setInitialUsername дополняют, а не считают готовым профилем —
+// иначе аккаунт навсегда остался бы без ника.
+function hasUsername(snap: FirebaseFirestore.DocumentSnapshot): boolean {
+    const username = snap.exists ? snap.get("username") : undefined;
+    return typeof username === "string" && username.length > 0;
+}
 
 // Поля нового профиля — одни на страховочный триггер и setInitialUsername.
 // Значения те же, что разрешает правило create в firestore.rules.
