@@ -27,6 +27,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { FieldValue, DocumentData } from "firebase-admin/firestore";
 import { econOp } from "./activity/log";
+import { assertNotBanned, assertEmailVerified } from "./guards";
 
 // ─── Shared db (admin инициализирован в index.ts) ─────────────────────────────
 const db = admin.firestore();
@@ -151,6 +152,7 @@ export const getStepperStatus = onCall(async (request) => {
     if (!request.auth) {
         throw new HttpsError("unauthenticated", "Auth required.");
     }
+    await assertNotBanned(request);
 
     const uid = request.auth.uid;
     const ref = db.collection("stepper").doc(uid);
@@ -241,6 +243,10 @@ export const stepperClaim = onCall(async (request) => {
     if (!request.auth) {
         throw new HttpsError("unauthenticated", "Auth required.");
     }
+    // Бан — и по claim в токене, и по документу; проверка ud.isBanned внутри
+    // транзакции остаётся. Почта — как у всех выплат: одноразовые аккаунты не фармят.
+    await assertNotBanned(request);
+    assertEmailVerified(request.auth);
 
     const uid = request.auth.uid;
 
@@ -274,9 +280,6 @@ export const stepperClaim = onCall(async (request) => {
         return idempData.result;
     }
 
-    // ── Бан-проверка до транзакции (экономит Firestore read если бан) ─────
-    // assertNotBanned импортирован из index.ts через общий модуль
-    // Дополнительная проверка ud.isBanned внутри транзакции остаётся
     const stepperRef = db.collection("stepper").doc(uid);
     const userRef    = db.collection("users").doc(uid);
     const leaderboardRef = db.collection("stepper_leaderboard").doc(uid);

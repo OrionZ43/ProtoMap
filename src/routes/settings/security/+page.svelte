@@ -36,17 +36,46 @@
 	}
 
 	let isToggling2FA = false;
+	// Выключить 2FA можно только с кодом из Telegram — его проверяет toggle2FA.
+	// Иначе защиту снимал бы любой, кто узнал пароль.
+	let disablePending = false;
+	let disableCode = '';
+
 	async function toggle2FA(event: Event) {
 		const checkbox = event.target as HTMLInputElement;
 		// Возвращаем UI в исходное состояние до получения ответа от сервера
 		checkbox.checked = data.is2FAEnabled;
+		if (data.is2FAEnabled) {
+			await requestDisableCode();
+		} else {
+			await callToggle();
+		}
+	}
+
+	async function requestDisableCode() {
+		isToggling2FA = true;
+		try {
+			await httpsCallable(functions, 'send2FACode')({ purpose: 'disable_2fa' });
+			disableCode = '';
+			disablePending = true;
+		} catch (e: any) {
+			modal.error(translate('ui.error'), e.message);
+		} finally {
+			isToggling2FA = false;
+		}
+	}
+
+	async function callToggle(code?: string) {
 		isToggling2FA = true;
 		try {
 			const toggleFunc = httpsCallable(functions, 'toggle2FA');
-			const res = await toggleFunc();
+			const res = await toggleFunc(code ? { code } : undefined);
 			data.is2FAEnabled = (res.data as any).is2FAEnabled;
-			checkbox.checked = data.is2FAEnabled;
-			modal.success(translate('ui.success'), data.is2FAEnabled ? '2FA включена' : '2FA отключена');
+			disablePending = false;
+			modal.success(
+				translate('ui.success'),
+				translate(data.is2FAEnabled ? 'security.2fa_enabled' : 'security.2fa_disabled')
+			);
 		} catch (e: any) {
 			modal.error(translate('ui.error'), e.message);
 		} finally {
@@ -155,6 +184,30 @@
 				<p class="desc text-orange-400" style="margin-top: -0.5rem; margin-bottom: 1rem;">
 					{$t('security.2fa_no_tg_desc', { default: 'Привяжите Telegram, чтобы включить 2FA' })}
 				</p>
+			{/if}
+
+			{#if disablePending}
+				<form class="code-box" transition:slide on:submit|preventDefault={() => callToggle(disableCode.trim())}>
+					<p class="code-label">{$t('security.2fa_disable_desc')}</p>
+					<input
+						class="code-input font-mono"
+						bind:value={disableCode}
+						inputmode="numeric"
+						autocomplete="one-time-code"
+						maxlength="5"
+						placeholder={$t('security.2fa_code_placeholder')}
+						aria-label={$t('security.2fa_code_placeholder')}
+						disabled={isToggling2FA}
+					/>
+					<div class="code-actions">
+						<button type="submit" class="action-btn red" disabled={isToggling2FA || disableCode.trim().length < 5}>
+							{$t('security.2fa_disable_btn')}
+						</button>
+						<button type="button" class="action-btn" on:click={() => (disablePending = false)} disabled={isToggling2FA}>
+							{$t('security.2fa_cancel')}
+						</button>
+					</div>
+				</form>
 			{/if}
 
 			{#if data.telegram_id}
@@ -410,6 +463,29 @@
 		color: var(--cyber-cyan);
 		font-size: 0.8rem;
 		text-decoration: underline;
+	}
+
+	.code-input {
+		width: 100%;
+		margin-top: 0.75rem;
+		padding: 0.7rem;
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		color: #fff;
+		text-align: center;
+		font-size: 1.4rem;
+		letter-spacing: 0.4em;
+	}
+	.code-input:focus {
+		outline: none;
+		border-color: #ff003c;
+	}
+	.code-actions {
+		display: flex;
+		gap: 0.75rem;
+	}
+	.code-actions .action-btn {
+		flex: 1;
 	}
 
 	@media (max-width: 640px) {

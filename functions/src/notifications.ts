@@ -30,9 +30,6 @@ const db = () => admin.firestore();
 /** Регион базы Firestore — триггеры живут там же (см. channelComments.ts). */
 const FIRESTORE_REGION = "europe-central2";
 
-/** Канал уведомлений Android-клиента для комментариев. */
-const COMMENTS_CHANNEL_ID = "protomap_comments_channel";
-
 const PREVIEW_LENGTH = 120;
 
 /** Коды ошибок FCM, после которых токен больше не годится. */
@@ -66,47 +63,60 @@ function messagePreview(msg: FirebaseFirestore.DocumentData): string {
   }
 }
 
+/** Чем закончилась отправка пуша. */
+export type PushStatus =
+  "sent" | "no_token" | "skipped" | "token_cleaned" | "failed";
+
 /**
- * Отправляет data-пуш пользователю. Токен берётся из users/{uid}.fcmToken
- * (его пишет SharedViewModel), запасной — users/{uid}/private/data.
- * Мёртвый токен стирается, чтобы не стучаться в него снова.
+ * Отправляет data-пуш пользователю. Токен берётся из
+ * users/{uid}/private/data — его читает только владелец. Запасной — поле
+ * users/{uid}.fcmToken: его пишет старое приложение, а сам документ
+ * пользователя читает кто угодно. Мёртвый токен стирается, и пуш уходит на
+ * следующий.
+ *
+ * channelId в data — id канала ProtoMap (channel_comment_reply). До
+ * 21.10.2026 сюда же поверх писался id канала уведомлений Android, и тап по
+ * пушу не открывал пост. Канал уведомлений приложения выбирают сами.
  * @param {string} uid получатель
  * @param {Record<string, string>} data полезная нагрузка
- * @return {Promise<void>}
+ * @return {Promise<PushStatus>} итог отправки
  */
 export async function sendPushToUser(
   uid: string,
   data: Record<string, string>,
-): Promise<void> {
+): Promise<PushStatus> {
   try {
     const userRef = db().collection("users").doc(uid);
     const user = await userRef.get();
-    if (!user.exists || user.get("isBanned") === true) return;
+    if (!user.exists || user.get("isBanned") === true) return "skipped";
 
-    let token: unknown = user.get("fcmToken");
-    let tokenRef: FirebaseFirestore.DocumentReference = userRef;
-    if (typeof token !== "string" || !token) {
-      tokenRef = userRef.collection("private").doc("data");
-      token = (await tokenRef.get()).get("fcmToken");
-    }
-    if (typeof token !== "string" || !token) return;
+    const privateRef = userRef.collection("private").doc("data");
+    const candidates: [FirebaseFirestore.DocumentReference, unknown][] = [
+      [privateRef, (await privateRef.get()).get("fcmToken")],
+      [userRef, user.get("fcmToken")],
+    ];
 
-    try {
-      await getMessaging().send({
-        token,
-        data: {...data, channelId: COMMENTS_CHANNEL_ID},
-        android: {priority: "high", ttl: 24 * 60 * 60 * 1000},
-      });
-    } catch (e) {
-      const code = (e as {code?: string}).code ?? "";
-      if (DEAD_TOKEN_CODES.has(code)) {
+    let cleaned = false;
+    for (const [tokenRef, token] of candidates) {
+      if (typeof token !== "string" || !token) continue;
+      try {
+        await getMessaging().send({
+          token,
+          data,
+          android: {priority: "high", ttl: 24 * 60 * 60 * 1000},
+        });
+        return "sent";
+      } catch (e) {
+        const code = (e as {code?: string}).code ?? "";
+        if (!DEAD_TOKEN_CODES.has(code)) throw e;
         await tokenRef.update({fcmToken: null}).catch(() => undefined);
-        return;
+        cleaned = true;
       }
-      throw e;
     }
+    return cleaned ? "token_cleaned" : "no_token";
   } catch (e) {
     console.error(`[Notifications] push to ${uid} failed:`, e);
+    return "failed";
   }
 }
 
@@ -155,7 +165,7 @@ export async function notifyProfileComment(
       actorName: ev.authorName,
       text: preview(ev.text),
     };
-    const sends: Promise<void>[] = [];
+    const sends: Promise<PushStatus>[] = [];
 
     if (repliedAuthor && repliedAuthor !== ev.authorUid) {
       sends.push(sendPushToUser(repliedAuthor, {

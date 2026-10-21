@@ -347,7 +347,9 @@
 					[myUid]: { username: myName, avatarUrl: avatar_url ?? null },
 					[partner.uid]: { username: partner.username, avatarUrl: partner.avatarUrl ?? null }
 				},
-				[`unreadCount.${partner.uid}`]: increment(1)
+				// Вложенный объект, а не ключ с точкой: в setDoc «unreadCount.uid»
+				// становится полем с точкой в имени, и счётчик не рос никогда.
+				unreadCount: { [partner.uid]: increment(1) }
 			},
 			{ merge: true }
 		);

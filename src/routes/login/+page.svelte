@@ -24,6 +24,7 @@
 	import { t } from 'svelte-i18n';
 	import { TURNSTILE_SITE_KEY } from '$lib/turnstile';
 	import AuthShell from '$lib/components/auth/AuthShell.svelte';
+	import { usernameFromDisplayName } from '$lib/utils/username';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -316,10 +317,7 @@
 			const userDocRef = doc(db, 'users', user.uid);
 			let userDocSnap = await getDoc(userDocRef);
 			if (!userDocSnap.exists()) {
-				let generatedUsername = user.displayName || '';
-				generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
-				if (generatedUsername.length < 3) generatedUsername = `user_${user.uid.substring(0, 8)}`;
-				if (generatedUsername.length > 20) generatedUsername = generatedUsername.substring(0, 20);
+				let generatedUsername = usernameFromDisplayName(user.displayName, user.uid);
 				const isAvailable = await isUsernameAvailable(generatedUsername);
 				if (!isAvailable) {
 					const randomSuffix = Math.floor(Math.random() * 9999);

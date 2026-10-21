@@ -1,0 +1,128 @@
+rules_version = '2';
+
+// Правила Cloud Storage. До 21.10.2026 они жили только в консоли Firebase, и
+// последний блок там был «allow read: if true» на {allPaths=**} с подписью
+// «запретить всё остальное». Совпавшие match складываются через «или», поэтому
+// этот блок открывал на чтение и листинг весь бакет без входа — в том числе фото
+// и голосовые из личных переписок. Здесь общего блока нет: путь, которого нет
+// ниже, закрыт.
+//
+// Файлы сообщений и постов клиенты показывают по ссылке скачивания с токеном
+// (getDownloadURL), а такие ссылки правила не проверяют. Поэтому чтение ниже
+// нужно только для получения самой ссылки после загрузки; листинг — никому.
+//
+// Пути пишут сайт (chat_media), старое Android-приложение by.iposdev.protomap
+// (все пути ниже) и новое com.z43studios.protomap. Меняя путь или тип файла,
+// проверь обоих.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function underMb(mb) {
+      return request.resource.size < mb * 1024 * 1024;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // Голосовые: сайт пишет audio/webm, Android — audio/mp4; некоторые браузеры
+    // записывают video/webm.
+    function isMedia(type) {
+      return (type == 'image' && isImage())
+          || (type == 'voice' && request.resource.contentType.matches('audio/.*|video/.*'));
+    }
+
+    function groupData(groupId) {
+      return firestore.get(/databases/(default)/documents/groups/$(groupId)).data;
+    }
+
+    function channelData(channelId) {
+      return firestore.get(/databases/(default)/documents/channels/$(channelId)).data;
+    }
+
+    // Писать в группу могут её участники. В служебную группу комментариев канала
+    // (isTechnical) комментаторы не вступают — туда пишут подписчики и владелец
+    // канала. Не больше двух чтений Firestore на запрос.
+    function canPostToGroup(groupId) {
+      let g = groupData(groupId);
+      return request.auth.uid in g.get('memberUids', [])
+          || (g.get('isTechnical', false) == true && canComment(g.get('linkedChannelId', '')));
+    }
+
+    function canComment(channelId) {
+      let c = channelData(channelId);
+      return c.get('ownerUid', '') == request.auth.uid
+          || request.auth.uid in c.get('subscriberUids', []);
+    }
+
+    // ── Стикеры: сайт грузит их по прямой ссылке без токена ──────────────────
+    match /stickers/{allPaths=**} {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
+    // ── Картинки новостей ─────────────────────────────────────────────────────
+    match /news/{allPaths=**} {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
+    // ── Аватары пользователей (старый путь; сейчас аватары живут в Cloudinary) ─
+    match /avatars/{uid}/{fileName} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if signedIn() && request.auth.uid == uid && underMb(5) && isImage();
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // ── Аватары групп и каналов меняет только владелец ───────────────────────
+    match /group_avatars/{groupId}/{fileName} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if signedIn() && underMb(5) && isImage()
+                            && groupData(groupId).get('ownerUid', '') == request.auth.uid;
+      allow delete: if signedIn() && groupData(groupId).get('ownerUid', '') == request.auth.uid;
+    }
+
+    match /channel_avatars/{channelId}/{fileName} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if signedIn() && underMb(5) && isImage()
+                            && channelData(channelId).get('ownerUid', '') == request.auth.uid;
+      allow delete: if signedIn() && channelData(channelId).get('ownerUid', '') == request.auth.uid;
+    }
+
+    // ── Медиа личных сообщений: chatId — два uid через «_», в заметках один дважды ─
+    match /chat_media/{chatId}/{type}/{fileName} {
+      allow get: if signedIn() && request.auth.uid in chatId.split('_');
+      allow list: if false;
+      allow create: if signedIn() && request.auth.uid in chatId.split('_') && underMb(10) && isMedia(type);
+      allow update, delete: if false;
+    }
+
+    // ── Медиа групп и комментариев каналов: group_media/{group}/{topic}/{type}/{file} ─
+    // Пути состоят из случайных id, которые видны только участникам, поэтому
+    // получить файл может любой вошедший, знающий путь; перечислить — никто.
+    match /group_media/{groupId}/{topicId}/{type}/{fileName} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && underMb(10) && isMedia(type) && canPostToGroup(groupId);
+      allow update: if false;
+      allow delete: if signedIn() && groupData(groupId).get('ownerUid', '') == request.auth.uid;
+    }
+
+    // ── Медиа постов каналов: пишет только владелец ──────────────────────────
+    match /channel_media/{channelId}/{type}/{fileName} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && underMb(10) && isMedia(type)
+                    && channelData(channelId).get('ownerUid', '') == request.auth.uid;
+      allow update: if false;
+      allow delete: if signedIn() && channelData(channelId).get('ownerUid', '') == request.auth.uid;
+    }
+  }
+}

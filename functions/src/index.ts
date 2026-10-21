@@ -7,6 +7,7 @@ import { PLINKO_MIN_BET, PLINKO_MAX_BALLS, PLINKO_PRIZE_ITEM, PLINKO_PRIZE_SLOTS
 import { isOnSale } from './shopRules';
 import { econOp } from './activity/log';
 import { dayKey as minskDayKey, dayStart as minskDayStart, latestBrief, makeBrief } from './activity/brief';
+import { assertNotBanned, assertEmailVerified, checkGlobalRateLimit } from './guards';
 
 import { onRequest } from "firebase-functions/v2/https";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -16,7 +17,6 @@ import { FieldValue } from "firebase-admin/firestore";
 import { v2 as cloudinary } from "cloudinary";
 import * as crypto from 'crypto';
 export { telegramWebhook, ageGateTimeout } from './telegram';
-import { getMessaging } from "firebase-admin/messaging";
 import vision from "@google-cloud/vision";
 export { getStepperStatus, stepperClaim } from './stepper';
 export { recordConsents, revokeConsent, getMyConsents } from './consents';
@@ -30,8 +30,8 @@ export {
     activityOnLocation, activityOnShopItem, activityOnNews,
 } from './activity/triggers';
 export { activityAlert, activityDigest } from './activity/notify';
-import { notifyProfileComment } from './notifications';
-import { auth } from "firebase-functions/v1";
+import { notifyProfileComment, sendPushToUser } from './notifications';
+import { runWith } from "firebase-functions/v1";
 
 
 // ===================================================================
@@ -69,47 +69,6 @@ function secureJitter(value: number, range: number): number {
     const randomInt = buffer.readUInt32BE(0);
     const randomFloat = (randomInt / 0xFFFFFFFF) - 0.5; // От -0.5 до +0.5
     return value + (randomFloat * range);
-}
-
-// ===================================================================
-// 🔒 SECURITY FIX #3: Глобальный Rate Limiter
-// ===================================================================
-async function checkGlobalRateLimit(
-    uid: string,
-    action: string,
-    limit: number,
-    windowMs: number
-): Promise<void> {
-    const now = Date.now();
-    const limitsRef = admin.firestore().collection('rate_limits').doc(uid);
-
-    await admin.firestore().runTransaction(async (t) => {
-        const doc = await t.get(limitsRef);
-        const data = doc.data() || {};
-        const actions = data[action] || [];
-
-        // Удаляем записи старше окна
-        const recentActions = actions.filter((timestamp: number) =>
-            now - timestamp < windowMs
-        );
-
-        if (recentActions.length >= limit) {
-            const waitTime = Math.ceil((recentActions[0] + windowMs - now) / 60000);
-            throw new HttpsError(
-                'resource-exhausted',
-                `Слишком много попыток. Попробуйте через ${waitTime} мин.`
-            );
-        }
-
-        // Добавляем новую запись
-        recentActions.push(now);
-
-        // Обновляем
-        t.set(limitsRef, {
-            [action]: recentActions,
-            lastUpdate: FieldValue.serverTimestamp()
-        }, { merge: true });
-    });
 }
 
 // ===================================================================
@@ -177,74 +136,70 @@ async function sendToCasinoChat(message: string) {
     }
 }
 
+// Пуш о сообщении в личке. Его зовут приложения после каждого сообщения, сайт
+// пушей не шлёт. До 21.10.2026 функция проверяла только вход: любой вошедший
+// мог отправить любому пуш с любым текстом и подписать его любым именем.
 export const sendPrivateChatNotification = onCall(async (request) => {
+    if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
     const uid = request.auth.uid;
-    const { recipientUid, chatId, senderName, messageText, messageType } = request.data;
+    await assertNotBanned(request);
+    // Пуш уходит на каждое сообщение — 60 в минуту хватает с запасом.
+    await checkGlobalRateLimit(uid, 'dm_push', 60, 60 * 1000);
 
-    if (!recipientUid || !chatId || !senderName) {
+    const { recipientUid, chatId, messageText, messageType } = request.data ?? {};
+    if (typeof recipientUid !== 'string' || !recipientUid || typeof chatId !== 'string' || !chatId) {
         throw new HttpsError('invalid-argument', 'Missing required fields.');
     }
 
     if (uid === recipientUid) return { status: 'skipped' };
 
-    try {
-        const recipientDoc = await db.collection('users').doc(recipientUid).get();
-        if (!recipientDoc.exists) throw new HttpsError('not-found', 'Recipient not found.');
-
-        const recipientData = recipientDoc.data()!;
-        const fcmToken = recipientData.fcmToken;
-
-        if (!fcmToken) {
-            return { status: 'no_token' };
-        }
-
-        let bodyText: string;
-        switch (messageType?.toUpperCase()) {
-            case 'IMAGE':
-                bodyText = '📷 Фото';
-                break;
-            case 'VOICE':
-                bodyText = '🎤 Голосовое сообщение';
-                break;
-            case 'STICKER':
-                bodyText = '😊 Стикер';
-                break;
-            default:
-                bodyText = messageText?.substring(0, 100) || 'Новое сообщение';
-        }
-
-        // Только data, без блока notification: уведомление строит клиент
-        // (MyFirebaseMessagingService). Иначе в фоне его рисует система —
-        // тап не открывает чат, а заглушённые чаты и открытый сейчас чат
-        // не учитываются. title/body клиент читает из data.
-        const message = {
-            token: fcmToken,
-            data: {
-                chatId: String(chatId),
-                partnerUid: uid,
-                type: 'private_message',
-                title: String(senderName),
-                body: bodyText,
-            },
-            android: {
-                priority: 'high' as const,
-                ttl: 24 * 60 * 60 * 1000,
-            },
-        };
-
-        await getMessaging().send(message);
-        return { status: 'sent' };
-
-    } catch (e: any) {
-        if (e.code === 'messaging/registration-token-not-registered' ||
-            e.code === 'messaging/invalid-registration-token') {
-            await db.collection('users').doc(recipientUid).update({ fcmToken: null });
-            return { status: 'token_cleaned' };
-        }
-        console.error('[FCM] Error sending notification:', e);
-        throw new HttpsError('internal', 'Failed to send notification.');
+    // Участники лички — два uid в её id; так же их проверяют правила Firestore.
+    const participants = chatId.split('_');
+    if (participants.length !== 2 || !participants.includes(uid) || !participants.includes(recipientUid)) {
+        throw new HttpsError('permission-denied', 'Not a participant of this chat.');
     }
+
+    const [sender, recipient] = await Promise.all([
+        db.collection('users').doc(uid).get(),
+        db.collection('users').doc(recipientUid).get(),
+    ]);
+    if (!recipient.exists) throw new HttpsError('not-found', 'Recipient not found.');
+    const blocked: unknown = recipient.get('blocked_uids');
+    if (Array.isArray(blocked) && blocked.includes(uid)) return { status: 'skipped' };
+
+    let bodyText: string;
+    switch (String(messageType ?? '').toUpperCase()) {
+        case 'IMAGE':
+            bodyText = '📷 Фото';
+            break;
+        case 'VOICE':
+            bodyText = '🎤 Голосовое сообщение';
+            break;
+        case 'STICKER':
+            bodyText = '😊 Стикер';
+            break;
+        default:
+            bodyText = typeof messageText === 'string' && messageText
+                ? messageText.substring(0, 100)
+                : 'Новое сообщение';
+    }
+
+    // Имя отправителя — из его профиля. senderName старое приложение
+    // по-прежнему присылает, но верить ему нельзя: так подписывали чужим именем.
+    const senderName = String(sender.get('username') || 'ProtoMap');
+
+    // Только data, без блока notification: уведомление строит клиент. Иначе
+    // в фоне его рисует система — тап не открывает чат, а заглушённые чаты
+    // и открытый сейчас чат не учитываются. title/body клиент читает из data.
+    const status = await sendPushToUser(recipientUid, {
+        chatId,
+        partnerUid: uid,
+        type: 'private_message',
+        title: senderName,
+        body: bodyText,
+    });
+    return { status };
 });
 
 // ===================================================================
@@ -287,36 +242,6 @@ export const migrateExternalAvatar = onCall(async (request) => {
 });
 
 
-// ⚠️ Тип НЕ `any` намеренно. Раньше он был `any`, и в пяти местах сюда по ошибке
-// передавали `uid` вместо `request`. На строке `request.auth?.token` и
-// `request.auth?.uid` дают undefined — то есть обе проверки молча пропускались,
-// и гард превращался в пустышку. Компилятор этого не видел именно из-за `any`.
-// Структурный тип ниже делает такую передачу ошибкой сборки.
-type BanCheckable = { auth?: { uid?: string; token?: Record<string, unknown> } };
-
-async function assertNotBanned(request: BanCheckable) {
-    if (request.auth?.token?.banned === true) {
-        console.warn(`Block by Token Claim: ${request.auth.uid}`);
-        throw new HttpsError('permission-denied', 'Account banned (Token).');
-    }
-
-    const uid = request.auth?.uid;
-    if (uid) {
-        const userRef = admin.firestore().collection('users').doc(uid);
-        const userSnap = await userRef.get();
-        if (userSnap.exists && userSnap.data()?.isBanned) {
-             console.warn(`Block by DB Check: ${uid}`);
-             throw new HttpsError('permission-denied', 'Account banned (DB).');
-        }
-    }
-}
-
-function assertEmailVerified(auth: any) {
-    if (!auth.token.email_verified) {
-        throw new HttpsError('permission-denied', 'Требуется подтверждение почты (Email Verification).');
-    }
-}
-
 export const sendMessage = onCall(async (request) => {
     if (request.app == undefined) {
         throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
@@ -355,7 +280,7 @@ export const sendMessage = onCall(async (request) => {
 
             const lastMessageTime = userData.last_chat_message;
             if (lastMessageTime && Date.now() - lastMessageTime.toDate().getTime() < 3000) {
-                throw new HttpsError('resource-exhausted', 'Слишком часто. Охладите трахание.');
+                throw new HttpsError('resource-exhausted', 'Слишком часто. Подождите пару секунд.');
             }
 
             const newMessage: any = {
@@ -509,6 +434,19 @@ export const toggleCommentLike = onCall(async (request) => {
     }
 });
 
+// Правила ника — одни на checkUsername, changeUsername и onUserCreated:
+// латиница, цифры и _, от 4 до 20 символов, без подстрок, под которыми можно
+// выдать себя за администрацию. До 21.10.2026 checkUsername проверял только
+// длину и запретные слова, и с сайта регистрировались ники, которые потом
+// нельзя было сменить ни на что похожее.
+const USERNAME_PATTERN = /^[a-zA-Z0-9_]{4,20}$/;
+const RESERVED_USERNAME_WORDS = ['admin', 'moderator', 'system', 'root', 'support', 'protomap', 'owner', 'dev', 'bot'];
+
+function isReservedUsername(name: string): boolean {
+    const lower = name.toLowerCase();
+    return RESERVED_USERNAME_WORDS.some(word => lower.includes(word));
+}
+
 export const checkUsername = onRequest({ cors: false }, async (request, response) => {
     if (handleCors(request, response)) return;
     if (request.method !== "POST") {
@@ -516,15 +454,18 @@ export const checkUsername = onRequest({ cors: false }, async (request, response
         return;
     }
 
-    const username = request.body.data.username;
+    const username = request.body?.data?.username;
     if (!username || typeof username !== "string" || username.length < 4) {
         response.status(400).json({ error: { message: "Имя слишком короткое" } });
         return;
     }
 
-    const lowerName = username.toLowerCase();
-    const forbiddenWords = ['admin', 'moderator', 'system', 'root', 'support', 'protomap', 'owner', 'dev', 'bot'];
-    if (forbiddenWords.some(word => lowerName.includes(word))) {
+    if (!USERNAME_PATTERN.test(username)) {
+        response.status(200).json({ data: { isAvailable: false, message: "Только латиница, цифры и _, до 20 символов." } });
+        return;
+    }
+
+    if (isReservedUsername(username)) {
          response.status(200).json({ data: { isAvailable: false, message: "Имя зарезервировано." } });
          return;
     }
@@ -1051,6 +992,7 @@ export const playSlotMachine = onCall(
 
         const uid = request.auth.uid;
         await assertNotBanned(request);
+        assertEmailVerified(request.auth);
 
         // Глобальный лимит (100 игр в час)
         await checkGlobalRateLimit(uid, 'slots', 100, 60 * 60 * 1000);
@@ -1300,12 +1242,19 @@ export const playCoinFlip = onCall(async (request) => {
     // ✅ НОВОЕ: Глобальный лимит (200 флипов в час)
     await checkGlobalRateLimit(uid, 'coinflip', 200, 60 * 60 * 1000);
 
-    let { bet, choice } = request.data;
+    let { bet } = request.data;
+    const { choice } = request.data;
     bet = Math.floor(Number(bet));
 
     // NaN проходил старую проверку typeof: баланс игрока и общий банк
     // становились NaN, а банк потом читался как 0 — и монетка проигрывала всем.
     if (!Number.isFinite(bet) || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
+
+    // Минимум — как у слотов и у кнопки «−» на сайте. До 21.10.2026 сервер
+    // принимал и ставку в 1 PC. Потолок задаёт банк — проверка в транзакции.
+    const MIN_BET = 10;
+    if (bet < MIN_BET) throw new HttpsError('invalid-argument', `Минимальная ставка — ${MIN_BET} PC.`);
+    if (choice !== 'heads' && choice !== 'tails') throw new HttpsError('invalid-argument', 'Invalid choice.');
 
     const userRef = db.collection('users').doc(uid);
     const bankRef = db.collection('system').doc('casino_stats');
@@ -1327,18 +1276,16 @@ export const playCoinFlip = onCall(async (request) => {
             const potentialWin = Math.floor(bet * WIN_MULTIPLIER);
             const profit = potentialWin - bet;
 
-            let forcedLoss = false;
+            // Банк не покроет выигрыш — ставку не принимаем. Раньше такой бросок
+            // молча делался проигрышным: игрок платил за заранее решённый исход.
+            // Сам банк в тексте не называем.
             if (profit > (bankBalance * 0.9)) {
-                console.log(`[COIN] Bank low (${bankBalance}). Forcing loss for bet ${bet}.`);
-                forcedLoss = true;
+                console.log(`[COIN] Bank low (${bankBalance}). Rejecting bet ${bet}.`);
+                throw new HttpsError('failed-precondition', 'Банк казино сейчас не покроет такой выигрыш. Попробуйте ставку меньше.');
             }
 
             // ✅ ИСПРАВЛЕНО: crypto.randomInt вместо Math.random()
-            let outcome = crypto.randomInt(0, 2) === 0 ? 'heads' : 'tails';
-
-            if (forcedLoss) {
-                outcome = (choice === 'heads') ? 'tails' : 'heads';
-            }
+            const outcome = crypto.randomInt(0, 2) === 0 ? 'heads' : 'tails';
 
             const hasWon = choice === outcome;
             let finalBalance = credits - bet;
@@ -2258,9 +2205,7 @@ export const changeUsername = onCall(async (request) => {
         throw new HttpsError('invalid-argument', 'Никнейм может содержать только латинские буквы, цифры и _');
     }
 
-    const lowerName = trimmed.toLowerCase();
-    const forbiddenWords = ['admin', 'moderator', 'system', 'root', 'support', 'protomap', 'owner', 'dev', 'bot'];
-    if (forbiddenWords.some(word => lowerName.includes(word))) {
+    if (isReservedUsername(trimmed)) {
         throw new HttpsError('invalid-argument', 'Это имя зарезервировано системой.');
     }
 
@@ -2406,35 +2351,51 @@ export const claimBirthdayBonus = onCall(async (request) => {
     }
 });
 
-export const onUserCreated = auth.user().onCreate(async (user) => {
-    const uid   = user.uid;
-    const email = user.email || "";
+// Страховка на случай, если клиент так и не создал профиль. Сайт и приложения
+// создают его сами в первые секунды после регистрации, поэтому триггер сначала
+// ждёт. Раньше он создавал профиль сразу и иногда успевал раньше сайта: запись
+// сайта становилась правкой чужого ника, а с 20.10.2026 ник — серверное поле,
+// и правила её отклоняли. Человек видел ошибку регистрации, выбранный ник
+// терялся, а ником становилось начало его почты.
+const SAFETY_NET_DELAY_MS = 90_000;
 
-    // ── Шаг 1: Проверяем, существует ли документ ────────────────────
-    // Это защищает от двойной записи при гонке условий (race condition)
-    // между клиентом и триггером.
+export const onUserCreated = runWith({ timeoutSeconds: 180 }).auth.user().onCreate(async (user) => {
+    const uid = user.uid;
+
+    // ── Шаг 1: Даём клиенту создать профиль самому ──────────────────
+    await new Promise((resolve) => setTimeout(resolve, SAFETY_NET_DELAY_MS));
     const userRef = db.collection("users").doc(uid);
-    const snap    = await userRef.get();
-
-    if (snap.exists) {
+    if ((await userRef.get()).exists) {
         console.log(`[SafetyNet] Document already exists for uid=${uid}, skipping.`);
         return null;
     }
 
     // ── Шаг 2: Генерируем username ───────────────────────────────────
-    // Приоритет: displayName → email-prefix → uid-prefix
-    const rawName = user.displayName
-        ?? email.split("@")[0]
-        ?? uid.substring(0, 12);
+    // Имя берём из Auth заново: при регистрации по почте сайт кладёт туда
+    // выбранный ник уже после создания аккаунта, у Google там имя аккаунта.
+    // Начало адреса почты не берём никогда: ник публичный, и почта человека
+    // оказалась бы на виду.
+    // Учётной записи уже нет — значит, её удалили, пока триггер ждал. Профиль
+    // ей не создаём: удалённый аккаунт вернулся бы на сайт со своим именем.
+    let fresh: admin.auth.UserRecord | null = null;
+    try {
+        fresh = await admin.auth().getUser(uid);
+    } catch (err) {
+        if ((err as { code?: string }).code === "auth/user-not-found") {
+            console.log(`[SafetyNet] Auth account is gone for uid=${uid}, skipping.`);
+            return null;
+        }
+    }
+    const rawName = fresh?.displayName ?? user.displayName ?? "";
 
-    // Оставляем только латиницу, цифры и _
-    // Firestore rules требуют 3..20 символов
+    // Ник по правилам changeUsername: латиница, цифры и _, от 4 до 20 символов,
+    // без запретных подстрок — иначе из имени Google «ProtoMap Admin» вышел бы
+    // ник ProtoMapAdmin.
     let base = rawName
         .replace(/[^a-zA-Z0-9_]/g, "")
-        .substring(0, 16)                   // оставляем место для суффикса
-        || uid.substring(0, 12);            // крайний fallback
+        .substring(0, 15);                  // место для суффикса _XXXX: 15 + 5 = 20
 
-    if (base.length < 3) {
+    if (base.length < 4 || isReservedUsername(base)) {
         base = `user_${uid.substring(0, 8)}`;
     }
 
@@ -2461,10 +2422,16 @@ export const onUserCreated = auth.user().onCreate(async (user) => {
     };
 
     try {
+        // create, а не set: если клиент всё-таки успел, его профиль не трогаем.
         // admin SDK обходит Firestore Rules — нам не нужен auth-контекст клиента
-        await userRef.set(newDoc);
+        await userRef.create(newDoc);
         console.log(`[SafetyNet] ✅ Profile created for uid=${uid}, username="${username}"`);
     } catch (err) {
+        if ((err as { code?: number }).code === 6) {
+            // ALREADY_EXISTS: клиент создал профиль между проверкой и записью.
+            console.log(`[SafetyNet] Client created the profile meanwhile for uid=${uid}, skipping.`);
+            return null;
+        }
         // Логируем, но не бросаем — триггер не должен крашить Auth flow
         console.error(`[SafetyNet] ❌ Failed to create profile for uid=${uid}:`, err);
     }

@@ -25,6 +25,7 @@
 	import { userStore } from '$lib/stores';
 	import { t } from 'svelte-i18n';
 	import { TURNSTILE_SITE_KEY } from '$lib/turnstile';
+	import { USERNAME_PATTERN, isReservedUsername, usernameFromDisplayName } from '$lib/utils/username';
 	import AuthShell from '$lib/components/auth/AuthShell.svelte';
 	import StepDots from '$lib/components/auth/StepDots.svelte';
 	import type { PageData } from './$types';
@@ -264,6 +265,17 @@
 			return;
 		}
 
+		// Ник — по тем же правилам, что и смена ника: иначе сменить его потом
+		// будет не на что похожее.
+		if (!USERNAME_PATTERN.test(finalUsername) || isReservedUsername(finalUsername)) {
+			step = 1;
+			modal.error(
+				$t('ui.error'),
+				$t(isReservedUsername(finalUsername) ? 'auth.username_reserved' : 'auth.username_rules')
+			);
+			return;
+		}
+
 		loading = true;
 
 		const usernameIsAvailable = await isUsernameAvailable(finalUsername);
@@ -351,11 +363,7 @@
 			let userDocSnap = await getDoc(userDocRef);
 
 			if (!userDocSnap.exists()) {
-				let generatedUsername = user.displayName || '';
-				generatedUsername = generatedUsername.replace(/[^a-zA-Z0-9_]/g, '');
-
-				if (generatedUsername.length < 3) generatedUsername = `user_${user.uid.substring(0, 8)}`;
-				if (generatedUsername.length > 20) generatedUsername = generatedUsername.substring(0, 20);
+				let generatedUsername = usernameFromDisplayName(user.displayName, user.uid);
 
 				const isAvailable = await isUsernameAvailable(generatedUsername);
 				if (!isAvailable) {
