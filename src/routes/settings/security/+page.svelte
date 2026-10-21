@@ -7,7 +7,7 @@
 	import { auth, functions } from '$lib/firebase';
 	import { sendEmailVerification } from 'firebase/auth';
 	import { modal } from '$lib/stores/modalStore';
-	import { t } from 'svelte-i18n';
+	import { t, locale } from 'svelte-i18n';
 	import { get } from 'svelte/store'; // Нужно для перевода в JS
 	import { myBlocked, unblockUser } from '$lib/stores/blocklist';
 	import { usernameCache, getUsername } from '$lib/stores/usernameCache';
@@ -114,6 +114,64 @@
 		} finally {
 			unblocking = null;
 		}
+	}
+
+	// --- СОГЛАСИЯ (functions/src/consents.ts) ---
+	// Экран согласий при регистрации обещает, что узнать, что дано, и отозвать
+	// согласие можно здесь. Необязательные (шагомер) отзываются кнопкой,
+	// обязательные — только удалением аккаунта: без них учётной записи нет.
+	type ConsentRow = {
+		consentId: string;
+		revokedAt: number | null;
+		grantedAt: number | null;
+		method: string;
+		doc: string;
+		version: string | null;
+	};
+	const CONSENT_ORDER = ['age_minimum', 'core_processing', 'cross_border', 'tos', 'activity_data', 'activity_leaderboard'];
+	const OPTIONAL_CONSENTS = ['activity_data', 'activity_leaderboard'];
+
+	let consents: ConsentRow[] = [];
+	let consentsState: 'loading' | 'ready' | 'error' = 'loading';
+	let revoking: string | null = null;
+
+	async function loadConsents() {
+		try {
+			const res = await httpsCallable(functions, 'getMyConsents')();
+			const items = (res.data as { items: (Omit<ConsentRow, 'doc' | 'version'> & { documentVersion: string })[] }).items;
+			// Записи приходят новыми сверху: первая запись каждого вида — текущее состояние
+			const latest = new Map<string, ConsentRow>();
+			for (const { documentVersion, ...item } of items) {
+				if (latest.has(item.consentId)) continue;
+				const [doc, ...rest] = String(documentVersion ?? '').split(' ');
+				const version = rest.join(' ');
+				latest.set(item.consentId, { ...item, doc, version: version && version !== 'unknown' ? version : null });
+			}
+			consents = CONSENT_ORDER.flatMap((id) => latest.get(id) ?? []);
+			consentsState = 'ready';
+		} catch (e) {
+			console.error('[Security] Согласия не загрузились:', e);
+			consentsState = 'error';
+		}
+	}
+	onMount(loadConsents);
+
+	$: dayFormat = new Intl.DateTimeFormat($locale ?? undefined, { day: '2-digit', month: '2-digit', year: 'numeric' });
+	$: hasRequiredConsent = consents.some((c) => !OPTIONAL_CONSENTS.includes(c.consentId) && !c.revokedAt);
+
+	function revokeConsent(consentId: string) {
+		modal.confirm(translate('consents.confirm_title'), translate(`consents.confirm_${consentId}`), async () => {
+			revoking = consentId;
+			try {
+				await httpsCallable(functions, 'revokeConsent')({ consentId });
+				await loadConsents();
+				modal.success(translate('ui.success'), translate('consents.revoked_ok'));
+			} catch (e: any) {
+				modal.error(translate('ui.error'), e.message);
+			} finally {
+				revoking = null;
+			}
+		});
 	}
 
 	// --- УДАЛЕНИЕ АККАУНТА ---
@@ -278,8 +336,60 @@
 			{/if}
 		</section>
 
+		<!-- СОГЛАСИЯ -->
+		<section class="sec-card">
+			<h3 class="sec-title text-cyber-yellow">{$t('consents.title')}</h3>
+			<p class="desc">{$t('consents.desc')}</p>
+			{#if consentsState === 'loading'}
+				<p class="desc">{$t('ui.loading')}</p>
+			{:else if consentsState === 'error'}
+				<p class="desc">{$t('consents.load_error')}</p>
+			{:else if consents.length === 0}
+				<p class="desc">{$t('consents.empty')}</p>
+			{:else}
+				<ul class="consent-list">
+					{#each consents as c (c.consentId)}
+						<li class="consent-row">
+							<div class="consent-info">
+								<span class="consent-name">{$t(`consents.names.${c.consentId}`)}</span>
+								<span class="consent-meta">
+									{#if c.revokedAt}
+										{$t('consents.revoked_on', { values: { date: dayFormat.format(c.revokedAt) } })}
+									{:else}
+										{$t('consents.granted', {
+											values: {
+												date: c.grantedAt ? dayFormat.format(c.grantedAt) : '—',
+												where: $t(c.method === 'android' ? 'consents.via_android' : 'consents.via_web')
+											}
+										})}{#if c.version}{' · '}{$t(c.doc === 'tos' ? 'consents.doc_tos' : 'consents.doc_privacy', {
+												values: { version: c.version }
+											})}{/if}
+									{/if}
+								</span>
+							</div>
+							{#if c.revokedAt}
+								<!-- отозванное: дата отзыва уже в строке выше -->
+							{:else if OPTIONAL_CONSENTS.includes(c.consentId)}
+								<button class="consent-btn" on:click={() => revokeConsent(c.consentId)} disabled={revoking === c.consentId}>
+									{$t('consents.revoke')}
+								</button>
+							{:else}
+								<span class="consent-tag">{$t('consents.required')}</span>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+				{#if hasRequiredConsent}
+					<p class="desc">
+						{$t('consents.required_note')}
+						<a href="#danger-zone" class="consent-link">{$t('consents.to_delete')}</a>
+					</p>
+				{/if}
+			{/if}
+		</section>
+
 		<!-- 3. ОПАСНАЯ ЗОНА -->
-		<section class="sec-card danger">
+		<section class="sec-card danger" id="danger-zone">
 			<h3 class="sec-title text-cyber-red">{$t('security.danger_title')}</h3>
 			<p class="desc">{$t('security.danger_desc')}</p>
 
@@ -476,15 +586,19 @@
 	.sec-card.danger {
 		border-color: rgba(255, 0, 60, 0.3);
 		background: rgba(255, 0, 60, 0.05);
+		/* ссылка из «Согласий» прокручивает сюда — не прятать заголовок под шапкой */
+		scroll-margin-top: 6rem;
 	}
 
-	/* ЧЁРНЫЙ СПИСОК */
-	.blocked-list {
+	/* ЧЁРНЫЙ СПИСОК И СОГЛАСИЯ */
+	.blocked-list,
+	.consent-list {
 		list-style: none;
 		margin: 0.75rem 0 0;
 		padding: 0;
 	}
-	.blocked-row {
+	.blocked-row,
+	.consent-row {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
@@ -502,25 +616,63 @@
 	.blocked-name:hover {
 		color: var(--cyber-yellow);
 	}
-	.unblock-btn {
+	/* Подписи русские — Russo One: в Chakra Petch нет кириллицы (app.css) */
+	.unblock-btn,
+	.consent-btn {
 		flex-shrink: 0;
 		padding: 0.3rem 0.8rem;
 		background: transparent;
 		color: var(--cyber-yellow);
 		border: 1px solid var(--cyber-yellow);
-		font-family: 'Chakra Petch', monospace;
+		font-family: var(--font-display);
 		font-size: 0.75rem;
-		font-weight: bold;
 		cursor: pointer;
 		transition: all 0.2s;
 	}
-	.unblock-btn:hover:not(:disabled) {
+	.unblock-btn:hover:not(:disabled),
+	.consent-btn:hover:not(:disabled) {
 		background: var(--cyber-yellow);
 		color: #000;
 	}
-	.unblock-btn:disabled {
+	.unblock-btn:disabled,
+	.consent-btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+	.consent-info {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+	.consent-name {
+		color: #fff;
+	}
+	.consent-meta {
+		color: var(--text-muted-color);
+		font-size: 0.75rem;
+	}
+	.consent-tag {
+		flex-shrink: 0;
+		padding: 0.2rem 0.6rem;
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		color: #888;
+		font-family: var(--font-display);
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	.consent-link {
+		color: var(--cyber-yellow);
+		text-decoration: underline;
+	}
+	/* На узком экране метка или кнопка уходит под название — иначе оно ломается в три строки */
+	@media (max-width: 480px) {
+		.consent-row {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.5rem;
+		}
 	}
 
 	/* CODE BOX */

@@ -1166,5 +1166,33 @@
 		"confirm_text": "They won't be able to message you or comment on your profile, and will see your profile without your avatar, bio and links. Shared chats stay as they are.",
 		"you_are_blocked": "You're on this user's block list",
 		"you_blocked": "You blocked this user"
+	},
+	"consents": {
+		"title": "Consents",
+		"desc": "Consents to the processing of personal data that you gave on the website and in the app.",
+		"names": {
+			"age_minimum": "Age 16+",
+			"core_processing": "Personal data processing",
+			"cross_border": "Cross-border data transfer",
+			"tos": "Terms of Service",
+			"activity_data": "Step counter: activity data",
+			"activity_leaderboard": "Step counter: leaderboard"
+		},
+		"granted": "Given {date} {where}",
+		"via_web": "on the website",
+		"via_android": "in the app",
+		"revoked_on": "Withdrawn {date}",
+		"doc_privacy": "Policy, version {version}",
+		"doc_tos": "Terms, version {version}",
+		"required": "Required",
+		"revoke": "Withdraw",
+		"required_note": "Required consents cannot be withdrawn separately: the account cannot exist without them. Withdrawing them means deleting the account.",
+		"to_delete": "Go to account deletion",
+		"empty": "No consent records.",
+		"load_error": "Could not load consents. Refresh the page.",
+		"confirm_title": "Withdraw consent?",
+		"confirm_activity_data": "ProtoCoins for steps will stop accruing, and your step data will be deleted from the server right away. Consent to the leaderboard is withdrawn along with it. Everything else keeps working.",
+		"confirm_activity_leaderboard": "Your step counter leaderboard entry will be deleted right away.",
+		"revoked_ok": "Consent withdrawn."
 	}
 }
