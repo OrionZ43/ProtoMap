@@ -1251,7 +1251,7 @@ export const playCoinFlip = onCall(async (request) => {
     if (!Number.isFinite(bet) || bet <= 0) throw new HttpsError('invalid-argument', 'Invalid bet.');
 
     // Минимум — как у слотов и у кнопки «−» на сайте. До 21.10.2026 сервер
-    // принимал и ставку в 1 PC. Потолок задаёт банк — проверка в транзакции.
+    // принимал и ставку в 1 PC. Потолок — доля банка, проверка в транзакции.
     const MIN_BET = 10;
     if (bet < MIN_BET) throw new HttpsError('invalid-argument', `Минимальная ставка — ${MIN_BET} PC.`);
     if (choice !== 'heads' && choice !== 'tails') throw new HttpsError('invalid-argument', 'Invalid choice.');
@@ -1274,14 +1274,17 @@ export const playCoinFlip = onCall(async (request) => {
 
             const WIN_MULTIPLIER = 1.95;
             const potentialWin = Math.floor(bet * WIN_MULTIPLIER);
-            const profit = potentialWin - bet;
 
-            // Банк не покроет выигрыш — ставку не принимаем. Раньше такой бросок
-            // молча делался проигрышным: игрок платил за заранее решённый исход.
-            // Сам банк в тексте не называем.
-            if (profit > (bankBalance * 0.9)) {
-                console.log(`[COIN] Bank low (${bankBalance}). Rejecting bet ${bet}.`);
-                throw new HttpsError('failed-precondition', 'Банк казино сейчас не покроет такой выигрыш. Попробуйте ставку меньше.', { reason: 'bank_limit' });
+            // Потолок ставки — доля банка, как у Плинко: один бросок забирает не
+            // больше 5 % банка (чистый выигрыш — 0,95 ставки). Считается по тому
+            // банку, из которого и заплатим. До 21.10.2026 потолка не было, а
+            // ставка, которую банк не покрывал, молча проигрывала.
+            const maxBet = Math.floor((bankBalance * 0.05) / 0.95);
+            if (maxBet < MIN_BET) {
+                throw new HttpsError('failed-precondition', 'Банк казино почти пуст — монетка откроется, когда он пополнится.', { reason: 'bank_limit' });
+            }
+            if (bet > maxBet) {
+                throw new HttpsError('invalid-argument', `Сейчас ставка до ${maxBet} PC.`, { reason: 'bet_too_high', maxBet });
             }
 
             // ✅ ИСПРАВЛЕНО: crypto.randomInt вместо Math.random()
@@ -2270,6 +2273,64 @@ export const changeUsername = onCall(async (request) => {
     }
 });
 
+// Первый ник — на сервере, с проверками changeUsername, но без паузы в 30 дней.
+// Создаёт профиль, если его ещё нет, или один раз заменяет ник, который выдал
+// страховочный триггер (user_… или имя Google), — так ник выбирает человек, а
+// не гонка с триггером. Уникальность проверяется в той же транзакции, что и
+// запись. Прямое создание профиля клиентом правила пока разрешают: им
+// пользуются сайт и старое приложение.
+export const setInitialUsername = onCall(async (request) => {
+    if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+    const uid = request.auth.uid;
+    await assertNotBanned(request);
+    await checkGlobalRateLimit(uid, 'setInitialUsername', 10, 60 * 60 * 1000);
+
+    const raw = request.data?.username;
+    const username = typeof raw === 'string' ? raw.trim() : '';
+    if (!USERNAME_PATTERN.test(username)) {
+        throw new HttpsError('invalid-argument', 'Ник — латиница, цифры и _, от 4 до 20 символов.', { reason: 'invalid_format' });
+    }
+    if (isReservedUsername(username)) {
+        throw new HttpsError('invalid-argument', 'Это имя зарезервировано системой.', { reason: 'reserved' });
+    }
+
+    const userRef = db.collection('users').doc(uid);
+    const picture = request.auth.token.picture;
+    let renamed = false;
+
+    await db.runTransaction(async (t) => {
+        const [snap, taken] = await Promise.all([
+            t.get(userRef),
+            t.get(db.collection('users').where('username', '==', username).limit(1)),
+        ]);
+        if (!taken.empty && taken.docs[0].id !== uid) {
+            throw new HttpsError('already-exists', 'Этот никнейм уже занят.', { reason: 'taken' });
+        }
+
+        if (!snap.exists) {
+            t.create(userRef, {
+                ...initialProfile(username, typeof picture === 'string' ? picture : undefined),
+                _created_by: 'setInitialUsername',
+                username_chosen_at: FieldValue.serverTimestamp(),
+            });
+            return;
+        }
+
+        const d = snap.data()!;
+        if (d._created_by !== 'safety_net_trigger' || d.username_chosen_at || d.last_username_change) {
+            throw new HttpsError('failed-precondition', 'Ник уже выбран — сменить его можно в профиле.', { reason: 'already_set' });
+        }
+        t.update(userRef, { username, username_chosen_at: FieldValue.serverTimestamp() });
+        renamed = true;
+    });
+
+    // Ник виден на метках карты — у нового профиля меток ещё нет
+    if (renamed) await clearMapCache();
+    return { status: 'ok', username };
+});
+
 // Ключи Cloudinary нужны очистке аккаунта, чтобы удалить аватар. Они лежат
 // в Secret Manager и видны только функциям, которые объявили их явно.
 export const deleteAccount = onCall({ secrets: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"] }, async (request) => {
@@ -2412,23 +2473,10 @@ export const onUserCreated = runWith({ timeoutSeconds: 180 }).auth.user().onCrea
     const username = await resolveUniqueUsername(base);
 
     const newDoc = {
-        username,
-        avatar_url:       user.photoURL || "",
-        about_me:         "",
-        status:           "",
-        social_link:      "",
-
-        casino_credits:   100,
-        glitch_shards:    0,
-        daily_streak:     0,
-        owned_items:      [],
-        last_daily_bonus: null,
-        isBanned:         false,
-
-        // Мета: помечаем, что документ создан триггером, а не клиентом.
-        // Это поможет при отладке и анализе онбординга.
-        _created_by:      "safety_net_trigger",
-        createdAt:        FieldValue.serverTimestamp(),
+        ...initialProfile(username, user.photoURL),
+        // Мета: документ создан триггером, а не клиентом. По этой метке
+        // setInitialUsername один раз даёт заменить выданный здесь ник.
+        _created_by: "safety_net_trigger",
     };
 
     try {
@@ -2448,6 +2496,25 @@ export const onUserCreated = runWith({ timeoutSeconds: 180 }).auth.user().onCrea
 
     return null;
 });
+
+// Поля нового профиля — одни на страховочный триггер и setInitialUsername.
+// Значения те же, что разрешает правило create в firestore.rules.
+function initialProfile(username: string, photoURL: string | undefined) {
+    return {
+        username,
+        avatar_url:       photoURL || "",
+        about_me:         "",
+        status:           "",
+        social_link:      "",
+        casino_credits:   100,
+        glitch_shards:    0,
+        daily_streak:     0,
+        owned_items:      [] as string[],
+        last_daily_bonus: null,
+        isBanned:         false,
+        createdAt:        FieldValue.serverTimestamp(),
+    };
+}
 
 // ── Вспомогательная функция: уникальный username ─────────────────────
 // Пробует base, затем base_XXXX (4 цифры) до 5 раз.

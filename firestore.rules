@@ -38,6 +38,15 @@ service cloud.firestore {
              );
     }
 
+    // Отметка о прочтении в личке: read_by — словарь {uid: время}, каждый
+    // ставит только свою
+    function onlyOwnReadMarkChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read_by'])
+          && request.resource.data.get('read_by', {})
+               .diff(resource.data.get('read_by', {})).affectedKeys()
+               .hasOnly([request.auth.uid]);
+    }
+
     // ── Комментарии каналов ─────────────────────────────────────────────────
     // Комментарии к постам живут в технической группе канала (isTechnical),
     // топик = пост. Группа приватная, подписчиков в memberUids никто не
@@ -86,10 +95,19 @@ service cloud.firestore {
                       && chatId.matches('.*_.*')
                       && request.auth.uid in chatId.split('_')
                       && request.resource.data.author_uid == request.auth.uid;
+        // Своё сообщение участник правит и удаляет (кроме автора, времени и
+        // типа), в чужом — только своя реакция и своя отметка о прочтении.
+        // До 21.10.2026 он мог переписать и чужое: текст, медиа, «удалено».
         allow update: if isAuthenticated()
                       && chatId.matches('.*_.*')
                       && request.auth.uid in chatId.split('_')
-                      && request.resource.data.author_uid == resource.data.author_uid;
+                      && request.resource.data.author_uid == resource.data.author_uid
+                      && (
+                           (resource.data.author_uid == request.auth.uid
+                            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['author_uid', 'createdAt', 'created_at', 'type']))
+                           || onlyOwnReactionChanged()
+                           || onlyOwnReadMarkChanged()
+                         );
         allow delete: if isAuthenticated() && (
             resource.data.author_uid == request.auth.uid || isAdmin()
         );
@@ -130,11 +148,12 @@ service cloud.firestore {
           'role', 'email', 'createdAt', 'migratedAt', 'migratedFrom',
           'isBanned', 'banReason', 'bannedAt', 'banCategory', 'bannedUntil',
           'is2FAEnabled', 'telegram_id', 'telegram_username', 'telegram_chat_verified', 'telegram_chat_verified_at',
-          'username', 'last_username_change',
+          'username', 'last_username_change', 'username_chosen_at', '_created_by',
           'avatar_url', 'about_me', 'status', 'socials', 'social_link',
           'equipped_frame', 'equipped_bg', 'equipped_badge',
           'birthday_bonus_claimed', 'referralBonusClaimed', 'stepperAnomalyFlag',
           'consents_privacy_version', 'consents_tos_version', 'consents_updated_at',
+          'activity_data_consent', 'activity_leaderboard_consent',
           'last_game_played', 'last_crash_game', 'last_bonus_game', 'last_chat_message',
           'last_avatar_upload', 'last_location_update'
         ];
@@ -177,6 +196,9 @@ service cloud.firestore {
         && absentOr('equipped_bg', [null, ''])
         && absentOr('equipped_badge', [null, ''])
         && absentOr('last_username_change', [null])
+        // По этим двум setInitialUsername решает, можно ли один раз сменить ник
+        && absentOr('username_chosen_at', [null])
+        && absentOr('_created_by', [null])
         && absentOr('banReason', [null, ''])
         && absentOr('bannedAt', [null])
         && absentOr('banCategory', [null])
@@ -184,6 +206,8 @@ service cloud.firestore {
         && absentOr('consents_privacy_version', [null])
         && absentOr('consents_tos_version', [null])
         && absentOr('consents_updated_at', [null])
+        && absentOr('activity_data_consent', [null, false])
+        && absentOr('activity_leaderboard_consent', [null, false])
         && absentOr('econ_op', [null])
         && absentOr('migratedAt', [null])
         && absentOr('migratedFrom', [null])
@@ -221,9 +245,11 @@ service cloud.firestore {
       match /comments/{commentId} {
         allow get:  if true;
         allow list: if true;
-        allow create: if isAuthenticated()
-                      && isNotBanned()
-                      && request.resource.data.author_uid == request.auth.uid;
+        // Комментарий создаёт только addComment: лимит частоты, длина, почта,
+        // имя автора из профиля. До 21.10.2026 прямое создание обходило всё это
+        // и давало подделать автора, лайки и дату. Сайт и оба приложения пишут
+        // через функцию.
+        allow create: if false;
         allow update: if false;
         allow delete: if isAdmin()
                       || (isAuthenticated() && resource.data.author_uid == request.auth.uid)
@@ -396,8 +422,10 @@ service cloud.firestore {
       allow read, delete: if isAdmin();
       allow update: if false;
     }
+    // Метки карты клиенты получают через getLocations, сайт — через Admin SDK.
+    // Прямое чтение никому не нужно: до 21.10.2026 оно было открыто всем.
     match /locations/{locationId} {
-      allow read:  if true;
+      allow read:  if false;
       allow write: if false;
     }
     match /global_chat/{messageId} {
@@ -778,13 +806,18 @@ service cloud.firestore {
         allow read: if isAuthenticated()
                     && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberUids;
 
+        // Роль при вступлении — только «member», владелец записывает себе
+        // «owner». До 21.10.2026 роль не проверялась, и вступивший в
+        // публичную группу мог сразу записать себе «admin».
         allow create: if isAuthenticated()
                       && isNotBanned()
                       && memberUid == request.auth.uid
                       && request.resource.data.uid == request.auth.uid
                       && (
-                           get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == request.auth.uid
-                           || get(/databases/$(database)/documents/groups/$(groupId)).data.get('isPublic', false) == true
+                           (get(/databases/$(database)/documents/groups/$(groupId)).data.ownerUid == request.auth.uid
+                            && request.resource.data.get('role', 'owner') == 'owner')
+                           || (get(/databases/$(database)/documents/groups/$(groupId)).data.get('isPublic', false) == true
+                               && request.resource.data.get('role', 'member') == 'member')
                          );
 
         allow update: if isAuthenticated()
