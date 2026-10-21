@@ -23,15 +23,17 @@
 {/if}
 
 <style>
+    /* Цвет — --primary-color (app.css): акцент, в сезон — цвет сезона.
+       Другой цвет задаётся этой переменной на родителе. */
     .neon-btn {
         @apply relative inline-block px-6 py-2 uppercase tracking-widest font-bold text-lg;
-        color: var(--primary-color, #00f0ff);
-        border: 2px solid var(--primary-color, #00f0ff);
+        color: var(--primary-color, #fcee0a);
+        border: 2px solid var(--primary-color, #fcee0a);
         background: transparent;
         overflow: hidden;
         transition: color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-        box-shadow: 0 0 5px var(--primary-color, #00f0ff),
-                    inset 0 0 5px var(--primary-color, #00f0ff);
+        box-shadow: 0 0 5px var(--primary-color, #fcee0a),
+                    inset 0 0 5px var(--primary-color, #fcee0a);
     }
 
     .btn-content {
@@ -46,30 +48,33 @@
         left: -100%;
         width: 100%;
         height: 100%;
-        background: linear-gradient(120deg, transparent, var(--primary-color, #00f0ff), transparent);
+        background: linear-gradient(120deg, transparent, var(--primary-color, #fcee0a), transparent);
         transition: left 0.5s ease-in-out;
         z-index: 0;
 
     }
 
     .neon-btn:hover {
-        color: --primary-color;
-        box-shadow: 0 0 25px var(--primary-color, #00f0ff);
+        box-shadow: 0 0 25px var(--primary-color, #fcee0a);
     }
 
     .neon-btn:hover::before {
         left: 100%;
     }
 
-    .neon-btn.disabled {
+    /* Недоступная: и ссылка с классом disabled, и <button disabled> */
+    .neon-btn.disabled,
+    .neon-btn:disabled {
         @apply border-gray-600 text-gray-600 cursor-not-allowed;
         box-shadow: none;
     }
-     .neon-btn.disabled:hover {
+    .neon-btn.disabled:hover,
+    .neon-btn:disabled:hover {
         @apply border-gray-600 text-gray-600;
-         box-shadow: none;
-     }
-     .neon-btn.disabled::before {
-         display: none;
-     }
+        box-shadow: none;
+    }
+    .neon-btn.disabled::before,
+    .neon-btn:disabled::before {
+        display: none;
+    }
 </style>

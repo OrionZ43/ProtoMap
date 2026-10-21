@@ -1556,13 +1556,6 @@
         }
     }
 
-    /* NeonButton с голубым цветом для кнопки «Написать» */
-    :global(.dm-neon) {
-        --primary-color: #00f0ff !important;
-        display: inline-flex !important;
-        align-items: center !important;
-    }
-
     .write-btn {
         display: inline-flex;
         align-items: center;

@@ -41,6 +41,7 @@
     >
         <div
             class="modal-container cyber-panel max-w-md w-full relative overflow-hidden"
+            class:is-error={$modal.type === 'error'}
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
@@ -109,7 +110,7 @@
             <div class="modal-actions px-6 sm:px-8 pb-6 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-4 space-y-2 space-y-reverse sm:space-y-0">
                 {#each $modal.actions as button}
                     {#if button.class === 'primary'}
-                        <NeonButton on:click={button.action} extraClass="w-full sm:w-auto" color={$modal.type === 'error' ? 'red' : 'cyan'}>
+                        <NeonButton on:click={button.action} extraClass="w-full sm:w-auto">
                             {button.text}
                         </NeonButton>
                     {:else}
@@ -124,21 +125,24 @@
 {/if}
 
 <style>
+    /* Обвязка — цветом акцента (в сезон — цвет сезона), у ошибки — красная */
     .modal-container {
         background: rgba(10, 10, 10, 0.9);
-        border: 1px solid rgba(0, 240, 255, 0.3); /* Cyan border */
-        box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);
+        border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.3);
+        box-shadow: 0 0 25px rgb(var(--cyber-yellow-rgb) / 0.2);
         clip-path: polygon(0 15px, 15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
     }
 
     .modal-container.is-error {
         border-color: rgba(255, 0, 60, 0.4);
         box-shadow: 0 0 25px rgba(255, 0, 60, 0.3);
+        /* основная кнопка окна ошибки — красная */
+        --primary-color: var(--cyber-red, #ff003c);
     }
 
     .corner-bg {
         @apply absolute w-16 h-16;
-        background: radial-gradient(circle, var(--cyber-cyan, #00f0ff) 0%, rgba(0, 240, 255, 0) 60%);
+        background: radial-gradient(circle, var(--cyber-yellow) 0%, rgb(var(--cyber-yellow-rgb) / 0) 60%);
         opacity: 0.1;
         filter: blur(5px);
         animation: spin 20s linear infinite;
@@ -154,8 +158,8 @@
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
     .top-bar {
-        @apply p-2 text-xs uppercase tracking-widest text-cyber-cyan/70 font-display;
-        border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+        @apply p-2 text-xs uppercase tracking-widest text-cyber-yellow/70 font-display;
+        border-bottom: 1px solid rgb(var(--cyber-yellow-rgb) / 0.2);
         position: relative;
     }
     .top-bar.is-error {
@@ -164,9 +168,9 @@
     }
     .top-bar::before {
         content: '';
-        @apply absolute top-1/2 left-2 w-2 h-2 rounded-full bg-cyber-cyan;
+        @apply absolute top-1/2 left-2 w-2 h-2 rounded-full bg-cyber-yellow;
         transform: translateY(-50%);
-        box-shadow: 0 0 5px var(--cyber-cyan);
+        box-shadow: 0 0 5px var(--cyber-yellow);
         animation: pulse-light 2s infinite;
     }
     .top-bar.is-error::before {
@@ -178,8 +182,9 @@
         50% { opacity: 0.5; }
     }
 
+    /* Russo One бывает только Regular — жирный браузер дорисовывает криво */
     .modal-title {
-        @apply text-2xl font-bold text-white text-center;
+        @apply text-2xl text-white text-center;
     }
 
     .modal-message {
@@ -187,7 +192,7 @@
     }
 
     .modal-actions {
-        border-top: 1px solid rgba(0, 240, 255, 0.1);
+        border-top: 1px solid rgb(var(--cyber-yellow-rgb) / 0.1);
         padding-top: 1.5rem;
     }
 

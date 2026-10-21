@@ -35,6 +35,13 @@
 		"error": "Error",
 		"confirm_delete": "Are you sure? This cannot be undone."
 	},
+	"modal": {
+		"ok": "OK",
+		"great": "Great!",
+		"close": "Close",
+		"got_it": "Got it",
+		"confirm_yes": "Yes, confirm"
+	},
 	"verify": {
 		"page_title": "VERIFICATION",
 		"header_loading": "PROCESSING DATA...",
@@ -1189,7 +1196,7 @@
 		"required_note": "Required consents cannot be withdrawn separately: the account cannot exist without them. Withdrawing them means deleting the account.",
 		"to_delete": "Go to account deletion",
 		"empty": "No consent records.",
-		"load_error": "Could not load consents. Refresh the page.",
+		"load_error": "Could not load consents. Try again.",
 		"confirm_title": "Withdraw consent?",
 		"confirm_activity_data": "ProtoCoins for steps will stop accruing, and your step data will be deleted from the server right away. Consent to the leaderboard is withdrawn along with it. Everything else keeps working.",
 		"confirm_activity_leaderboard": "Your step counter leaderboard entry will be deleted right away.",

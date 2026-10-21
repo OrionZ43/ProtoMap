@@ -8,7 +8,7 @@
 :root {
     --bg-color-start: #1f2125;
     --bg-color-end: #101214;
-    --primary-color: #00f0ff; /* Старое название для --cyber-cyan */
+    --primary-color: rgb(var(--cyber-yellow-rgb)); /* Основной цвет NeonButton и тумблеров — акцент, в сезон меняется вместе с ним. Перекрашивается на родителе */
     --secondary-bg-color: #1a1d21;
     --border-color: #30363d;
     --text-color: #e8e8e8;
@@ -178,13 +178,13 @@ body {
 }
 
 .leaflet-popup-content a {
-    color: var(--primary-color, #4fc3f7);
+    color: var(--cyber-cyan, #4fc3f7);
     font-weight: 700;
     transition: color 0.2s ease, text-shadow 0.2s ease;
 }
 .leaflet-popup-content a:hover {
     color: var(--link-hover-color, #ffffff);
-    text-shadow: 0 0 5px var(--primary-color, #4fc3f7);
+    text-shadow: 0 0 5px var(--cyber-cyan, #4fc3f7);
 }
 
 .leaflet-popup-close-button {
@@ -256,7 +256,7 @@ body {
 
 .leaflet-control-custom.geolocation-button i {
     font-size: 16px;
-    color: var(--primary-color, #4fc3f7);
+    color: var(--cyber-cyan, #4fc3f7);
     line-height: 32px;
     transition: color 0.2s ease, transform 0.5s ease;
 }
