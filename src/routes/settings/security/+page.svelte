@@ -203,7 +203,7 @@
 	<div class="sections-grid">
 		<!-- 1. ИДЕНТИФИКАЦИЯ (EMAIL) -->
 		<section class="sec-card">
-			<h3 class="sec-title text-cyber-cyan">{$t('security.email_title')}</h3>
+			<h3 class="sec-title text-cyber-yellow">{$t('security.email_title')}</h3>
 
 			<div class="info-row">
 				<span class="label">EMAIL:</span>
@@ -233,7 +233,7 @@
 
 		<!-- 2. СВЯЗЬ (TELEGRAM) И 2FA -->
 		<section class="sec-card">
-			<h3 class="sec-title text-cyber-purple">{$t('security.tg_title')}</h3>
+			<h3 class="sec-title text-cyber-yellow">{$t('security.tg_title')}</h3>
 
 			<div class="info-row" style="margin-top: 1rem; border-bottom: none;">
 				<span class="label"
@@ -292,7 +292,7 @@
 				</div>
 				<div class="info-row">
 					<span class="label">{$t('security.user')}</span>
-					<span class="value text-cyber-purple"
+					<span class="value text-cyber-yellow"
 						>@{data.telegram_username || 'ID: ' + data.telegram_id}</span
 					>
 				</div>
@@ -301,7 +301,7 @@
 				<p class="desc">{$t('security.tg_desc')}</p>
 
 				{#if !tgLinkCode}
-					<button class="action-btn purple" on:click={generateTgCode} disabled={isGeneratingCode}>
+					<button class="action-btn accent" on:click={generateTgCode} disabled={isGeneratingCode}>
 						{isGeneratingCode ? $t('security.btn_generating') : $t('security.btn_gen')}
 					</button>
 				{:else}
@@ -528,13 +528,13 @@
 		border-radius: 50%;
 	}
 	input:checked + .slider {
-		background-color: rgba(188, 19, 254, 0.5);
-		border-color: #bc13fe;
+		background-color: rgb(var(--cyber-yellow-rgb) / 0.35);
+		border-color: var(--cyber-yellow);
 	}
 	input:checked + .slider:before {
 		transform: translateX(20px);
-		background-color: #bc13fe;
-		box-shadow: 0 0 10px #bc13fe;
+		background-color: var(--cyber-yellow);
+		box-shadow: 0 0 10px var(--cyber-yellow);
 	}
 
 	/* BUTTONS */
@@ -561,15 +561,15 @@
 		cursor: not-allowed;
 	}
 
-	.action-btn.purple {
-		border-color: var(--cyber-purple);
-		color: var(--cyber-purple);
+	.action-btn.accent {
+		border-color: var(--cyber-yellow);
+		color: var(--cyber-yellow);
 		background: transparent;
 	}
-	.action-btn.purple:hover {
-		background: var(--cyber-purple);
-		color: #fff;
-		box-shadow: 0 0 15px var(--cyber-purple);
+	.action-btn.accent:hover {
+		background: var(--cyber-yellow);
+		color: #000;
+		box-shadow: 0 0 15px var(--cyber-yellow);
 	}
 
 	.action-btn.red {
@@ -686,7 +686,7 @@
 	}
 	.code-val {
 		font-size: 1.5rem;
-		color: var(--cyber-purple);
+		color: var(--cyber-yellow);
 		font-weight: bold;
 		font-family: monospace;
 		letter-spacing: 2px;

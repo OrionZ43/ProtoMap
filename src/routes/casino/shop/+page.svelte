@@ -226,9 +226,9 @@
         display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
         position: relative; overflow: hidden; background: #0a0a0a; padding: 2rem;
     }
-    .bg-blur-1, .bg-blur-2 { position: absolute; width: 400px; height: 400px; border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; }
-    .bg-blur-1 { background: var(--cyber-red); top: 10%; left: 10%; animation: float-blur-1 20s infinite ease-in-out; }
-    .bg-blur-2 { background: var(--cyber-cyan); bottom: 10%; right: 10%; animation: float-blur-2 25s infinite ease-in-out; }
+    .bg-blur-1, .bg-blur-2 { position: absolute; width: 400px; height: 400px; border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; opacity: 0.35; }
+    .bg-blur-1 { background: var(--cyber-yellow); top: 10%; left: 10%; animation: float-blur-1 20s infinite ease-in-out; }
+    .bg-blur-2 { background: var(--cyber-yellow); bottom: 10%; right: 10%; animation: float-blur-2 25s infinite ease-in-out; }
 
     .market-header { text-align: center; margin-bottom: 2rem; z-index: 2; }
     .dealer-art { max-width: 350px; max-height: 220px; margin: 0 auto; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5)); }
@@ -265,7 +265,7 @@
     }
     .panel-btn:hover:not(:disabled) { color: #fff; transform: translateY(-2px); }
     .panel-btn:active:not(:disabled) { transform: translateY(1px); box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5); }
-    .panel-btn.inventory:hover:not(:disabled) { box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1), 0 0 20px var(--cyber-cyan); }
+    .panel-btn.inventory:hover:not(:disabled) { box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1), 0 0 20px var(--cyber-yellow); }
     .panel-btn.shop:hover:not(:disabled) { box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1), 0 0 20px var(--cyber-yellow); }
     .panel-btn.lobby:hover:not(:disabled) { box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1), 0 0 20px var(--cyber-purple); }
     .panel-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
@@ -299,10 +299,10 @@
     }
 
     .shop-tab.active {
-        background: rgba(0, 243, 255, 0.1);
-        border-color: var(--cyber-cyan);
-        color: var(--cyber-cyan);
-        box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        background: rgb(var(--cyber-yellow-rgb) / 0.1);
+        border-color: var(--cyber-yellow);
+        color: var(--cyber-yellow);
+        box-shadow: 0 0 15px rgb(var(--cyber-yellow-rgb) / 0.2);
     }
 
     .items-grid {

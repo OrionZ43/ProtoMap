@@ -131,7 +131,7 @@
     <meta name="yandex-verification" content="c5f88bd5ab9cbd60" />
     <meta property="og:site_name" content="ProtoMap" />
     <meta property="og:locale" content="ru_RU" />
-    <meta name="theme-color" content="#00f0ff" />
+    <meta name="theme-color" content="#0a0a0a" />
 
     <title>{hasCustomSeo ? seoData.title : 'ProtoMap - Карта протогенов'}</title>
     <meta name="description" content={hasCustomSeo ? seoData.description : 'Интерактивная карта протогенов с мини-играми, чатом и профилями'} />

@@ -223,9 +223,9 @@
         display: flex; align-items: center; justify-content: center;
         position: relative; overflow: hidden; background: #0a0a0a; padding: 2rem;
     }
-    .bg-blur-1, .bg-blur-2 { position: absolute; width: 400px; height: 400px; border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; }
-    .bg-blur-1 { background: var(--cyber-green); top: 10%; right: 10%; animation: float-blur-1 20s infinite ease-in-out; }
-    .bg-blur-2 { background: var(--cyber-cyan); bottom: 10%; left: 10%; animation: float-blur-2 25s infinite ease-in-out; }
+    .bg-blur-1, .bg-blur-2 { position: absolute; width: 400px; height: 400px; border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; opacity: 0.35; }
+    .bg-blur-1 { background: var(--cyber-yellow); top: 10%; right: 10%; animation: float-blur-1 20s infinite ease-in-out; }
+    .bg-blur-2 { background: var(--cyber-yellow); bottom: 10%; left: 10%; animation: float-blur-2 25s infinite ease-in-out; }
 
     .inventory-container {
         width: 100%; max-width: 1200px; z-index: 2;
@@ -234,7 +234,7 @@
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     }
     .header { text-align: center; padding: 2rem; border-bottom: 1px solid rgba(255, 255, 255, 0.15); }
-    .title { font-size: 3rem; color: #fff; text-shadow: 0 0 15px #fff; }
+    .title { font-size: 3rem; color: #fff; }
     .subtitle { color: var(--text-muted-color); font-family: 'Chakra Petch', 'Russo One', monospace; }
 
     /* TABS */
@@ -308,7 +308,7 @@
         padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
         text-align: center; cursor: pointer; transition: all 0.2s; position: relative;
     }
-    .item-slot:hover { background: rgba(255,255,255,0.1); border-color: var(--cyber-cyan); }
+    .item-slot:hover { background: rgba(255,255,255,0.1); border-color: var(--cyber-yellow); }
     .item-slot.selected { border-color: var(--cyber-yellow); box-shadow: 0 0 15px var(--cyber-yellow); transform: scale(1.05); z-index: 2; }
 
     .item-icon-preview { width: 70px; height: 70px; }
@@ -358,7 +358,7 @@
     }
     .panel-btn:hover:not(:disabled) { color: #fff; transform: translateY(-2px); }
     .panel-btn.save:hover:not(:disabled) { box-shadow: 0 0 20px var(--cyber-yellow); border-color: var(--cyber-yellow); }
-    .panel-btn.shop:hover:not(:disabled) { box-shadow: 0 0 20px var(--cyber-cyan); border-color: var(--cyber-cyan); }
+    .panel-btn.shop:hover:not(:disabled) { box-shadow: 0 0 20px var(--cyber-yellow); border-color: var(--cyber-yellow); }
     .panel-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
 
     @media (max-width: 1024px) {

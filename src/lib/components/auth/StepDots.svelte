@@ -49,7 +49,7 @@
         width: 9px;
         height: 9px;
         padding: 0;
-        border: 1px solid rgba(0, 243, 255, 0.45);
+        border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.45);
         background: transparent;
         border-radius: 0;
         transform: rotate(45deg);
@@ -57,14 +57,14 @@
     }
 
     .dot--done {
-        background: rgba(0, 243, 255, 0.45);
+        background: rgb(var(--cyber-yellow-rgb) / 0.45);
     }
 
     button.dot--done {
         cursor: pointer;
     }
     button.dot--done:hover {
-        background: rgba(0, 243, 255, 0.8);
+        background: rgb(var(--cyber-yellow-rgb) / 0.8);
     }
 
     .dot--current {

@@ -79,15 +79,15 @@
     .settings-panel {
         width: 100%; max-width: 400px;
         background: rgba(10, 15, 20, 0.95);
-        border: 1px solid var(--cyber-cyan);
-        box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
+        border: 1px solid var(--cyber-yellow);
+        box-shadow: 0 0 30px rgb(var(--cyber-yellow-rgb) / 0.15);
         border-radius: 12px; overflow: hidden;
     }
 
     .panel-header {
         display: flex; justify-content: space-between; align-items: center;
         padding: 1rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);
-        background: rgba(0, 243, 255, 0.05);
+        background: rgb(var(--cyber-yellow-rgb) / 0.05);
     }
     .close-btn { font-size: 1.5rem; color: #666; transition: color 0.2s; line-height: 1; }
     .close-btn:hover { color: #fff; }
@@ -104,18 +104,18 @@
         padding: 4px 12px; font-size: 0.8rem; font-weight: bold; color: #888; border-radius: 4px;
         transition: all 0.2s;
     }
-    .lang-btn.active { background: var(--cyber-cyan); color: #000; box-shadow: 0 0 10px var(--cyber-cyan); }
+    .lang-btn.active { background: var(--cyber-yellow); color: #000; box-shadow: 0 0 10px var(--cyber-yellow); }
 
     .panel-footer { padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; }
     .save-btn {
-        width: 100%; padding: 0.8rem; background: transparent; border: 1px solid var(--cyber-cyan);
-        color: var(--cyber-cyan); font-weight: bold; font-family: 'Chakra Petch', 'Russo One', monospace;
+        width: 100%; padding: 0.8rem; background: transparent; border: 1px solid var(--cyber-yellow);
+        color: var(--cyber-yellow); font-weight: bold; font-family: 'Chakra Petch', 'Russo One', monospace;
         text-transform: uppercase; transition: all 0.2s; cursor: pointer;
     }
-    .save-btn:hover { background: var(--cyber-cyan); color: #000; box-shadow: 0 0 15px var(--cyber-cyan); }
+    .save-btn:hover { background: var(--cyber-yellow); color: #000; box-shadow: 0 0 15px var(--cyber-yellow); }
 
     .cyber-switch { appearance: none; width: 44px; height: 24px; background: #333; border-radius: 99px; position: relative; cursor: pointer; transition: all 0.3s; border: 1px solid #555; }
     .cyber-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #888; border-radius: 50%; transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); }
-    .cyber-switch:checked { background: rgba(0, 240, 255, 0.2); border-color: var(--cyber-cyan); }
-    .cyber-switch:checked::after { left: 22px; background: var(--cyber-cyan); box-shadow: 0 0 10px var(--cyber-cyan); }
+    .cyber-switch:checked { background: rgb(var(--cyber-yellow-rgb) / 0.2); border-color: var(--cyber-yellow); }
+    .cyber-switch:checked::after { left: 22px; background: var(--cyber-yellow); box-shadow: 0 0 10px var(--cyber-yellow); }
 </style>

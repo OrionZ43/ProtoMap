@@ -868,14 +868,14 @@
         font-size: 0.8rem;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: #00f3ff;
-        border: 1px solid rgba(0, 243, 255, 0.4);
-        background: rgba(0, 243, 255, 0.06);
+        color: var(--cyber-yellow);
+        border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.4);
+        background: rgb(var(--cyber-yellow-rgb) / 0.06);
         transition: background 0.18s, border-color 0.18s, color 0.18s;
     }
     .map-link:hover {
-        background: rgba(0, 243, 255, 0.16);
-        border-color: #00f3ff;
+        background: rgb(var(--cyber-yellow-rgb) / 0.16);
+        border-color: var(--cyber-yellow);
         color: #fff;
     }
     .map-link svg {
@@ -1260,8 +1260,8 @@
     .icon-btn.del:hover { color: #ff003c; }
 
     .reply-badge {
-        background: rgba(0, 243, 255, 0.1); border: 1px solid var(--cyber-cyan);
-        color: var(--cyber-cyan); padding: 0.3rem 0.8rem; border-radius: 4px;
+        background: rgb(var(--cyber-yellow-rgb) / 0.1); border: 1px solid var(--cyber-yellow);
+        color: var(--cyber-yellow); padding: 0.3rem 0.8rem; border-radius: 4px;
         font-size: 0.8rem; margin-bottom: 0.5rem; display: inline-flex; align-items: center;
     }
 
@@ -1474,10 +1474,10 @@
 
     /* Подсветка всей коробки при фокусе */
     .comment-input-box:focus-within {
-        border-color: rgba(0, 243, 255, 0.3);
+        border-color: rgb(var(--cyber-yellow-rgb) / 0.3);
         box-shadow:
             0 20px 50px rgba(0, 0, 0, 0.9),
-            0 0 20px rgba(0, 243, 255, 0.05);
+            0 0 20px rgb(var(--cyber-yellow-rgb) / 0.05);
     }
 
     /* Поле ввода */
@@ -1504,22 +1504,22 @@
     .input-field:focus {
         outline: none;
         background: rgba(0, 0, 0, 0.6);
-        border-color: var(--cyber-cyan);
+        border-color: var(--cyber-yellow);
         /* Внутреннее свечение */
-        box-shadow: inset 0 0 15px rgba(0, 243, 255, 0.05);
+        box-shadow: inset 0 0 15px rgb(var(--cyber-yellow-rgb) / 0.05);
     }
 
     /* Плашка ответа (всплывает сверху) */
     .reply-badge {
-        background: linear-gradient(90deg, rgba(0, 243, 255, 0.1), transparent);
-        border-left: 3px solid var(--cyber-cyan);
+        background: linear-gradient(90deg, rgb(var(--cyber-yellow-rgb) / 0.1), transparent);
+        border-left: 3px solid var(--cyber-yellow);
         padding: 0.6rem 1rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 0.5rem;
         font-size: 0.85rem;
-        color: var(--cyber-cyan);
+        color: var(--cyber-yellow);
         border-radius: 4px;
         font-family: 'Chakra Petch', 'Russo One', monospace;
         animation: slide-in 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;

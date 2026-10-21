@@ -351,12 +351,12 @@
         display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
         position: relative; overflow: hidden; background: #0a0a0a; padding: 2rem;
     }
-    .bg-blur-1, .bg-blur-2 { position: absolute; width: 400px; height: 400px; border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; }
-    .bg-blur-1 { background: var(--cyber-purple); top: 10%; left: 10%; animation: float-blur-1 20s infinite ease-in-out; }
+    .bg-blur-1, .bg-blur-2 { position: absolute; width: 400px; height: 400px; border-radius: 50%; filter: blur(150px); pointer-events: none; z-index: 0; opacity: 0.35; }
+    .bg-blur-1 { background: var(--cyber-yellow); top: 10%; left: 10%; animation: float-blur-1 20s infinite ease-in-out; }
     .bg-blur-2 { background: var(--cyber-yellow); bottom: 10%; right: 10%; animation: float-blur-2 25s infinite ease-in-out; }
 
     .header { text-align: center; margin-bottom: 3rem; position: relative; z-index: 2; }
-    .title { font-size: 4rem; color: #fff; text-shadow: 0 0 15px #fff; }
+    .title { font-size: 4rem; color: #fff; }
     .subtitle { color: var(--text-muted-color); font-family: 'Chakra Petch', 'Russo One', monospace; }
 
     .user-panel {
@@ -387,13 +387,13 @@
     .panel-btn:hover:not(:disabled) { color: #fff; transform: translateY(-2px); }
     .panel-btn:active:not(:disabled) { transform: translateY(1px); box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5); }
     .panel-btn.shop:hover:not(:disabled) { box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1), 0 0 20px var(--cyber-yellow); }
-    .panel-btn.inventory:hover:not(:disabled) { box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1), 0 0 20px var(--cyber-cyan); }
+    .panel-btn.inventory:hover:not(:disabled) { box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.05), 4px 4px 8px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255, 255, 255, 0.1), 0 0 20px var(--cyber-yellow); }
     .panel-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
 
     .calendar-wrapper {
         width: 100%; max-width: 900px;
         background: rgba(10, 15, 20, 0.8);
-        border: 1px solid rgba(0, 243, 255, 0.2);
+        border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.2);
         border-radius: 12px;
         padding: 1.5rem;
         margin-bottom: 2rem;
@@ -431,11 +431,11 @@
     .reward-val { font-size: 0.9rem; font-weight: bold; color: #ccc; }
 
     .day-cell.claimed {
-        background: rgba(0, 243, 255, 0.1);
-        border-color: rgba(0, 243, 255, 0.3);
-        color: #00f3ff;
+        background: rgb(var(--cyber-yellow-rgb) / 0.1);
+        border-color: rgb(var(--cyber-yellow-rgb) / 0.3);
+        color: var(--cyber-yellow);
     }
-    .check-icon { color: #00f3ff; font-size: 1.2rem; }
+    .check-icon { color: var(--cyber-yellow); }
 
     .day-cell.active {
         background: rgba(255,255,255,0.1);
@@ -601,7 +601,7 @@
     .rank { width: 40px; font-size: 1.2rem; color: #666; font-weight: bold; }
     .player-info { display: flex; align-items: center; flex-grow: 1; }
     .username { color: #eee; font-weight: 500; }
-    .credits { color: var(--cyber-cyan); font-weight: bold; }
+    .credits { color: var(--cyber-yellow); font-weight: bold; }
 
     .top-1 .rank { color: #ffd700; text-shadow: 0 0 10px #ffd700; font-size: 1.5rem; }
     .top-1 .username { color: #ffd700; }

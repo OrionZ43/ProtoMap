@@ -123,7 +123,7 @@
             </a>
 
              <div class="seasonal-phrase-container hidden xl:block">
-                 <a href={seasonal.link} target="_blank" rel="noopener noreferrer" class="hover:text-cyan-400 transition-colors">
+                 <a href={seasonal.link} target="_blank" rel="noopener noreferrer" class="hover:text-cyber-yellow transition-colors">
                     {seasonal.phrase}
                  </a>
             </div>
@@ -331,7 +331,7 @@
                     </a>
                 {/if}
 
-                <a href="/messages" class="mobile-link text-cyber-cyan border-l-cyan-400">
+                <a href="/messages" class="mobile-link text-cyber-yellow border-l-cyber-yellow">
                     <svg class="ml-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     {$t('menu.messages')}
                     {#if $totalUnread > 0}
@@ -528,7 +528,7 @@
     .setting-row:hover { color: #fff; }
     .cyber-switch { appearance: none; width: 36px; height: 20px; background: #334155; border-radius: 99px; position: relative; cursor: pointer; transition: all 0.3s; border: 1px solid #475569; }
     .cyber-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #94a3b8; border-radius: 50%; transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); }
-    .cyber-switch:checked { background: rgba(0, 240, 255, 0.2); border-color: var(--cyber-yellow); }
+    .cyber-switch:checked { background: rgb(var(--cyber-yellow-rgb) / 0.2); border-color: var(--cyber-yellow); }
     .cyber-switch:checked::after { left: 18px; background: var(--cyber-yellow); box-shadow: 0 0 10px var(--cyber-yellow); }
 
     /* flex — чтобы иконки вставали вровень с текстом.
@@ -560,7 +560,7 @@
 
     .nav-divider {
         height: 20px; width: 1px; background: rgba(255, 255, 255, 0.2);
-        box-shadow: 0 0 5px rgba(0, 243, 255, 0.3); margin: 0 0.5rem;
+        box-shadow: 0 0 5px rgb(var(--cyber-yellow-rgb) / 0.3); margin: 0 0.5rem;
     }
 
     .settings-btn-mobile {
@@ -568,10 +568,10 @@
         margin: 0.5rem 1rem;
         display: flex; align-items: center; justify-content: center; gap: 0.8rem;
         padding: 0.8rem;
-        background: rgba(0, 243, 255, 0.05);
-        border: 1px solid var(--cyber-cyan);
+        background: rgb(var(--cyber-yellow-rgb) / 0.05);
+        border: 1px solid var(--cyber-yellow);
         border-radius: 8px;
-        color: var(--cyber-cyan);
+        color: var(--cyber-yellow);
         font-family: 'Chakra Petch', 'Russo One', monospace;
         font-weight: bold;
         text-transform: uppercase;
@@ -579,9 +579,9 @@
         transition: all 0.2s;
     }
     .settings-btn-mobile:hover {
-        background: var(--cyber-cyan);
+        background: var(--cyber-yellow);
         color: #000;
-        box-shadow: 0 0 15px var(--cyber-cyan);
+        box-shadow: 0 0 15px var(--cyber-yellow);
     }
     .settings-btn-mobile .icon { flex-shrink: 0; }
     .android-btn {

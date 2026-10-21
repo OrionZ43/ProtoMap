@@ -40,12 +40,12 @@
 <svg class="net" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <defs>
         <radialGradient id="net-glow" cx="50%" cy="45%" r="65%">
-            <stop offset="0%" stop-color="rgba(0,243,255,0.16)" />
-            <stop offset="100%" stop-color="rgba(0,243,255,0)" />
+            <stop offset="0%" style="stop-color: rgb(var(--cyber-yellow-rgb) / 0.16)" />
+            <stop offset="100%" style="stop-color: rgb(var(--cyber-yellow-rgb) / 0)" />
         </radialGradient>
         <pattern id="net-grid" width="6.25" height="6.25" patternUnits="userSpaceOnUse">
             <path d="M 6.25 0 L 0 0 0 6.25" fill="none"
-                  stroke="rgba(0,243,255,0.09)" stroke-width="0.15" />
+                  style="stroke: rgb(var(--cyber-yellow-rgb) / 0.09)" stroke-width="0.15" />
         </pattern>
     </defs>
 
@@ -54,7 +54,7 @@
 
     {#each links as l}
         <line x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
-              stroke="rgba(0,243,255,0.14)" stroke-width="0.12" />
+              style="stroke: rgb(var(--cyber-yellow-rgb) / 0.14)" stroke-width="0.12" />
     {/each}
 
     {#each dots as d}
@@ -77,7 +77,7 @@
     }
 
     .dot {
-        fill: rgba(0, 243, 255, 0.55);
+        fill: rgb(var(--cyber-yellow-rgb) / 0.55);
         animation: pulse 4.5s ease-in-out infinite;
     }
 

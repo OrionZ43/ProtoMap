@@ -87,7 +87,7 @@
         position: relative;
         overflow: hidden;
         background: radial-gradient(circle at 30% 20%, #0a1620 0%, #05080c 70%);
-        border-right: 1px solid rgba(0, 243, 255, 0.18);
+        border-right: 1px solid rgb(var(--cyber-yellow-rgb) / 0.18);
     }
 
     @media (min-width: 1024px) {
@@ -107,7 +107,7 @@
     .showcase__kicker {
         font-size: 0.75rem;
         letter-spacing: 0.28em;
-        color: rgba(0, 243, 255, 0.65);
+        color: rgb(var(--cyber-yellow-rgb) / 0.65);
         margin: 0 0 1.5rem;
     }
 
@@ -116,7 +116,7 @@
         line-height: 1;
         color: #fff;
         margin: 0;
-        text-shadow: 0 0 24px rgba(0, 243, 255, 0.45);
+        text-shadow: 0 0 24px rgb(var(--cyber-yellow-rgb) / 0.45);
     }
 
     .showcase__caption {
@@ -134,7 +134,7 @@
         position: absolute;
         width: 40px;
         height: 40px;
-        border-color: rgba(0, 243, 255, 0.5);
+        border-color: rgb(var(--cyber-yellow-rgb) / 0.5);
         z-index: 1;
     }
     .showcase__corner--tl {
