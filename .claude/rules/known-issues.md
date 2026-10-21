@@ -3,7 +3,7 @@
 Active, verified defects. Each entry: what, where, how it was verified, what to do.
 Remove an entry when it's fixed — this file is only useful if it's true.
 
-Last verified: **2026-09-11** for 1, 2, 4; **2026-10-21** for 3 and 5–7 (against the working
+Last verified: **2026-09-11** for 1, 2, 4; **2026-10-21** for 3, 5–7 and 9 (against the working
 tree and, where stated, against prod).
 
 ---
@@ -179,3 +179,28 @@ protection there (5 digits, 3 attempts, 5 minutes, one per minute).
 signed-in user — who follows which channel is public to members. The site checks its own
 subscription with `uid in subscriberUids`, so hiding the list needs a different shape (for
 example, only `subscribers/{uid}` readable by its owner). Orion, 2026-10-21: leave as is for now.
+
+---
+
+## 9. `functions` lint can't run as configured
+
+**Where:** `functions/package.json` (`"lint": "eslint --ext .js,.ts ."`), `functions/.eslintrc.js`,
+root `eslint.config.js`.
+
+**What:** `functions` has ESLint 8.57. It switches to flat config as soon as it finds an
+`eslint.config.js` in any ancestor directory, and it finds the root one. That config loads the
+root `@typescript-eslint` v8, which crashes under ESLint 8: `Error while loading rule
+'@typescript-eslint/no-unused-expressions': Cannot read properties of undefined (reading
+'allowShortCircuit')`. So `npm --prefix functions run lint` fails on every file and
+`functions/.eslintrc.js` is never applied. The deploy gate is `tsc`, not lint, so nothing else
+breaks.
+
+**Workaround:** from `functions/`, `ESLINT_USE_FLAT_CONFIG=false npx eslint --ext .ts src/<file>.ts`
+applies `.eslintrc.js`. On the whole tree that reports thousands of errors, mostly `indent` and
+`quotes` in files written with 4 spaces and single quotes; `channelComments.ts` and `groups.ts`
+are clean.
+
+**Verified:** 2026-10-21.
+
+**Do:** put `ESLINT_USE_FLAT_CONFIG=false` into the `lint` script (`cross-env` on Windows) or give
+`functions` its own flat config; reformatting the tree, if wanted, is a separate isolated commit.
