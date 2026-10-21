@@ -3,7 +3,8 @@
 Active, verified defects. Each entry: what, where, how it was verified, what to do.
 Remove an entry when it's fixed — this file is only useful if it's true.
 
-Last verified: **2026-09-11** (against the working tree, not against prod).
+Last verified: **2026-09-11** for 1, 2, 4; **2026-10-21** for 3 and 5–7 (against the working
+tree and, where stated, against prod).
 
 ---
 
@@ -91,7 +92,11 @@ the Data Access log, clients changed only `fcmToken`; rare actions (blocking a u
 `blocked_uids`, beta and stepper consent flags) may not have shown up yet.
 
 Separately, the `create` rule can't check that a username is unique or not reserved: the site
-checks availability client-side, so a modified client can register with someone else's nickname.
+checks availability client-side, so a modified client can register with someone else's nickname,
+or with Cyrillic, spaces and look-alike letters (the rule allows 3–20 characters of anything).
+Since 2026-10-21 everything else agrees on one set of username rules — `checkUsername`,
+`changeUsername`, the safety-net trigger and the site (`src/lib/utils/username.ts`): 4–20
+characters of `[a-zA-Z0-9_]`, no reserved substrings.
 
 **Verified:** Firebase Rules API (`projects.test`), 30 allow/deny cases against the live
 ruleset `984e426d` — all pass; the same cases against the previous ruleset passed 11 of 30.
@@ -99,9 +104,9 @@ ruleset `984e426d` — all pass; the same cases against the previous ruleset pas
 **Do:** After a week of Data Access logs (enabled 2026-10-20), list every field clients write
 to `users/{uid}` — principal `service-779680752096@firebase-rules.iam.gserviceaccount.com`,
 `request.writes[].updateMask.fieldPaths` — and switch the owner update rule to `hasOnly`.
-Move the first username and document creation into a callable (the Android session proposed
-`setInitialUsername`); drop the client `create` only after the site uses it and the old app is
-retired.
+`setInitialUsername` (live since 2026-10-21) creates the profile with a checked, unique
+username; move the site's registration to it once the new app has proven it, and drop the
+client `create` only after the old app is retired.
 
 ---
 
@@ -130,3 +135,38 @@ real errors when debugging — that is exactly how it was found.
 **Do:** either add the files, or remove those entries from `soundFiles` (and the matching
 members of the `SoundName` union) until the game that needs them ships. Don't set
 `preload: false` as the fix — that only defers the same 404 to first play.
+
+---
+
+## 5. DM unread counter: the old app still writes dotted field names
+
+**Where:** the old app (`by.iposdev.protomap`) increments `unreadCount.<uid>` with a dotted
+key inside `set(…, merge)`, which creates a top-level field literally named
+`unreadCount.<uid>`. The site writes the nested map since 2026-10-21; the counter it reads
+(`unreadCount[uid]`) works for messages sent from the site and the new app.
+
+**Verified:** 2026-10-21, 56 of 56 recent chats had stray dotted fields.
+
+**Do:** once the old app is retired, delete the stray `unreadCount.*` fields from `chats`
+(one script, backup first).
+
+---
+
+## 6. Map points the old app sent before 2026-10-21 may be raw GPS
+
+**What:** the old app sent its points as manual (`isManual: true`), and raw GPS when its own
+geocoder failed; manual points are stored as they are and shown on the public map. Since
+2026-10-21 `addOrUpdateLocation` snaps every point from the old app (by its App Check app id)
+to the district centre. Older points can't be told apart from manual points set on the site.
+
+**Do:** nothing automatic is safe. If needed, ask the affected users to re-set their point, or
+snap all points whose `city` came from a manual lookup — that would also move points people
+placed by hand on purpose.
+
+---
+
+## 7. Low-risk guard gaps
+
+`migrateExternalAvatar` and `getTelegramAuthCode` check only `request.auth` (no App Check, no
+ban check). `send2FACode` and `verify2FACode` have no App Check; the code itself is the
+protection there (5 digits, 3 attempts, 5 minutes, one per minute).
