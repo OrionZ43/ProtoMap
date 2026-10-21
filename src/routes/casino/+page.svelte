@@ -189,7 +189,7 @@
                         <div class="day-num">{$t('casino.day_short')} {dayNum}</div>
 
                         {#if isClaimed}
-                            <div class="check-icon">✔</div>
+                            <svg class="check-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
                         {:else}
                             {#if dayNum !== 30}
                                 <div class="reward-val">{amount}</div>

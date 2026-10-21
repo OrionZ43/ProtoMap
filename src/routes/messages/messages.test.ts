@@ -10,6 +10,12 @@
 import { describe, it, vi } from 'vitest';
 import { render } from '@testing-library/svelte';
 import { readable, writable } from 'svelte/store';
+import { addMessages, init } from 'svelte-i18n';
+import ru from '$lib/i18n/locales/ru.json';
+
+// Подписи страницы — из локалей, как на сайте; без словаря $t бросает при рендере
+addMessages('ru', ru);
+init({ fallbackLocale: 'ru', initialLocale: 'ru' });
 
 vi.mock('$app/environment', () => ({ browser: true, dev: false }));
 vi.mock('$app/navigation', () => ({ goto: vi.fn(), beforeNavigate: vi.fn() }));

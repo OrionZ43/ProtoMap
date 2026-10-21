@@ -3,32 +3,9 @@
 Active, verified defects. Each entry: what, where, how it was verified, what to do.
 Remove an entry when it's fixed — this file is only useful if it's true.
 
-Last verified: **2026-09-11** for 1, 2, 4; **2026-10-21** for 3, 5–7 and 9 (against the working
-tree and, where stated, against prod).
-
----
-
-## 1. `oscillator.type = 'whitenoise'` — invalid oscillator type
-
-**Where:** `src/lib/client/soundGenerator.ts:20`, in `generateSpinSound()`.
-
-**What:** `'whitenoise'` is not a Web Audio `OscillatorType`. The valid values are `sine`,
-`square`, `sawtooth`, `triangle`, `custom`. Assigning an invalid value to an enum-typed
-attribute throws a `TypeError` in the browser, so `generateSpinSound()` cannot run at all.
-White noise is not producible with `OscillatorNode` — it needs an `AudioBufferSourceNode`
-filled with random samples (or an `AudioWorklet`).
-
-**Verified:** `svelte-check` → `soundGenerator.ts 20:5 Type '"whitenoise"' is not assignable
-to type 'OscillatorType'`.
-
-**Severity today: dormant.** `grep` finds **no importers** of `soundGenerator.ts` anywhere in
-`src/` — the module is entirely unreferenced (the app uses `$lib/client/audioManager` instead).
-Nothing crashes right now.
-
-**Do:** don't wire this module up without fixing the function first. If you need the spin
-noise, generate a buffer of random samples and play it through the existing lowpass filter
-chain; the rest of the function is fine. If nobody wants the sound, deleting the module is
-also a legitimate resolution.
+Last verified: **2026-09-11** for 2; **2026-10-21** for 3, 5–7 and 9 (against the working tree
+and, where stated, against prod). Numbers are kept stable when an entry is removed — other
+documents refer to them.
 
 ---
 
@@ -107,34 +84,6 @@ to `users/{uid}` — principal `service-779680752096@firebase-rules.iam.gservice
 `setInitialUsername` (live since 2026-10-21) creates the profile with a checked, unique
 username; move the site's registration to it once the new app has proven it, and drop the
 client `create` only after the old app is retired.
-
----
-
-## 4. `audioManager` preloads ten sound files that aren't in the repo
-
-**Where:** `src/lib/client/audioManager.ts:33-45` (the `soundFiles` map) and the
-`preload: true` loop at line 56.
-
-**What:** Every entry in `soundFiles` is instantiated as a `Howl` with `preload: true`
-when the manager initializes, so the browser fetches all of them up front. Ten of the
-paths have no file behind them:
-
-`entercasino.mp3`, `vd_bgm.mp3`, `vd_win.mp3`, `vd_lose.mp3`, `vd_reload.mp3`,
-`vd_shot_live.mp3`, `vd_shot_blank.mp3`, `vd_item_scanner.mp3`, `vd_item_generic.mp3`,
-`vd_item_emp.mp3`
-
-
-**Verified:** 2026-09-04, by logging every response with status ≥ 400 during an automated
-browser pass over `/casino/*` (`scripts/showcase/capture.mjs`). Ten distinct 404s per
-casino page load, repeated on each visit — Howler retries rather than caching the failure.
-
-**Severity: cosmetic but noisy.** Nothing throws; Howler swallows the load error. The cost
-is a burst of failed requests on every casino page and a console full of 404s, which buries
-real errors when debugging — that is exactly how it was found.
-
-**Do:** either add the files, or remove those entries from `soundFiles` (and the matching
-members of the `SoundName` union) until the game that needs them ships. Don't set
-`preload: false` as the fix — that only defers the same 404 to first play.
 
 ---
 

@@ -36,7 +36,7 @@ Respond in Russian.
 ```bash
 npm run dev                  # vite dev server (localhost:5173)
 npm run build                # production build
-npm test                     # vitest run (47 tests, 4 files — all passing)
+npm test                     # vitest run (139 tests, 14 files — all passing)
 npm run check                # svelte-check
 npm run lint                 # prettier --check . && eslint .
 npm run format               # prettier --write . — see warning below
@@ -172,7 +172,7 @@ Not auto-loaded — read the relevant file when the task touches its area:
 
 - **`.claude/rules/firebase.md`** — deploy commands, the region split and how it breaks, both secret stores and which name lives where.
 - **`.claude/rules/economy.md`** — the client-never-decides invariant behind the Firestore deny rules, the `onCall` guard ladder line by line, why bans are enforced three times.
-- **`.claude/rules/known-issues.md`** — active verified defects (`soundGenerator.ts` invalid oscillator type, `audioManager` preloading sound files that don't exist), plus the `mobileapp/*` read rules that still need proper verification.
+- **`.claude/rules/known-issues.md`** — active verified defects (the `users` update rule is still a denylist, leftovers of the old Android app, low-risk guard gaps, `functions` lint that can't run as configured), plus the `mobileapp/*` read rules that still need proper verification.
 
 ## Related repository: Android app
 
