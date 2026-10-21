@@ -5,6 +5,7 @@ import { purgeAccount } from './accountPurge';
 import { clearMapCache } from './mapCache';
 import { PLINKO_MIN_BET, PLINKO_MAX_BALLS, PLINKO_PRIZE_ITEM, PLINKO_PRIZE_SLOTS, plinkoMaxBet, plinkoPayout, dropBall, isPlinkoPrizeOpen, isPlinkoOpen } from './plinko';
 import { isOnSale } from './shopRules';
+import { betTier } from './casinoLimits';
 import { econOp } from './activity/log';
 import { dayKey as minskDayKey, dayStart as minskDayStart, latestBrief, makeBrief } from './activity/brief';
 import { assertNotBanned, assertEmailVerified, checkGlobalRateLimit } from './guards';
@@ -1279,14 +1280,14 @@ export const playCoinFlip = onCall(async (request) => {
             // больше 5 % банка (чистый выигрыш — 0,95 ставки). Считается по тому
             // банку, из которого и заплатим. До 21.10.2026 потолка не было, а
             // ставка, которую банк не покрывал, молча проигрывала.
-            const maxBet = Math.floor((bankBalance * 0.05) / 0.95);
+            // Точный потолок выдал бы банк (банк ≈ 19 × потолок), поэтому он
+            // округляется вниз до ступени — по ней виден только диапазон банка.
+            const maxBet = betTier(Math.floor((bankBalance * 0.05) / 0.95));
             if (maxBet < MIN_BET) {
                 throw new HttpsError('failed-precondition', 'Банк казино почти пуст — монетка откроется, когда он пополнится.', { reason: 'bank_limit' });
             }
-            // Сам потолок не называем: банк из него восстанавливается
-            // (банк ≈ 19 × потолок), а сумму банка игрокам не показываем.
             if (bet > maxBet) {
-                throw new HttpsError('invalid-argument', 'Ставка слишком большая для банка казино. Попробуйте меньше.', { reason: 'bet_too_high' });
+                throw new HttpsError('invalid-argument', `Сейчас ставка до ${maxBet} PC.`, { reason: 'bet_too_high', maxBet });
             }
 
             // ✅ ИСПРАВЛЕНО: crypto.randomInt вместо Math.random()

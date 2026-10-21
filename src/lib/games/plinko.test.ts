@@ -13,6 +13,17 @@ import {
 	plinkoPayout,
 	dropBall
 } from './plinko';
+import { BET_TIERS, betTier } from '../../../functions/src/casinoLimits';
+
+describe('Ступени потолка ставки', () => {
+	it('округляет вниз до ступени', () => {
+		expect(betTier(9)).toBe(0);
+		expect(betTier(10)).toBe(10);
+		expect(betTier(526)).toBe(500);
+		expect(betTier(4_999)).toBe(2500);
+		expect(betTier(1_000_000)).toBe(5000);
+	});
+});
 
 const binom = (n: number, k: number) => {
 	let r = 1;
@@ -51,8 +62,14 @@ describe('Плинко: таблица выплат', () => {
 });
 
 describe('Плинко: лимит ставки от банка', () => {
-	it('ставка за шарик — 0,1% банка', () => {
-		expect(plinkoMaxBet(73_056)).toBe(73);
+	it('ставка за шарик — 0,1% банка, вниз до ступени', () => {
+		expect(plinkoMaxBet(73_056)).toBe(50);
+		expect(plinkoMaxBet(250_000)).toBe(250);
+	});
+
+	it('по лимиту виден только диапазон банка, а не сумма', () => {
+		expect(plinkoMaxBet(50_000)).toBe(plinkoMaxBet(99_999));
+		expect(BET_TIERS).toContain(plinkoMaxBet(123_456));
 	});
 
 	it('у лимита есть потолок', () => {

@@ -6,6 +6,7 @@
 
 import type {SaleFields} from "./shopRules";
 import {isWithinWindow} from "./shopRules";
+import {betTier} from "./casinoLimits";
 
 /**
  * Плинко открывается вместе с Хэллоуином 2026 и дальше остаётся насовсем.
@@ -76,14 +77,16 @@ export function isPlinkoPrizeOpen(
 
 /**
  * Ставка за шарик — не больше 0,1% общего банка казино. При ×50 один шарик
- * забирает не больше 5% банка; банк худеет — падает и лимит. Если лимит
- * меньше PLINKO_MIN_BET, игра закрыта.
+ * забирает не больше 5% банка; банк худеет — падает и лимит. Лимит
+ * округляется вниз до ступени (casinoLimits.ts): точный — это банк / 1000,
+ * а сумму банка игрокам не показываем. Если лимит меньше PLINKO_MIN_BET,
+ * игра закрыта.
  * @param {number} bank баланс system/casino_stats.bank_balance
  * @return {number} максимальная ставка за шарик
  */
 export function plinkoMaxBet(bank: number): number {
   if (!Number.isFinite(bank) || bank <= 0) return 0;
-  return Math.min(PLINKO_MAX_BET_CAP, Math.floor(bank / 1000));
+  return betTier(Math.min(PLINKO_MAX_BET_CAP, Math.floor(bank / 1000)));
 }
 
 /**
