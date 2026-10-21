@@ -1551,6 +1551,15 @@ async function getDistrictCenterCoords(lat: number, lng: number): Promise<[strin
     }
 }
 
+// Старое Android-приложение (by.iposdev.protomap) присылает свою точку как
+// ручную (isManual), а когда его геокодер не срабатывает — точный GPS. Ручная
+// точка хранится как есть и уходит на публичную карту, поэтому точки этого
+// приложения сервер всегда сводит к центру района, как GPS сайта.
+const OLD_ANDROID_APP_IDS = [
+    '1:779680752096:android:b66e3d8413d67942c80b85', // by.iposdev.protomap
+    '1:779680752096:android:bc4b65e43e4e86ddc80b85', // by.iposdev.protomap.debug
+];
+
 export const addOrUpdateLocation = onCall(async (request) => {
     if (request.app == undefined) {
         throw new HttpsError('failed-precondition', 'The function must be called from an App Check verified app.');
@@ -1563,7 +1572,8 @@ export const addOrUpdateLocation = onCall(async (request) => {
     const uid = request.auth.uid;
     await assertNotBanned(request);
 
-    const { lat, lng, isManual } = request.data;
+    const { lat, lng } = request.data;
+    const isManual = Boolean(request.data.isManual) && !OLD_ANDROID_APP_IDS.includes(request.app.appId);
 
     if (!lat || !lng || typeof lat !== 'number' || typeof lng !== 'number') {
         throw new HttpsError('invalid-argument', 'Invalid coordinates.');
