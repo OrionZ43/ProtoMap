@@ -71,7 +71,11 @@ export { ageGateTimeout } from "./features/ageGate";
 // ─── Webhook ─────────────────────────────────────────────────────────────────
 
 export const telegramWebhook = onRequest(
-    { secrets: ["TELEGRAM_BOT_TOKEN", "TG_VERIFY_HMAC_SECRET", "TG_WEBHOOK_SECRET"] },
+    // 512 МБ, а не дефолтные 256: бот тянет много зависимостей (telegraf,
+    // firebase-admin, vision, cloudinary), и на 256 МБ холодный старт иногда
+    // не успевал начать слушать порт за стартовый probe Cloud Run — деплой падал
+    // с «Container Healthcheck failed». Больше памяти — больше CPU на старте.
+    { memory: "512MiB", secrets: ["TELEGRAM_BOT_TOKEN", "TG_VERIFY_HMAC_SECRET", "TG_WEBHOOK_SECRET"] },
     async (request, response) => {
         const secret = request.header('X-Telegram-Bot-Api-Secret-Token');
         if (!process.env.TG_WEBHOOK_SECRET || secret !== process.env.TG_WEBHOOK_SECRET) {
