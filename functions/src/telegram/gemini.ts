@@ -728,3 +728,103 @@ export async function askGemini(persona: string, request: string, images: Inline
         };
     }
 }
+
+// ─── Вопрос с возможным действием ────────────────────────────────────────────────
+
+/**
+ * Ответ модели вместе с решением о действии над участником.
+ *
+ * `action` — что модель решила сделать; `seconds` для мута (0 — навсегда, null —
+ * не указала). КОГО трогать, модель НЕ решает: цель и право проверяет вызывающий
+ * (ask.ts) по Telegram id, иначе через текст можно было бы выпросить мут чужими
+ * руками. Формы ответа и ошибок — как у askGemini, чтобы переиспользовать разбор.
+ */
+export type ActionResult =
+    | { ok: true; reply: string; action: 'none' | 'mute' | 'unmute' | 'ban' | 'kick'; seconds: number | null }
+    | { ok: false; reason: 'no_key' | 'limited' | 'exhausted' | 'refused' | 'empty' | 'api_failed'; detail?: string };
+
+/** Схема ответа: текст реплики плюс действие. Цели в ней нет намеренно. */
+const ACTION_SCHEMA = {
+    type: 'object',
+    properties: {
+        reply: {type: 'string'},
+        action: {type: 'string', enum: ['none', 'mute', 'unmute', 'ban', 'kick']},
+        seconds: {type: 'integer'},
+    },
+    required: ['reply', 'action'],
+};
+
+/**
+ * Как askGemini, но ответ строго по ACTION_SCHEMA: кроме текста модель возвращает
+ * действие. Модель, время и картинки — те же, что у обычных вопросов.
+ */
+export async function askGeminiAction(persona: string, request: string, images: InlineImage[] = []): Promise<ActionResult> {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        console.warn('[ASK] GEMINI_API_KEY не задан');
+        return {ok: false, reason: 'no_key'};
+    }
+
+    const parts: any[] = [{text: request}];
+    for (const img of images) {
+        parts.push({inline_data: {mime_type: img.mimeType, data: img.data}});
+    }
+
+    const startedAt = Date.now();
+    try {
+        const {response, model} = await generate({
+            systemInstruction: {parts: [{text: persona}]},
+            contents: [{role: 'user', parts}],
+            generationConfig: {
+                thinkingConfig: ASK_THINKING,
+                maxOutputTokens: 8192,
+                responseMimeType: 'application/json',
+                responseSchema: ACTION_SCHEMA,
+            },
+            safetySettings: SAFETY_SETTINGS,
+        }, apiKey, 'ASK', ASK_BUDGET, ASK_MODEL);
+
+        if (!response.ok) {
+            const body = await response.text().catch(() => '');
+            const detail = failureDetail(response.status, model, body);
+            console.error(`[ASK] ${detail}`);
+            if (response.status === 429) {
+                return {ok: false, reason: quotaInfo(body)?.daily ? 'exhausted' : 'limited', detail};
+            }
+            return {ok: false, reason: response.status === 503 ? 'limited' : 'api_failed', detail};
+        }
+
+        const data = await response.json();
+        const candidate = data?.candidates?.[0];
+        const text = candidateText(candidate);
+        const usage = data?.usageMetadata;
+        const cost = `${((Date.now() - startedAt) / 1000).toFixed(1)} с · размышления ` +
+            `${usage?.thoughtsTokenCount ?? 0} · ответ ${usage?.candidatesTokenCount ?? '?'} ток.`;
+
+        if (!text) {
+            const why = String(candidate?.finishReason ?? data?.promptFeedback?.blockReason ?? '');
+            console.warn(`[ASK] Пустой ответ: ${why} · ${model}: ${cost}`);
+            return {ok: false, reason: REFUSAL_REASONS.includes(why) ? 'refused' : 'empty', detail: why};
+        }
+
+        let parsed: any;
+        try {
+            parsed = JSON.parse(text);
+        } catch {
+            console.warn(`[ASK] Ответ не JSON: ${text.slice(0, 200)}`);
+            return {ok: false, reason: 'empty', detail: 'bad_json'};
+        }
+
+        const reply = typeof parsed?.reply === 'string' ? parsed.reply : '';
+        const action = ['none', 'mute', 'unmute', 'ban', 'kick'].includes(parsed?.action) ? parsed.action : 'none';
+        const seconds = Number.isFinite(parsed?.seconds) ? Math.floor(parsed.seconds) : null;
+        if (!reply) return {ok: false, reason: 'empty', detail: 'no reply'};
+
+        console.log(`[ASK] ${model}: ${cost} · action=${action}${seconds != null ? ` ${seconds}s` : ''}`);
+        return {ok: true, reply, action, seconds};
+    } catch (e) {
+        const timedOut = (e as any)?.name === 'TimeoutError';
+        console.error(`[ASK] ${timedOut ? 'Gemini не ответил вовремя' : 'Ошибка запроса к Gemini'}:`, e);
+        return {ok: false, reason: timedOut ? 'limited' : 'api_failed', detail: e instanceof Error ? e.message : String(e)};
+    }
+}

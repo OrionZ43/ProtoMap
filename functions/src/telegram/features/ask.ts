@@ -20,10 +20,10 @@
 
 import { Telegraf, Context } from "telegraf";
 import type { Message, User } from "telegraf/types";
-import { db } from "../core/bot";
+import { db, TELEGRAM_SERVICE_IDS } from "../core/bot";
 import { hasFeature } from "../core/registry";
 import { isOrion, isHrumer, isLoved, sendTyping } from "../core/helpers";
-import { askGemini, AskResult, InlineImage, inlineImageFromTelegram } from "../gemini";
+import { askGeminiAction, AskResult, InlineImage, inlineImageFromTelegram } from "../gemini";
 import { TRANSCRIPT_ICON, UWU_ICON } from "./transcribe";
 import {
     getRecent, recordBotReply, describeMessage, type HistoryEntry, type Role,
@@ -72,6 +72,12 @@ const PERSONA = [
     'С остальными ты дружелюбный, но с иронией: на вопрос отвечаешь по существу и можешь ' +
     'беззлобно подколоть, как приятель, а не как хам. Без оскорблений. Мат — изредка и ' +
     'только к месту.',
+    'Ты можешь заставить собеседника помолчать — но ТОЛЬКО того, кто сейчас к тебе ' +
+    'обращается, и никого другого. Делай это, если он откровенно хамит тебе, лезет с ' +
+    'оскорблениями или сам просит себя замутить. Тогда верни action=mute и seconds — на ' +
+    'сколько секунд (для «навсегда» верни 0). За безобидную болтовню, шутки или флирт не ' +
+    'мути и мутом не угрожай; обычно хватает колкого ответа. Цель указывать не нужно, её ' +
+    'подставит система.',
     'Пол собеседника неизвестен: не используй о нём глаголы прошедшего времени и слова с родом.',
     'Не шути про национальность, ориентацию, внешность и здоровье. Не выдумывай факты ' +
     'о людях из чата.',
@@ -84,6 +90,11 @@ const ORION_PERSONA = [
     'немного смущаешься и флиртуешь, но отвечаешь нормально и по делу, без грубости.',
     'Ты знаешь, что у Ориона есть парень — Хрумер (@Hrumer), и любишь их обоих; ' +
     'ревности нет.',
+    'Твоими руками Орион может сделать что угодно с кем угодно. Если он ответил на чьё-то ' +
+    'сообщение (reply) и просит замутить, забанить, кикнуть или размутить — верни ' +
+    'соответствующее действие: mute с seconds (0 — навсегда), unmute, ban или kick. Цель ' +
+    'подставит система по тому, на кого он ответил; тебе её называть не нужно. Если reply ' +
+    'нет, действие ни к кому не применяется — просто ответь. Самого Ориона ты не трогаешь.',
     RULES,
 ].join('\n');
 
@@ -92,6 +103,8 @@ const HRUMER_PERSONA = [
     'Сейчас с тобой говорит Хрумер (@Hrumer) — парень Ориона. Ты любишь их обоих: с ' +
     'Хрумером ты тёплый и заботливый, немного смущаешься, но отвечаешь нормально и по ' +
     'делу, без грубости. К Ориону его не ревнуешь.',
+    'Действия вроде мута, бана или кика ты не выполняешь — просто общаешься. Всегда ' +
+    'возвращай action=none.',
     RULES,
 ].join('\n');
 
@@ -329,6 +342,45 @@ function failureLine(result: Exclude<AskResult, { ok: true }>, loved: boolean): 
     return randomOf(loved ? LOVED_BROKEN : BROKEN);
 }
 
+// ─── Действия над участниками ─────────────────────────────────────────────────
+//
+// Исполняет КОД. «Кого» и «вправе ли» уже решено в answer() по Telegram id —
+// сюда приходит готовая цель. Здесь только «как».
+
+const MUTED_PERMS = {
+    can_send_messages: false, can_send_audios: false, can_send_documents: false,
+    can_send_photos: false, can_send_videos: false, can_send_video_notes: false,
+    can_send_voice_notes: false, can_send_polls: false, can_send_other_messages: false,
+    can_add_web_page_previews: false,
+};
+const ALL_PERMS = {
+    can_send_messages: true, can_send_audios: true, can_send_documents: true,
+    can_send_photos: true, can_send_videos: true, can_send_video_notes: true,
+    can_send_voice_notes: true, can_send_polls: true, can_send_other_messages: true,
+    can_add_web_page_previews: true,
+};
+
+/**
+ * Применяет действие к участнику. Длительность мута: seconds от модели; 0 —
+ * навсегда, не указала — 5 минут. Меньше 30 с Telegram считает «навсегда»,
+ * поэтому поднимаем до 30. Кик — бан со снятием, чтобы человек мог вернуться.
+ */
+async function runModeration(ctx: Context, action: string, seconds: number | null, targetId: number): Promise<void> {
+    if (action === 'mute') {
+        const extra: { permissions: typeof MUTED_PERMS; until_date?: number } = { permissions: MUTED_PERMS };
+        const s = seconds == null ? 300 : seconds;
+        if (s > 0) extra.until_date = Math.floor(Date.now() / 1000) + Math.max(30, s);
+        await ctx.restrictChatMember(targetId, extra);
+    } else if (action === 'unmute') {
+        await ctx.restrictChatMember(targetId, { permissions: ALL_PERMS });
+    } else if (action === 'ban') {
+        await ctx.banChatMember(targetId);
+    } else if (action === 'kick') {
+        await ctx.banChatMember(targetId);
+        await ctx.unbanChatMember(targetId, { only_if_banned: true });
+    }
+}
+
 // ─── Ответ ──────────────────────────────────────────────────────────────────────
 
 async function answer(ctx: Context, msg: Message, question: string): Promise<void> {
@@ -400,20 +452,61 @@ async function answer(ctx: Context, msg: Message, question: string): Promise<voi
 
     const request = buildRequest(msg, question, ctx.botInfo.id, asker, history);
     const persona = forOrion ? ORION_PERSONA : forHrumer ? HRUMER_PERSONA : PERSONA;
-    const result = await withTyping(chatId, () => askGemini(persona, request, images));
+    const result = await withTyping(chatId, () => askGeminiAction(persona, request, images));
 
-    if (!result.ok && result.reason === 'exhausted') {
-        await markExhausted(chatId).catch((e) => console.error('[ASK] Не удалось запомнить конец квоты:', e));
+    if (!result.ok) {
+        if (result.reason === 'exhausted') {
+            await markExhausted(chatId).catch((e) => console.error('[ASK] Не удалось запомнить конец квоты:', e));
+        }
+        await ctx.reply(failureLine(result, loved), replyTo);
+        return;
+    }
+
+    // Кого и чем можно тронуть — решает КОД, не модель. Модель лишь предлагает
+    // действие; цель и право ставим по Telegram id.
+    //  - обычный собеседник: бот мутит только ЕГО САМОГО (нарывается или просит);
+    //  - Орион: любое действие над тем, на чьё сообщение он ответил (reply);
+    //  - Хрумер и все прочие: ничего.
+    let actType = result.action;
+    let actTarget: number | null = null;
+    if (actType !== 'none') {
+        if (forOrion) {
+            const tid = (replied as any)?.from?.id;
+            if (typeof tid === 'number') actTarget = tid;
+            else actType = 'none';
+        } else if (forHrumer) {
+            actType = 'none';
+        } else if (actType === 'mute') {
+            actTarget = asker.id;
+        } else {
+            actType = 'none'; // обычным доступен только мут самих себя
+        }
+    }
+    // Неприкосновенны при любом раскладе: сам бот, служебные аккаунты, Орион и Хрумер.
+    if (actTarget != null &&
+        (actTarget === ctx.botInfo.id || TELEGRAM_SERVICE_IDS.includes(actTarget) || isLoved(actTarget))) {
+        actType = 'none';
+        actTarget = null;
     }
 
     // Без parse_mode: в ответе модели может оказаться что угодно, и символы
     // разметки либо сломали бы отправку, либо исказили текст.
-    const text = result.ok ? clip(result.text, MAX_ANSWER) : failureLine(result, loved);
+    const text = clip(result.reply || '…', MAX_ANSWER);
     const sent = await ctx.reply(text, replyTo);
 
     // Свой ответ — в память, чтобы в следующем вопросе бот видел свою реплику.
-    if (result.ok && sent?.message_id) {
+    if (sent?.message_id) {
         await recordBotReply(chatId, sent.message_id, text);
+    }
+
+    if (actType !== 'none' && actTarget != null) {
+        try {
+            await runModeration(ctx, actType, result.seconds, actTarget);
+            console.log(`[ASK] Действие ${actType} на ${actTarget} применено`);
+        } catch (e) {
+            // Чаще всего — цель админ, или у бота нет прав ограничивать.
+            console.warn(`[ASK] Действие ${actType} на ${actTarget} не вышло:`, e);
+        }
     }
 }
 
