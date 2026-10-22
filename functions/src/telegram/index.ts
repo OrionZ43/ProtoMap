@@ -12,6 +12,9 @@
  *
  *   guards      — первым, до него не должно выполняться ничего
  *   channel     — приветствие в обсуждении канала; вызывает next() всегда
+ *   history     — до transcribe: пишет сообщения в память бота, а bot.on('voice')
+ *                 в transcribe не зовёт next(), и запись ниже голосовых бы не
+ *                 увидела; свой обработчик зовёт next() всегда
  *   команды     — до triggers: bot.on('text') ловит и команды
  *   age_gate    — после captcha: карантин (шаг 1 капчи) должен забанить
  *                 вошедшего раньше, чем ему зададут вопрос
@@ -30,6 +33,7 @@ import { bot } from "./core/bot";
 
 import * as guards from "./core/guards";
 import * as channel from "./features/channel";
+import * as history from "./features/history";
 import * as info from "./features/info";
 import * as linking from "./features/linking";
 import * as duel from "./features/duel";
@@ -46,6 +50,7 @@ console.log('[BOT] Initializing ProtoMap Guardian Bot v2.1...');
 
 guards.register(bot);
 channel.register(bot);
+history.register(bot);
 info.register(bot);
 linking.register(bot);
 duel.register(bot);

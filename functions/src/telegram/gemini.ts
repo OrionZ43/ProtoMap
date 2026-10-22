@@ -449,6 +449,33 @@ async function downloadTelegramFile(
     }
 }
 
+// ─── Картинки для вопросов боту ──────────────────────────────────────────────────
+
+/** Картинка в виде inline-данных для Gemini: mime и base64. */
+export interface InlineImage {
+    mimeType: string;
+    data: string;
+}
+
+/**
+ * Скачивает фото или статичный стикер из Telegram и готовит его для Gemini.
+ *
+ * Та же труба, что у расшифровки: модели 3.x мультимодальные и видят картинку
+ * байтами в запросе, ровно как голосовое. Возвращает null, если нет токена,
+ * скачать не вышло или файл больше лимита (MAX_FILE_BYTES) — вопрос тогда уйдёт
+ * без картинки, текстом.
+ */
+export async function inlineImageFromTelegram(fileId: string, mimeType: string): Promise<InlineImage | null> {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) {
+        console.warn('[ASK] TELEGRAM_BOT_TOKEN не задан — картинка не отправлена');
+        return null;
+    }
+    const buffer = await downloadTelegramFile(fileId, botToken);
+    if (!buffer || buffer.length > MAX_FILE_BYTES) return null;
+    return { mimeType, data: buffer.toString('base64') };
+}
+
 /**
  * Расшифровывает голосовое сообщение или видеокружок.
  *
@@ -642,18 +669,24 @@ export async function generateJson(system: string, user: string, schema: object,
  * придёт finishReason MAX_TOKENS и пустой ответ. Длину самого ответа держит
  * характер («одно-три предложения»), а не этот потолок.
  */
-export async function askGemini(persona: string, request: string): Promise<AskResult> {
+export async function askGemini(persona: string, request: string, images: InlineImage[] = []): Promise<AskResult> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         console.warn('[ASK] GEMINI_API_KEY не задан');
         return { ok: false, reason: 'no_key' };
     }
 
+    // Картинки идут частями того же сообщения, после текста вопроса.
+    const parts: any[] = [{ text: request }];
+    for (const img of images) {
+        parts.push({ inline_data: { mime_type: img.mimeType, data: img.data } });
+    }
+
     const startedAt = Date.now();
     try {
         const { response, model } = await generate({
             systemInstruction: { parts: [{ text: persona }] },
-            contents: [{ role: 'user', parts: [{ text: request }] }],
+            contents: [{ role: 'user', parts }],
             generationConfig: { thinkingConfig: ASK_THINKING, maxOutputTokens: 8192 },
             safetySettings: SAFETY_SETTINGS,
         }, apiKey, 'ASK', ASK_BUDGET, ASK_MODEL);
