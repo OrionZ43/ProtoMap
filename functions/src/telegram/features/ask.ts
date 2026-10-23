@@ -498,6 +498,22 @@ async function answer(ctx: Context, msg: Message, question: string): Promise<voi
     }
 }
 
+/**
+ * Ответ реплаем на собственное сообщение бота — тоже обращение к нему, без
+ * «Ориоша»: так разговор продолжается естественно. Расшифровки голосовых бот
+ * выкладывает от своего имени, но они адресованы автору голосового, а не боту,
+ * — такой реплай обращением не считаем (та же проверка, что в banter.ts).
+ */
+function isReplyToBot(ctx: Context): boolean {
+    const replied: any = (ctx.message as any)?.reply_to_message;
+    if (!replied || replied.from?.id !== ctx.botInfo.id) return false;
+    if (typeof replied.text === 'string' &&
+        (replied.text.startsWith(TRANSCRIPT_ICON) || replied.text.startsWith(UWU_ICON))) {
+        return false;
+    }
+    return true;
+}
+
 export function register(bot: Telegraf): void {
     // next() вызывается всегда: дальше стоит banter, и по ctx.state.asked он
     // знает, что на это сообщение уже ответила нейросеть, и не добавляет
@@ -505,12 +521,15 @@ export function register(bot: Telegraf): void {
     bot.on('text', async (ctx, next) => {
         if (!hasFeature(ctx.chat.id, 'ask')) return next();
 
-        const call = ctx.message.text.match(CALL);
-        if (!call) return next();
+        const text = ctx.message.text;
+        const call = text.match(CALL);
+        // Обращение к боту: «Ориоша …» в начале ИЛИ ответ реплаем на его реплику.
+        if (!call && !isReplyToBot(ctx)) return next();
 
         ctx.state.asked = true;
+        const question = call ? text.slice(call[0].length).trim() : text.trim();
         try {
-            await answer(ctx, ctx.message, ctx.message.text.slice(call[0].length).trim());
+            await answer(ctx, ctx.message, question);
         } catch (e) {
             console.error('[ASK] Не удалось ответить:', e);
         }
@@ -518,19 +537,20 @@ export function register(bot: Telegraf): void {
         return next();
     });
 
-    // Фото с подписью «Ориоша, …» — тот же вопрос, но картинкой. Стикеры подписей
-    // не имеют, поэтому только фото. next() обязателен: ниже banter реагирует на
-    // спойлеры.
+    // Фото с подписью «Ориоша, …» или реплаем на реплику бота — вопрос, но
+    // картинкой. next() обязателен: ниже banter реагирует на спойлеры.
     bot.on('photo', async (ctx, next) => {
         if (!hasFeature(ctx.chat.id, 'ask')) return next();
 
         const caption = (ctx.message as any).caption;
         const call = typeof caption === 'string' ? caption.match(CALL) : null;
-        if (!call) return next();
+        if (!call && !isReplyToBot(ctx)) return next();
 
         ctx.state.asked = true;
+        const question = call ? caption.slice(call[0].length).trim()
+            : (typeof caption === 'string' ? caption.trim() : '');
         try {
-            await answer(ctx, ctx.message, caption.slice(call[0].length).trim());
+            await answer(ctx, ctx.message, question);
         } catch (e) {
             console.error('[ASK] Не удалось ответить на фото:', e);
         }
