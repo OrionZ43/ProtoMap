@@ -740,16 +740,20 @@ export async function askGemini(persona: string, request: string, images: Inline
  * руками. Формы ответа и ошибок — как у askGemini, чтобы переиспользовать разбор.
  */
 export type ActionResult =
-    | { ok: true; reply: string; action: 'none' | 'mute' | 'unmute' | 'ban' | 'kick'; seconds: number | null }
+    | { ok: true; reply: string; action: 'none' | 'mute' | 'unmute' | 'ban' | 'kick'; seconds: number | null; note: string | null }
     | { ok: false; reason: 'no_key' | 'limited' | 'exhausted' | 'refused' | 'empty' | 'api_failed'; detail?: string };
 
-/** Схема ответа: текст реплики плюс действие. Цели в ней нет намеренно. */
+/**
+ * Схема ответа: текст реплики, действие и обновлённое впечатление о собеседнике
+ * (`note`). Цели действия в схеме нет намеренно — её ставит код по id.
+ */
 const ACTION_SCHEMA = {
     type: 'object',
     properties: {
         reply: {type: 'string'},
         action: {type: 'string', enum: ['none', 'mute', 'unmute', 'ban', 'kick']},
         seconds: {type: 'integer'},
+        note: {type: 'string'},
     },
     required: ['reply', 'action'],
 };
@@ -818,10 +822,11 @@ export async function askGeminiAction(persona: string, request: string, images: 
         const reply = typeof parsed?.reply === 'string' ? parsed.reply : '';
         const action = ['none', 'mute', 'unmute', 'ban', 'kick'].includes(parsed?.action) ? parsed.action : 'none';
         const seconds = Number.isFinite(parsed?.seconds) ? Math.floor(parsed.seconds) : null;
+        const note = typeof parsed?.note === 'string' ? parsed.note : null;
         if (!reply) return {ok: false, reason: 'empty', detail: 'no reply'};
 
         console.log(`[ASK] ${model}: ${cost} · action=${action}${seconds != null ? ` ${seconds}s` : ''}`);
-        return {ok: true, reply, action, seconds};
+        return {ok: true, reply, action, seconds, note};
     } catch (e) {
         const timedOut = (e as any)?.name === 'TimeoutError';
         console.error(`[ASK] ${timedOut ? 'Gemini не ответил вовремя' : 'Ошибка запроса к Gemini'}:`, e);
