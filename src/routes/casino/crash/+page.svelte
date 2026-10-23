@@ -29,6 +29,12 @@
     let history: { val: number, crashed: boolean }[] = [];
     let sounds: { [key: string]: Howl } = {};
     let unsubscribeRTDB: (() => void) | null = null;
+    // Сдвиг часов клиента относительно сервера (RTDB .info/serverTimeOffset):
+    // serverNow ≈ Date.now() + serverTimeOffset. Нужен, чтобы вести кривую от
+    // серверного времени старта игры, а не от момента прихода ответа (иначе
+    // клиент отстаёт от сервера и показывает меньше, чем игрок успел набрать).
+    let serverTimeOffset = 0;
+    let unsubscribeOffset: (() => void) | null = null;
 
     // ⬅️ НОВОЕ: Состояние тултипа
     let isMechanicsOpen = false;
@@ -104,11 +110,18 @@
         sounds.win = new Howl({ src: ['/sounds/sucsess.mp3'], volume: 0.8 });
         sounds.click = new Howl({ src: ['/sounds/click.mp3'] });
 
+        // Сдвиг часов относительно сервера — чтобы вести кривую по серверному
+        // времени старта игры (см. serverTimeOffset выше).
+        unsubscribeOffset = onValue(ref(rtdb, '.info/serverTimeOffset'), (snap) => {
+            serverTimeOffset = snap.val() || 0;
+        });
+
         return () => {
             window.removeEventListener('resize', resizeCanvas);
             cancelAnimationFrame(animationFrame);
             sounds.engine?.stop();
             if (unsubscribeRTDB) unsubscribeRTDB();
+            if (unsubscribeOffset) unsubscribeOffset();
         };
     });
 
@@ -162,6 +175,9 @@
             const startFunc = httpsCallable(functions, 'startCrashGame');
             const result: any = await startFunc({ bet: betAmount });
             gameId = result.data.data.gameId;
+            // Серверное время старта (мс). Старый сервер его не вернёт — тогда
+            // якоримся по приходу ответа, как раньше (обратная совместимость).
+            const startedAt = result.data.data.startedAt;
 
             if ($userStore.user) {
                 userStore.update(s => {
@@ -183,7 +199,10 @@
                 if (!data) return;
 
                 if (data.s === 'bang') {
-                    if (gameStatus === 'CASHED_OUT') {
+                    // Краш показываем только пока игра активна. Если уже забрал
+                    // выигрыш или краш уже показан (например, из awaitCrashGame) —
+                    // не трогаем.
+                    if (gameStatus !== 'UPLOADING') {
                         if (unsubscribeRTDB) unsubscribeRTDB();
                         return;
                     }
@@ -199,7 +218,24 @@
                 }
             });
 
-            startTime = Date.now();
+            // Точный сигнал о крахе: пока этот запрос открыт, у функции есть CPU,
+            // поэтому она отвечает ровно в момент краха, а не с опозданием, как
+            // фоновый цикл. Слушаем параллельно с RTDB — что придёт раньше. Нет
+            // функции на сервере / ошибка — молча живём на RTDB (краш покажет он).
+            const awaitFunc = httpsCallable(functions, 'awaitCrashGame', { timeout: 90000 });
+            awaitFunc({ gameId }).then((res: any) => {
+                const out = res?.data?.data;
+                if (out?.outcome === 'crashed' && gameStatus === 'UPLOADING') {
+                    crash(typeof out.crashPoint === 'number' ? out.crashPoint : multiplier);
+                    if (unsubscribeRTDB) unsubscribeRTDB();
+                }
+            }).catch(() => { /* нет функции или сбой — краш покажет RTDB */ });
+
+            // Кривую ведём от серверного времени старта (через serverTimeOffset),
+            // иначе клиент отстаёт от сервера на время ответа и показывает меньше.
+            startTime = typeof startedAt === 'number'
+                ? startedAt - serverTimeOffset
+                : Date.now();
             sounds.engine?.volume(0.5);
             sounds.engine?.rate(0.8);
             sounds.engine?.play();

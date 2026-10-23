@@ -682,7 +682,7 @@ export const getDailyBonus = onCall(async (request) => {
     }
 });
 
-export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) => {
+export const startCrashGame = onCall(async (request) => {
     if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
     if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
 
@@ -770,6 +770,12 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
             });
         });
 
+        // Серверное время старта (из createdAt — его же использует cashOut, так
+        // что точка отсчёта у кривой клиента, awaitCrashGame и выплаты одна).
+        // serverTimestamp резолвится на коммите, поэтому читаем документ после.
+        const startedSnap = await db.collection('crash_games').doc(gameId).get();
+        const startedAt = startedSnap.get('createdAt')?.toMillis?.() ?? Date.now();
+
         await gameRtdbRef.set({
             m: 1.00,
             s: 'run',
@@ -783,6 +789,7 @@ export const startCrashGame = onCall({ timeoutSeconds: 300 }, async (request) =>
         return {
             data: {
                 gameId,
+                startedAt,
                 debug_token: easterEgg
             }
         };
@@ -920,6 +927,86 @@ export const cashOutCrashGame = onCall(async (request) => {
         throw new HttpsError('internal', e.message);
     }
 });
+
+// Точный сигнал о крахе. Фоновый цикл (runGameLoopRTDB) запускается ПОСЛЕ ответа
+// startCrashGame, а Cloud Run после ответа урезает CPU — поэтому «bang» в RTDB
+// приходит с опозданием в секунды, и клиент успевает «перелететь» (на экране
+// 1.60 при крахе на 1.20). Здесь запрос держится открытым и спит до момента
+// краха по серверным часам: пока он открыт, CPU есть, и просыпается он вовремя.
+// Пишет тот же «bang», что и цикл (идемпотентно), и отвечает клиенту. Деньги это
+// не трогает — их по-прежнему решает cashOutCrashGame по своему времени.
+// maxInstances: 1 — бетонный потолок расходов: даже при накрутке больше одной
+// машины не поднимется, а клиент при недоступности функции живёт на RTDB.
+export const awaitCrashGame = onCall(
+    { timeoutSeconds: 90, maxInstances: 1 },
+    async (request) => {
+        if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
+        if (!request.auth) throw new HttpsError('unauthenticated', 'Auth required.');
+
+        const uid = request.auth.uid;
+        await assertNotBanned(request);
+        assertEmailVerified(request.auth);
+
+        const { gameId } = request.data ?? {};
+        if (typeof gameId !== 'string' || gameId.length === 0) {
+            throw new HttpsError('invalid-argument', 'Invalid game.');
+        }
+
+        const fsGameRef = db.collection('crash_games').doc(gameId);
+        const snap = await fsGameRef.get();
+        if (!snap.exists) throw new HttpsError('not-found', 'Game not found.');
+
+        const data = snap.data()!;
+        // Ждать чужую игру нельзя — и приватность, и защита от холостых «снов».
+        if (data.uid !== uid) throw new HttpsError('permission-denied', 'Not your game.');
+
+        // Игра уже закрыта — спать не о чем. Отвечаем сразу: она уже закончилась,
+        // так что точку краха раскрыть уже не рано.
+        if (data.status !== 'active') {
+            if (data.status === 'crashed') {
+                return { data: { outcome: 'crashed', crashPoint: data.crashPoint } };
+            }
+            return { data: { outcome: 'ended' } };
+        }
+
+        const startedAt = data.createdAt?.toMillis?.();
+        if (!startedAt) throw new HttpsError('not-found', 'Game expired.');
+
+        // Момент краха по серверным часам: m(t) = e^(CRASH_SPEED·t), крах при
+        // m = crashPoint ⇒ t = ln(crashPoint)/CRASH_SPEED. crashPoint ≤ 50
+        // (потолок при старте), поэтому сон ≤ ~49 с; min(…, 60000) — страховка.
+        const crashAt = startedAt + (Math.log(data.crashPoint) / CRASH_SPEED) * 1000;
+        if (crashAt - Date.now() > 0) {
+            // Защита от усиления (сто await на одну ставку) — считаем только
+            // реальные «сны». Лимит выше темпа игр (50/час), честного не трогает.
+            await checkGlobalRateLimit(uid, 'crash_await', 60, 60 * 60 * 1000);
+            const waitMs = crashAt - Date.now();
+            if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, Math.min(waitMs, 60000)));
+        }
+
+        // Проснулись в момент краха. Те же идемпотентные записи, что и цикл: в
+        // RTDB — «bang» (не затирая 'done' при выходе и не воскрешая уже удалённую
+        // ноду), в Firestore — status crashed, только если игра ещё active.
+        const rtdb = admin.app().database('https://protomap-1e1db-default-rtdb.europe-west1.firebasedatabase.app');
+        await rtdb.ref(`crash_games/${gameId}`).transaction((cur) =>
+            (cur == null || cur.s === 'done') ? undefined : { ...cur, m: data.crashPoint, s: 'bang' });
+
+        let cashedOut = false;
+        await db.runTransaction(async (tx) => {
+            const g = await tx.get(fsGameRef);
+            const status = g.get('status');
+            if (status === 'active') {
+                tx.update(fsGameRef, { status: 'crashed', finalMultiplier: data.crashPoint });
+            } else if (status === 'cashed_out') {
+                cashedOut = true;
+            }
+        });
+
+        return cashedOut
+            ? { data: { outcome: 'ended' } }
+            : { data: { outcome: 'crashed', crashPoint: data.crashPoint, crashedAt: crashAt } };
+    }
+);
 
 export const synthesizeArtifact = onCall(async (request) => {
     if (request.app == undefined) throw new HttpsError('failed-precondition', 'App Check required.');
