@@ -88,6 +88,38 @@ export const load: PageServerLoad = async ({ params, setHeaders, locals }) => {
 
     const userProfileData = userDoc.data()!;
 
+    // Забаненный профиль: скрываем всё, оставляем только ник и пометку бана.
+    // Статус бана публичен (users.isBanned читается всеми), причину и срок не
+    // показываем. Как и для заблокировавшего, грузим по минимуму — без
+    // комментариев, соцсетей, описания, аватара и метки на карте.
+    if (userProfileData.isBanned === true) {
+        setHeaders({ 'Cache-Control': 'public, max-age=60' });
+        return {
+            hasLocation: false,
+            blockedViewer: false,
+            iBlocked: false,
+            profile: {
+                uid: userDoc.id,
+                username: userProfileData.username,
+                isBanned: true,
+                avatar_url: null,
+                about_me: '',
+                status: null,
+                socials: {},
+                equipped_frame: null,
+                equipped_bg: null
+            },
+            comments: [] as Comment[],
+            seoData: {
+                title: `${userProfileData.username} | ProtoMap`,
+                description: `Профиль пользователя ${userProfileData.username} на карте протогенов ProtoMap`,
+                image: getOgImageUrl(uid),
+                url: `https://proto-map.vercel.app/u/${uid}`,
+                type: 'profile'
+            }
+        };
+    }
+
     // Чёрный список (users/{кто}/blocked/{кого}). Тому, кого владелец профиля
     // заблокировал, показываем только ник — без аватара, рамки, фона,
     // описания, ссылок, метки и комментариев (решение Ориона, «как в

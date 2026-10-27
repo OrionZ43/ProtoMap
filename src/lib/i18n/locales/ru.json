@@ -659,6 +659,7 @@
 	},
 	"profile": {
 		"banned_badge": "Забанен",
+		"banned_notice": "Пользователь забанен за нарушение правил проекта.",
 		"page_title": "Профиль",
 		"user_id": "USER ID",
 		"channels": "КАНАЛЫ СВЯЗИ",

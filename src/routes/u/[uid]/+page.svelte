@@ -192,6 +192,8 @@
     }
 
     $: isOwner = $userStore.user && $userStore.user.uid === data.profile.uid;
+    // Забаненный профиль: сервер отдаёт только ник; прячем меню, действия и комментарии.
+    $: targetBanned = data.profile?.isBanned === true;
 
     // Чёрный список (src/lib/stores/blocklist.ts): до первого снимка живого
     // списка — то, что сказал сервер, потом только живой список. Раньше они
@@ -518,7 +520,7 @@
 
             <div class="top-bar">
                 <span class="pl-6">{$t('profile.user_id')}: {data.profile.uid.substring(0, 18).toUpperCase()}...</span>
-                {#if $userStore.user && !isOwner}
+                {#if $userStore.user && !isOwner && !targetBanned}
                     <!-- Действия с профилем: чёрный список и жалоба в одном меню -->
                     <div class="profile-menu">
                         <button
@@ -607,6 +609,12 @@
 
             <div class="profile-content">
 
+                {#if targetBanned}
+                    <div class="banned-info">
+                        <p class="banned-info-text">{$t('profile.banned_notice')}</p>
+                    </div>
+                {/if}
+
                 {#if hasSocials}
                     <div class="profile-section">
                         <h4 class="font-display">// {$t('profile.channels')}</h4>
@@ -654,7 +662,7 @@
                 <div class="profile-actions">
                     <NeonButton href="/profile/edit">{$t('profile.edit')}</NeonButton>
                 </div>
-            {:else if $userStore.user}
+            {:else if $userStore.user && !targetBanned}
                 <div class="profile-actions">
                     {#if data.blockedViewer}
                         <p class="blocked-note">{$t('blocklist.you_are_blocked')}</p>
@@ -681,6 +689,7 @@
             </div>
         </div>
 
+        {#if !targetBanned}
         <div class="comments-container max-w-4xl mx-auto mt-12 pb-32">
     <h4 class="font-display text-2xl text-cyber-yellow mb-6 text-center tracking-widest">// {$t('profile.comments_title')}</h4>
 
@@ -812,6 +821,7 @@
         {/each}
     </div>
 </div>
+        {/if}
 {/if}
 
 
@@ -915,6 +925,9 @@
         text-transform: uppercase;
     }
     .banned-plaque svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+
+    .banned-info { text-align: center; padding: 1.25rem 1rem 0.5rem; }
+    .banned-info-text { color: #cbd5e1; font-size: 0.95rem; line-height: 1.55; margin: 0; }
 
 
     .profile-content { @apply p-6 text-left; }

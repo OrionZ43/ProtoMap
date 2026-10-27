@@ -659,6 +659,7 @@
 	},
 	"profile": {
 		"banned_badge": "Banned",
+		"banned_notice": "This user is banned for violating the project rules.",
 		"page_title": "Profile",
 		"user_id": "USER ID",
 		"channels": "CHANNELS",
