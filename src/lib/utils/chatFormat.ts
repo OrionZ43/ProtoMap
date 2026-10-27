@@ -135,7 +135,8 @@ export function previewFor(type: string, text: string): string {
 		case 'STICKER':
 			return '🌟 Стикер';
 		default:
-			return text ?? '';
+			// Спойлер в превью не раскрываем и не светим: ||...|| → блок «░░░».
+			return (text ?? '').replace(/\|\|[^|\n]+?\|\|/g, '░░░');
 	}
 }
 

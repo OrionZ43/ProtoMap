@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { spoilerToHtml } from './spoilers';
+import { spoilerToHtml, spoilerToPreview } from './spoilers';
 
 describe('spoilerToHtml', () => {
   it('пустое/отсутствующее → пустая строка', () => {
@@ -48,5 +48,13 @@ describe('spoilerToHtml', () => {
   it('одиночная | и пустые || не превращаются в спойлер', () => {
     expect(spoilerToHtml('a | b')).toBe('a | b');
     expect(spoilerToHtml('||||')).toBe('||||');
+  });
+});
+
+describe('spoilerToPreview', () => {
+  it('скрывает ||...|| блоком, остальное оставляет', () => {
+    expect(spoilerToPreview('финал: ||он предатель||, жесть')).toBe('финал: ░░░, жесть');
+    expect(spoilerToPreview('без спойлера')).toBe('без спойлера');
+    expect(spoilerToPreview(null)).toBe('');
   });
 });

@@ -13,7 +13,7 @@
     import { usernameCache, getUsername, getAvatarUrl } from '$lib/stores/usernameCache';
     import { scrollToBottom } from '$lib/utils/scroll';
     import { chat } from '$lib/stores';
-    import { spoilerToHtml, spoilers } from '$lib/client/spoilers';
+    import { spoilerToHtml, spoilerToPreview, spoilers } from '$lib/client/spoilers';
 
     type ReplyInfo = { author_username: string; text: string; };
     type ChatMessage = {
@@ -254,7 +254,7 @@
                                     <strong>{msg.replyTo.author_username}:</strong>
                                     {#if msg.replyToImage}<span class="text-cyber-cyan italic">[{$t('chat.img_title')}]</span>
                                     {:else if msg.replyToVoiceMessage}<span class="text-cyber-yellow italic">[{$t('chat.voice_title')}]</span>
-                                    {:else}{@html spoilerToHtml(msg.replyTo.text)}{/if}
+                                    {:else}{spoilerToPreview(msg.replyTo.text)}{/if}
                                 </div>
                             {/if}
                             {#if msg.image}

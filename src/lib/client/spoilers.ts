@@ -38,6 +38,15 @@ export function spoilerToHtml(text: string | null | undefined): string {
   );
 }
 
+/**
+ * Для превью и цитат: `||...||` → блок «░░░» (не раскрываем и не светим содержимое).
+ * Возвращает плоскую строку — рендерить как обычный текст (Svelte экранирует сам).
+ */
+export function spoilerToPreview(text: string | null | undefined): string {
+  if (!text) return '';
+  return text.replace(/\|\|[^|\n]+?\|\|/g, '░░░');
+}
+
 const GLYPHS = '0123456789/\\|!<>=+:;?';
 const rg = () => GLYPHS[(Math.random() * GLYPHS.length) | 0];
 
