@@ -740,7 +740,7 @@ export async function askGemini(persona: string, request: string, images: Inline
  * руками. Формы ответа и ошибок — как у askGemini, чтобы переиспользовать разбор.
  */
 export type ActionResult =
-    | { ok: true; reply: string; action: 'none' | 'mute' | 'unmute' | 'ban' | 'kick'; seconds: number | null; note: string | null }
+    | { ok: true; reply: string; action: 'none' | 'mute' | 'restrict' | 'unmute' | 'ban' | 'kick' | 'tag'; seconds: number | null; tag: string | null; rep: { who: string; interests: string; attitude: string } | null }
     | { ok: false; reason: 'no_key' | 'limited' | 'exhausted' | 'refused' | 'empty' | 'api_failed'; detail?: string };
 
 /**
@@ -751,9 +751,12 @@ const ACTION_SCHEMA = {
     type: 'object',
     properties: {
         reply: {type: 'string'},
-        action: {type: 'string', enum: ['none', 'mute', 'unmute', 'ban', 'kick']},
+        action: {type: 'string', enum: ['none', 'mute', 'restrict', 'unmute', 'ban', 'kick', 'tag']},
         seconds: {type: 'integer'},
-        note: {type: 'string'},
+        tag: {type: 'string'},
+        repWho: {type: 'string'},
+        repInterests: {type: 'string'},
+        repAttitude: {type: 'string'},
     },
     required: ['reply', 'action'],
 };
@@ -820,13 +823,18 @@ export async function askGeminiAction(persona: string, request: string, images: 
         }
 
         const reply = typeof parsed?.reply === 'string' ? parsed.reply : '';
-        const action = ['none', 'mute', 'unmute', 'ban', 'kick'].includes(parsed?.action) ? parsed.action : 'none';
+        const action = ['none', 'mute', 'restrict', 'unmute', 'ban', 'kick', 'tag'].includes(parsed?.action) ? parsed.action : 'none';
         const seconds = Number.isFinite(parsed?.seconds) ? Math.floor(parsed.seconds) : null;
-        const note = typeof parsed?.note === 'string' ? parsed.note : null;
+        const tag = typeof parsed?.tag === 'string' ? parsed.tag : null;
+        const repWho = typeof parsed?.repWho === 'string' ? parsed.repWho : '';
+        const repInterests = typeof parsed?.repInterests === 'string' ? parsed.repInterests : '';
+        const repAttitude = typeof parsed?.repAttitude === 'string' ? parsed.repAttitude : '';
+        const rep = (repWho || repInterests || repAttitude)
+            ? {who: repWho, interests: repInterests, attitude: repAttitude} : null;
         if (!reply) return {ok: false, reason: 'empty', detail: 'no reply'};
 
         console.log(`[ASK] ${model}: ${cost} · action=${action}${seconds != null ? ` ${seconds}s` : ''}`);
-        return {ok: true, reply, action, seconds, note};
+        return {ok: true, reply, action, seconds, tag, rep};
     } catch (e) {
         const timedOut = (e as any)?.name === 'TimeoutError';
         console.error(`[ASK] ${timedOut ? 'Gemini не ответил вовремя' : 'Ошибка запроса к Gemini'}:`, e);

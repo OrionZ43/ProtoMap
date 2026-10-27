@@ -68,6 +68,9 @@ console.log('[BOT] ✅ All handlers registered successfully!');
 // Таймаут проверки возраста — отдельная функция, её вызывает Cloud Tasks.
 export { ageGateTimeout } from "./features/ageGate";
 
+// Конец режима еблана — тоже отложенная задача Cloud Tasks (см. features/ask.ts).
+export { eblanTimeout } from "./features/ask";
+
 // ─── Webhook ─────────────────────────────────────────────────────────────────
 
 export const telegramWebhook = onRequest(
