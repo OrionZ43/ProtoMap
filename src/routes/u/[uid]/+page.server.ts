@@ -114,6 +114,7 @@ export const load: PageServerLoad = async ({ params, setHeaders, locals }) => {
             profile: {
                 uid: userDoc.id,
                 username: userProfileData.username,
+                isBanned: userProfileData.isBanned === true,
                 avatar_url: null,
                 about_me: '',
                 status: null,
@@ -241,6 +242,7 @@ export const load: PageServerLoad = async ({ params, setHeaders, locals }) => {
         profile: {
             uid: userDoc.id,
             username: userProfileData.username,
+            isBanned: userProfileData.isBanned === true,
             avatar_url: userProfileData.avatar_url,
             about_me: userProfileData.about_me,
             status: userProfileData.status || null,

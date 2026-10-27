@@ -567,6 +567,15 @@
                 </div>
 
                 <h2 class="profile-username font-display">{data.profile.username}</h2>
+                {#if data.profile.isBanned}
+                    <div class="banned-plaque" role="status">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10" /><line x1="4.9" y1="4.9" x2="19.1" y2="19.1" />
+                        </svg>
+                        {$t('profile.banned_badge')}
+                    </div>
+                {/if}
                 {#if partnerPresence}
                     {#if partnerPresence.state === 'online'}
                         <div class="presence-indicator online">[ ONLINE ]</div>
@@ -887,6 +896,25 @@
     .presence-indicator { font-family: 'Chakra Petch', 'Russo One', monospace; font-size: 0.85rem; margin-top: 0.25rem; }
     .presence-indicator.online { color: #39ff14; text-shadow: 0 0 8px #39ff14; font-weight: bold; }
     .presence-indicator.offline { color: #94a3b8; }
+
+    /* Плашка «Забанен» — статус бана публичен, без причины и срока (решение Ориона). */
+    .banned-plaque {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.5rem;
+        padding: 0.25rem 0.7rem;
+        border: 1px solid rgba(239, 68, 68, 0.6);
+        border-radius: 999px;
+        background: rgba(239, 68, 68, 0.12);
+        color: #f87171;
+        font-family: 'Chakra Petch', 'Russo One', monospace;
+        font-size: 0.8rem;
+        font-weight: bold;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+    .banned-plaque svg { width: 1rem; height: 1rem; flex-shrink: 0; }
 
 
     .profile-content { @apply p-6 text-left; }

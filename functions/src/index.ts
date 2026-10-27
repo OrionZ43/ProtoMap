@@ -18,7 +18,7 @@ import fetch from "node-fetch";
 import { FieldValue } from "firebase-admin/firestore";
 import { v2 as cloudinary } from "cloudinary";
 import * as crypto from 'crypto';
-export { telegramWebhook, ageGateTimeout } from './telegram';
+export { telegramWebhook, ageGateTimeout, eblanTimeout } from './telegram';
 import vision from "@google-cloud/vision";
 export { getStepperStatus, stepperClaim } from './stepper';
 export { recordConsents, revokeConsent, getMyConsents } from './consents';
@@ -1833,6 +1833,7 @@ export const getLocations = onRequest({ cors: false }, async (request, response)
             const loc = doc.data();
             const user = usersMap.get(loc.user_id);
             if (!user) return null;
+            if (user.isBanned === true) return null;  // забаненных на карте не показываем
             return {
                 lat: loc.latitude,
                 lng: loc.longitude,

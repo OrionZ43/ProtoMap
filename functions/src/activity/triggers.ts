@@ -17,6 +17,7 @@ import * as admin from "firebase-admin";
 import {
   FIRESTORE_REGION, authorOf, describeUserChange, snippet, writeActivity,
 } from "./log";
+import {clearMapCache} from "../mapCache";
 
 const db = () => admin.firestore();
 
@@ -54,6 +55,27 @@ export const activityOnUserWrite = onDocumentWrittenWithAuthContext(
     const entry = describeUserChange(
       event.params.uid, before, after, authorOf(event.authType, event.authId));
     if (entry) await writeActivity(entry, event.id);
+
+    // Индекс забаненных (system/banned_users): клиент подписан на один
+    // документ и сразу знает всех забаненных — для плашек «Забанен» в чате,
+    // группах и комментариях. Ведём его здесь, на источнике истины
+    // (users.isBanned): любой путь бана (админка, миграция, удаление
+    // аккаунта) проходит через этот триггер, забыть обновить индекс нельзя,
+    // и лишних вызовов функции нет — триггер и так срабатывает на каждую
+    // запись в users.
+    const wasBanned = before?.isBanned === true;
+    const nowBanned = after?.isBanned === true;
+    if (wasBanned !== nowBanned) {
+      await db().doc("system/banned_users").set({
+        uids: nowBanned ?
+          admin.firestore.FieldValue.arrayUnion(event.params.uid) :
+          admin.firestore.FieldValue.arrayRemove(event.params.uid),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
+      // Метку забаненного надо убрать с карты сразу, а не через сутки,
+      // поэтому force — в обход троттлинга clearMapCache.
+      await clearMapCache(true);
+    }
   }
 );
 

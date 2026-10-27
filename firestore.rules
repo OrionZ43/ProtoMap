@@ -353,6 +353,15 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /system/banned_users {
+      // Индекс забаненных: один документ { uids, updatedAt }. Читают все
+      // вошедшие — для плашек «Забанен» в чате, группах, комментариях; пишет
+      // только сервер (триггер activityOnUserWrite). Приватности не убавляет:
+      // isBanned и так читается у users/{uid}.
+      allow read:  if isAuthenticated();
+      allow write: if false;
+    }
+
     // Пульс воркера скачивания (worker/ в репозитории). Пишет его воркер через
     // Admin SDK, читает команда /dlstatus в боте — тоже сервер. Клиенту здесь
     // делать нечего.

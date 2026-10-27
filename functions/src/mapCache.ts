@@ -11,7 +11,7 @@ import * as admin from "firebase-admin";
 
 const db = () => admin.firestore();
 
-export async function clearMapCache(): Promise<void> {
+export async function clearMapCache(force = false): Promise<void> {
     const cacheRef = db().collection("system").doc("map_cache");
 
     try {
@@ -20,7 +20,9 @@ export async function clearMapCache(): Promise<void> {
         await db().runTransaction(async (t) => {
             const doc = await t.get(cacheRef);
 
-            if (doc.exists) {
+            // force — сброс обязателен и его нельзя потерять (бан: метка
+            // должна исчезнуть сразу). Без него — не чаще раза в минуту.
+            if (!force && doc.exists) {
                 const lastUpdated = doc.data()?.updatedAt?.toMillis() || 0;
                 if (Date.now() - lastUpdated < 60000) {
                     throw new Error("THROTTLED"); // транзакция откатится

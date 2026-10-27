@@ -658,6 +658,7 @@
 		"prize_text": "Your ball landed in a pumpkin slot. The frame is in your inventory — equip it there."
 	},
 	"profile": {
+		"banned_badge": "Banned",
 		"page_title": "Profile",
 		"user_id": "USER ID",
 		"channels": "CHANNELS",
