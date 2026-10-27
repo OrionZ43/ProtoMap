@@ -25,6 +25,7 @@
 	import { userStore } from '$lib/stores';
 	import VoiceMessage from '$lib/components/chat/VoiceMessage.svelte';
 	import { scrollToBottom } from '$lib/utils/scroll';
+	import { spoilerToHtml, spoilers } from '$lib/client/spoilers';
 
 	// ── Константы ──────────────────────────────────────────────────────────
 	const MAX_POST_LENGTH = 4000;
@@ -435,6 +436,7 @@
 	<div
 		class="posts-feed"
 		bind:this={postsContainer}
+		use:spoilers={{ label: $t('spoiler.reveal') }}
 		on:click={() => (openReactPanel = null)}
 	>
 		{#if posts.filter((p) => !p.is_deleted).length === 0}
@@ -457,11 +459,11 @@
 						{:else if (post.type === 'VOICE' || post.type === 'voice') && post.media_url}
 							<VoiceMessage src={post.media_url} isOwn={false} />
 						{:else}
-							<p class="post-text">{post.edited_text ?? post.text}</p>
+							<p class="post-text">{@html spoilerToHtml(post.edited_text ?? post.text)}</p>
 						{/if}
 
 						{#if post.text && (post.type === 'IMAGE' || post.type === 'image')}
-							<p class="post-caption">{post.text}</p>
+							<p class="post-caption">{@html spoilerToHtml(post.text)}</p>
 						{/if}
 
 						{#if post.edited_text && post.type === 'TEXT'}

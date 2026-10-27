@@ -769,3 +769,36 @@ html {
     border-left: none !important;
     border-top: none !important;
 }
+
+/* ── Спойлеры в сообщениях: ||скрытый текст|| (логика — src/lib/client/spoilers.ts) ──
+   Глобально, потому что спаны приходят через {@html} и scoped-стили их не видят.
+   До инициализации / без JS: color:transparent — сырой текст скрыт плашкой (не утекает).
+   После инициализации: каждый символ в ячейке .sp-cell фиксированной ширины (от своей
+   настоящей буквы), поэтому при мерцании строки не прыгают. По тапу — расшифровка. */
+.spoiler {
+    cursor: pointer;
+    color: transparent;
+    background: rgba(245, 205, 70, 0.1);
+    border-radius: 3px;
+    padding: 0 3px;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    transition: color 0.25s ease, background 0.25s ease;
+}
+.spoiler.on {
+    color: inherit;
+    background: transparent;
+    -webkit-user-select: auto;
+    user-select: auto;
+}
+.sp-word { white-space: nowrap; }
+.sp-cell {
+    display: inline-block;
+    text-align: center;
+    vertical-align: baseline;
+    color: #f5cd46;
+    text-shadow: 0 0 5px rgba(245, 205, 70, 0.35);
+}
+.spoiler.on .sp-cell { color: inherit; text-shadow: none; }

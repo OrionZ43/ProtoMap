@@ -170,6 +170,9 @@
 		"rights": "ProtoMap",
 		"pd_policy": "ПЕРСОНАЛЬНЫЕ ДАННЫЕ"
 	},
+	"spoiler": {
+		"reveal": "Показать спойлер"
+	},
 	"chat": {
 		"title": "ОБЩИЙ ЧАТ",
 		"placeholder": "Введите сообщение...",

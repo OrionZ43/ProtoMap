@@ -13,6 +13,7 @@
 	import VoiceMessage from '$lib/components/chat/VoiceMessage.svelte';
 	import ImageLightbox from '$lib/components/chat/ImageLightbox.svelte';
 	import { getStickerUrl, type StickerPack } from '$lib/stores/stickerStore';
+	import { spoilerToHtml, spoilers } from '$lib/client/spoilers';
 	import {
 		mtype,
 		fmtTime,
@@ -107,7 +108,7 @@
 		<span class="row-ava-spacer"></span>
 	{/if}
 
-	<div class="wrap" class:own={isOwn}>
+	<div class="wrap" class:own={isOwn} use:spoilers={{ label: $t('spoiler.reveal') }}>
 		<div
 			class="bubble"
 			class:own={isOwn}
@@ -162,7 +163,7 @@
 					{/if}
 				</div>
 			{:else}
-				<p class="text">{msg.text}</p>
+				<p class="text">{@html spoilerToHtml(msg.text)}</p>
 			{/if}
 
 			{#if T !== 'STICKER'}

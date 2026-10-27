@@ -170,6 +170,9 @@
 		"rights": "ProtoMap",
 		"pd_policy": "PERSONAL DATA"
 	},
+	"spoiler": {
+		"reveal": "Show spoiler"
+	},
 	"chat": {
 		"title": "GLOBAL CHAT",
 		"placeholder": "Enter message...",
