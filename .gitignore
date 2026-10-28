@@ -30,3 +30,9 @@ repomix.config.json
 # Trailer studio (локальная работа, не публикуется)
 trailer/
 *.auth.json
+
+# Firebase emulator (тесты правил)
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebase/

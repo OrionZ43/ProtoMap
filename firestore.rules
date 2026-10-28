@@ -390,6 +390,21 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /system/android_app {
+      // Версии и флаги нового Android-приложения (com.z43studios.protomap).
+      // read — всем, включая до входа (проверка версии идёт до логина), как у
+      // публичных mobileapp/*. Пишет только админ и только корректную форму.
+      // Старые mobileapp/config|feature_flags|compatibility НЕ трогаем — это
+      // контракт СТАРОГО приложения, оно может заблокировать само себя.
+      allow read: if true;
+      allow write: if isAdmin()
+        && request.resource.data.latest is int
+        && request.resource.data.minimum is int
+        && request.resource.data.force is bool
+        && request.resource.data.flags is map
+        && request.resource.data.flags.values().hasOnly([true, false]);
+    }
+
     match /mobileapp/config {
       allow read:  if true;
       allow write: if isAdmin();
