@@ -25,6 +25,27 @@ So the split is:
 
 ---
 
+## 2026-10-28 (47) — Уведомления: учёт replies + actorUid (по фидбеку android)
+
+**Что.** По живому фидбеку android-сессии: (1) в data `channel_post` не было `actorUid` — тема
+`channel_{id}` общая, автор поста (подписан на свой канал) получал пуш о собственном посте, а
+приложению нечем отфильтровать; добавил `actorUid` (из `post.author_uid`, фолбэк `ownerUid`).
+(2) `notificationPrefs.replies` сервер не учитывал — тумблер «ответы» в приложении был пустышкой
+для токен-пушей (их гасит только сервер).
+
+**Как.** `sendPushToUser`/`sendPushToNewApp` получили необязательный `prefKey`; при
+`notificationPrefs[prefKey] === false` возвращают "skipped" до отправки. Токен-пуши комментов/ответов
+(profile_comment(_reply), channel_comment(_reply), group_reply) передают "replies"; DM
+(`sendPrivateChatNotification`) — нет, не гасится. Лента (`writeNotification`) не трогается —
+пишется всегда (решение Ориона: пуш off, лента остаётся).
+
+**Проверено.** Эмулятор: гейт префов 8/8 (replies:false → skipped у обоих отправщиков; DM без prefKey
+не гасится; channels не влияет на replies; при выключенном пуше лента получает group_reply). `tsc`
+чисто. Харнес `scratchpad/pref-gating-test.cjs`.
+
+**Деплой.** Те же 4 функции (коммит 4dfaf2c). Объявления: живую проверку отложили до готовности
+подписки приложения на темы (решение Ориона).
+
 ## 2026-10-28 (46) — Центр уведомлений: бэкенд (функции + пуши)
 
 **Что.** Серверная часть центра уведомлений: лента `users/{uid}/notifications` по событиям и пуши
