@@ -31,12 +31,32 @@ deferring.
 
 Respond in Russian.
 
+## Verification & testing (non-negotiable)
+
+Verify and test everything you build, as thoroughly as you can, before calling it done — on
+both sides of this project, web and Android. The goal is to stay in control of our own code
+and never ship the kind of critical bugs we found in the old app.
+
+- Logic you add or change gets tests (unit where it fits). Run them and show the result —
+  never "should work".
+- Security-sensitive code (anything rendered through `{@html}`, auth, Firestore rules,
+  economy, moderation, uploads): test adversarially, including *combinations*, not just the
+  happy path; for rendered HTML, confirm in a real browser (Playwright), not only jsdom.
+- UI: Playwright snapshot on desktop and phone before pushing; look at it, don't assume.
+- Cloud Functions and Firestore rules: exercise against the emulator
+  (`@firebase/rules-unit-testing` for rules) before deploying; a prod deploy is not a test.
+- Report honestly: if something is unverified, say so. Never claim "done", "works", or
+  "secure" without the evidence — a confident claim that turns out wrong is worse than a hedge.
+
 ## Commands
 
 ```bash
 npm run dev                  # vite dev server (localhost:5173)
 npm run build                # production build
-npm test                     # vitest run (139 tests, 14 files — all passing)
+npm test                     # vitest run (unit/component tests, jsdom)
+npm run test:rules           # Firestore rules tests on the emulator — needs JDK 11+ FIRST on PATH
+                             # (an Oracle Java 8 shim is ahead of JDK on PATH; firebase reads java
+                             #  from PATH, not JAVA_HOME. Quick fix: set "PATH=%JAVA_HOME%\bin;%PATH%")
 npm run check                # svelte-check
 npm run lint                 # prettier --check . && eslint .
 npm run format               # prettier --write . — see warning below

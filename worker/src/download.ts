@@ -69,8 +69,12 @@ export function isE621(url: string): boolean {
 async function resolveE621(url: string): Promise<string> {
     if (E621_POST.test(url)) return url;
 
+    // Accept-Encoding: identity — принципиально не просим Brotli. Ссылка пришла
+    // из публичного чата, а разжатие чужого Brotli на непропатченном Node — это
+    // Node2Shell (CVE-2026-111497, RCE). Настоящий фикс — свежий рантайм при
+    // пересборке образа; это второй рубеж на случай, если образ отстал.
     const res = await fetch(url, {
-        headers: { "User-Agent": E621_USER_AGENT },
+        headers: { "User-Agent": E621_USER_AGENT, "Accept-Encoding": "identity" },
         redirect: "follow",
     });
     if (!E621_POST.test(res.url)) {
@@ -121,8 +125,9 @@ async function downloadE621(shortOrFull: string): Promise<Downloaded> {
     const url = await resolveE621(shortOrFull);
     const id = url.match(E621_POST)![1];
 
+    // Не просим Brotli — см. resolveE621 (Node2Shell).
     const res = await fetch(`https://e621.net/posts/${id}.json`, {
-        headers: { "User-Agent": E621_USER_AGENT },
+        headers: { "User-Agent": E621_USER_AGENT, "Accept-Encoding": "identity" },
     });
     if (!res.ok) {
         throw new DownloadError(`e621 ответил HTTP ${res.status}`);
@@ -145,7 +150,7 @@ async function downloadE621(shortOrFull: string): Promise<Downloaded> {
     const ext = fileUrl.split(".").pop() || "bin";
     const path = join(dir, `e621_${id}.${ext}`);
 
-    const fileRes = await fetch(fileUrl, { headers: { "User-Agent": E621_USER_AGENT } });
+    const fileRes = await fetch(fileUrl, { headers: { "User-Agent": E621_USER_AGENT, "Accept-Encoding": "identity" } });
     if (!fileRes.ok || !fileRes.body) {
         await rm(dir, { recursive: true, force: true });
         throw new DownloadError(`Не удалось скачать файл: HTTP ${fileRes.status}`);
