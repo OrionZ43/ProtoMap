@@ -25,7 +25,7 @@ export { recordConsents, revokeConsent, getMyConsents } from './consents';
 export { enforceRetention } from './retention';
 export { getOrCreateReferralCode, claimReferral, getReferralStatus, finishReferralCampaign } from './referralFunctions';
 export { onChannelCommentWritten, onChannelPostCreated, onChannelPostDeleted, onChannelDeleted } from './channelComments';
-export { onChannelCommentReplyCreated } from './notifications';
+export { onChannelCommentReplyCreated, onChannelPostNotify, sendAnnouncement } from './notifications';
 export { createGroupInvite, joinGroupByInvite, onGroupDeleted } from './groups';
 export {
     activityOnUserWrite, activityOnAdminWrite, activityOnProfileComment, activityOnChatMessage,
