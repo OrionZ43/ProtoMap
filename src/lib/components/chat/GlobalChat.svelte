@@ -13,7 +13,8 @@
     import { usernameCache, getUsername, getAvatarUrl } from '$lib/stores/usernameCache';
     import { scrollToBottom } from '$lib/utils/scroll';
     import { chat } from '$lib/stores';
-    import { spoilerToHtml, spoilerToPreview, spoilers } from '$lib/client/spoilers';
+    import { renderMessageHtml, spoilerToPreview, spoilers } from '$lib/client/spoilers';
+    import RichEditor from '$lib/components/RichEditor.svelte';
 
     type ReplyInfo = { author_username: string; text: string; };
     type ChatMessage = {
@@ -33,7 +34,7 @@
     let canSendMessage = true;
     const cooldownSeconds = 3;
     let replyingTo: any = null;
-    let inputElement: HTMLTextAreaElement;
+    let inputElement: { focus: () => void } | undefined;
     let messagesLimit = 20;
     let chatLang = 'ru';
     let reachedEnd = false;
@@ -153,7 +154,7 @@
     }
 
     async function sendMessage() {
-        if (isSending || !canSendMessage || !messageText.trim()) return;
+        if (isSending || !canSendMessage || !messageText.trim() || messageText.trim().length > 1000) return;
         const currentUser = $userStore.user;
         if (!currentUser) { modal.error(get(t)('ui.error'), get(t)('chat.login_req')); return; }
         isSending = true; canSendMessage = false;
@@ -171,10 +172,6 @@
             await tick();
             scrollToBottom(messagesWindow);
         } catch (e) { canSendMessage = true; } finally { isSending = false; }
-    }
-
-    function handleKeydown(event: KeyboardEvent) {
-        if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }
     }
 
     function setReplyTo(message: ChatMessage) {
@@ -262,7 +259,7 @@
                             {:else if msg.voiceMessage}
                                 <div class="mobile-exclusive voice"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg></div><div class="info"><span class="title">{$t('chat.media_voice')}</span><span class="subtitle">{$t('chat.app_only')}</span></div></div>
                             {:else}
-                                <p class="message-text">{@html spoilerToHtml(msg.text)}</p>
+                                <p class="message-text">{@html renderMessageHtml(msg.text)}</p>
                             {/if}
                             <span class="message-time-inline">{msg.createdAt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                         </div>
@@ -287,12 +284,11 @@
                     <button on:click={() => replyingTo = null}>&times;</button>
                 </div>
             {/if}
-            <textarea bind:this={inputElement} bind:value={messageText} on:keydown={handleKeydown}
-                maxlength="1000" disabled={isSending || !canSendMessage}
+            <RichEditor bind:this={inputElement} bind:value={messageText} variant="chat"
                 placeholder={!canSendMessage ? $t('chat.wait') : $t('chat.placeholder')}
-                class="input-field"></textarea>
+                on:submit={sendMessage} />
         </div>
-        <button on:click={sendMessage} disabled={isSending || !canSendMessage || !messageText.trim()} class="send-button">
+        <button on:click={sendMessage} disabled={isSending || !canSendMessage || !messageText.trim() || messageText.trim().length > 1000} class="send-button">
             {#if isSending}
                 <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             {:else}

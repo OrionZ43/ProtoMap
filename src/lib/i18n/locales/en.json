@@ -170,6 +170,16 @@
 		"rights": "ProtoMap",
 		"pd_policy": "PERSONAL DATA"
 	},
+	"editor": {
+		"toolbar": "Formatting",
+		"bold": "Bold",
+		"italic": "Italic",
+		"strike": "Strikethrough",
+		"code": "Code",
+		"link": "Link",
+		"spoiler": "Spoiler",
+		"link_prompt": "Paste a link (http/https):"
+	},
 	"spoiler": {
 		"reveal": "Show spoiler"
 	},

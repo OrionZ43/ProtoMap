@@ -13,7 +13,7 @@
 	import VoiceMessage from '$lib/components/chat/VoiceMessage.svelte';
 	import ImageLightbox from '$lib/components/chat/ImageLightbox.svelte';
 	import { getStickerUrl, type StickerPack } from '$lib/stores/stickerStore';
-	import { spoilerToHtml, spoilers } from '$lib/client/spoilers';
+	import { renderMessageHtml, spoilers } from '$lib/client/spoilers';
 	import {
 		mtype,
 		fmtTime,
@@ -163,7 +163,7 @@
 					{/if}
 				</div>
 			{:else}
-				<p class="text">{@html spoilerToHtml(msg.text)}</p>
+				<p class="text">{@html renderMessageHtml(msg.text)}</p>
 			{/if}
 
 			{#if T !== 'STICKER'}

@@ -1,3 +1,6 @@
+import DOMPurify from 'dompurify';
+import { mdToInlineHtml } from './richtext';
+
 /**
  * Спойлеры в сообщениях: `||скрытый текст||`.
  *
@@ -36,6 +39,35 @@ export function spoilerToHtml(text: string | null | undefined): string {
   return e.replace(/\|\|([^|\n]+?)\|\|/g, (_m, inner: string) =>
     `<span class="spoiler" data-text="${inner}">${inner}</span>`
   );
+}
+
+/** Белый список для пузырей сообщений: инлайн-набор, ссылки только http(s). */
+export const MSG_ALLOWED_TAGS = ['strong', 'em', 's', 'code', 'a', 'span', 'br'];
+export const MSG_ALLOWED_ATTR = ['href', 'target', 'rel', 'class', 'data-text'];
+
+/**
+ * Markdown сообщения → безопасный инлайн-HTML для `{@html}`. Защита слоёная,
+ * и это сделано намеренно:
+ *  1) наш разбор (richtext) экранирует текст и держит узкий набор;
+ *  2) DOMPurify — проверенный финальный фильтр с жёстким белым списком.
+ * Второй слой нужен именно потому, что ручной разбор уже один раз ошибся
+ * (инъекция в data-text спойлера на сочетании ссылка+спойлер) — DOMPurify
+ * закрывает такой класс ошибок независимо от корректности наших регулярок.
+ */
+export function renderMessageHtml(text: string | null | undefined): string {
+  const html = mdToInlineHtml(text);
+  if (typeof window !== 'undefined' && (DOMPurify as unknown as { sanitize?: unknown })?.sanitize) {
+    // Без ALLOWED_URI_REGEXP: проверено — он заодно срезает target/rel у ссылок.
+    // И он не нужен: javascript:/data: DOMPurify режет сам по умолчанию, а наш
+    // разбор отдаёт в href только http(s) (isSafeHttpUrl). Два слоя остаются.
+    return DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: MSG_ALLOWED_TAGS,
+      ALLOWED_ATTR: MSG_ALLOWED_ATTR,
+    });
+  }
+  // SSR: чат рисуется на клиенте, но на всякий случай отдаём уже экранированный
+  // разбор (richtext экранирует до вставки тегов и покрыт тестами).
+  return html;
 }
 
 /**

@@ -170,6 +170,16 @@
 		"rights": "ProtoMap",
 		"pd_policy": "ПЕРСОНАЛЬНЫЕ ДАННЫЕ"
 	},
+	"editor": {
+		"toolbar": "Письмена",
+		"bold": "Жирно",
+		"italic": "Косо",
+		"strike": "Перечёркнуто",
+		"code": "Код",
+		"link": "Грамота",
+		"spoiler": "Тайнопись",
+		"link_prompt": "Впиши ссылку (http/https):"
+	},
 	"spoiler": {
 		"reveal": "Явить тайное"
 	},
