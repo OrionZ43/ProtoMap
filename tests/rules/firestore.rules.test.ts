@@ -6,7 +6,7 @@ import {
 	assertSucceeds,
 	type RulesTestEnvironment
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 // Тесты правил бьют по эмулятору (поднимается `npm run test:rules`), загружая
 // наш реальный firestore.rules. Это первый харнес правил в репозитории —
@@ -87,5 +87,62 @@ describe('граница доверия (регрессия харнеса)', ()
 	it('клиент не может писать в stepper/*', async () => {
 		const db = testEnv.authenticatedContext(USER).firestore();
 		await assertFails(setDoc(doc(db, 'stepper', USER), { credits: 999999 }));
+	});
+});
+
+describe('users/{uid}/notifications', () => {
+	const NOTIF = 'notif1';
+	const path = `users/${USER}/notifications/${NOTIF}`;
+
+	beforeEach(async () => {
+		await testEnv.withSecurityRulesDisabled(async (ctx) => {
+			await setDoc(doc(ctx.firestore(), path), { type: 'profile_comment', text: 'привет', read: false, createdAt: new Date() });
+		});
+	});
+
+	it('владелец читает своё уведомление', async () => {
+		await assertSucceeds(getDoc(doc(testEnv.authenticatedContext(USER).firestore(), path)));
+	});
+	it('чужое уведомление читать нельзя', async () => {
+		await assertFails(getDoc(doc(testEnv.authenticatedContext('other_uid').firestore(), path)));
+	});
+	it('владелец помечает прочитанным (read false→true)', async () => {
+		await assertSucceeds(updateDoc(doc(testEnv.authenticatedContext(USER).firestore(), path), { read: true }));
+	});
+	it('снять прочтение (true→false) нельзя', async () => {
+		await testEnv.withSecurityRulesDisabled(async (ctx) => {
+			await updateDoc(doc(ctx.firestore(), path), { read: true });
+		});
+		await assertFails(updateDoc(doc(testEnv.authenticatedContext(USER).firestore(), path), { read: false }));
+	});
+	it('менять другое поле нельзя', async () => {
+		await assertFails(updateDoc(doc(testEnv.authenticatedContext(USER).firestore(), path), { text: 'взлом' }));
+	});
+	it('read вместе с другим полем нельзя', async () => {
+		await assertFails(updateDoc(doc(testEnv.authenticatedContext(USER).firestore(), path), { read: true, text: 'x' }));
+	});
+	it('клиент не создаёт уведомление', async () => {
+		await assertFails(setDoc(doc(testEnv.authenticatedContext(USER).firestore(), `users/${USER}/notifications/new1`), { type: 'x', read: false }));
+	});
+	it('клиент не удаляет уведомление', async () => {
+		await assertFails(deleteDoc(doc(testEnv.authenticatedContext(USER).firestore(), path)));
+	});
+});
+
+describe('announcements', () => {
+	beforeEach(async () => {
+		await testEnv.withSecurityRulesDisabled(async (ctx) => {
+			await setDoc(doc(ctx.firestore(), 'announcements/a1'), { title: 'T', text: 'x', lang: 'ru', createdAt: new Date() });
+		});
+	});
+
+	it('вошедший читает объявление', async () => {
+		await assertSucceeds(getDoc(doc(testEnv.authenticatedContext(USER).firestore(), 'announcements/a1')));
+	});
+	it('без входа читать нельзя', async () => {
+		await assertFails(getDoc(doc(testEnv.unauthenticatedContext().firestore(), 'announcements/a1')));
+	});
+	it('клиент не пишет объявление', async () => {
+		await assertFails(setDoc(doc(testEnv.authenticatedContext(ADMIN).firestore(), 'announcements/a2'), { title: 'T', text: 'x' }));
 	});
 });

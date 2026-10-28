@@ -290,6 +290,19 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      match /notifications/{notifId} {
+        // Лента уведомлений. Создаёт только сервер (триггеры/функции). Владелец
+        // читает и может лишь пометить прочитанным (read: false → true) — больше
+        // ничего: остальные поля и удаление клиенту недоступны.
+        allow read:   if isOwner(userId);
+        allow create: if false;
+        allow update: if isOwner(userId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+          && resource.data.read == false
+          && request.resource.data.read == true;
+        allow delete: if false;
+      }
+
       match /comments/{commentId} {
         allow get:  if true;
         allow list: if true;
@@ -403,6 +416,14 @@ service cloud.firestore {
         && request.resource.data.force is bool
         && request.resource.data.flags is map
         && request.resource.data.flags.values().hasOnly([true, false]);
+    }
+
+    match /announcements/{announcementId} {
+      // Объявления админов: читают все вошедшие, пишет только функция
+      // sendAnnouncement (Admin SDK в обход правил). Прочитанность хранится
+      // в users/{uid}.announcementsSeenAt (владельцем-писабельное поле).
+      allow read:  if isAuthenticated();
+      allow write: if false;
     }
 
     match /mobileapp/config {
