@@ -25,6 +25,36 @@ So the split is:
 
 ---
 
+## 2026-10-28 (46) — Центр уведомлений: бэкенд (функции + пуши)
+
+**Что.** Серверная часть центра уведомлений: лента `users/{uid}/notifications` по событиям и пуши
+по видам. profile_comment(_reply) и channel_comment_reply — добавил запись в ленту; НОВЫЕ виды —
+channel_comment (владельцу канала на верхний коммент под постом), group_reply (автору исходного при
+ответе в обычной группе), channel_post (новый пост канала), announcement (объявление админа). Правила
+`notifications`/`announcements` уже были в проде (коммит 2f566f8).
+
+**Как / почему так.** Токен — без миграции: новые виды (channel_comment, group_reply) шлём только на
+`users/{uid}/private/data.fcmToken` (его уже пишет новое приложение), старый верхний `users.fcmToken`
+не трогаем — `sendPushToNewApp` без фолбэка. channel_post и announcement — по FCM-темам (`channel_{id}`,
+`announcements_ru/_en`), без фан-аута документов на каждого подписчика. `onChannelCommentReplyCreated`
+расширен до одного триггера на три случая (имя не менял — иначе orphan при деплое). `sendAnnouncement` —
+onCall с полным гвард-ладдером + гейт `admins/{uid}`.
+
+**Как проверено.** Эмулятор Firestore: маршрутизация получателей 10/10 (включая адверсариальные — ответ
+на своё, от заблокированного через `isBlockedBy`, удалённое сообщение, ответ на удалённый оригинал);
+`sendAnnouncement` 10/10 (не-админ → permission-denied и документ не создан; валидация; App Check;
+подтверждение почты; выбор тем ru/en/обе). `tsc` чисто. FCM-вручение эмулятор не умеет (нет FCM-эмулятора) —
+живую проверку делает android-сессия после деплоя. Харнесы: `scratchpad/trigger-recipients-test.cjs`,
+`announce-test.cjs`.
+
+**Деплой.** `functions:addComment,onChannelCommentReplyCreated,onChannelPostNotify,sendAnnouncement`
+(коммит 727ff69). Регионы верные: onCall → europe-west1, триггеры → europe-central2 (через
+`FIRESTORE_REGION`). Разовый таймаут discovery на холодной загрузке (Windows/Defender) — прошло с повтора.
+
+**Оставлено намеренно.** TTL на `notifications.expireAt` — отдельным шагом (конфиг Firestore, нужен
+re-export indexes перед `--force`). `announcementsSeenAt` забаненному в правилах — пропущено (забаненные
+колокольчик не видят). Сайт-UI (колокольчик + лента) — отдельной задачей.
+
 ## 2026-10-27 (45) — Спойлер не светит в превью и цитатах
 
 **Что.** Наводка Android-сессии: в превью последнего сообщения (список личек) и в цитате реплая
