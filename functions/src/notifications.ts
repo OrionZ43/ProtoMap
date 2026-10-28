@@ -90,18 +90,23 @@ export type PushStatus =
  * @param {string} uid получатель
  * @param {Record<string, string>} data полезная нагрузка
  * @param {string} fromUid кто вызвал пуш
+ * @param {string} prefKey ключ notificationPrefs; выключен — пуш не шлём
  * @return {Promise<PushStatus>} итог отправки
  */
 export async function sendPushToUser(
   uid: string,
   data: Record<string, string>,
   fromUid?: string,
+  prefKey?: string,
 ): Promise<PushStatus> {
   try {
     const userRef = db().collection("users").doc(uid);
     const user = await userRef.get();
     if (!user.exists || user.get("isBanned") === true) return "skipped";
     if (fromUid && await isBlockedBy(uid, fromUid)) return "skipped";
+    if (prefKey && user.get("notificationPrefs")?.[prefKey] === false) {
+      return "skipped";
+    }
 
     const privateRef = userRef.collection("private").doc("data");
     const candidates: [FirebaseFirestore.DocumentReference, unknown][] = [
@@ -193,12 +198,16 @@ export async function sendPushToNewApp(
   uid: string,
   data: Record<string, string>,
   fromUid?: string,
+  prefKey?: string,
 ): Promise<PushStatus> {
   try {
     const userRef = db().collection("users").doc(uid);
     const user = await userRef.get();
     if (!user.exists || user.get("isBanned") === true) return "skipped";
     if (fromUid && await isBlockedBy(uid, fromUid)) return "skipped";
+    if (prefKey && user.get("notificationPrefs")?.[prefKey] === false) {
+      return "skipped";
+    }
     const privateRef = userRef.collection("private").doc("data");
     const token = (await privateRef.get()).get("fcmToken");
     if (typeof token !== "string" || !token) return "no_token";
@@ -273,7 +282,7 @@ export async function notifyProfileComment(
         type: "profile_comment_reply",
         title: `${ev.authorName} ответил(а) на ваш комментарий`,
         body: base.text,
-      }, ev.authorUid));
+      }, ev.authorUid, "replies"));
       sends.push(writeNotification(
         repliedAuthor, ev.authorUid, "profile_comment_reply", base.text,
         {
@@ -291,7 +300,7 @@ export async function notifyProfileComment(
         type: "profile_comment",
         title: `${ev.authorName} оставил(а) комментарий в профиле`,
         body: base.text,
-      }, ev.authorUid));
+      }, ev.authorUid, "replies"));
       sends.push(writeNotification(
         ev.profileUid, ev.authorUid, "profile_comment", base.text,
         {profileUid: ev.profileUid, commentId: ev.commentId},
@@ -365,7 +374,7 @@ export const onChannelCommentReplyCreated = onDocumentCreated(
             commentId: messageId, actorUid: authorUid, actorName, channelName,
             text, title: `${actorName} ответил(а) на ваш комментарий`,
             body: text,
-          }, authorUid);
+          }, authorUid, "replies");
           await writeNotification(recipient, authorUid, "channel_comment_reply",
             text, {channelId, groupId, postId: topicId, messageId});
         } else {
@@ -376,7 +385,7 @@ export const onChannelCommentReplyCreated = onDocumentCreated(
             commentId: messageId, actorUid: authorUid, actorName, channelName,
             text, title: `${actorName} прокомментировал(а) ваш пост`,
             body: text,
-          }, authorUid);
+          }, authorUid, "replies");
           await writeNotification(owner, authorUid, "channel_comment", text,
             {channelId, groupId, postId: topicId});
         }
@@ -387,7 +396,7 @@ export const onChannelCommentReplyCreated = onDocumentCreated(
           type: "group_reply", groupId, topicId, commentId: messageId,
           actorUid: authorUid, actorName, text,
           title: `${actorName} ответил(а) в теме`, body: text,
-        }, authorUid);
+        }, authorUid, "replies");
         await writeNotification(recipient, authorUid, "group_reply", text,
           {groupId, topicId, messageId});
       }
@@ -421,6 +430,9 @@ export const onChannelPostNotify = onDocumentCreated(
           channelId,
           postId,
           groupId: typeof groupId === "string" ? groupId : "",
+          // Тема channel_{id} общая: автор поста тоже подписан на свой канал.
+          // Без actorUid приложению нечем скрыть пуш о собственном посте.
+          actorUid: String(post.author_uid || channel.get("ownerUid") || ""),
           title: String(channel.get("name") || "Канал"),
           body,
         },
