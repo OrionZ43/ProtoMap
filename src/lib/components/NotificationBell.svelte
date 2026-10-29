@@ -156,10 +156,17 @@
         transition: color 0.2s, background 0.2s;
     }
     .icon-btn:hover, .icon-btn.active { color: #fff; background: rgba(255, 255, 255, 0.1); }
+    /* Один в один с .msg-badge в навбаре: те же размеры, шрифт и свечение +
+       флекс-центровка (line-height-центровка уводила цифру из-за метрик шрифта).
+       Так счётчики «Сообщений» и колокольчика одинаковые, и число по центру. */
     .count {
-        position: absolute; top: 1px; right: 1px; min-width: 17px; height: 17px; padding: 0 4px;
-        background: var(--cyber-red, #ff003c); color: #fff; border-radius: 9px;
-        font: 700 10px/17px 'Inter', sans-serif; text-align: center; border: 2px solid #050a10;
+        position: absolute; top: -2px; right: -2px;
+        min-width: 16px; height: 16px; padding: 0 4px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 8px;
+        background: var(--cyber-red, #ff003c); color: #fff;
+        font-family: var(--font-tech); font-size: 0.55rem; font-weight: 900; line-height: 1;
+        box-shadow: 0 0 6px rgba(255, 0, 60, 0.6);
     }
 
     .panel {
