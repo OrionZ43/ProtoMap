@@ -1300,6 +1300,17 @@
 			"open_journal": "Open the journal"
 		}
 	},
+	"notif": {
+		"title": "Notifications",
+		"mark_all": "Mark all read",
+		"empty": "Nothing yet.",
+		"admin_title": "Message from the admins",
+		"profile_comment": "commented on your profile",
+		"profile_comment_reply": "replied to your comment",
+		"channel_comment": "commented on your post",
+		"channel_comment_reply": "replied to your comment",
+		"group_reply": "replied in the topic"
+	},
 	"admin_users": {
 		"title": "People",
 		"subtitle": "Find someone by nickname and manage the account: balance, items, email, ban, transfer.",

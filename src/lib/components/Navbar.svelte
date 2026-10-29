@@ -17,6 +17,7 @@
     import { t, json, locale } from 'svelte-i18n';
     import SettingsModal from '$lib/components/SettingsModal.svelte';
     import HalloweenSpiders from '$lib/components/HalloweenSpiders.svelte';
+    import NotificationBell from '$lib/components/NotificationBell.svelte';
 
     let isSettingsOpenMobile = false;
 
@@ -214,6 +215,9 @@
                     <span class="msg-badge">{$totalUnread > 99 ? '99+' : $totalUnread}</span>
                 {/if}
             </a>
+            {#if $userStore.user}
+                <NotificationBell />
+            {/if}
             <!-- Android App -->
             <a href="/mobile-beta" class="icon-btn android-btn" title="Download App">
                 <svg width="20" height="20" viewBox="0 0 512 512" fill="currentColor">
@@ -272,6 +276,7 @@
                     <span class="text-[10px] text-cyber-yellow font-bold">PC</span>
                     <span class="font-mono text-sm font-bold">{Math.floor($displayedCredits)}</span>
                 </div>
+                <NotificationBell />
             {/if}
 
             <button on:click={toggleMobileMenu} class="p-2 text-gray-400 hover:text-white transition-colors relative">
@@ -512,8 +517,12 @@
     .cyber-dropdown {
         position: absolute; top: calc(100% + 8px); right: 0; width: 240px;
         background: rgba(8, 12, 18, 0.95); backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px;
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6); z-index: 100; overflow: hidden; transform-origin: top right;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        /* Фирменный срез угла (верх-левый, низ-правый), как у ChatWidget и модалок,
+           вместо круглого border-radius. Тень — через filter: drop-shadow, иначе
+           clip-path её срезает. Применяется к меню настроек и меню пользователя. */
+        clip-path: polygon(0 12px, 12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%);
+        filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.55)); z-index: 100; overflow: hidden; transform-origin: top right;
     }
     .dropdown-header { padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'Chakra Petch', 'Russo One', monospace; }
     .dropdown-item { display: flex; align-items: center; width: 100%; padding: 0.75rem 1rem; font-size: 0.9rem; color: #cbd5e1; transition: all 0.2s; text-align: left; font-family: 'Inter', sans-serif; }
