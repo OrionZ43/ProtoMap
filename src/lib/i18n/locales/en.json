@@ -1017,6 +1017,7 @@
 		"news": "News",
 		"roadmap": "Roadmap",
 		"exit": "Back to site",
+		"profile": "My profile",
 		"aria": "Admin sections"
 	},
 	"admin_activity": {
@@ -1045,6 +1046,7 @@
 			"map": "Map"
 		},
 		"user_not_found": "User “{query}” not found",
+		"open_person": "Open in People",
 		"index_building": "The index for this filter is still building — for a few minutes after a deploy some entries may be missing.",
 		"strip": {
 			"banned": "banned",
@@ -1058,8 +1060,8 @@
 			"truncated": "More than 2000 entries in this period — totals use the latest 2000."
 		},
 		"top": {
-			"gainers": "Last 24 hours, gained:",
-			"losers": "lost:"
+			"gainers": "Gained in 24 hours",
+			"losers": "Lost in 24 hours"
 		},
 		"feed": {
 			"empty": "No entries",
@@ -1296,6 +1298,225 @@
 			"activity": "Activity today",
 			"activity_groups": "By journal section",
 			"open_journal": "Open the journal"
+		}
+	},
+	"admin_users": {
+		"title": "People",
+		"subtitle": "Find someone by nickname and manage the account: balance, items, email, ban, transfer.",
+		"empty": "Type a nickname — exact or its beginning — or paste a uid. If several match, you’ll get to choose.",
+		"search": {
+			"placeholder": "Nickname or uid",
+			"find": "Find",
+			"searching": "Searching…"
+		},
+		"candidates": "{count, plural, one {# match} other {# matches}} — pick one",
+		"status": {
+			"active": "Active",
+			"banned": "Banned",
+			"email_ok": "Email verified",
+			"email_no": "Email not verified",
+			"telegram": "Telegram {id}"
+		},
+		"meta": {
+			"uid": "UID",
+			"email": "Email",
+			"created": "Joined",
+			"ban_reason": "Ban reason",
+			"copy": "Copy",
+			"copied": "Copied"
+		},
+		"links": {
+			"profile": "Profile",
+			"journal": "Journal entries"
+		},
+		"numbers": {
+			"balance": "Balance",
+			"items": "Items"
+		},
+		"balance": {
+			"title": "Balance · protocoins",
+			"amount_ph": "Amount",
+			"give": "Give",
+			"take": "Take",
+			"quick": "Quick:",
+			"zero": "Set to 0",
+			"hint": "Any amount by hand — type a number and “Give”/“Take”. Every change goes to the journal.",
+			"zero_confirm_title": "Reset the balance?",
+			"zero_confirm_text": "{name} will lose the whole balance — {amount} PC right now. It will show up in the activity journal."
+		},
+		"items": {
+			"title": "Cosmetics · one by one",
+			"equipped": "equipped",
+			"grant_one": "Give",
+			"revoke": "Take",
+			"no_catalog": "The cosmetics catalog is empty.",
+			"equip_frame": "Equip a frame…",
+			"equip_bg": "Equip a background…",
+			"unequip": "unequip",
+			"equip_do": "Equip",
+			"grant": "Give the whole pack ({count})"
+		},
+		"notify": {
+			"title": "Message to the person",
+			"placeholder": "Text — appears in the bell on the site and in the app",
+			"push": "Also send a phone push",
+			"send": "Send the message"
+		},
+		"streak": {
+			"title": "Streak and cooldowns",
+			"label": "Daily streak",
+			"set": "Set",
+			"cooldowns": "Reset a cooldown",
+			"cd_daily": "Daily bonus",
+			"cd_username": "Name change",
+			"cd_birthday": "Birthday gift"
+		},
+		"history": {
+			"title": "Admin actions on this person",
+			"empty": "Nothing yet."
+		},
+		"email": {
+			"title": "Email",
+			"verified": "Email is already verified",
+			"verify": "Verify manually"
+		},
+		"ban": {
+			"title": "Access & ban",
+			"reason": "Reason — the person will see it",
+			"child_safety": "Child safety (section 2.3) — no appeal",
+			"ban": "Ban",
+			"unban": "Lift the ban"
+		},
+		"migrate": {
+			"open": "Account transfer",
+			"title": "Account transfer",
+			"text": "Balance, items and the map pin move from the old account to the new one; the old account gets blocked. A transfer can’t be undone.",
+			"from": "From — old account uid",
+			"to": "To — new account uid",
+			"run": "Transfer",
+			"cancel": "Cancel"
+		},
+		"result": {
+			"ok_title": "Done",
+			"fail_title": "Didn’t work",
+			"credits": "Balance changed by {amount} PC.",
+			"items": "Given: {count} frames and backgrounds.",
+			"email_verified": "Email verified.",
+			"banned": "Banned; the person’s sessions were revoked.",
+			"unbanned": "Ban lifted.",
+			"migrated": "Account transferred: {from} → {to}.",
+			"not_found": "Nobody with that nickname.",
+			"empty_query": "Type a nickname.",
+			"search_failed": "Search failed — try again.",
+			"bad_input": "Invalid data.",
+			"self_balance": "You can’t change your own balance.",
+			"self_ban": "You can’t ban yourself.",
+			"admin_ban": "Admins can’t be banned.",
+			"bad_migrate": "Two different uids are needed.",
+			"admin_migrate": "An admin account can’t be transferred.",
+			"item_granted": "Item given.",
+			"item_revoked": "Item taken.",
+			"equipped": "Equipped.",
+			"notified": "Message sent.",
+			"streak_set": "Streak set to {streak}.",
+			"cooldown_reset": "Cooldown reset.",
+			"not_owned": "The person doesn’t own this item — grant it first.",
+			"too_long": "The text is too long (max 2000).",
+			"failed": "Error: {detail}"
+		}
+	},
+	"admin_news": {
+		"title": "News",
+		"subtitle": "Publishing to the /news feed. The text supports markdown — the preview on the right shows how it will look.",
+		"open_site": "Open the feed",
+		"lang": "Feed",
+		"lang_ru": "Russian",
+		"lang_en": "English",
+		"field_title": "Title",
+		"field_title_ph": "For example: Halloween on ProtoMap",
+		"field_content": "Text",
+		"field_content_ph": "What’s new? **Bold**, lists and links work.",
+		"field_image": "Image — link",
+		"field_tags": "Tags, comma-separated",
+		"field_tags_ph": "update, event",
+		"publish": "Publish",
+		"publishing": "Publishing…",
+		"preview": "Preview",
+		"preview_now": "just now",
+		"preview_title": "News title",
+		"preview_empty": "The text will appear here.",
+		"image_broken": "The image didn’t load — check the link.",
+		"recent": "Recent posts",
+		"recent_empty": "None yet.",
+		"result": {
+			"ok_title": "Published",
+			"ok": "The post is in the feed.",
+			"fail_title": "Didn’t work",
+			"required": "A title and text are required.",
+			"forbidden": "No permission.",
+			"failed": "Couldn’t save — try again."
+		}
+	},
+	"admin_roadmap": {
+		"title": "Roadmap",
+		"subtitle": "What’s waiting, in progress and done. Click a task to edit it.",
+		"new": "New task",
+		"filters": {
+			"platform": "Platform",
+			"assignee": "Who",
+			"priority": "Priority",
+			"all": "All"
+		},
+		"lanes": {
+			"todo": "Waiting",
+			"in_progress": "In progress",
+			"done": "Done"
+		},
+		"platform": {
+			"web": "Site",
+			"app": "App",
+			"backend": "Server",
+			"design": "Design"
+		},
+		"priority": {
+			"low": "Low",
+			"medium": "Medium",
+			"critical": "Urgent"
+		},
+		"assignee": {
+			"orion": "Orion",
+			"iposdev": "iposdev",
+			"system": "System"
+		},
+		"empty_lane": "Empty",
+		"actions": {
+			"start": "Start",
+			"back": "Back to the queue",
+			"done": "Done",
+			"reopen": "Back to work",
+			"delete": "Delete"
+		},
+		"form": {
+			"new_title": "New task",
+			"edit_title": "Task {id}",
+			"title": "Title",
+			"title_ph": "What to do",
+			"platform": "Platform",
+			"assignee": "Who does it",
+			"priority": "Priority",
+			"details": "Details",
+			"details_ph": "Details, links, what to check",
+			"create": "Create",
+			"save": "Save",
+			"cancel": "Cancel"
+		},
+		"delete_confirm_title": "Delete the task?",
+		"delete_confirm_text": "“{title}” will be gone from the roadmap for good.",
+		"result": {
+			"fail_title": "Didn’t work",
+			"required": "A title is required.",
+			"bad_input": "Invalid data.",
+			"failed": "Couldn’t save."
 		}
 	},
 	"blocklist": {

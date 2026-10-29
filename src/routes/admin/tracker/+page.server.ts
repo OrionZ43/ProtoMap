@@ -1,4 +1,7 @@
 // src/routes/admin/tracker/+page.server.ts
+//
+// «Роадмап» в админке: задачи по колонкам «ждёт — в работе — готово».
+// Ошибки — кодами; текст для них страница берёт из локалей (admin_roadmap.result).
 
 import { firestoreAdmin } from '$lib/server/firebase.admin';
 import { error, fail, redirect } from '@sveltejs/kit';
@@ -8,9 +11,26 @@ import { ADMIN_UIDS } from '$env/static/private';
 
 const adminList = ADMIN_UIDS ? ADMIN_UIDS.split(',') : [];
 
+const PLATFORMS = ['web', 'app', 'backend', 'design'];
+const PRIORITIES = ['low', 'medium', 'critical'];
+const STATUSES = ['todo', 'in_progress', 'done'];
+/** iposdev остаётся у старых задач; новым его не назначают (страница его не предлагает). */
+const ASSIGNEES = ['orion', 'iposdev', 'system'];
+
 function assertAdmin(locals: App.Locals) {
     if (!locals.user || !adminList.includes(locals.user.uid)) {
         throw error(403, 'ОТКАЗАНО В ДОСТУПЕ.');
+    }
+}
+
+/** Запись в Firestore: сбой возвращается кодом, а не страницей ошибки. */
+async function write(run: () => Promise<unknown>) {
+    try {
+        await run();
+        return { success: true };
+    } catch (e) {
+        console.error('[admin/tracker] запись:', e);
+        return fail(500, { code: 'failed' });
     }
 }
 
@@ -67,39 +87,42 @@ export const actions: Actions = {
         const assignee = data.get('assignee')      as string;
         const desc     = (data.get('description') as string ?? '').trim();
 
-        if (!title)    return fail(400, { message: 'Название обязательно.' });
-        if (!['web','app','backend','design'].includes(platform)) return fail(400);
-        if (!['low','medium','critical'].includes(priority))     return fail(400);
-        if (!['orion','iposdev','system'].includes(assignee))    return fail(400);
+        if (!title) return fail(400, { code: 'required' });
+        if (!PLATFORMS.includes(platform) || !PRIORITIES.includes(priority) || !ASSIGNEES.includes(assignee)) {
+            return fail(400, { code: 'bad_input' });
+        }
 
-        await firestoreAdmin.collection('roadmap').add({
+        return write(() => firestoreAdmin.collection('roadmap').add({
             title, description: desc, platform, priority, assignee,
             status:    'todo',
             createdAt: FieldValue.serverTimestamp(),
             author:    locals.user!.uid
-        });
-        return { success: true };
+        }));
     },
 
     edit: async ({ request, locals }) => {
         assertAdmin(locals);
         const data = await request.formData();
         const id   = (data.get('id') as string ?? '').trim();
-        if (!id) return fail(400);
+        if (!id) return fail(400, { code: 'bad_input' });
 
-        const updates: Record<string, string> = {};
         const title    = (data.get('title')       as string ?? '').trim();
-        const desc     = (data.get('description') as string ?? '').trim();
+        const platform = data.get('platform') as string;
         const priority = data.get('priority') as string;
         const assignee = data.get('assignee') as string;
+        if (!title) return fail(400, { code: 'required' });
 
-        if (title)    updates.title       = title;
-        if (desc)     updates.description = desc;
-        if (priority && ['low','medium','critical'].includes(priority)) updates.priority = priority;
-        if (assignee && ['orion','iposdev','system'].includes(assignee)) updates.assignee = assignee;
+        // Описание пишется всегда: пустое поле — значит, описание убрали.
+        // Раньше пустое значение пропускалось, и стереть описание было нельзя.
+        const updates: Record<string, string> = {
+            title,
+            description: (data.get('description') as string ?? '').trim()
+        };
+        if (PLATFORMS.includes(platform)) updates.platform = platform;
+        if (PRIORITIES.includes(priority)) updates.priority = priority;
+        if (ASSIGNEES.includes(assignee)) updates.assignee = assignee;
 
-        await firestoreAdmin.collection('roadmap').doc(id).update(updates);
-        return { success: true };
+        return write(() => firestoreAdmin.collection('roadmap').doc(id).update(updates));
     },
 
     updateStatus: async ({ request, locals }) => {
@@ -107,19 +130,17 @@ export const actions: Actions = {
         const data   = await request.formData();
         const id     = (data.get('id')     as string ?? '').trim();
         const status = (data.get('status') as string ?? '').trim();
-        if (!id || !['todo','in_progress','done'].includes(status)) return fail(400);
+        if (!id || !STATUSES.includes(status)) return fail(400, { code: 'bad_input' });
 
-        await firestoreAdmin.collection('roadmap').doc(id).update({ status });
-        return { success: true };
+        return write(() => firestoreAdmin.collection('roadmap').doc(id).update({ status }));
     },
 
     delete: async ({ request, locals }) => {
         assertAdmin(locals);
-        const data = await request.formData(); // ← фикс бага: было `data` без объявления
+        const data = await request.formData();
         const id   = (data.get('id') as string ?? '').trim();
-        if (!id) return fail(400);
+        if (!id) return fail(400, { code: 'bad_input' });
 
-        await firestoreAdmin.collection('roadmap').doc(id).delete();
-        return { success: true };
+        return write(() => firestoreAdmin.collection('roadmap').doc(id).delete());
     }
 };

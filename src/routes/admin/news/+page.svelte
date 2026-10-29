@@ -1,224 +1,194 @@
+<!-- src/routes/admin/news/+page.svelte -->
+<!--
+    «Новости»: публикация в ленту /news. Предпросмотр справа рисует введённое
+    так же, как лента (renderMarkdown), под формой — последние публикации.
+    Вид — общие элементы админки (admin.css).
+-->
 <script lang="ts">
     import { enhance } from '$app/forms';
+    import type { SubmitFunction } from '@sveltejs/kit';
+    import { t, locale } from 'svelte-i18n';
     import { modal } from '$lib/stores/modalStore';
-    import type { ActionData } from './$types';
-    import { fade, slide } from 'svelte/transition';
+    import { renderMarkdown } from '$lib/utils/markdown';
+    import { formats } from '$lib/admin/format';
+    import type { PageData } from './$types';
 
-    export let form: ActionData;
+    export let data: PageData;
 
-    let isSubmitting = false;
+    let lang: 'ru' | 'en' = 'ru';
+    let title = '';
+    let content = '';
     let imageUrl = '';
+    let tags = '';
+    let busy = false;
+    let imageBroken = false;
 
-    $: if (form?.success) {
-        modal.success("Опубликовано!", "Новость успешно добавлена в ленту.");
-        imageUrl = '';
-    } else if (form?.message) {
-        modal.error("Ошибка", form.message);
-    }
+    $: f = formats($locale);
+    $: tagList = tags.split(',').map((s) => s.trim()).filter(Boolean);
+    $: previewHtml = content.trim() ? renderMarkdown(content) : '';
+    // Новая ссылка — новая попытка загрузить картинку.
+    $: imageUrl, (imageBroken = false);
+
+    const publish: SubmitFunction = () => {
+        busy = true;
+        return async ({ result, update }) => {
+            await update({ reset: false });
+            busy = false;
+            if (result.type === 'success') {
+                title = '';
+                content = '';
+                imageUrl = '';
+                tags = '';
+                modal.success($t('admin_news.result.ok_title'), $t('admin_news.result.ok'));
+            } else if (result.type === 'failure') {
+                const code = (result.data as { code?: string } | undefined)?.code ?? 'failed';
+                modal.error($t('admin_news.result.fail_title'), $t(`admin_news.result.${code}`));
+            }
+        };
+    };
 </script>
 
 <svelte:head>
-    <title>Propaganda Control | Overlord</title>
+    <title>{$t('admin_news.title')} | ProtoMap</title>
 </svelte:head>
 
-<div class="news-editor-wrapper" in:fade={{duration: 500}}>
+<header class="adm-head">
+    <div>
+        <h1>{$t('admin_news.title')}</h1>
+        <p>{$t('admin_news.subtitle')}</p>
+    </div>
+    <a class="adm-btn" href="/news" target="_blank" rel="noopener">
+        {$t('admin_news.open_site')}
+        <svg class="adm-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
+    </a>
+</header>
 
-    <header class="page-header">
-        <h2 class="text-3xl font-bold text-white font-display tracking-widest mb-2">МОДУЛЬ ПРОПАГАНДЫ</h2>
-        <p class="text-gray-500 font-mono text-sm">/// GLOBAL BROADCAST SYSTEM</p>
-    </header>
-
-    <div class="editor-grid">
-
-        <div class="editor-panel cyber-glass">
-            <form
-                method="POST"
-                action="?/create"
-                use:enhance={() => {
-                    isSubmitting = true;
-                    return async ({ update }) => {
-                        await update();
-                        isSubmitting = false;
-                    };
-                }}
-                class="editor-form"
-            >
-                <div class="form-group">
-                    <label class="cyber-label">ЦЕЛЕВАЯ АУДИТОРИЯ</label>
-                    <div class="lang-selector">
-                        <label class="radio-label">
-                            <input type="radio" name="lang" value="ru" checked>
-                            <span class="radio-btn">RU (Russian)</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="lang" value="en">
-                            <span class="radio-btn">EN (English)</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="cyber-label">ЗАГОЛОВОК ТРАНСЛЯЦИИ</label>
-                    <input type="text" name="title" required placeholder="Пример: THE GLITCH PIT 2.0" class="cyber-input header-input" autocomplete="off" />
-                </div>
-
-                <div class="form-group">
-                    <label class="cyber-label">ТЕКСТ СООБЩЕНИЯ</label>
-                    <textarea name="content" required rows="12" placeholder="Введите текст новости..." class="cyber-input text-area"></textarea>
-                </div>
-
-                <div class="meta-grid">
-                    <div class="form-group">
-                        <label class="cyber-label">URL ИЗОБРАЖЕНИЯ</label>
-                        <input type="url" name="imageUrl" bind:value={imageUrl} placeholder="https://..." class="cyber-input" />
-                    </div>
-
-                    <div class="form-group">
-                        <label class="cyber-label">ТЕГИ (CSV)</label>
-                        <input type="text" name="tags" placeholder="update, event, system" class="cyber-input" />
-                    </div>
-                </div>
-
-                <div class="actions-bar">
-                    <button type="submit" class="broadcast-btn" disabled={isSubmitting}>
-                        {isSubmitting ? 'ШИФРОВАНИЕ...' : 'ЗАПУСТИТЬ В ЭФИР'}
-                        <span class="btn-glow"></span>
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <div class="preview-panel">
-            <h3 class="preview-title">ПРЕДПРОСМОТР СИГНАЛА</h3>
-
-            <div class="news-card-preview cyber-glass">
-                {#if imageUrl}
-                    <div class="card-image" transition:slide>
-                        <img src={imageUrl} alt="Preview" />
-                        <div class="image-overlay"></div>
-                    </div>
-                {:else}
-                    <div class="card-image-placeholder">
-                        <span>НЕТ ИЗОБРАЖЕНИЯ</span>
-                    </div>
-                {/if}
-
-                <div class="card-content">
-                    <div class="meta-mock">
-                        <span class="date">ТОЛЬКО ЧТО</span>
-                        <div class="tags-mock">
-                            <span class="tag">#preview</span>
-                        </div>
-                    </div>
-                    <div class="title-mock">ЗАГОЛОВОК НОВОСТИ</div>
-                    <div class="text-mock">
-                        <div class="line w-full"></div>
-                        <div class="line w-11/12"></div>
-                        <div class="line w-4/5"></div>
-                    </div>
-                </div>
+<div class="layout">
+    <form class="adm-panel editor" method="POST" action="?/create" use:enhance={publish}>
+        <div class="adm-field">
+            <span class="adm-label">{$t('admin_news.lang')}</span>
+            <div class="adm-chips" role="radiogroup" aria-label={$t('admin_news.lang')}>
+                <label class="adm-chip" class:on={lang === 'ru'}>
+                    <input type="radio" name="lang" value="ru" bind:group={lang} />
+                    {$t('admin_news.lang_ru')}
+                </label>
+                <label class="adm-chip" class:on={lang === 'en'}>
+                    <input type="radio" name="lang" value="en" bind:group={lang} />
+                    {$t('admin_news.lang_en')}
+                </label>
             </div>
         </div>
 
-    </div>
+        <label class="adm-field">
+            <span class="adm-label">{$t('admin_news.field_title')}</span>
+            <input type="text" name="title" class="adm-input big" bind:value={title} required autocomplete="off"
+                placeholder={$t('admin_news.field_title_ph')} />
+        </label>
+
+        <label class="adm-field">
+            <span class="adm-label">{$t('admin_news.field_content')}</span>
+            <textarea name="content" class="adm-textarea" rows="12" bind:value={content} required
+                placeholder={$t('admin_news.field_content_ph')}></textarea>
+        </label>
+
+        <div class="two">
+            <label class="adm-field">
+                <span class="adm-label">{$t('admin_news.field_image')}</span>
+                <input type="url" name="imageUrl" class="adm-input" bind:value={imageUrl} placeholder="https://…" />
+            </label>
+            <label class="adm-field">
+                <span class="adm-label">{$t('admin_news.field_tags')}</span>
+                <input type="text" name="tags" class="adm-input" bind:value={tags} placeholder={$t('admin_news.field_tags_ph')} />
+            </label>
+        </div>
+
+        <div class="submit">
+            <button type="submit" class="adm-btn primary" disabled={busy}>
+                {busy ? $t('admin_news.publishing') : $t('admin_news.publish')}
+            </button>
+        </div>
+    </form>
+
+    <aside class="side">
+        <h2 class="adm-panel-title">{$t('admin_news.preview')}</h2>
+        <article class="adm-panel preview">
+            {#if imageUrl && !imageBroken}
+                <img class="cover" src={imageUrl} alt="" on:error={() => (imageBroken = true)} />
+            {:else if imageUrl && imageBroken}
+                <div class="cover empty">{$t('admin_news.image_broken')}</div>
+            {/if}
+            <div class="meta">
+                <span>{$t('admin_news.preview_now')}</span>
+                <span class="adm-badge">{lang.toUpperCase()}</span>
+                {#each tagList as tag}<span class="tag">#{tag}</span>{/each}
+            </div>
+            <h3 class:placeholder={!title.trim()}>{title.trim() || $t('admin_news.preview_title')}</h3>
+            {#if previewHtml}
+                <div class="md">{@html previewHtml}</div>
+            {:else}
+                <p class="adm-note">{$t('admin_news.preview_empty')}</p>
+            {/if}
+        </article>
+
+        <h2 class="adm-panel-title recent-title">{$t('admin_news.recent')}</h2>
+        <div class="adm-panel recent">
+            {#each data.recent as n (n.id)}
+                <div class="item">
+                    {#if n.image}<img src={n.image} alt="" loading="lazy" />{:else}<span class="thumb"></span>{/if}
+                    <div class="item-text">
+                        <span class="item-title">{n.title}</span>
+                        <span class="item-meta">{n.createdAt ? f.when(n.createdAt, Date.now()) : '—'} · {n.lang.toUpperCase()}</span>
+                    </div>
+                </div>
+            {:else}
+                <p class="adm-note">{$t('admin_news.recent_empty')}</p>
+            {/each}
+        </div>
+    </aside>
 </div>
 
 <style>
-    .news-editor-wrapper { max-width: 1200px; margin: 0 auto; }
-    .page-header { text-align: center; margin-bottom: 3rem; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr); gap: 24px; align-items: start; }
+    .editor { display: flex; flex-direction: column; gap: 20px; }
+    .adm-chip input { position: absolute; opacity: 0; pointer-events: none; }
+    .adm-chip { position: relative; }
+    .adm-chip:focus-within { outline: 2px solid var(--yellow); outline-offset: 2px; }
+    .adm-input.big { font: 400 19px var(--display); }
+    .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .submit { display: flex; justify-content: flex-end; }
 
-    .editor-grid {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 2rem;
-        align-items: start;
-    }
+    /* ── Предпросмотр: как карточка в ленте ── */
+    .side { position: sticky; top: 20px; }
+    .adm-panel.preview { padding: 0; overflow: hidden; }
+    .cover { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+    .cover.empty { display: grid; place-items: center; padding: 16px; background: rgba(255, 107, 129, .08); color: #ffb3c0; font-size: 13.5px; text-align: center; }
+    .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 18px 20px 0; color: var(--dim); font-size: 13px; }
+    .tag { color: var(--yellow); }
+    .preview h3 { margin: 10px 20px 0; font: 400 22px/1.25 var(--display); overflow-wrap: anywhere; }
+    .preview h3.placeholder { color: var(--dim); }
+    .preview .adm-note { padding: 10px 20px 20px; }
+    .md { padding: 10px 20px 20px; color: var(--soft); font-size: 15px; line-height: 1.6; overflow-wrap: anywhere; max-height: 520px; overflow-y: auto; }
+    .md :global(p) { margin: 0 0 10px; }
+    .md :global(h1), .md :global(h2), .md :global(h3) { margin: 14px 0 8px; font: 500 17px var(--body); color: var(--text); }
+    .md :global(a) { color: var(--yellow); }
+    .md :global(ul), .md :global(ol) { margin: 0 0 10px; padding-left: 20px; }
+    .md :global(code) { font-size: 13px; color: #c9bbff; }
+    .md :global(img) { max-width: 100%; border-radius: 12px; }
 
-    .cyber-glass {
-        background: rgba(20, 25, 35, 0.4);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 20px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    }
-
-    .editor-panel { padding: 2rem; }
-    .editor-form { display: flex; flex-direction: column; gap: 1.5rem; }
-
-    .cyber-label {
-        display: block; font-family: 'Chakra Petch', monospace; font-weight: bold;
-        color: #64748b; font-size: 0.75rem; letter-spacing: 0.1em; margin-bottom: 0.5rem;
-    }
-
-    .cyber-input {
-        width: 100%; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px; padding: 1rem; color: #fff; font-family: 'Inter', sans-serif;
-        transition: all 0.2s; outline: none;
-    }
-    .cyber-input:focus {
-        background: rgba(0, 0, 0, 0.4);
-        border-color: var(--cyber-yellow);
-        box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
-    }
-
-    .header-input { font-size: 1.2rem; font-weight: bold; font-family: 'Chakra Petch', monospace; }
-    .text-area { font-size: 1rem; line-height: 1.6; resize: vertical; }
-
-    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-
-    .actions-bar { margin-top: 1rem; display: flex; justify-content: flex-end; }
-
-    .broadcast-btn {
-        position: relative; padding: 1rem 3rem; background: var(--cyber-yellow);
-        color: #000; font-weight: 900; font-family: 'Chakra Petch', sans-serif;
-        border-radius: 12px; cursor: pointer; overflow: hidden;
-        transition: transform 0.2s; text-transform: uppercase; letter-spacing: 0.05em;
-    }
-    .broadcast-btn:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(0, 243, 255, 0.4); }
-    .broadcast-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
-
-    .preview-title {
-        font-family: 'Chakra Petch', monospace; font-size: 0.8rem; color: #64748b;
-        margin-bottom: 1rem; text-align: center; letter-spacing: 0.1em;
-    }
-
-    .news-card-preview {
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .card-image { position: relative; height: 180px; overflow: hidden; }
-    .card-image img { width: 100%; height: 100%; object-fit: cover; }
-    .image-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(20,25,35,1), transparent); opacity: 0.6; }
-
-    .card-image-placeholder {
-        height: 180px; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
-        color: #444; font-family: 'Chakra Petch', monospace; font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .card-content { padding: 1.5rem; }
-    .meta-mock { display: flex; justify-content: space-between; margin-bottom: 1rem; }
-    .date { font-size: 0.7rem; color: #64748b; font-family: 'Chakra Petch', monospace; }
-    .tag { font-size: 0.7rem; color: var(--cyber-yellow); background: rgba(0, 243, 255, 0.1); padding: 2px 6px; border-radius: 4px; }
-
-    .title-mock { font-family: 'Chakra Petch', sans-serif; font-weight: bold; font-size: 1.2rem; color: #fff; margin-bottom: 1rem; opacity: 0.5; }
-    .text-mock .line { height: 10px; background: rgba(255,255,255,0.1); margin-bottom: 8px; border-radius: 2px; }
-
-    .lang-selector { display: flex; gap: 1rem; }
-    .radio-label input { display: none; }
-    .radio-btn {
-        display: block; padding: 0.5rem 1rem;
-        border: 1px solid #555; border-radius: 4px;
-        color: #888; font-weight: bold; cursor: pointer;
-        font-family: 'Chakra Petch', monospace; transition: all 0.2s;
-    }
-    .radio-label input:checked + .radio-btn {
-        background: var(--cyber-yellow); color: #000; border-color: var(--cyber-yellow);
-        box-shadow: 0 0 10px rgba(252, 238, 10, 0.3);
-    }
+    .adm-panel-title.recent-title { margin-top: 26px; }
+    .adm-panel.recent { padding: 8px 18px; }
+    .item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .item:last-child { border-bottom: 0; }
+    .item img, .thumb { width: 52px; height: 36px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: rgba(255, 255, 255, .05); }
+    .item-text { display: flex; flex-direction: column; min-width: 0; }
+    .item-title { color: var(--text); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item-meta { color: var(--dim); font-size: 12.5px; }
 
     @media (max-width: 1024px) {
-        .editor-grid { grid-template-columns: 1fr; }
-        .preview-panel { display: none; }
+        .layout { grid-template-columns: 1fr; }
+        .side { position: static; }
+    }
+    @media (max-width: 600px) {
+        .two { grid-template-columns: 1fr; }
     }
 </style>

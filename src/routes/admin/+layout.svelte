@@ -22,7 +22,9 @@
 
     $: path = $page.url.pathname;
     $: isOn = (href: string) => (href === '/admin' ? path === '/admin' : path.startsWith(href));
-    $: initial = (data.user?.username ?? '?').charAt(0).toUpperCase();
+    $: username = data.user?.username ?? '';
+    // Без своего аватара — картинка DiceBear по нику, как в навбаре сайта
+    $: avatar = data.user?.avatarUrl || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(username)}`;
 </script>
 
 <svelte:head>
@@ -36,7 +38,7 @@
         <header class="adm-top">
             <a class="adm-logo" href="/admin">
                 <span class="adm-mark" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M4 9.5c0-1.4 1.1-2.5 2.5-2.5h11c1.4 0 2.5 1.1 2.5 2.5v3.5c0 2.2-1.8 4-4 4H8c-2.2 0-4-1.8-4-4V9.5Z" fill="#0a0a0c" /><path d="M7.4 10.6l2.4 1.4M16.6 10.6l-2.4 1.4" stroke="#fcee0a" stroke-width="1.8" stroke-linecap="round" /></svg>
+                    <img src="/logo.svg" alt="" />
                 </span>
                 ProtoMap
             </a>
@@ -53,7 +55,15 @@
                 <a class="adm-round" href="/" title={$t('admin_nav.exit')} aria-label={$t('admin_nav.exit')}>
                     <svg class="adm-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>
                 </a>
-                <span class="adm-me" title={data.user?.username ?? ''}>{initial}</span>
+                <!-- Рамка — глобальные правила .comment-avatar-wrapper.frame_* (src/styles/cosmetics.css) -->
+                <a
+                    class="adm-me comment-avatar-wrapper {data.user?.equippedFrame ?? ''}"
+                    href="/u/{data.user?.uid}"
+                    title={username}
+                    aria-label={$t('admin_nav.profile')}
+                >
+                    <img src={avatar} alt="" />
+                </a>
             </div>
         </header>
 

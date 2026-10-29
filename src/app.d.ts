@@ -5,6 +5,8 @@ declare global {
                 uid: string;
                 email: string | undefined;
                 username: string | null;
+                avatarUrl?: string | null;
+                equippedFrame?: string | null;
                 emailVerified?: boolean;
                 isBanned?: boolean;
                 /** Редакции документов, на которые есть запись в журнале согласий. */

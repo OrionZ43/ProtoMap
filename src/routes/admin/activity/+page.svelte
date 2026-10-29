@@ -1,12 +1,14 @@
 <!-- src/routes/admin/activity/+page.svelte -->
 <!--
-    Журнал действий — компактной таблицей: одна строка на событие, описание
-    обычной фразой («Слоты, ставка 50», «Покупка: Лунная ночь»). Служебное
-    (автор записи, пометка, поля) — в раскрывающихся подробностях строки.
+    Журнал действий — одна строка на событие, описание обычной фразой
+    («Слоты, ставка 50», «Покупка: Лунная ночь»). Служебное (автор записи,
+    пометка, поля) — в раскрывающихся подробностях строки. Вид — общие
+    элементы админки (admin.css: adm-head, adm-chip, adm-panel…).
 -->
 <script lang="ts">
-    import { t } from 'svelte-i18n';
+    import { t, locale } from 'svelte-i18n';
     import { describeEntry as describe, kindLabel as label, QUOTED, PLAIN } from '$lib/admin/describe';
+    import { formats } from '$lib/admin/format';
     import type { Translate } from '$lib/admin/day';
     import type { PageData } from './$types';
 
@@ -16,20 +18,9 @@
 
     const GROUPS = ['economy', 'content', 'moderation', 'admin', 'profile', 'account', 'map'];
     const PERIODS = ['1', '7', '30', '180'];
+    const now = Date.now();
 
-    const timeFormat = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Minsk', hour: '2-digit', minute: '2-digit' });
-    const dayFormat = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Minsk', day: '2-digit', month: '2-digit' });
-    const nf = new Intl.NumberFormat('ru-RU');
-    const today = dayFormat.format(Date.now());
-
-    function when(at: number): string {
-        const day = dayFormat.format(at);
-        return day === today ? timeFormat.format(at) : `${day} ${timeFormat.format(at)}`;
-    }
-
-    function signed(n: number): string {
-        return `${n > 0 ? '+' : n < 0 ? '−' : ''}${nf.format(Math.abs(n))}`;
-    }
+    $: f = formats($locale);
 
     // Ссылка с текущими фильтрами; переданные параметры их заменяют.
     function link(params: Record<string, string | null>): string {
@@ -69,256 +60,272 @@
 </script>
 
 <svelte:head>
-    <title>{$t('admin_activity.title')} | Overlord</title>
+    <title>{$t('admin_activity.title')} | ProtoMap</title>
 </svelte:head>
 
-<div class="journal">
-    <header class="head">
+<header class="adm-head">
+    <div>
         <h1>{$t('admin_activity.title')}</h1>
         <p>{$t('admin_activity.subtitle')}</p>
-    </header>
-
-    <div class="toolbar">
-        <nav class="chips" aria-label={$t('admin_activity.title')}>
-            <a class="chip" class:active={!data.filters.group && !data.filters.alerts} href={link({ group: null, alerts: null, before: null })}>
-                {$t('admin_activity.filters.all')}
-            </a>
-            {#each GROUPS as g}
-                <a class="chip" class:active={data.filters.group === g && !data.filters.alerts} href={link({ group: g, alerts: null, before: null })}>
-                    {$t(`admin_activity.groups.${g}`)}
-                </a>
-            {/each}
-            <a class="chip chip-alert" class:active={data.filters.alerts} href={link({ alerts: '1', group: null, before: null })}>
-                {$t('admin_activity.filters.alerts')}
-                {#if data.alertsCount > 0}<span class="count">{data.alertsCount}</span>{/if}
-            </a>
-        </nav>
-
-        <form class="search-form" method="GET">
-            {#if data.filters.group}<input type="hidden" name="group" value={data.filters.group} />{/if}
-            {#if data.filters.alerts}<input type="hidden" name="alerts" value="1" />{/if}
-            <label class="search">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <input name="user" value={data.filters.user} placeholder={$t('admin_activity.filters.user_placeholder')}
-                    aria-label={$t('admin_activity.filters.user_placeholder')} autocomplete="off" />
-            </label>
-            <select name="days" value={data.filters.days} on:change={submitOnChange} aria-label={$t('admin_activity.filters.period')}>
-                {#each PERIODS as p}
-                    <option value={p}>{$t(`admin_activity.periods.${p}`)}</option>
-                {/each}
-            </select>
-        </form>
     </div>
+</header>
 
-    {#if data.indexBuilding}<p class="note">{$t('admin_activity.index_building')}</p>{/if}
-    {#if data.userNotFound}<p class="note warn">{$t('admin_activity.user_not_found', { values: { query: data.filters.user } })}</p>{/if}
-
-    {#if data.user}
-        <div class="strip">
-            <a class="strip-name" href={`/u/${data.user.uid}`}>{data.user.username}</a>
-            {#if data.user.isBanned}<span class="pill pill-red">{$t('admin_activity.strip.banned')}</span>{/if}
-            <span>{$t('admin_activity.strip.balance', { values: { value: nf.format(data.user.balance) } })}</span>
-            {#if data.summary}
-                <span>{$t('admin_activity.strip.games')} <b class:plus={data.summary.won + data.summary.lost > 0} class:minus={data.summary.won + data.summary.lost < 0}>{signed(data.summary.won + data.summary.lost)}</b>
-                    <small>({signed(data.summary.won)} / {signed(data.summary.lost)})</small></span>
-                <span>{$t('admin_activity.strip.bonuses')} <b>{signed(data.summary.bonuses)}</b></span>
-                <span>{$t('admin_activity.strip.shop', { values: { count: data.summary.purchases } })} <b>{nf.format(data.summary.shop)}</b></span>
-                <span>{$t('admin_activity.strip.admin')} <b>{signed(data.summary.admin)}</b></span>
-                <span class:danger={data.summary.direct > 0}>{$t('admin_activity.strip.direct')} <b>{data.summary.direct}</b></span>
-                <span>{$t('admin_activity.strip.content', { values: { comments: data.summary.comments, chat: data.summary.chat, channels: data.summary.channels } })}</span>
-            {/if}
-            <a class="strip-clear" href={link({ user: null, before: null })}>{$t('admin_activity.filters.clear_user')}</a>
-        </div>
-        {#if data.summary?.truncated}<p class="note">{$t('admin_activity.strip.truncated')}</p>{/if}
-    {/if}
-
-    {#if data.top && (data.top.gainers.length || data.top.losers.length)}
-        <div class="strip top">
-            <span class="muted">{$t('admin_activity.top.gainers')}</span>
-            {#each data.top.gainers as x}<a href={link({ user: x.uid, before: null })}>{x.name} <b class="plus">{signed(x.sum)}</b></a>{:else}<span class="muted">—</span>{/each}
-            <span class="sep"></span>
-            <span class="muted">{$t('admin_activity.top.losers')}</span>
-            {#each data.top.losers as x}<a href={link({ user: x.uid, before: null })}>{x.name} <b class="minus">{signed(x.sum)}</b></a>{:else}<span class="muted">—</span>{/each}
-        </div>
-    {/if}
-
-    <div class="table">
-        {#each data.rows as r (r.id)}
-            <details class="row" class:alert={r.alert} class:direct={r.flag === 'direct'}>
-                <summary>
-                    <time class="c-time" datetime={new Date(r.at).toISOString()}>{when(r.at)}</time>
-                    <span class="c-who">
-                        {#if r.uid}
-                            <a href={link({ user: r.uid, before: null })}>{r.username ?? r.uid}</a>
-                        {:else if r.authorType === 'direct'}
-                            <span class="muted">{$t('admin_activity.feed.unknown_author')}</span>
-                        {:else}
-                            <span class="muted">{$t('admin_activity.feed.system_actor')}</span>
-                        {/if}
-                        {#if r.target && r.target !== r.uid}
-                            <span class="arrow" aria-hidden="true">›</span>
-                            <a href={link({ user: r.target, before: null })}>{r.targetName ?? r.target}</a>
-                        {/if}
-                    </span>
-                    <span class="c-what">
-                        {#if r.flag === 'direct'}<span class="pill pill-red">{$t('admin_activity.feed.direct_badge')}</span>{/if}
-                        {describe(r, $t, data.itemNames)}
-                    </span>
-                    <span class="c-delta" class:plus={(r.delta ?? 0) > 0} class:minus={(r.delta ?? 0) < 0}>
-                        {#if r.delta !== null && r.delta !== 0}{signed(r.delta)}{/if}
-                    </span>
-                    <span class="c-balance">
-                        {#if r.balance !== null && r.group === 'economy'}{nf.format(r.balance)}{/if}
-                    </span>
-                    <span class="c-mark">
-                        {#if r.alert}
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label={$t('admin_activity.feed.alert')}>
-                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                                <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-                            </svg>
-                        {/if}
-                    </span>
-                </summary>
-                <dl class="more">
-                    <dt>{$t('admin_activity.details.section')}</dt>
-                    <dd>{$t(`admin_activity.groups.${r.group}`)} · {label(r.kind, $t)}</dd>
-                    <dt>{$t('admin_activity.details.author')}</dt>
-                    <dd>{authorText(r, $t)}
-                        {#if r.flag === 'direct' && auditLink(r)}
-                            · <a href={auditLink(r)} target="_blank" rel="noopener noreferrer">{$t('admin_activity.details.audit')}</a>
-                        {/if}
-                    </dd>
-                    {#if r.balance !== null && r.group === 'economy'}
-                        <dt>{$t('admin_activity.details.balance')}</dt><dd>{nf.format(r.balance)} PC</dd>
-                    {/if}
-                    {#if r.itemsAdded.length || r.itemsRemoved.length}
-                        <dt>{$t('admin_activity.details.items')}</dt>
-                        <dd>
-                            {#if r.itemsAdded.length}+{r.itemsAdded.map((i) => data.itemNames[i] ?? i).join(', ')}{/if}
-                            {#if r.itemsRemoved.length} −{r.itemsRemoved.map((i) => data.itemNames[i] ?? i).join(', ')}{/if}
-                        </dd>
-                    {/if}
-                    {#if r.shards}<dt>{$t('admin_activity.details.shards')}</dt><dd>{signed(r.shards)}</dd>{/if}
-                    {#if r.ref}<dt>{$t('admin_activity.details.mark')}</dt><dd><code>{r.ref}</code></dd>{/if}
-                    {#if r.fields.length}<dt>{$t('admin_activity.details.fields')}</dt><dd><code>{r.fields.join(', ')}</code></dd>{/if}
-                    {#if r.text && !QUOTED.has(r.kind) && !PLAIN.has(r.kind)}<dt>{$t('admin_activity.details.text')}</dt><dd>{r.text}</dd>{/if}
-                    <dt>{$t('admin_activity.details.id')}</dt><dd><code>{r.id}</code></dd>
-                </dl>
-            </details>
-        {:else}
-            <p class="empty">{$t('admin_activity.feed.empty')}</p>
+<div class="toolbar">
+    <nav class="adm-chips" aria-label={$t('admin_activity.title')}>
+        <a class="adm-chip" class:on={!data.filters.group && !data.filters.alerts} href={link({ group: null, alerts: null, before: null })}>
+            {$t('admin_activity.filters.all')}
+        </a>
+        {#each GROUPS as g}
+            <a class="adm-chip" class:on={data.filters.group === g && !data.filters.alerts} href={link({ group: g, alerts: null, before: null })}>
+                {$t(`admin_activity.groups.${g}`)}
+            </a>
         {/each}
-    </div>
+        <a class="adm-chip" class:on={data.filters.alerts} href={link({ alerts: '1', group: null, before: null })}>
+            <svg class="adm-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+            {$t('admin_activity.filters.alerts')}
+            {#if data.alertsCount > 0}<span class="n">{data.alertsCount}</span>{/if}
+        </a>
+    </nav>
 
-    {#if data.nextBefore}
-        <a class="more-link" href={link({ before: String(data.nextBefore) })}>{$t('admin_activity.feed.load_more')}</a>
-    {/if}
+    <form class="filters" method="GET">
+        {#if data.filters.group}<input type="hidden" name="group" value={data.filters.group} />{/if}
+        {#if data.filters.alerts}<input type="hidden" name="alerts" value="1" />{/if}
+        <label class="adm-search">
+            <svg class="adm-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+            <input name="user" value={data.filters.user} placeholder={$t('admin_activity.filters.user_placeholder')}
+                aria-label={$t('admin_activity.filters.user_placeholder')} autocomplete="off" />
+        </label>
+        <select class="adm-select period" name="days" value={data.filters.days} on:change={submitOnChange} aria-label={$t('admin_activity.filters.period')}>
+            {#each PERIODS as p}
+                <option value={p}>{$t(`admin_activity.periods.${p}`)}</option>
+            {/each}
+        </select>
+    </form>
 </div>
 
+{#if data.indexBuilding}<p class="adm-note gap">{$t('admin_activity.index_building')}</p>{/if}
+{#if data.userNotFound}<p class="adm-note warn gap">{$t('admin_activity.user_not_found', { values: { query: data.filters.user } })}</p>{/if}
+
+{#if data.user}
+    <section class="adm-panel person">
+        <div class="person-head">
+            <a class="person-name" href={`/u/${data.user.uid}`}>{data.user.username}</a>
+            {#if data.user.isBanned}<span class="adm-badge red">{$t('admin_activity.strip.banned')}</span>{/if}
+            <span class="adm-badge yellow">{$t('admin_activity.strip.balance', { values: { value: f.nf.format(data.user.balance) } })}</span>
+            <a class="adm-btn small clear" href={`/admin/users?uid=${encodeURIComponent(data.user.uid)}`}>{$t('admin_activity.open_person')}</a>
+            <a class="adm-btn small" href={link({ user: null, before: null })}>{$t('admin_activity.filters.clear_user')}</a>
+        </div>
+        {#if data.summary}
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-l">{$t('admin_activity.strip.games')}</span>
+                    <b class:plus={data.summary.won + data.summary.lost > 0} class:minus={data.summary.won + data.summary.lost < 0}>{f.signed(data.summary.won + data.summary.lost)}</b>
+                    <small>{f.signed(data.summary.won)} / {f.signed(data.summary.lost)}</small>
+                </div>
+                <div class="stat">
+                    <span class="stat-l">{$t('admin_activity.strip.bonuses')}</span>
+                    <b>{f.signed(data.summary.bonuses)}</b>
+                </div>
+                <div class="stat">
+                    <span class="stat-l">{$t('admin_activity.strip.shop', { values: { count: data.summary.purchases } })}</span>
+                    <b>{f.nf.format(data.summary.shop)}</b>
+                </div>
+                <div class="stat">
+                    <span class="stat-l">{$t('admin_activity.strip.admin')}</span>
+                    <b>{f.signed(data.summary.admin)}</b>
+                </div>
+                <div class="stat" class:danger={data.summary.direct > 0}>
+                    <span class="stat-l">{$t('admin_activity.strip.direct')}</span>
+                    <b>{data.summary.direct}</b>
+                </div>
+                <div class="stat wide">
+                    <span class="stat-l">{$t('admin_home.cat.community')}</span>
+                    <span class="stat-t">{$t('admin_activity.strip.content', { values: { comments: data.summary.comments, chat: data.summary.chat, channels: data.summary.channels } })}</span>
+                </div>
+            </div>
+        {/if}
+        {#if data.summary?.truncated}<p class="adm-note">{$t('admin_activity.strip.truncated')}</p>{/if}
+    </section>
+{/if}
+
+{#if data.top && (data.top.gainers.length || data.top.losers.length)}
+    <section class="adm-panel top">
+        <div>
+            <h2 class="adm-panel-title">{$t('admin_activity.top.gainers')}</h2>
+            {#each data.top.gainers as x}
+                <a class="mover" href={link({ user: x.uid, before: null })}><span>{x.name}</span><b class="plus">{f.signed(x.sum)}</b></a>
+            {:else}
+                <p class="adm-note">—</p>
+            {/each}
+        </div>
+        <div>
+            <h2 class="adm-panel-title">{$t('admin_activity.top.losers')}</h2>
+            {#each data.top.losers as x}
+                <a class="mover" href={link({ user: x.uid, before: null })}><span>{x.name}</span><b class="minus">{f.signed(x.sum)}</b></a>
+            {:else}
+                <p class="adm-note">—</p>
+            {/each}
+        </div>
+    </section>
+{/if}
+
+<div class="adm-panel list">
+    {#each data.rows as r (r.id)}
+        <details class="row" class:alert={r.alert} class:direct={r.flag === 'direct'}>
+            <summary>
+                <time class="c-time" datetime={new Date(r.at).toISOString()}>{f.when(r.at, now)}</time>
+                <span class="c-who">
+                    {#if r.uid}
+                        <a href={link({ user: r.uid, before: null })}>{r.username ?? r.uid}</a>
+                    {:else if r.authorType === 'direct'}
+                        <span class="muted">{$t('admin_activity.feed.unknown_author')}</span>
+                    {:else}
+                        <span class="muted">{$t('admin_activity.feed.system_actor')}</span>
+                    {/if}
+                    {#if r.target && r.target !== r.uid}
+                        <span class="arrow" aria-hidden="true">→</span>
+                        <a href={link({ user: r.target, before: null })}>{r.targetName ?? r.target}</a>
+                    {/if}
+                </span>
+                <span class="c-what">
+                    {#if r.flag === 'direct'}<span class="adm-badge red">{$t('admin_activity.feed.direct_badge')}</span>{/if}
+                    {describe(r, $t, data.itemNames)}
+                </span>
+                <span class="c-delta" class:plus={(r.delta ?? 0) > 0} class:minus={(r.delta ?? 0) < 0}>
+                    {#if r.delta !== null && r.delta !== 0}{f.signed(r.delta)}{/if}
+                </span>
+                <span class="c-balance">
+                    {#if r.balance !== null && r.group === 'economy'}{f.nf.format(r.balance)}{/if}
+                </span>
+                <span class="c-mark">
+                    {#if r.alert}
+                        <svg class="adm-i" viewBox="0 0 24 24" role="img" aria-label={$t('admin_activity.feed.alert')}>
+                            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><path d="M12 9v4" /><path d="M12 17h.01" />
+                        </svg>
+                    {/if}
+                </span>
+            </summary>
+            <dl class="more">
+                <dt>{$t('admin_activity.details.section')}</dt>
+                <dd>{$t(`admin_activity.groups.${r.group}`)} · {label(r.kind, $t)}</dd>
+                <dt>{$t('admin_activity.details.author')}</dt>
+                <dd>{authorText(r, $t)}
+                    {#if r.flag === 'direct' && auditLink(r)}
+                        · <a href={auditLink(r)} target="_blank" rel="noopener noreferrer">{$t('admin_activity.details.audit')}</a>
+                    {/if}
+                </dd>
+                {#if r.balance !== null && r.group === 'economy'}
+                    <dt>{$t('admin_activity.details.balance')}</dt><dd>{f.nf.format(r.balance)} PC</dd>
+                {/if}
+                {#if r.itemsAdded.length || r.itemsRemoved.length}
+                    <dt>{$t('admin_activity.details.items')}</dt>
+                    <dd>
+                        {#if r.itemsAdded.length}+{r.itemsAdded.map((i) => data.itemNames[i] ?? i).join(', ')}{/if}
+                        {#if r.itemsRemoved.length} −{r.itemsRemoved.map((i) => data.itemNames[i] ?? i).join(', ')}{/if}
+                    </dd>
+                {/if}
+                {#if r.shards}<dt>{$t('admin_activity.details.shards')}</dt><dd>{f.signed(r.shards)}</dd>{/if}
+                {#if r.ref}<dt>{$t('admin_activity.details.mark')}</dt><dd><code>{r.ref}</code></dd>{/if}
+                {#if r.fields.length}<dt>{$t('admin_activity.details.fields')}</dt><dd><code>{r.fields.join(', ')}</code></dd>{/if}
+                {#if r.text && !QUOTED.has(r.kind) && !PLAIN.has(r.kind)}<dt>{$t('admin_activity.details.text')}</dt><dd>{r.text}</dd>{/if}
+                <dt>{$t('admin_activity.details.id')}</dt><dd><code>{r.id}</code></dd>
+            </dl>
+        </details>
+    {:else}
+        <p class="adm-empty">{$t('admin_activity.feed.empty')}</p>
+    {/each}
+</div>
+
+{#if data.nextBefore}
+    <div class="more-wrap">
+        <a class="adm-btn" href={link({ before: String(data.nextBefore) })}>{$t('admin_activity.feed.load_more')}</a>
+    </div>
+{/if}
+
 <style>
-    .journal { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.85rem; padding-bottom: 2rem; }
-
-    .head h1 { font-family: 'Chakra Petch', sans-serif; font-weight: 800; font-size: 1.7rem; color: #fff; margin: 0; letter-spacing: 0.04em; }
-    .head p { color: #94a3b8; margin: 0.25rem 0 0; font-size: 0.9rem; }
-
     /* ── Фильтры ── */
-    .toolbar { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: space-between; }
-    .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-    .chip {
-        display: inline-flex; align-items: center; gap: 0.35rem;
-        padding: 0.3rem 0.7rem; border-radius: 999px; font-size: 0.82rem; font-weight: 600;
-        color: #94a3b8; text-decoration: none; border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(15, 20, 30, 0.6); transition: color 0.15s, border-color 0.15s, background 0.15s;
-    }
-    .chip:hover { color: #e2e8f0; border-color: rgba(255, 255, 255, 0.25); }
-    .chip.active { color: #00f3ff; border-color: rgba(0, 243, 255, 0.5); background: rgba(0, 243, 255, 0.1); }
-    .chip-alert.active { color: #ff3b5c; border-color: rgba(255, 59, 92, 0.55); background: rgba(255, 0, 60, 0.12); }
-    .count { background: #ff003c; color: #fff; border-radius: 999px; padding: 0 0.4rem; font-size: 0.72rem; line-height: 1.3rem; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .filters { display: flex; gap: 8px; flex: 0 1 460px; min-width: 0; }
+    .filters .adm-search { flex: 1; }
+    .filters .period { width: auto; border-radius: 999px; padding: 10px 14px; }
+    .adm-note.gap { margin-bottom: 14px; }
 
-    .search-form { display: flex; gap: 0.4rem; }
-    .search {
-        display: flex; align-items: center; gap: 0.4rem; padding: 0 0.6rem; min-width: 210px;
-        background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #64748b;
-    }
-    .search svg { width: 16px; height: 16px; flex-shrink: 0; }
-    .search input { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: #e2e8f0; padding: 0.45rem 0; font-size: 0.88rem; }
-    select {
-        background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;
-        color: #e2e8f0; padding: 0.4rem 0.5rem; font-size: 0.88rem;
-    }
+    /* ── Человек ── */
+    .person { margin-bottom: 14px; }
+    .person-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .person-name { font: 400 24px/1.2 var(--display); color: var(--text); text-decoration: none; margin-right: 4px; }
+    .person-name:hover { text-decoration: underline; text-underline-offset: 4px; }
+    .clear { margin-left: auto; }
+    .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 1.6fr); gap: 10px; margin-top: 16px; }
+    .stat { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 16px; background: rgba(255, 255, 255, .03); border: 1px solid var(--line); min-width: 0; }
+    .stat-l { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+    .stat b { font: 400 20px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+    .stat small { color: var(--dim); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .stat-t { color: var(--soft); font-size: 13.5px; }
+    .stat.danger { border-color: rgba(255, 107, 129, .35); background: rgba(255, 107, 129, .08); }
+    .stat.danger b { color: var(--red); }
 
-    .note { margin: 0; color: #94a3b8; font-size: 0.85rem; }
-    .note.warn { color: #fca5a5; }
+    /* ── Кто сколько за сутки ── */
+    .top { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-bottom: 14px; }
+    .mover { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); color: var(--soft); text-decoration: none; font-size: 14.5px; }
+    .mover:last-child { border-bottom: 0; }
+    .mover:hover span { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+    .mover b { font-variant-numeric: tabular-nums; font-weight: 500; }
 
-    /* ── Полоса итогов по человеку и топа за сутки ── */
-    .strip {
-        display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 1rem; padding: 0.6rem 0.85rem;
-        background: rgba(15, 20, 30, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px;
-        color: #cbd5e1; font-size: 0.85rem;
-    }
-    .strip b { font-variant-numeric: tabular-nums; color: #e2e8f0; }
-    .strip small { color: #64748b; }
-    .strip .danger, .strip .danger b { color: #ff3b5c; }
-    .strip-name { font-family: 'Chakra Petch', sans-serif; font-weight: 800; font-size: 1.05rem; color: #fff; text-decoration: none; }
-    .strip-name:hover { color: #00f3ff; }
-    .strip-clear { margin-left: auto; color: #64748b; font-size: 0.8rem; }
-    .strip.top a { color: #e2e8f0; text-decoration: none; }
-    .strip.top a:hover { color: #00f3ff; }
-    .sep { width: 1px; height: 1rem; background: rgba(255, 255, 255, 0.12); }
-    .muted { color: #64748b; }
-
-    .pill { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 0.05rem 0.4rem; border-radius: 5px; margin-right: 0.35rem; vertical-align: 1px; }
-    .pill-red { background: rgba(255, 0, 60, 0.2); color: #ff3b5c; }
-
-    /* ── Таблица ── */
-    .table { display: flex; flex-direction: column; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; overflow: hidden; }
-    .row { border-bottom: 1px solid rgba(255, 255, 255, 0.05); background: rgba(15, 20, 30, 0.45); }
+    /* ── Записи ── */
+    .adm-panel.list { padding: 6px 0; }
+    .row { border-bottom: 1px solid var(--line); }
     .row:last-child { border-bottom: 0; }
-    .row.alert { background: rgba(60, 5, 15, 0.45); }
+    .row.alert { background: linear-gradient(90deg, rgba(252, 238, 10, .06), transparent 60%); }
+    .row.direct { background: linear-gradient(90deg, rgba(255, 107, 129, .08), transparent 60%); }
     summary {
-        display: grid; grid-template-columns: 6.2rem minmax(9rem, 14rem) minmax(0, 1fr) 6rem 6rem 1.4rem;
-        align-items: center; gap: 0.75rem; padding: 0.45rem 0.85rem; cursor: pointer; list-style: none;
-        font-size: 0.88rem; color: #cbd5e1;
+        display: grid; grid-template-columns: 6.6rem minmax(9rem, 15rem) minmax(0, 1fr) 6rem 6rem 1.4rem;
+        align-items: center; gap: 14px; padding: 11px 24px; cursor: pointer; list-style: none;
+        font-size: 14.5px; color: var(--soft); transition: background .15s ease;
     }
     summary::-webkit-details-marker { display: none; }
-    summary:hover { background: rgba(255, 255, 255, 0.03); }
-    .row[open] summary { background: rgba(0, 243, 255, 0.05); }
-    .c-time { color: #64748b; font-variant-numeric: tabular-nums; font-size: 0.8rem; }
+    summary:hover { background: rgba(255, 255, 255, .03); }
+    .row[open] summary { background: rgba(255, 255, 255, .04); }
+    .c-time { color: var(--dim); font-size: 13px; font-variant-numeric: tabular-nums; }
     .c-who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .c-who a { color: #00f3ff; text-decoration: none; }
-    .c-who a:hover { text-decoration: underline; }
-    .arrow { color: #64748b; margin: 0 0.2rem; }
-    .c-what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e2e8f0; }
+    .c-who a { color: var(--text); font-weight: 500; text-decoration: none; }
+    .c-who a:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .arrow { color: var(--dim); margin: 0 6px; }
+    .c-what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+    .c-what .adm-badge { margin-right: 6px; padding: 1px 8px; font-size: 12px; }
     .c-delta, .c-balance { text-align: right; font-variant-numeric: tabular-nums; }
-    .c-delta { font-weight: 700; }
-    .c-balance { color: #64748b; font-size: 0.82rem; }
-    .c-mark svg { width: 16px; height: 16px; color: #ff3b5c; display: block; }
-    .plus { color: #4ade80; }
-    .minus { color: #f87171; }
+    .c-delta { font-weight: 500; }
+    .c-balance { color: var(--dim); font-size: 13px; }
+    .c-mark { color: var(--yellow); display: flex; }
+    .muted { color: var(--dim); }
+    .plus { color: var(--green); }
+    .minus { color: var(--red); }
 
     .more {
-        display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0;
-        padding: 0.4rem 0.85rem 0.75rem 7.6rem; font-size: 0.82rem; color: #94a3b8;
+        display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0;
+        padding: 6px 24px 16px calc(6.6rem + 38px); font-size: 13.5px; color: var(--muted);
     }
-    .more dt { color: #64748b; }
-    .more dd { margin: 0; color: #cbd5e1; overflow-wrap: anywhere; }
-    .more a { color: #00f3ff; }
-    .more code { font-size: 0.78rem; color: #a5b4fc; }
+    .more dt { color: var(--dim); }
+    .more dd { margin: 0; color: var(--soft); overflow-wrap: anywhere; }
+    .more a { color: var(--text); }
+    .more code { font-size: 12.5px; color: #c9bbff; }
 
-    .empty { margin: 0; padding: 1.5rem; text-align: center; color: #64748b; }
-    .more-link { align-self: center; color: #00f3ff; font-weight: 600; text-decoration: none; padding: 0.4rem 1rem; }
-    .more-link:hover { text-decoration: underline; }
+    .more-wrap { display: flex; justify-content: center; margin-top: 16px; }
 
-    @media (max-width: 768px) {
-        .head h1 { font-size: 1.35rem; }
-        .search { min-width: 0; flex: 1; }
-        .search-form { width: 100%; }
+    @media (max-width: 1100px) {
+        .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .stat.wide { grid-column: span 3; }
+    }
+
+    @media (max-width: 760px) {
+        .filters { flex: 1 1 100%; }
+        .top { grid-template-columns: 1fr; gap: 16px; }
+        .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .stat.wide { grid-column: span 2; }
         summary {
             grid-template-columns: auto minmax(0, 1fr) auto auto;
             grid-template-areas: 'time who delta mark' 'what what what what';
-            gap: 0.2rem 0.6rem;
+            gap: 4px 10px; padding: 11px 18px;
         }
         .c-time { grid-area: time; }
         .c-who { grid-area: who; }
@@ -326,6 +333,6 @@
         .c-mark { grid-area: mark; }
         .c-what { grid-area: what; white-space: normal; }
         .c-balance { display: none; }
-        .more { padding-left: 0.85rem; }
+        .more { padding-left: 18px; }
     }
 </style>

@@ -88,9 +88,11 @@
 	place-items: center;
 }
 
-.adm-mark svg {
-	width: 22px;
-	height: 22px;
+/* Логотип сайта (static/logo.svg) — чёрный силуэт на жёлтой плашке */
+.adm-mark img {
+	height: 24px;
+	width: auto;
+	display: block;
 }
 
 .adm-pills {
@@ -149,15 +151,25 @@
 	border-color: var(--line-strong);
 }
 
+/* Аватар с надетой рамкой. Сами рамки — глобальные правила
+   .comment-avatar-wrapper.frame_* из src/styles/cosmetics.css: они рисуются
+   псевдоэлементами и обводкой, обёртке нужен position: relative. */
 .adm-me {
+	position: relative;
+	display: block;
 	width: 38px;
 	height: 38px;
 	border-radius: 50%;
-	background: linear-gradient(135deg, var(--yellow), var(--amber));
-	color: #000;
-	display: grid;
-	place-items: center;
-	font: 600 14px var(--display);
+	flex-shrink: 0;
+}
+
+.adm-me img {
+	width: 100%;
+	height: 100%;
+	display: block;
+	border-radius: 50%;
+	object-fit: cover;
+	background: rgba(255, 255, 255, 0.06);
 }
 
 .adm-main {
@@ -403,6 +415,311 @@
 }
 .adm .tile.t-alert.calm .label {
 	color: rgba(91, 228, 155, 0.75);
+}
+
+/* ── Общие элементы страниц: заголовок, панели, кнопки, поля, чипы, бейджи ── */
+
+.adm .adm-head {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 16px;
+	margin: 34px 0 24px;
+}
+.adm .adm-head h1 {
+	margin: 0;
+	font: 300 34px/1.15 var(--display);
+	letter-spacing: -0.01em;
+}
+.adm .adm-head p {
+	margin: 8px 0 0;
+	max-width: 760px;
+	color: var(--muted);
+	font-size: 15px;
+}
+
+.adm .adm-panel {
+	position: relative;
+	min-width: 0;
+	padding: 22px 24px;
+	border-radius: 22px;
+	border: 1px solid var(--line);
+	background: #131317;
+}
+.adm .adm-panel-title {
+	margin: 0 0 14px;
+	font: 500 12px var(--body);
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.adm .adm-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 10px 18px;
+	border-radius: 999px;
+	border: 1px solid var(--line-strong);
+	background: rgba(255, 255, 255, 0.04);
+	color: var(--text);
+	font: 500 14px var(--body);
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+.adm .adm-btn:hover:not(:disabled) {
+	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(255, 255, 255, 0.22);
+}
+.adm .adm-btn:active:not(:disabled) {
+	transform: translateY(1px);
+}
+.adm .adm-btn:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+.adm .adm-btn:focus-visible {
+	outline: 2px solid var(--yellow);
+	outline-offset: 2px;
+}
+.adm .adm-btn.primary {
+	background: var(--yellow);
+	border-color: var(--yellow);
+	color: #0a0a0c;
+	font-weight: 600;
+}
+.adm .adm-btn.primary:hover:not(:disabled) {
+	background: #fff36b;
+	border-color: #fff36b;
+}
+.adm .adm-btn.danger {
+	color: #ffb3c0;
+	border-color: rgba(255, 107, 129, 0.35);
+	background: rgba(255, 107, 129, 0.08);
+}
+.adm .adm-btn.danger:hover:not(:disabled) {
+	background: rgba(255, 107, 129, 0.16);
+	border-color: rgba(255, 107, 129, 0.6);
+}
+.adm .adm-btn.success {
+	color: #b9f5d3;
+	border-color: rgba(91, 228, 155, 0.35);
+	background: rgba(91, 228, 155, 0.08);
+}
+.adm .adm-btn.success:hover:not(:disabled) {
+	background: rgba(91, 228, 155, 0.16);
+	border-color: rgba(91, 228, 155, 0.6);
+}
+.adm .adm-btn.small {
+	padding: 6px 12px;
+	font-size: 13px;
+}
+.adm .adm-btn.icon {
+	width: 34px;
+	height: 34px;
+	padding: 0;
+}
+.adm .adm-btn .adm-i {
+	width: 16px;
+	height: 16px;
+}
+
+.adm .adm-field {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	min-width: 0;
+}
+.adm .adm-label {
+	font-size: 12px;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+.adm .adm-input,
+.adm .adm-select,
+.adm .adm-textarea {
+	width: 100%;
+	padding: 11px 14px;
+	border-radius: 14px;
+	border: 1px solid var(--line-strong);
+	background: rgba(0, 0, 0, 0.28);
+	color: var(--text);
+	font: 15px var(--body);
+	outline: none;
+	transition: border-color 0.2s ease, background 0.2s ease;
+}
+.adm .adm-input:focus,
+.adm .adm-select:focus,
+.adm .adm-textarea:focus {
+	border-color: rgba(252, 238, 10, 0.55);
+	background: rgba(0, 0, 0, 0.4);
+}
+.adm .adm-input::placeholder,
+.adm .adm-textarea::placeholder {
+	color: var(--dim);
+}
+.adm .adm-select option {
+	background: #131317;
+	color: var(--text);
+}
+.adm .adm-textarea {
+	min-height: 120px;
+	resize: vertical;
+	line-height: 1.55;
+}
+
+.adm .adm-search {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	padding: 0 16px;
+	border-radius: 999px;
+	border: 1px solid var(--line-strong);
+	background: rgba(0, 0, 0, 0.28);
+	color: var(--dim);
+	transition: border-color 0.2s ease;
+}
+.adm .adm-search:focus-within {
+	border-color: rgba(252, 238, 10, 0.55);
+}
+.adm .adm-search input {
+	flex: 1;
+	min-width: 0;
+	padding: 11px 0;
+	border: 0;
+	background: transparent;
+	color: var(--text);
+	font: 15px var(--body);
+	outline: none;
+}
+.adm .adm-search input::placeholder {
+	color: var(--dim);
+}
+
+.adm .adm-check {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	color: var(--soft);
+	font-size: 14px;
+	cursor: pointer;
+	user-select: none;
+}
+.adm .adm-check input {
+	margin-top: 3px;
+	accent-color: var(--yellow);
+}
+
+.adm .adm-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.adm .adm-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	padding: 7px 14px;
+	border-radius: 999px;
+	border: 1px solid var(--line);
+	background: rgba(255, 255, 255, 0.03);
+	color: var(--muted);
+	font: 500 13.5px var(--body);
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+.adm .adm-chip:hover {
+	color: var(--text);
+	border-color: var(--line-strong);
+}
+.adm .adm-chip.on {
+	background: var(--text);
+	border-color: var(--text);
+	color: #0a0a0c;
+}
+.adm .adm-chip .n {
+	min-width: 20px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: var(--yellow);
+	color: #0a0a0c;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 20px;
+	text-align: center;
+}
+
+.adm .adm-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 3px 10px;
+	border-radius: 999px;
+	border: 1px solid var(--line);
+	color: var(--muted);
+	font-size: 12.5px;
+	font-weight: 500;
+	white-space: nowrap;
+}
+.adm .adm-badge .adm-i {
+	width: 14px;
+	height: 14px;
+}
+.adm .adm-badge.green {
+	color: #b9f5d3;
+	background: rgba(91, 228, 155, 0.1);
+	border-color: rgba(91, 228, 155, 0.3);
+}
+.adm .adm-badge.red {
+	color: #ffb3c0;
+	background: rgba(255, 107, 129, 0.1);
+	border-color: rgba(255, 107, 129, 0.3);
+}
+.adm .adm-badge.yellow {
+	color: #fff6a3;
+	background: rgba(252, 238, 10, 0.1);
+	border-color: rgba(252, 238, 10, 0.3);
+}
+.adm .adm-badge.violet {
+	color: #d9d0ff;
+	background: rgba(139, 108, 255, 0.14);
+	border-color: rgba(139, 108, 255, 0.3);
+}
+
+.adm .adm-note {
+	margin: 0;
+	color: var(--muted);
+	font-size: 14px;
+}
+.adm .adm-note.warn {
+	color: #ffb3c0;
+}
+.adm .adm-empty {
+	margin: 0;
+	padding: 36px 0;
+	text-align: center;
+	color: var(--muted);
+}
+
+@media (max-width: 760px) {
+	.adm .adm-head {
+		margin: 22px 0 18px;
+	}
+	.adm .adm-head h1 {
+		font-size: 27px;
+	}
+	.adm .adm-panel {
+		padding: 18px;
+		border-radius: 20px;
+	}
 }
 
 /* На узком экране вкладки уходят под логотип и прокручиваются вбок. */

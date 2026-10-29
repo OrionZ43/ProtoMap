@@ -47,6 +47,9 @@ export const handle: Handle = async ({ event, resolve }) => {
                 uid: decodedClaims.uid,
                 email: decodedClaims.email,
                 username: userData.username || 'Unknown',
+                // Шапка админки показывает аватар с надетой рамкой
+                avatarUrl: userData.avatar_url || null,
+                equippedFrame: userData.equipped_frame || null,
                 emailVerified: decodedClaims.email_verified || false,
                 isBanned: isBanned,
                 // Зеркала журнала согласий. Пишет их только recordConsents;

@@ -1,522 +1,314 @@
 <!-- src/routes/admin/tracker/+page.svelte -->
+<!--
+    «Роадмап»: задачи по колонкам «ждёт — в работе — готово», фильтры по
+    платформе, исполнителю и приоритету. Новая задача и правка — в карточке
+    (Sheet.svelte), удаление — с подтверждением. Вид — общие элементы админки.
+-->
 <script lang="ts">
     import { enhance } from '$app/forms';
-    import { fade, slide, scale } from 'svelte/transition';
+    import type { SubmitFunction } from '@sveltejs/kit';
     import { flip } from 'svelte/animate';
     import { quintOut } from 'svelte/easing';
+    import { t } from 'svelte-i18n';
+    import { modal } from '$lib/stores/modalStore';
+    import Sheet from '$lib/components/admin/Sheet.svelte';
     import type { PageData } from './$types';
     import type { Task } from './+page.server';
 
     export let data: PageData;
 
-    // Фильтры
+    const PLATFORMS = ['web', 'app', 'backend', 'design'] as const;
+    const PRIORITIES = ['low', 'medium', 'critical'] as const;
+    // Новым задачам — только действующая команда; iposdev остаётся у старых.
+    const TEAM = ['orion', 'system'] as const;
+    const LANES = ['todo', 'in_progress', 'done'] as const;
+
+    const AVATARS: Record<string, string> = {
+        orion: '/casino/orioncasino.png',
+        iposdev: 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=iposdev',
+        system: '/logo.svg'
+    };
+    const PLATFORM_TONE: Record<string, string> = { web: 'violet', app: 'green', backend: 'yellow', design: 'red' };
+
     let filterPlatform = 'all';
     let filterAssignee = 'all';
     let filterPriority = 'all';
+    let creating = false;
+    let editing: Task | null = null;
+    let busy = false;
 
-    $: filtered = data.tasks.filter(t =>
-        (filterPlatform === 'all' || t.platform === filterPlatform) &&
-        (filterAssignee === 'all' || t.assignee === filterAssignee) &&
-        (filterPriority === 'all' || t.priority === filterPriority)
+    $: assignees = ['all', ...TEAM, ...(data.tasks.some((x) => x.assignee === 'iposdev') ? ['iposdev'] : [])];
+    // В карточке задачи iposdev остаётся только у тех задач, где он уже стоит.
+    $: formAssignees = editing?.assignee === 'iposdev' ? [...TEAM, 'iposdev'] : [...TEAM];
+    $: filtered = data.tasks.filter((x) =>
+        (filterPlatform === 'all' || x.platform === filterPlatform) &&
+        (filterAssignee === 'all' || x.assignee === filterAssignee) &&
+        (filterPriority === 'all' || x.priority === filterPriority)
     );
+    $: lanes = {
+        todo: filtered.filter((x) => x.status === 'todo'),
+        in_progress: filtered.filter((x) => x.status === 'in_progress'),
+        done: filtered.filter((x) => x.status === 'done')
+    } as Record<string, Task[]>;
 
-    $: todo     = filtered.filter(t => t.status === 'todo');
-    $: progress = filtered.filter(t => t.status === 'in_progress');
-    $: done     = filtered.filter(t => t.status === 'done');
+    const shortId = (id: string) => 'T·' + id.slice(0, 4).toUpperCase();
 
-    let showCreate  = false;
-    let editingTask: Task | null = null;
-
-    function shortId(id: string) { return 'T·' + id.slice(0,4).toUpperCase(); }
-
-    const AVATARS: Record<string,string> = {
-        orion:   '/casino/orioncasino.png',
-        iposdev: 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=iposdev',
-        system:  '/logo.svg'
+    // Ответ сервера: успех — список обновится сам (update), ошибка — окном.
+    const act: SubmitFunction = () => {
+        busy = true;
+        return async ({ result, update }) => {
+            await update();
+            busy = false;
+            if (result.type === 'success') {
+                creating = false;
+                editing = null;
+            } else if (result.type === 'failure') {
+                const code = (result.data as { code?: string } | undefined)?.code ?? 'failed';
+                modal.error($t('admin_roadmap.result.fail_title'), $t(`admin_roadmap.result.${code}`));
+            }
+        };
     };
 
-    const PLATFORM_COLOR: Record<string,string> = {
-        web:     '#60a5fa',
-        app:     '#c084fc',
-        backend: '#facc15',
-        design:  '#f472b6'
-    };
-
-    const PRIORITY_LABEL: Record<string,string> = {
-        low:      'LOW',
-        medium:   'MED',
-        critical: 'CRIT'
-    };
+    function confirmDelete(e: MouseEvent, task: Task) {
+        const form = (e.currentTarget as HTMLElement).closest('form');
+        modal.confirm(
+            $t('admin_roadmap.delete_confirm_title'),
+            $t('admin_roadmap.delete_confirm_text', { values: { title: task.title } }),
+            () => form?.requestSubmit()
+        );
+    }
 </script>
 
-<svelte:head><title>Neural Planner | Overlord</title></svelte:head>
+<svelte:head>
+    <title>{$t('admin_roadmap.title')} | ProtoMap</title>
+</svelte:head>
 
-<div class="planner" in:fade={{ duration: 400 }}>
-    <div class="grid-bg"></div>
+<header class="adm-head">
+    <div>
+        <h1>{$t('admin_roadmap.title')}</h1>
+        <p>{$t('admin_roadmap.subtitle')}</p>
+    </div>
+    <button type="button" class="adm-btn primary" on:click={() => (creating = true)}>
+        <svg class="adm-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
+        {$t('admin_roadmap.new')}
+    </button>
+</header>
 
-    <!-- HEADER -->
-    <header class="planner-header">
-        <div class="header-left">
-            <h1 class="planner-title">NEURAL_PLANNER</h1>
-            <!-- Фильтры -->
-            <div class="filters">
-                <div class="filter-group">
-                    <span class="filter-sep">PLATFORM:</span>
-                    {#each ['all','web','app','backend','design'] as p}
-                        <button class="ftag" class:ftag-on={filterPlatform === p}
-                                on:click={() => filterPlatform = p}>
-                            {p === 'all' ? 'ALL' : p.toUpperCase()}
-                        </button>
-                    {/each}
-                </div>
-                <div class="filter-group">
-                    <span class="filter-sep">WHO:</span>
-                    {#each ['all','orion','iposdev','system'] as a}
-                        <button class="ftag" class:ftag-on={filterAssignee === a}
-                                on:click={() => filterAssignee = a}>
-                            {a.toUpperCase()}
-                        </button>
-                    {/each}
-                </div>
-                <div class="filter-group">
-                    <span class="filter-sep">PRIO:</span>
-                    {#each ['all','low','medium','critical'] as p}
-                        <button class="ftag"
-                                class:ftag-on={filterPriority === p}
-                                class:ftag-crit={p === 'critical' && filterPriority === 'critical'}
-                                on:click={() => filterPriority = p}>
-                            {p === 'all' ? 'ALL' : PRIORITY_LABEL[p]}
-                        </button>
-                    {/each}
-                </div>
-            </div>
+<div class="filters">
+    <div class="group">
+        <span class="adm-label">{$t('admin_roadmap.filters.platform')}</span>
+        <div class="adm-chips">
+            <button type="button" class="adm-chip" class:on={filterPlatform === 'all'} on:click={() => (filterPlatform = 'all')}>{$t('admin_roadmap.filters.all')}</button>
+            {#each PLATFORMS as p}
+                <button type="button" class="adm-chip" class:on={filterPlatform === p} on:click={() => (filterPlatform = p)}>{$t(`admin_roadmap.platform.${p}`)}</button>
+            {/each}
         </div>
-        <button class="new-btn" on:click={() => showCreate = !showCreate}>
-            {showCreate ? '✕ CLOSE' : '+ NEW DIRECTIVE'}
-        </button>
-    </header>
-
-    <!-- CREATE FORM -->
-    {#if showCreate}
-        <div class="form-wrap" transition:slide={{ duration: 250 }}>
-            <form method="POST" action="?/create"
-                  use:enhance={() => { showCreate = false; return async ({ update }) => update(); }}
-                  class="directive-form">
-                <h3 class="form-tag">> INITIATE_PROTOCOL</h3>
-                <div class="form-grid">
-                    <div class="fg full">
-                        <label>TITLE</label>
-                        <input type="text" name="title" class="fi" required placeholder="Task name..." />
-                    </div>
-                    <div class="fg">
-                        <label>MODULE</label>
-                        <select name="platform" class="fi">
-                            <option value="web">WEB_CLIENT</option>
-                            <option value="app">MOBILE_APP</option>
-                            <option value="backend">SERVER_CORE</option>
-                            <option value="design">VISUAL_ARTS</option>
-                        </select>
-                    </div>
-                    <div class="fg">
-                        <label>OPERATOR</label>
-                        <select name="assignee" class="fi">
-                            <option value="orion">ORION</option>
-                            <option value="iposdev">IPOSDEV</option>
-                            <option value="system">SYSTEM</option>
-                        </select>
-                    </div>
-                    <div class="fg">
-                        <label>PRIORITY</label>
-                        <select name="priority" class="fi">
-                            <option value="low">LOW</option>
-                            <option value="medium" selected>MEDIUM</option>
-                            <option value="critical">CRITICAL</option>
-                        </select>
-                    </div>
-                    <div class="fg full">
-                        <label>DETAILS</label>
-                        <input type="text" name="description" class="fi" placeholder="Technical specs..." />
-                    </div>
-                </div>
-                <button type="submit" class="exec-btn">EXECUTE</button>
-            </form>
+    </div>
+    <div class="group">
+        <span class="adm-label">{$t('admin_roadmap.filters.assignee')}</span>
+        <div class="adm-chips">
+            {#each assignees as a}
+                <button type="button" class="adm-chip" class:on={filterAssignee === a} on:click={() => (filterAssignee = a)}>
+                    {a === 'all' ? $t('admin_roadmap.filters.all') : $t(`admin_roadmap.assignee.${a}`)}
+                </button>
+            {/each}
         </div>
-    {/if}
-
-    <!-- EDIT MODAL -->
-    {#if editingTask}
-        <div class="modal-overlay" transition:fade on:click|self={() => editingTask = null}>
-            <div class="edit-modal" transition:scale={{ duration: 180, easing: quintOut }}>
-                <h3 class="form-tag">> EDIT: {shortId(editingTask.id)}</h3>
-                <form method="POST" action="?/edit"
-                      use:enhance={() => { editingTask = null; return async ({ update }) => update(); }}>
-                    <input type="hidden" name="id" value={editingTask.id} />
-                    <div class="form-grid">
-                        <div class="fg full">
-                            <label>TITLE</label>
-                            <input type="text" name="title" class="fi" value={editingTask.title} required />
-                        </div>
-                        <div class="fg">
-                            <label>OPERATOR</label>
-                            <select name="assignee" class="fi">
-                                <option value="orion"   selected={editingTask.assignee === 'orion'}>ORION</option>
-                                <option value="iposdev" selected={editingTask.assignee === 'iposdev'}>IPOSDEV</option>
-                                <option value="system"  selected={editingTask.assignee === 'system'}>SYSTEM</option>
-                            </select>
-                        </div>
-                        <div class="fg">
-                            <label>PRIORITY</label>
-                            <select name="priority" class="fi">
-                                <option value="low"      selected={editingTask.priority === 'low'}>LOW</option>
-                                <option value="medium"   selected={editingTask.priority === 'medium'}>MEDIUM</option>
-                                <option value="critical" selected={editingTask.priority === 'critical'}>CRITICAL</option>
-                            </select>
-                        </div>
-                        <div class="fg full">
-                            <label>DETAILS</label>
-                            <input type="text" name="description" class="fi" value={editingTask.description} />
-                        </div>
-                    </div>
-                    <div class="modal-actions">
-                        <button type="button" class="cancel-btn" on:click={() => editingTask = null}>CANCEL</button>
-                        <button type="submit" class="exec-btn">SAVE</button>
-                    </div>
-                </form>
-            </div>
+    </div>
+    <div class="group">
+        <span class="adm-label">{$t('admin_roadmap.filters.priority')}</span>
+        <div class="adm-chips">
+            <button type="button" class="adm-chip" class:on={filterPriority === 'all'} on:click={() => (filterPriority = 'all')}>{$t('admin_roadmap.filters.all')}</button>
+            {#each PRIORITIES as p}
+                <button type="button" class="adm-chip" class:on={filterPriority === p} on:click={() => (filterPriority = p)}>{$t(`admin_roadmap.priority.${p}`)}</button>
+            {/each}
         </div>
-    {/if}
-
-    <!-- KANBAN -->
-    <div class="kanban">
-
-        <!-- PENDING -->
-        <div class="lane">
-            <div class="lane-head">
-                <div class="lane-name">
-                    <span class="lane-dot" style="background:#475569"></span>
-                    PENDING
-                </div>
-                <span class="lane-count">{todo.length}</span>
-            </div>
-            <div class="lane-body">
-                {#each todo as task (task.id)}
-                    <div class="card prio-{task.priority}" animate:flip={{ duration: 280, easing: quintOut }}>
-                        <div class="card-top">
-                            <span class="card-id">{shortId(task.id)}</span>
-                            <div class="card-badges">
-                                <span class="pbadge" style="color:{PLATFORM_COLOR[task.platform]}">{task.platform}</span>
-                                <img src={AVATARS[task.assignee]} alt={task.assignee} class="assignee-av" title={task.assignee} />
-                            </div>
-                        </div>
-                        <div class="card-body" on:click={() => editingTask = task} role="button" tabindex="0"
-                             on:keydown={(e) => e.key === 'Enter' && (editingTask = task)}>
-                            <h4 class="card-title">{task.title}</h4>
-                            {#if task.description}<p class="card-desc">{task.description}</p>{/if}
-                        </div>
-                        <div class="card-foot">
-                            <form method="POST" action="?/delete" use:enhance>
-                                <input type="hidden" name="id" value={task.id} />
-                                <button class="ctrl-btn del" title="Delete">×</button>
-                            </form>
-                            <form method="POST" action="?/updateStatus" use:enhance>
-                                <input type="hidden" name="id" value={task.id} />
-                                <input type="hidden" name="status" value="in_progress" />
-                                <button class="ctrl-btn go" title="Start">▶</button>
-                            </form>
-                        </div>
-                    </div>
-                {/each}
-            </div>
-        </div>
-
-        <!-- IN PROGRESS -->
-        <div class="lane lane-active">
-            <div class="lane-head">
-                <div class="lane-name">
-                    <span class="lane-dot pulse" style="background:#fcee0a"></span>
-                    PROCESSING
-                </div>
-                <span class="lane-count warn">{progress.length}</span>
-            </div>
-            <div class="lane-body">
-                {#each progress as task (task.id)}
-                    <div class="card card-active prio-{task.priority}" animate:flip={{ duration: 280, easing: quintOut }}>
-                        <div class="scanline"></div>
-                        <div class="card-top">
-                            <span class="card-id cy">{shortId(task.id)}</span>
-                            <div class="card-badges">
-                                <span class="pbadge" style="color:{PLATFORM_COLOR[task.platform]}">{task.platform}</span>
-                                <img src={AVATARS[task.assignee]} alt={task.assignee} class="assignee-av" />
-                            </div>
-                        </div>
-                        <div class="card-body" on:click={() => editingTask = task} role="button" tabindex="0"
-                             on:keydown={(e) => e.key === 'Enter' && (editingTask = task)}>
-                            <h4 class="card-title cy">{task.title}</h4>
-                            {#if task.description}<p class="card-desc">{task.description}</p>{/if}
-                        </div>
-                        <div class="card-foot">
-                            <form method="POST" action="?/updateStatus" use:enhance>
-                                <input type="hidden" name="id" value={task.id} />
-                                <input type="hidden" name="status" value="todo" />
-                                <button class="ctrl-btn back" title="Back">◀</button>
-                            </form>
-                            <form method="POST" action="?/updateStatus" use:enhance>
-                                <input type="hidden" name="id" value={task.id} />
-                                <input type="hidden" name="status" value="done" />
-                                <button class="ctrl-btn done" title="Done">✔</button>
-                            </form>
-                        </div>
-                    </div>
-                {/each}
-            </div>
-        </div>
-
-        <!-- DONE -->
-        <div class="lane lane-done">
-            <div class="lane-head">
-                <div class="lane-name">
-                    <span class="lane-dot" style="background:#4ade80"></span>
-                    ONLINE
-                </div>
-                <span class="lane-count ok">{done.length}</span>
-            </div>
-            <div class="lane-body">
-                {#each done as task (task.id)}
-                    <div class="card card-done" animate:flip={{ duration: 280, easing: quintOut }}>
-                        <div class="card-top">
-                            <span class="card-id muted">{shortId(task.id)}</span>
-                            <img src={AVATARS[task.assignee]} alt={task.assignee} class="assignee-av dimmed" />
-                        </div>
-                        <h4 class="card-title muted struck">{task.title}</h4>
-                        <div class="card-foot justify-end">
-                            <form method="POST" action="?/updateStatus" use:enhance>
-                                <input type="hidden" name="id" value={task.id} />
-                                <input type="hidden" name="status" value="in_progress" />
-                                <button class="ctrl-btn back" title="Reopen">↩</button>
-                            </form>
-                            <form method="POST" action="?/delete" use:enhance>
-                                <input type="hidden" name="id" value={task.id} />
-                                <button class="ctrl-btn del" title="Archive">×</button>
-                            </form>
-                        </div>
-                    </div>
-                {/each}
-            </div>
-        </div>
-
     </div>
 </div>
 
+<div class="kanban">
+    {#each LANES as lane}
+        <section class="adm-panel lane lane-{lane}">
+            <header class="lane-head">
+                <h2><span class="dot"></span>{$t(`admin_roadmap.lanes.${lane}`)}</h2>
+                <span class="count">{lanes[lane].length}</span>
+            </header>
+            <div class="cards">
+                {#each lanes[lane] as task (task.id)}
+                    <article class="card prio-{task.priority}" class:is-done={lane === 'done'} animate:flip={{ duration: 280, easing: quintOut }}>
+                        <div class="card-top">
+                            <span class="adm-badge {PLATFORM_TONE[task.platform]}">{$t(`admin_roadmap.platform.${task.platform}`)}</span>
+                            <span class="prio">{$t(`admin_roadmap.priority.${task.priority}`)}</span>
+                            <img class="who" src={AVATARS[task.assignee]} alt={$t(`admin_roadmap.assignee.${task.assignee}`)}
+                                title={$t(`admin_roadmap.assignee.${task.assignee}`)} referrerpolicy="no-referrer" />
+                        </div>
+                        <button type="button" class="card-body" on:click={() => (editing = task)}>
+                            <h3>{task.title}</h3>
+                            {#if task.description}<p>{task.description}</p>{/if}
+                        </button>
+                        <div class="card-foot">
+                            <span class="id">{shortId(task.id)}</span>
+                            <div class="card-actions">
+                                {#if lane === 'todo'}
+                                    <form method="POST" action="?/delete" use:enhance={act}>
+                                        <input type="hidden" name="id" value={task.id} />
+                                        <button type="button" class="adm-btn icon small danger-ghost" title={$t('admin_roadmap.actions.delete')}
+                                            aria-label={$t('admin_roadmap.actions.delete')} on:click={(e) => confirmDelete(e, task)}>
+                                            <svg class="adm-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /></svg>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="?/updateStatus" use:enhance={act}>
+                                        <input type="hidden" name="id" value={task.id} />
+                                        <input type="hidden" name="status" value="in_progress" />
+                                        <button class="adm-btn small" disabled={busy}>
+                                            <svg class="adm-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z" /></svg>
+                                            {$t('admin_roadmap.actions.start')}
+                                        </button>
+                                    </form>
+                                {:else if lane === 'in_progress'}
+                                    <form method="POST" action="?/updateStatus" use:enhance={act}>
+                                        <input type="hidden" name="id" value={task.id} />
+                                        <input type="hidden" name="status" value="todo" />
+                                        <button class="adm-btn icon small" disabled={busy} title={$t('admin_roadmap.actions.back')} aria-label={$t('admin_roadmap.actions.back')}>
+                                            <svg class="adm-i" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="?/updateStatus" use:enhance={act}>
+                                        <input type="hidden" name="id" value={task.id} />
+                                        <input type="hidden" name="status" value="done" />
+                                        <button class="adm-btn small success" disabled={busy}>
+                                            <svg class="adm-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                                            {$t('admin_roadmap.actions.done')}
+                                        </button>
+                                    </form>
+                                {:else}
+                                    <form method="POST" action="?/updateStatus" use:enhance={act}>
+                                        <input type="hidden" name="id" value={task.id} />
+                                        <input type="hidden" name="status" value="in_progress" />
+                                        <button class="adm-btn icon small" disabled={busy} title={$t('admin_roadmap.actions.reopen')} aria-label={$t('admin_roadmap.actions.reopen')}>
+                                            <svg class="adm-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" /></svg>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="?/delete" use:enhance={act}>
+                                        <input type="hidden" name="id" value={task.id} />
+                                        <button type="button" class="adm-btn icon small danger-ghost" title={$t('admin_roadmap.actions.delete')}
+                                            aria-label={$t('admin_roadmap.actions.delete')} on:click={(e) => confirmDelete(e, task)}>
+                                            <svg class="adm-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /></svg>
+                                        </button>
+                                    </form>
+                                {/if}
+                            </div>
+                        </div>
+                    </article>
+                {:else}
+                    <p class="adm-note empty-lane">{$t('admin_roadmap.empty_lane')}</p>
+                {/each}
+            </div>
+        </section>
+    {/each}
+</div>
+
+{#if creating || editing}
+    <Sheet
+        id={editing ? 'task-edit' : 'task-new'}
+        title={editing ? $t('admin_roadmap.form.edit_title', { values: { id: shortId(editing.id) } }) : $t('admin_roadmap.form.new_title')}
+        closeLabel={$t('admin_roadmap.form.cancel')}
+        on:close={() => { creating = false; editing = null; }}
+    >
+        <form method="POST" action={editing ? '?/edit' : '?/create'} use:enhance={act} class="task-form">
+            {#if editing}<input type="hidden" name="id" value={editing.id} />{/if}
+            <label class="adm-field full">
+                <span class="adm-label">{$t('admin_roadmap.form.title')}</span>
+                <input type="text" name="title" class="adm-input" required value={editing?.title ?? ''}
+                    placeholder={$t('admin_roadmap.form.title_ph')} autocomplete="off" />
+            </label>
+            <label class="adm-field">
+                <span class="adm-label">{$t('admin_roadmap.form.platform')}</span>
+                <select name="platform" class="adm-select">
+                    {#each PLATFORMS as p}
+                        <option value={p} selected={(editing?.platform ?? 'web') === p}>{$t(`admin_roadmap.platform.${p}`)}</option>
+                    {/each}
+                </select>
+            </label>
+            <label class="adm-field">
+                <span class="adm-label">{$t('admin_roadmap.form.assignee')}</span>
+                <select name="assignee" class="adm-select">
+                    {#each formAssignees as a}
+                        <option value={a} selected={(editing?.assignee ?? 'orion') === a}>{$t(`admin_roadmap.assignee.${a}`)}</option>
+                    {/each}
+                </select>
+            </label>
+            <label class="adm-field">
+                <span class="adm-label">{$t('admin_roadmap.form.priority')}</span>
+                <select name="priority" class="adm-select">
+                    {#each PRIORITIES as p}
+                        <option value={p} selected={(editing?.priority ?? 'medium') === p}>{$t(`admin_roadmap.priority.${p}`)}</option>
+                    {/each}
+                </select>
+            </label>
+            <label class="adm-field full">
+                <span class="adm-label">{$t('admin_roadmap.form.details')}</span>
+                <textarea name="description" class="adm-textarea" rows="4" placeholder={$t('admin_roadmap.form.details_ph')}>{editing?.description ?? ''}</textarea>
+            </label>
+            <div class="form-actions full">
+                <button type="button" class="adm-btn" on:click={() => { creating = false; editing = null; }}>{$t('admin_roadmap.form.cancel')}</button>
+                <button type="submit" class="adm-btn primary" disabled={busy}>{editing ? $t('admin_roadmap.form.save') : $t('admin_roadmap.form.create')}</button>
+            </div>
+        </form>
+    </Sheet>
+{/if}
+
 <style>
-    :root { --cy:#fcee0a; --cc:#00f3ff; --cr:#ff003c; --cg:#39ff14; }
+    .filters { display: flex; flex-wrap: wrap; gap: 14px 28px; margin-bottom: 20px; }
+    .group { display: flex; flex-direction: column; gap: 8px; }
 
-    .planner { padding: 1.5rem; min-height: 100%; position: relative; color: #e2e8f0; }
+    .kanban { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+    .adm-panel.lane { padding: 16px; min-height: 360px; }
+    .lane-head { display: flex; align-items: center; justify-content: space-between; margin: 2px 4px 14px; }
+    .lane-head h2 { display: flex; align-items: center; gap: 10px; margin: 0; font: 500 13px var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--soft); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+    .lane-in_progress .dot { background: var(--yellow); box-shadow: 0 0 0 4px rgba(252, 238, 10, .15); }
+    .lane-done .dot { background: var(--green); }
+    .adm-panel.lane-in_progress { border-color: rgba(252, 238, 10, .16); }
+    .count { min-width: 28px; padding: 2px 8px; border-radius: 999px; background: rgba(255, 255, 255, .06); color: var(--muted); font-size: 13px; text-align: center; font-variant-numeric: tabular-nums; }
+    .cards { display: flex; flex-direction: column; gap: 10px; }
+    .adm-note.empty-lane { padding: 20px 4px; text-align: center; color: var(--dim); }
 
-    .grid-bg {
-        position: absolute; inset: 0; z-index: 0; pointer-events: none;
-        background-size: 32px 32px;
-        background-image:
-            linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,.015) 1px, transparent 1px);
+    .card { position: relative; padding: 14px 14px 12px 18px; border-radius: 16px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); overflow: hidden; transition: border-color .2s ease, background .2s ease; }
+    .card::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--dim); }
+    .card.prio-medium::before { background: var(--yellow); }
+    .card.prio-critical::before { background: var(--red); }
+    .card.prio-critical { background: linear-gradient(90deg, rgba(255, 107, 129, .07), rgba(255, 255, 255, .02) 60%); }
+    .card:hover { border-color: var(--line-strong); background-color: rgba(255, 255, 255, .05); }
+    .card.is-done { opacity: .7; }
+    .card.is-done h3 { text-decoration: line-through; text-decoration-color: var(--dim); }
+
+    .card-top { display: flex; align-items: center; gap: 8px; }
+    .prio { font-size: 12px; color: var(--dim); }
+    .prio-critical .prio { color: #ffb3c0; }
+    .prio-medium .prio { color: #fff6a3; }
+    .who { width: 24px; height: 24px; margin-left: auto; border-radius: 50%; object-fit: cover; border: 1px solid var(--line-strong); background: #0a0a0c; }
+
+    .card-body { display: block; width: 100%; margin: 10px 0 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+    .card-body h3 { margin: 0; font: 500 15.5px/1.35 var(--body); color: var(--text); overflow-wrap: anywhere; }
+    .card-body p { margin: 6px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-body:hover h3 { text-decoration: underline; text-underline-offset: 3px; }
+    .card-body:focus-visible { outline: 2px solid var(--yellow); outline-offset: 4px; border-radius: 6px; }
+
+    .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+    .id { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+    .card-actions { display: flex; gap: 6px; }
+    .adm-btn.danger-ghost { color: var(--dim); }
+    .adm-btn.danger-ghost:hover:not(:disabled) { color: #ffb3c0; border-color: rgba(255, 107, 129, .4); background: rgba(255, 107, 129, .08); }
+
+    .task-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .full { grid-column: 1 / -1; }
+    .form-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+    @media (max-width: 1000px) {
+        .kanban { grid-template-columns: 1fr; }
+        .adm-panel.lane { min-height: 0; }
     }
-
-    /* HEADER */
-    .planner-header {
-        position: relative; z-index: 1;
-        display: flex; justify-content: space-between; align-items: flex-start;
-        margin-bottom: 1.5rem; padding-bottom: 1.25rem;
-        border-bottom: 1px solid rgba(0,243,255,.15);
-        flex-wrap: wrap; gap: 1rem;
-    }
-    .planner-title {
-        font-family: 'Chakra Petch', monospace; font-size: 1.6rem; font-weight: 900;
-        color: #fff; letter-spacing: .08em; margin-bottom: .6rem;
-        text-shadow: 0 0 20px rgba(0,243,255,.3);
-    }
-
-    /* FILTERS */
-    .filters { display: flex; flex-direction: column; gap: .4rem; }
-    .filter-group { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; }
-    .filter-sep { font-family: 'Chakra Petch', monospace; font-size: .6rem; color: #334155; letter-spacing: .15em; min-width: 55px; }
-    .ftag {
-        background: transparent; border: 1px solid rgba(255,255,255,.07);
-        color: #475569; padding: .15rem .5rem; font-size: .65rem;
-        font-family: 'Chakra Petch', monospace; cursor: pointer; border-radius: 2px;
-        transition: all .15s;
-    }
-    .ftag:hover   { color: #e2e8f0; border-color: rgba(255,255,255,.2); }
-    .ftag.ftag-on { background: rgba(0,243,255,.1); border-color: var(--cc); color: var(--cc); }
-    .ftag.ftag-crit { background: rgba(255,0,60,.1); border-color: var(--cr); color: var(--cr); }
-
-    /* BUTTONS */
-    .new-btn {
-        background: rgba(0,243,255,.08); border: 1px solid rgba(0,243,255,.3);
-        color: var(--cc); padding: .55rem 1.25rem;
-        font-family: 'Chakra Petch', monospace; font-weight: 700; font-size: .8rem;
-        cursor: pointer; letter-spacing: .1em; transition: all .2s; white-space: nowrap;
-    }
-    .new-btn:hover { background: var(--cc); color: #000; box-shadow: 0 0 16px rgba(0,243,255,.3); }
-
-    /* FORM */
-    .form-wrap { position: relative; z-index: 1; margin-bottom: 1.5rem; }
-    .directive-form, .edit-modal form {
-        background: rgba(9,11,17,.95); border: 1px solid var(--cc);
-        padding: 1.5rem; box-shadow: 0 0 30px rgba(0,243,255,.08);
-    }
-    .form-tag {
-        font-family: 'JetBrains Mono', monospace; font-size: .75rem;
-        color: #475569; margin-bottom: 1rem;
-        border-bottom: 1px dashed rgba(255,255,255,.07); padding-bottom: .5rem;
-    }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .75rem; }
-    @media(max-width:640px) { .form-grid { grid-template-columns: 1fr; } }
-    .fg { display: flex; flex-direction: column; gap: .25rem; }
-    .fg.full { grid-column: 1 / -1; }
-    .fg label { font-family: 'Chakra Petch', monospace; font-size: .6rem; color: var(--cc); letter-spacing: .15em; }
-    .fi {
-        background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.1);
-        color: #fff; padding: .5rem .65rem; font-size: .85rem; outline: none;
-        font-family: 'Chakra Petch', monospace; transition: border-color .2s;
-    }
-    .fi:focus { border-color: var(--cy); }
-    .fi option { background: #0f172a; }
-
-    .exec-btn {
-        background: var(--cy); color: #000; font-weight: 900;
-        font-family: 'Chakra Petch', monospace; border: none;
-        padding: .65rem 2rem; cursor: pointer; margin-top: 1rem;
-        letter-spacing: .1em; transition: box-shadow .2s; width: 100%;
-    }
-    .exec-btn:hover { box-shadow: 0 0 16px rgba(252,238,10,.4); }
-
-    .modal-actions { display: flex; gap: .75rem; margin-top: 1rem; }
-    .cancel-btn {
-        flex: 1; padding: .65rem; background: transparent;
-        border: 1px solid rgba(255,255,255,.1); color: #64748b;
-        font-family: 'Chakra Petch', monospace; font-weight: 700;
-        cursor: pointer; transition: all .2s;
-    }
-    .cancel-btn:hover { border-color: #94a3b8; color: #fff; }
-
-    /* KANBAN */
-    .kanban {
-        position: relative; z-index: 1;
-        display: grid; grid-template-columns: repeat(3, 1fr);
-        gap: 1.25rem; align-items: start;
-    }
-    @media(max-width:900px) { .kanban { grid-template-columns: 1fr; } }
-
-    .lane {
-        background: rgba(10,12,18,.6); border: 1px solid rgba(255,255,255,.05);
-        border-radius: 4px; padding: 1rem; min-height: 400px;
-    }
-    .lane-active { border-color: rgba(252,238,10,.1); }
-    .lane-done   { opacity: .8; }
-
-    .lane-head {
-        display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 1rem; padding-bottom: .6rem;
-        border-bottom: 1px solid rgba(255,255,255,.05);
-    }
-    .lane-name {
-        display: flex; align-items: center; gap: .5rem;
-        font-family: 'Chakra Petch', monospace; font-size: .75rem;
-        font-weight: 700; letter-spacing: .12em; color: #94a3b8;
-    }
-    .lane-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-    .lane-dot.pulse { animation: blink 1.5s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-    .lane-count {
-        font-family: 'Chakra Petch', monospace; font-size: .7rem;
-        background: rgba(255,255,255,.06); padding: .1rem .4rem;
-        border-radius: 2px; color: #475569;
-    }
-    .lane-count.warn { color: var(--cy); }
-    .lane-count.ok   { color: #4ade80; }
-
-    .lane-body { display: flex; flex-direction: column; gap: .6rem; }
-
-    /* CARDS */
-    .card {
-        background: rgba(20,25,35,.7); border: 1px solid rgba(255,255,255,.06);
-        border-left: 3px solid #334155; border-radius: 3px; padding: .8rem;
-        position: relative; overflow: hidden; transition: transform .2s, background .2s;
-    }
-    .card:hover { transform: translateY(-2px); background: rgba(30,35,45,.9); }
-
-    .prio-low      { border-left-color: #60a5fa; }
-    .prio-medium   { border-left-color: var(--cy); }
-    .prio-critical {
-        border-left-color: var(--cr);
-        background: repeating-linear-gradient(
-            45deg, rgba(20,25,35,.7), rgba(20,25,35,.7) 12px,
-            rgba(255,0,60,.04) 12px, rgba(255,0,60,.04) 24px
-        );
-    }
-
-    .card-active { border-color: rgba(252,238,10,.15); }
-    .card-done   { border-left-color: #1e293b; }
-
-    .scanline {
-        position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-        background: linear-gradient(90deg, transparent, var(--cy), transparent);
-        opacity: .4; animation: scan-y 2.5s linear infinite;
-    }
-    @keyframes scan-y { 0%{top:0;opacity:0} 20%{opacity:.4} 80%{opacity:.4} 100%{top:100%;opacity:0} }
-
-    .card-top {
-        display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: .4rem;
-    }
-    .card-id {
-        font-family: 'JetBrains Mono', monospace; font-size: .62rem; color: #475569;
-    }
-    .card-id.cy    { color: var(--cy); }
-    .card-id.muted { color: #1e293b; }
-
-    .card-badges { display: flex; align-items: center; gap: .4rem; }
-    .pbadge { font-family: 'Chakra Petch', monospace; font-size: .58rem; font-weight: 700; }
-
-    .assignee-av { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,.1); }
-    .assignee-av.dimmed { filter: grayscale(1); opacity: .4; }
-
-    .card-body { cursor: pointer; }
-    .card-title { font-weight: 700; font-size: .88rem; color: #e2e8f0; line-height: 1.35; margin-bottom: .25rem; }
-    .card-title.cy     { color: var(--cy); }
-    .card-title.muted  { color: #334155; }
-    .card-title.struck { text-decoration: line-through; }
-    .card-desc { font-size: .72rem; color: #475569; line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-
-    .card-foot {
-        display: flex; justify-content: space-between; align-items: center;
-        margin-top: .6rem; padding-top: .5rem;
-        border-top: 1px solid rgba(255,255,255,.04);
-    }
-    .card-foot.justify-end { justify-content: flex-end; gap: .4rem; }
-
-    .ctrl-btn {
-        background: transparent; border: 1px solid transparent;
-        color: #334155; width: 26px; height: 26px;
-        border-radius: 3px; cursor: pointer; font-size: .85rem;
-        display: flex; align-items: center; justify-content: center;
-        transition: all .15s;
-    }
-    .ctrl-btn:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.1); }
-    .ctrl-btn.del:hover  { color: var(--cr); border-color: rgba(255,0,60,.3); }
-    .ctrl-btn.go:hover   { color: #4ade80; border-color: rgba(74,222,128,.3); }
-    .ctrl-btn.done:hover { color: #4ade80; border-color: rgba(74,222,128,.3); }
-    .ctrl-btn.back:hover { color: #60a5fa; border-color: rgba(96,165,250,.3); }
-
-    /* MODAL */
-    .modal-overlay {
-        position: fixed; inset: 0; background: rgba(0,0,0,.85);
-        z-index: 100; display: flex; align-items: center; justify-content: center;
-        backdrop-filter: blur(6px);
-    }
-    .edit-modal {
-        width: 90%; max-width: 560px;
-        background: rgba(9,11,17,.98); border: 1px solid var(--cc);
-        padding: 1.75rem; box-shadow: 0 0 40px rgba(0,243,255,.1);
+    @media (max-width: 600px) {
+        .task-form { grid-template-columns: 1fr; }
     }
 </style>

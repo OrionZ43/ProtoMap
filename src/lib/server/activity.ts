@@ -25,6 +25,12 @@ export function econOp(kind: string, ref?: string | number) {
 export type AdminActionKind =
     | 'admin_credits'
     | 'admin_items'
+    | 'admin_grant_item'
+    | 'admin_revoke_item'
+    | 'admin_equip'
+    | 'admin_notify'
+    | 'admin_streak'
+    | 'admin_cooldown'
     | 'admin_ban'
     | 'admin_unban'
     | 'admin_verify_email'
