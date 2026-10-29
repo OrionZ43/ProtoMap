@@ -25,6 +25,23 @@ So the split is:
 
 ---
 
+## 2026-10-29 (48) — Колокольчик: `adm` раздувало admin_message на 100vh (коллизия с админкой)
+
+**Что.** Текст admin_message в колокольчике рисовался как `<span class="preview adm">`. Класс `adm`
+совпадает с корневым классом дизайн-системы админки (`src/routes/admin/admin.css`:
+`.adm { min-height: 100vh; … }` + `.adm::before { position: fixed; inset: 0 }`). Route-CSS админки
+залипает в документе после захода в `/admin` (отмечено в самом admin.css), поэтому у админа `.adm`
+цеплялся за этот span и раздувал его на всю высоту экрана — «километровое нечто» после текста
+уведомления (видно только у админов, на всех страницах). Репортил Орион скрином `docs/img_1.png`.
+
+**Как.** Переименовал модификатор `adm` → `admin-msg` в `NotificationBell.svelte` (разметка + CSS),
+с комментарием-предупреждением. Единственная жертва — колокольчик; других элементов с голым
+классом-токеном `adm` вне админки нет (`<div class="adm">` в `admin/+layout.svelte` легитимен).
+
+**Проверено.** Playwright/Chromium с подключённым реальным `admin.css`: `preview adm` = 760px
+(min-height 760px = 100vh), `preview admin-msg` = 16px (min-height 0). Харнес
+`scratchpad/panel-check3.html`. Правило в `.jules/bolt.md`.
+
 ## 2026-10-28 (47) — Уведомления: учёт replies + actorUid (по фидбеку android)
 
 **Что.** По живому фидбеку android-сессии: (1) в data `channel_post` не было `actorUid` — тема

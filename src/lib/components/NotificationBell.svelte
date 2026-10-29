@@ -124,7 +124,7 @@
                             </span>
                             <span class="body">
                                 <span class="line"><b>{$t('notif.admin_title')}</b></span>
-                                <span class="preview adm">{n.text}</span>
+                                <span class="preview admin-msg">{n.text}</span>
                                 <span class="time">{ago(n.createdAt)}</span>
                             </span>
                         {:else}
@@ -221,7 +221,12 @@
         display: block; font-size: 0.82rem; color: #64748b; margin-top: 2px;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .preview.adm { white-space: normal; color: #cbd5e1; }
+    /* Класс admin-msg, а НЕ adm: .adm — корневой класс дизайн-системы админки
+       (src/routes/admin/admin.css, там `.adm { min-height: 100vh }` + фон и
+       `.adm::before` на весь экран). Её route-CSS залипает в документе после
+       захода в /admin, и `.adm` цеплялся за этот span, раздувая его на 100vh —
+       то самое «километровое нечто» в колокольчике у админов. Не переименовывать обратно. */
+    .preview.admin-msg { white-space: normal; color: #cbd5e1; }
     .time { display: block; font: 0.7rem 'Chakra Petch', monospace; color: #475569; margin-top: 4px; }
     .dot {
         width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 6px;
