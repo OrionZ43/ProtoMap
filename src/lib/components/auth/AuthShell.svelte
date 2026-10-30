@@ -1,6 +1,6 @@
 <script lang="ts">
-    import NetworkCanvas from './NetworkCanvas.svelte';
-    import { t } from 'svelte-i18n';
+    import { t, locale } from 'svelte-i18n';
+    import { onMount } from 'svelte';
 
     /**
      * Общий каркас страниц входа и регистрации.
@@ -24,12 +24,67 @@
 
     /** Сколько протогенов уже на карте. Показывается на витрине, если известно. */
     export let protogens: number | null = null;
+
+    /**
+     * Фон витрины — беззвучный видео-тур 1:1 из трейлера (решение Ориона,
+     * 29.10.2026; монтаж в ритм трека-ориентира, звука нет).
+     *
+     * Грузим видео только когда оно реально видно и уместно:
+     *   - mounted — на сервере и до гидрации показываем статичный постер
+     *     (корректный no-JS фолбэк и защита от вспышки автоплея);
+     *   - wideEnough — витрина скрыта (display:none) до 1024px, поэтому на
+     *     телефоне тяжёлый файл не качаем вовсе, только лёгкий постер в SSR;
+     *   - !reducedMotion — у попросивших «меньше движения» остаётся постер.
+     *
+     * Текст интерфейса вшит в кадр, поэтому у RU и EN свои файлы. ru_april
+     * регистрируется под кодом 'ru' и отдельного файла не требует.
+     */
+    let mounted = false;
+    let wideEnough = true;
+    let reducedMotion = false;
+
+    $: videoSuffix = $locale?.startsWith('en') ? '-en' : '';
+    $: posterSrc = `/auth/login-1x1${videoSuffix}.webp`;
+    $: showVideo = mounted && wideEnough && !reducedMotion;
+
+    onMount(() => {
+        const wide = window.matchMedia('(min-width: 1024px)');
+        const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        wideEnough = wide.matches;
+        reducedMotion = motion.matches;
+        mounted = true;
+
+        const onWide = (e: MediaQueryListEvent) => (wideEnough = e.matches);
+        const onMotion = (e: MediaQueryListEvent) => (reducedMotion = e.matches);
+        wide.addEventListener('change', onWide);
+        motion.addEventListener('change', onMotion);
+        return () => {
+            wide.removeEventListener('change', onWide);
+            motion.removeEventListener('change', onMotion);
+        };
+    });
 </script>
 
 <div class="auth">
     <!-- Витрина -->
     <aside class="showcase" aria-hidden="true">
-        <NetworkCanvas />
+        <!-- Фон: беззвучный видео-тур 1:1. Постер — и SSR/no-JS фолбэк, и кадр
+             при prefers-reduced-motion. {#key} пересобирает <video> при смене
+             языка, иначе смена src у <source> сама по себе не перегружает ролик. -->
+        {#if showVideo}
+            {#key videoSuffix}
+                <video class="showcase__media" autoplay muted loop playsinline poster={posterSrc}>
+                    <source src={`/auth/login-1x1${videoSuffix}.webm`} type="video/webm" />
+                    <source src={`/auth/login-1x1${videoSuffix}.mp4`} type="video/mp4" />
+                </video>
+            {/key}
+        {:else}
+            <img class="showcase__media" src={posterSrc} alt="" />
+        {/if}
+
+        <!-- Затемнение снизу: под счётчиком в кадре разное (карта, карточка
+             слотов с балансом), без скрима подпись теряется. -->
+        <div class="showcase__scrim"></div>
 
         <div class="showcase__content">
             <p class="showcase__kicker font-display">PROTOMAP NETWORK</p>
@@ -48,6 +103,9 @@
 
         <div class="showcase__corner showcase__corner--tl"></div>
         <div class="showcase__corner showcase__corner--br"></div>
+
+        <!-- Атрибуция карты рисуется страницей: в видео она не вшита. -->
+        <p class="showcase__attribution">© OpenFreeMap © OpenMapTiles © OpenStreetMap</p>
     </aside>
 
     <!-- Форма -->
@@ -94,9 +152,38 @@
         .showcase { display: block; }
     }
 
+    /* Видео и постер лежат одним слоем в самом низу витрины. Кадр 1:1,
+       витрина — высокий прямоугольник, поэтому cover: по бокам срезается
+       до ~6%, главное тура держится в средних ~85% ширины. */
+    .showcase__media {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 0;
+    }
+
+    /* Нижняя треть гасится сильно: в кадре там UI приложения (баланс слотов,
+       кнопки), и без этого наш счётчик сталкивается с чужими цифрами. Верхние
+       ~60% видео остаются живыми. */
+    .showcase__scrim {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background: linear-gradient(
+            to top,
+            rgba(5, 8, 12, 0.97) 0%,
+            rgba(5, 8, 12, 0.92) 20%,
+            rgba(5, 8, 12, 0.6) 40%,
+            rgba(5, 8, 12, 0) 70%
+        );
+    }
+
     .showcase__content {
         position: relative;
-        z-index: 1;
+        z-index: 2;
         height: 100%;
         display: flex;
         flex-direction: column;
@@ -135,7 +222,7 @@
         width: 40px;
         height: 40px;
         border-color: rgba(0, 243, 255, 0.5);
-        z-index: 1;
+        z-index: 2;
     }
     .showcase__corner--tl {
         top: 1.25rem; left: 1.25rem;
@@ -144,6 +231,25 @@
     .showcase__corner--br {
         bottom: 1.25rem; right: 1.25rem;
         border-bottom: 1px solid; border-right: 1px solid;
+    }
+
+    /* Подпись карты поверх видео — статично, мелко, в свободном верхнем
+       правом углу (там нет уголка-рамки). Тень держит читаемость над
+       светлыми кадрами. */
+    .showcase__attribution {
+        position: absolute;
+        top: 0.6rem;
+        right: 0.85rem;
+        z-index: 2;
+        margin: 0;
+        max-width: 60%;
+        text-align: right;
+        font-size: 0.58rem;
+        line-height: 1.3;
+        letter-spacing: 0.01em;
+        color: rgba(159, 179, 200, 0.72);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+        pointer-events: none;
     }
 
     /* ─── Панель формы ────────────────────────────────────────────────────── */
