@@ -14,7 +14,6 @@
     import { page } from '$app/stores';
     import { onMount } from 'svelte';
     import { AudioManager } from '$lib/client/audioManager';
-    import Footer from "$lib/components/Footer.svelte";
     import CookieBanner from '$lib/components/CookieBanner.svelte';
     import { browser, dev } from '$app/environment';
     import { injectAnalytics } from '@vercel/analytics/sveltekit';
@@ -189,12 +188,6 @@
             <main class="flex-grow">
                 <slot />
             </main>
-        </div>
-
-        <div class="hidden lg:block">
-            {#if !isMapPage && !isBanned && !isAdminPage}
-                <Footer />
-            {/if}
         </div>
 
         <Modal />

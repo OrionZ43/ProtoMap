@@ -7,6 +7,8 @@
     const opacity = tweened(0, { duration: 400, easing: quintOut });
     onMount(() => { opacity.set(1); });
 
+    const currentYear = new Date().getFullYear();
+
     const testers = [
         {
             id: 'kess',
@@ -197,6 +199,22 @@
                 {$t('about_page.disclaimer')}
             </p>
         </div>
+
+        <hr class="separator" />
+
+        <div class="legal-section text-center">
+            <h4 class="section-subtitle">{$t('about_page.legal_title')}</h4>
+            <div class="legal-links">
+                <a href="/personal-data-policy">{$t('footer.pd_policy')}</a>
+                <a href="/privacy-policy">{$t('footer.policy')}</a>
+                <a href="/terms-of-service">{$t('footer.terms')}</a>
+            </div>
+            <p class="legal-contact">
+                {$t('about_page.contact_label')}
+                <a href="mailto:orion.z43studios@gmail.com">orion.z43studios@gmail.com</a>
+            </p>
+            <p class="legal-copyright">© {currentYear} {$t('footer.rights')}</p>
+        </div>
     </div>
 </div>
 
@@ -309,6 +327,23 @@
     .join-btn:hover { background: var(--cyber-cyan, #00f0ff); color: #000; box-shadow: 0 0 20px var(--cyber-cyan, #00f0ff); transform: scale(1.05); }
 
     .tg-icon { width: 24px; height: 24px; }
+
+    /* Блок документов и связи — перенесён сюда из глобальной фикс-плашки Footer,
+       которая загромождала страницы и угол чата. Шрифт --font-display (Russo One):
+       Chakra Petch без кириллицы, русские подписи в нём падают в Courier. */
+    .legal-section { margin-top: 1rem; }
+    .legal-links {
+        display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem 1.5rem; margin-bottom: 1.25rem;
+    }
+    .legal-links a {
+        font-family: var(--font-display); font-size: 0.8rem; letter-spacing: 0.05em;
+        text-transform: uppercase; color: #94a3b8; text-decoration: none; transition: color 0.2s;
+    }
+    .legal-links a:hover { color: var(--cyber-yellow, #fcee0a); text-decoration: underline; }
+    .legal-contact { font-size: 0.95rem; color: #cbd5e1; margin-bottom: 0.5rem; }
+    .legal-contact a { color: var(--cyber-cyan, #00f0ff); text-decoration: none; }
+    .legal-contact a:hover { text-decoration: underline; }
+    .legal-copyright { font-size: 0.75rem; color: #64748b; font-family: var(--font-display); letter-spacing: 0.05em; }
 
     @media (max-width: 768px) {
         .about-container { margin: 1rem; padding: 1.5rem; }
