@@ -20,7 +20,7 @@
 	import { tweened } from 'svelte/motion';
 	// Используются в разметке модалки 2FA (transition:fade / transition:slide).
 	// Без этого импорта страница падала с ReferenceError при открытии модалки.
-	import { fade, slide } from 'svelte/transition';
+	import { fade, slide, fly } from 'svelte/transition';
 	import { modal } from '$lib/stores/modalStore';
 	import { userStore } from '$lib/stores';
 	import { t } from 'svelte-i18n';
@@ -40,10 +40,17 @@
 	 * в колонку вдвое длиннее экрана.
 	 */
 	let step = 1;
+	/** Направление перехода между шагами: 1 — вперёд, -1 — назад (для анимации слайда). */
+	let dir = 1;
+	function goStep(s: number) {
+		dir = s >= step ? 1 : -1;
+		step = s;
+	}
 
 	let email = '';
 	let password = '';
 	let username = '';
+	let showPassword = false;
 	let loading = false;
 	let googleLoading = false;
 
@@ -537,27 +544,60 @@
 	protogens={data?.protogens ?? null}
 >
 	<div style="opacity: {$opacity}">
-		<StepDots total={3} current={step} onGoTo={(s) => (step = s)} />
+		<StepDots total={3} current={step} onGoTo={goStep} />
 
 		<form on:submit|preventDefault={handleRegister} novalidate>
+			<div class="steps">
 			{#if step === 1}
-				<div class="step" in:fade={{ duration: 150 }}>
-					<div class="form-group">
-						<label for="username" class="form-label font-display">{$t('auth.username_label')}</label>
-						<input bind:value={username} type="text" id="username" name="username" class="input-field" autocomplete="username" />
+				<div class="step" in:fly={{ x: dir * 48, duration: 320, easing: quintOut }} out:fly={{ x: dir * -48, duration: 200 }}>
+					<div class="field">
+						<label for="username" class="field__label">{$t('auth.username_label')}</label>
+						<div class="field__row">
+							<svg class="field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<circle cx="12" cy="8" r="4" />
+								<path d="M4 21a8 8 0 0 1 16 0" />
+							</svg>
+							<input bind:value={username} type="text" id="username" name="username" class="field__input" placeholder={$t('auth.username_placeholder')} autocomplete="username" />
+							<span class="field__line"></span>
+						</div>
 					</div>
-					<div class="form-group">
-						<label for="email" class="form-label font-display">{$t('auth.email_label')}</label>
-						<input bind:value={email} type="email" id="email" name="email" class="input-field" autocomplete="email" />
+					<div class="field">
+						<label for="email" class="field__label">{$t('auth.email_label')}</label>
+						<div class="field__row">
+							<svg class="field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<rect x="3" y="5" width="18" height="14" rx="2" />
+								<path d="m3 7 9 6 9-6" />
+							</svg>
+							<input bind:value={email} type="email" id="email" name="email" class="field__input" placeholder={$t('auth.email_placeholder')} autocomplete="email" />
+							<span class="field__line"></span>
+						</div>
 					</div>
-					<div class="form-group">
-						<label for="password" class="form-label font-display">{$t('auth.password_label')}</label>
-						<input bind:value={password} type="password" id="password" name="password" class="input-field" autocomplete="new-password" />
+					<div class="field">
+						<label for="password" class="field__label">{$t('auth.password_label')}</label>
+						<div class="field__row">
+							<svg class="field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<rect x="5" y="11" width="14" height="10" rx="2" />
+								<path d="M8 11V7a4 4 0 0 1 8 0v4" />
+							</svg>
+							{#if showPassword}
+								<input bind:value={password} type="text" id="password" name="password" class="field__input" placeholder={$t('auth.password_placeholder')} autocomplete="new-password" />
+							{:else}
+								<input bind:value={password} type="password" id="password" name="password" class="field__input" placeholder={$t('auth.password_placeholder')} autocomplete="new-password" />
+							{/if}
+							<button type="button" class="field__eye" on:click={() => (showPassword = !showPassword)} aria-label={showPassword ? $t('auth.hide_password') : $t('auth.show_password')} title={showPassword ? $t('auth.hide_password') : $t('auth.show_password')}>
+								{#if showPassword}
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18" /><path d="M10.6 10.6a3 3 0 0 0 4.2 4.2" /><path d="M9.9 5.1A9.5 9.5 0 0 1 12 5c6.5 0 10 7 10 7a15.9 15.9 0 0 1-3.1 3.9" /><path d="M6.1 6.1A15.9 15.9 0 0 0 2 12s3.5 7 10 7a9.5 9.5 0 0 0 3-.5" /></svg>
+								{:else}
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+								{/if}
+							</button>
+							<span class="field__line"></span>
+						</div>
 					</div>
 
 					<div class="nav">
 						<span></span>
-						<NeonButton type="button" disabled={!step1Filled} on:click={() => (step = 2)}>
+						<NeonButton type="button" disabled={!step1Filled} on:click={() => goStep(2)}>
 							{$t('auth.next')}
 						</NeonButton>
 					</div>
@@ -572,7 +612,7 @@
 					выполняется даже нагляднее, чем куском длинной формы, — но
 					сворачивать текст по-прежнему нельзя.
 				-->
-				<div class="step" in:fade={{ duration: 150 }}>
+				<div class="step" in:fly={{ x: dir * 48, duration: 320, easing: quintOut }} out:fly={{ x: dir * -48, duration: 200 }}>
 					<section class="consent-notice" aria-labelledby="consent-notice-title">
 						<h2 id="consent-notice-title" class="consent-notice__title font-display">
 							{$t('auth.consent.notice_title')}
@@ -636,8 +676,8 @@
 					</div>
 
 					<div class="nav">
-						<button type="button" class="back" on:click={() => (step = 1)}>← {$t('auth.back')}</button>
-						<NeonButton type="button" disabled={!allConsentsGiven} on:click={() => (step = 3)}>
+						<button type="button" class="back" on:click={() => goStep(1)}>← {$t('auth.back')}</button>
+						<NeonButton type="button" disabled={!allConsentsGiven} on:click={() => goStep(3)}>
 							{$t('auth.next')}
 						</NeonButton>
 					</div>
@@ -645,7 +685,7 @@
 			{/if}
 
 			{#if step === 3}
-				<div class="step" in:fade={{ duration: 150 }}>
+				<div class="step" in:fly={{ x: dir * 48, duration: 320, easing: quintOut }} out:fly={{ x: dir * -48, duration: 200 }}>
 					<p class="step__hint">{$t('auth.captcha_hint')}</p>
 
 					<div class="form-group flex justify-center">
@@ -657,7 +697,7 @@
 					</div>
 
 					<div class="nav">
-						<button type="button" class="back" on:click={() => (step = 2)}>← {$t('auth.back')}</button>
+						<button type="button" class="back" on:click={() => goStep(2)}>← {$t('auth.back')}</button>
 						<NeonButton
 							type="submit"
 							disabled={loading || googleLoading || !allConsentsGiven || !turnstileVerified}
@@ -708,6 +748,7 @@
 					</div>
 				</div>
 			{/if}
+			</div>
 		</form>
 
 		<p class="mt-8 text-center text-sm text-gray-500">
@@ -720,7 +761,15 @@
 <style>
 	/* ─── Мастер ──────────────────────────────────────────────────────────── */
 
+	/* Шаги лежат в одной ячейке грида, поэтому при переходе уходящий и
+	   приходящий шаги накладываются (слайд друг через друга), а не толкают
+	   вёрстку. Высота — по текущему контенту. */
+	.steps {
+		display: grid;
+	}
 	.step {
+		grid-column: 1;
+		grid-row: 1;
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
@@ -777,24 +826,86 @@
 	}
 	.form-group {
 	}
-	.form-label {
-		@apply mb-2 block text-sm font-bold uppercase tracking-widest text-cyber-yellow;
+	/* Поле-полосочка прямо на видео: подпись сверху, слева иконка, у пароля справа
+	   глазик, снизу подчёркивание, которое «прорисовывается» из центра в фокусе
+	   (аним 1). Коробки нет; тени — для читаемости над кадром. */
+	.field__label {
+		display: block;
+		margin-bottom: 0.45rem;
+		font-family: var(--font-display, 'Russo One'), sans-serif;
+		font-size: 0.72rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--cyber-yellow, #fcee0a);
+		text-shadow: 0 1px 6px rgba(0, 0, 0, 0.75);
 	}
-	.input-field {
-		@apply block w-full bg-transparent p-2 text-gray-200;
+	.field__row {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+	}
+	.field__icon {
+		width: 19px;
+		height: 19px;
+		flex-shrink: 0;
+		color: rgba(203, 213, 225, 0.72);
+		transition: color 0.25s;
+		filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.6));
+	}
+	.field__row:focus-within .field__icon {
+		color: var(--cyber-yellow, #fcee0a);
+	}
+	.field__input {
+		flex: 1;
+		min-width: 0;
+		background: transparent;
 		border: none;
-		border-bottom: 1px solid var(--border-color, #30363d);
-		border-radius: 0;
+		outline: none;
+		padding: 0.6rem 0.1rem;
+		color: #f8fafc;
 		font-family: 'Inter', sans-serif;
-		font-size: 1.1em;
-		transition:
-			border-color 0.3s,
-			box-shadow 0.3s;
+		font-size: 1.05rem;
+		text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
 	}
-	.input-field:focus {
-		@apply outline-none;
-		border-bottom-color: var(--cyber-yellow, #fcee0a);
-		box-shadow: 0 1px 0 var(--cyber-yellow, #fcee0a);
+	.field__input::placeholder {
+		color: rgba(203, 213, 225, 0.5);
+	}
+	.field__eye {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		flex-shrink: 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: rgba(203, 213, 225, 0.72);
+		transition: color 0.2s;
+		filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.6));
+	}
+	.field__eye svg {
+		width: 19px;
+		height: 19px;
+	}
+	.field__eye:hover {
+		color: var(--cyber-yellow, #fcee0a);
+	}
+	.field__line {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -1px;
+		height: 2px;
+		background: var(--cyber-yellow, #fcee0a);
+		transform: scaleX(0);
+		transform-origin: center;
+		transition: transform 0.3s ease;
+	}
+	.field__row:focus-within .field__line {
+		transform: scaleX(1);
 	}
 
 	.google-btn {

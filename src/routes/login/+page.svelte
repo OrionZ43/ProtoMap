@@ -34,6 +34,7 @@
 	let loading = false;
 	let googleLoading = false;
 	let isResetMode = false;
+	let showPassword = false;
 
 	// Флаг готовности App Check токена — кнопка Google заблокирована до прогрева
 	let appCheckReady = false;
@@ -616,28 +617,78 @@
 		class="space-y-6"
 		novalidate
 	>
-		<div class="form-group">
-			<label for="email" class="form-label font-display">{$t('auth.email_label')}</label>
-			<input
-				bind:value={email}
-				type="email"
-				id="email"
-				name="email"
-				class="input-field"
-				placeholder="name@example.com"
-			/>
+		<div class="field">
+			<label for="email" class="field__label">{$t('auth.email_label')}</label>
+			<div class="field__row">
+				<svg class="field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<rect x="3" y="5" width="18" height="14" rx="2" />
+					<path d="m3 7 9 6 9-6" />
+				</svg>
+				<input
+					bind:value={email}
+					type="email"
+					id="email"
+					name="email"
+					class="field__input"
+					placeholder={$t('auth.email_placeholder')}
+					autocomplete="email"
+				/>
+			</div>
 		</div>
 
 		{#if !isResetMode}
-			<div class="form-group" transition:slide>
-				<label for="password" class="form-label font-display">{$t('auth.password_label')}</label>
-				<input
-					bind:value={password}
-					type="password"
-					id="password"
-					name="password"
-					class="input-field"
-				/>
+			<div transition:slide>
+				<div class="field">
+					<label for="password" class="field__label">{$t('auth.password_label')}</label>
+					<div class="field__row">
+						<svg class="field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<rect x="5" y="11" width="14" height="10" rx="2" />
+							<path d="M8 11V7a4 4 0 0 1 8 0v4" />
+						</svg>
+						{#if showPassword}
+							<input
+								bind:value={password}
+								type="text"
+								id="password"
+								name="password"
+								class="field__input"
+								placeholder={$t('auth.password_placeholder')}
+								autocomplete="current-password"
+							/>
+						{:else}
+							<input
+								bind:value={password}
+								type="password"
+								id="password"
+								name="password"
+								class="field__input"
+								placeholder={$t('auth.password_placeholder')}
+								autocomplete="current-password"
+							/>
+						{/if}
+						<button
+							type="button"
+							class="field__eye"
+							on:click={() => (showPassword = !showPassword)}
+							aria-label={showPassword ? $t('auth.hide_password') : $t('auth.show_password')}
+							title={showPassword ? $t('auth.hide_password') : $t('auth.show_password')}
+						>
+							{#if showPassword}
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M3 3l18 18" />
+									<path d="M10.6 10.6a3 3 0 0 0 4.2 4.2" />
+									<path d="M9.9 5.1A9.5 9.5 0 0 1 12 5c6.5 0 10 7 10 7a15.9 15.9 0 0 1-3.1 3.9" />
+									<path d="M6.1 6.1A15.9 15.9 0 0 0 2 12s3.5 7 10 7a9.5 9.5 0 0 0 3-.5" />
+								</svg>
+							{:else}
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+									<circle cx="12" cy="12" r="3" />
+								</svg>
+							{/if}
+						</button>
+					</div>
+				</div>
 
 				<div class="mt-2 text-right">
 					<button
@@ -761,30 +812,90 @@
 </AuthShell>
 
 <style>
-	.form-title {
-		@apply mb-10 text-center text-2xl font-bold text-white lg:text-3xl;
-		text-shadow: none;
-	}
 	.form-group {
 	}
-	.form-label {
-		@apply mb-2 block text-sm font-bold uppercase tracking-widest text-cyber-yellow;
+
+	/* Поле-полосочка прямо на видео: подпись сверху, слева иконка, у пароля справа
+	   глазик, снизу подчёркивание; в фокусе из центра прорисовывается жёлтая линия
+	   (::after). Коробки/заливки нет. Тени — чтобы читалось над кадром. */
+	.field__label {
+		display: block;
+		margin-bottom: 0.45rem;
+		font-family: var(--font-display, 'Russo One'), sans-serif;
+		font-size: 0.72rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--cyber-yellow, #fcee0a);
+		text-shadow: 0 1px 6px rgba(0, 0, 0, 0.75);
 	}
-	.input-field {
-		@apply block w-full bg-transparent p-2 text-gray-200;
+	.field__row {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+	}
+	.field__row::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -1px;
+		height: 2px;
+		background: var(--cyber-yellow, #fcee0a);
+		transform: scaleX(0);
+		transform-origin: center;
+		transition: transform 0.3s ease;
+	}
+	.field__row:focus-within::after {
+		transform: scaleX(1);
+	}
+	.field__icon {
+		width: 19px;
+		height: 19px;
+		flex-shrink: 0;
+		color: rgba(203, 213, 225, 0.72);
+		transition: color 0.2s;
+		filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.6));
+	}
+	.field__row:focus-within .field__icon {
+		color: var(--cyber-yellow, #fcee0a);
+	}
+	.field__input {
+		flex: 1;
+		min-width: 0;
+		background: transparent;
 		border: none;
-		border-bottom: 1px solid var(--border-color, #30363d);
-		border-radius: 0;
+		outline: none;
+		padding: 0.6rem 0.1rem;
+		color: #f8fafc;
 		font-family: 'Inter', sans-serif;
-		font-size: 1.1em;
-		transition:
-			border-color 0.3s,
-			box-shadow 0.3s;
+		font-size: 1.05rem;
+		text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
 	}
-	.input-field:focus {
-		@apply outline-none;
-		border-bottom-color: var(--cyber-yellow, #fcee0a);
-		box-shadow: 0 1px 0 var(--cyber-yellow, #fcee0a);
+	.field__input::placeholder {
+		color: rgba(203, 213, 225, 0.5);
+	}
+	.field__eye {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 30px;
+		height: 30px;
+		flex-shrink: 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: rgba(203, 213, 225, 0.72);
+		transition: color 0.2s;
+		filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.6));
+	}
+	.field__eye svg {
+		width: 20px;
+		height: 20px;
+	}
+	.field__eye:hover {
+		color: var(--cyber-yellow, #fcee0a);
 	}
 
 	.google-btn {

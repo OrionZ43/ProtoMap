@@ -5,15 +5,10 @@
     /**
      * Общий каркас страниц входа и регистрации.
      *
-     * Раньше обе были колонкой в 512 пикселей по центру. После добавления
-     * блока согласий колонка стала вдвое длиннее экрана и превратилась
-     * в «тоненький столбик» — отсюда переделка.
-     *
-     * Витрина слева не украшение ради украшения: она забирает половину ширины
-     * на большом экране, из-за чего форма перестаёт выглядеть потерянной,
-     * а длинный текст согласий получает нормальную колонку вместо узкой полосы.
-     * На экранах уже 1024 пикселей витрина убирается совсем — там она только
-     * отняла бы место у формы.
+     * Концепт (решение Ориона, 31.10.2026): никакой колонки-витрины и коробки
+     * формы. Фильм-тур лежит фоном на всю страницу, поверх — красивое затемнение,
+     * а заголовок и поля ввода «проявляются» прямо на затемнённом видео, без
+     * контейнера. «Безрамочность».
      */
 
     /** Заголовок над формой. */
@@ -22,40 +17,35 @@
     /** Строка под заголовком — необязательная. */
     export let subtitle: string | null = null;
 
-    /** Сколько протогенов уже на карте. Показывается на витрине, если известно. */
+    /**
+     * Оставлен для совместимости с вызовами (login/register передают число
+     * протогенов). Счётчик «PROTOMAP NETWORK» убран по просьбе Ориона, поэтому
+     * значение больше не показывается.
+     */
     export let protogens: number | null = null;
+    void protogens;
 
     /**
-     * Фон витрины — беззвучный видео-тур 1:1 из трейлера (решение Ориона,
-     * 29.10.2026; монтаж в ритм трека-ориентира, звука нет).
-     *
-     * Грузим видео только когда оно реально видно и уместно:
-     *   - mounted — на сервере и до гидрации показываем статичный постер
-     *     (корректный no-JS фолбэк и защита от вспышки автоплея);
-     *   - wideEnough — витрина скрыта (display:none) до 1024px, поэтому на
-     *     телефоне тяжёлый файл не качаем вовсе, только лёгкий постер в SSR;
+     * Фон — беззвучный видео-тур из трейлера (Storage, public/film/v2/).
+     * Десктоп — широкий фильм 16:9 (`login-wide`); на телефоне (<1024px) тяжёлый
+     * ролик не качаем, показываем вертикальный постер `login-tall` (один на оба
+     * языка, без титров). Текст интерфейса вшит в кадр, поэтому у RU и EN свои
+     * широкие файлы.
+     *   - mounted — до гидрации и в SSR показываем постер;
+     *   - wideEnough — ниже 1024px видео нет, только постер;
      *   - !reducedMotion — у попросивших «меньше движения» остаётся постер.
-     *
-     * Текст интерфейса вшит в кадр, поэтому у RU и EN свои файлы. ru_april
-     * регистрируется под кодом 'ru' и отдельного файла не требует.
      */
     let mounted = false;
     let wideEnough = true;
     let reducedMotion = false;
 
-    /**
-     * Файлы фильма раздаёт Firebase Storage (public/film/v1/), а не репозиторий:
-     * так тяжёлые ролики (~114 МБ на сайт) не висят в git и не идут через Vercel.
-     * Ссылка прямая, без токена — правило Storage `allow get: if true` на
-     * public/film/**; эндпоинт ?alt=media поддерживает Range для <video>. Новая
-     * версия фильма — новая папка (v2, …), чтобы адрес не менялся.
-     */
     const FILM_BASE =
-        'https://firebasestorage.googleapis.com/v0/b/protomap-1e1db.firebasestorage.app/o/public%2Ffilm%2Fv1%2F';
+        'https://firebasestorage.googleapis.com/v0/b/protomap-1e1db.firebasestorage.app/o/public%2Ffilm%2Fv2%2F';
     const filmUrl = (file: string) => `${FILM_BASE}${file}?alt=media`;
 
     $: videoSuffix = $locale?.startsWith('en') ? '-en' : '';
-    $: posterSrc = filmUrl(`login-1x1${videoSuffix}.webp`);
+    // Широкий постер под 16:9-видео на десктопе, вертикальный — на телефоне.
+    $: posterSrc = wideEnough ? filmUrl(`login-wide${videoSuffix}.webp`) : filmUrl('login-tall.webp');
     $: showVideo = mounted && wideEnough && !reducedMotion;
 
     onMount(() => {
@@ -76,14 +66,10 @@
     });
 
     /**
-     * Запуск фонового видео. Не полагаемся на один атрибут `autoplay`:
-     *   - Svelte не всегда отражает атрибут `muted` в одноимённое свойство, а
-     *     автоплей без звука браузер пускает только по свойству `muted` — иначе
-     *     блокирует. Ставим явно.
-     *   - видео вставляется динамически (после onMount) и грузится с сети, поэтому
-     *     стартуем сами по canplay, а не ждём canplaythrough.
-     * Если браузер всё равно отклонил play() — остаётся постер/первый кадр, в
-     * консоль не шумим.
+     * Запуск фонового видео. Не полагаемся на один атрибут `autoplay`: Svelte не
+     * всегда отражает `muted` в свойство (браузер тогда блокирует беззвучный
+     * автоплей), а динамически вставленное сетевое видео само стартует только к
+     * canplaythrough — поэтому стартуем явно по canplay.
      */
     function startPlayback(e: Event) {
         const v = e.currentTarget as HTMLVideoElement;
@@ -93,190 +79,172 @@
 </script>
 
 <div class="auth">
-    <!-- Витрина -->
-    <aside class="showcase" aria-hidden="true">
-        <!-- Фон: беззвучный видео-тур 1:1. Постер — и SSR/no-JS фолбэк, и кадр
-             при prefers-reduced-motion. {#key} пересобирает <video> при смене
-             языка, иначе смена src у <source> сама по себе не перегружает ролик. -->
-        {#if showVideo}
-            {#key videoSuffix}
-                <video
-                    class="showcase__media"
-                    autoplay
-                    muted
-                    loop
-                    playsinline
-                    poster={posterSrc}
-                    on:loadeddata={startPlayback}
-                    on:canplay={startPlayback}
-                >
-                    <source src={filmUrl(`login-1x1${videoSuffix}.webm`)} type="video/webm" />
-                    <source src={filmUrl(`login-1x1${videoSuffix}.mp4`)} type="video/mp4" />
-                </video>
-            {/key}
-        {:else}
-            <img class="showcase__media" src={posterSrc} alt="" />
-        {/if}
+    <!-- Фон: фильм на всю страницу. Постер — SSR/no-JS/reduced-motion фолбэк.
+         {#key} пересобирает <video> при смене языка. -->
+    {#if showVideo}
+        {#key videoSuffix}
+            <video
+                class="auth__media"
+                autoplay
+                muted
+                loop
+                playsinline
+                poster={posterSrc}
+                on:loadeddata={startPlayback}
+                on:canplay={startPlayback}
+            >
+                <source src={filmUrl(`login-wide${videoSuffix}.webm`)} type="video/webm" />
+                <source src={filmUrl(`login-wide${videoSuffix}.mp4`)} type="video/mp4" />
+            </video>
+        {/key}
+    {:else}
+        <img class="auth__media" src={posterSrc} alt="" />
+    {/if}
 
-        <!-- Затемнение снизу: под счётчиком в кадре разное (карта, карточка
-             слотов с балансом), без скрима подпись теряется. -->
-        <div class="showcase__scrim"></div>
+    <!-- Красивое затемнение поверх видео: радиальное (к краям и низу темнее) +
+         вертикальное, чтобы поля читались, а видео оставалось видно. -->
+    <div class="auth__scrim"></div>
 
-        <div class="showcase__content">
-            <p class="showcase__kicker font-display">PROTOMAP NETWORK</p>
-
-            {#if protogens !== null}
-                <p class="showcase__count font-display">{protogens}</p>
-                <p class="showcase__caption">
-                    {$t('auth.showcase_protogens', { values: { count: protogens } })}
-                </p>
-            {:else}
-                <p class="showcase__caption showcase__caption--solo">
-                    {$t('auth.showcase_tagline')}
-                </p>
+    <!-- Контент прямо на видео, без коробки. -->
+    <div class="auth__content">
+        <header class="auth__head">
+            <h1 class="auth__title font-display">{title}</h1>
+            {#if subtitle}
+                <p class="auth__subtitle">{subtitle}</p>
             {/if}
-        </div>
+        </header>
 
-        <div class="showcase__corner showcase__corner--tl"></div>
-        <div class="showcase__corner showcase__corner--br"></div>
+        <slot />
+    </div>
 
-        <!-- Атрибуция карты рисуется страницей: в видео она не вшита. -->
-        <p class="showcase__attribution">© OpenFreeMap © OpenMapTiles © OpenStreetMap</p>
-    </aside>
+    <!-- Плёночный шум поверх: сглаживает переходы затемнения (убирает полосы)
+         и делает картинку «киношной». Кликам не мешает (pointer-events: none). -->
+    <div class="auth__noise" aria-hidden="true"></div>
 
-    <!-- Форма -->
-    <main class="panel">
-        <div class="panel__inner">
-            <header class="panel__head">
-                <h1 class="panel__title font-display">{title}</h1>
-                {#if subtitle}
-                    <p class="panel__subtitle">{subtitle}</p>
-                {/if}
-            </header>
-
-            <slot />
-        </div>
-    </main>
+    <!-- Подпись карты: в видео не вшита, рисует страница. -->
+    <p class="auth__attribution">© OpenFreeMap © OpenMapTiles © OpenStreetMap</p>
 </div>
 
 <style>
     .auth {
-        display: grid;
-        grid-template-columns: 1fr;
-        min-height: calc(100vh - 4rem);
-    }
-
-    /* Две колонки только там, где для них правда есть место. */
-    @media (min-width: 1024px) {
-        .auth {
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-            align-items: stretch;
-        }
-    }
-
-    /* ─── Витрина ─────────────────────────────────────────────────────────── */
-
-    .showcase {
-        display: none;
         position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 4rem);
         overflow: hidden;
-        background: radial-gradient(circle at 30% 20%, #0a1620 0%, #05080c 70%);
-        border-right: 1px solid rgba(0, 243, 255, 0.18);
+        background: #05080c;
+        padding: 3rem 1.25rem 4.5rem;
     }
 
-    @media (min-width: 1024px) {
-        .showcase { display: block; }
-    }
-
-    /* Видео и постер лежат одним слоем в самом низу витрины. Кадр 1:1,
-       витрина — высокий прямоугольник, поэтому cover: по бокам срезается
-       до ~6%, главное тура держится в средних ~85% ширины. */
-    .showcase__media {
-        position: absolute;
-        inset: 0;
+    /* Фон закреплён за окном (не зависит от высоты формы — иначе кроп разный на
+       входе и регистрации). Широкий 16:9, cover. */
+    .auth__media {
+        position: fixed;
+        inset: 4rem 0 0 0;
         width: 100%;
-        height: 100%;
+        height: calc(100vh - 4rem);
         object-fit: cover;
         z-index: 0;
     }
 
-    /* Нижняя треть гасится сильно: в кадре там UI приложения (баланс слотов,
-       кнопки), и без этого наш счётчик сталкивается с чужими цифрами. Верхние
-       ~60% видео остаются живыми. */
-    .showcase__scrim {
-        position: absolute;
-        inset: 0;
+    /* Затемнение-столб по центру (где форма); край зависит от ширины окна, чтобы
+       не гасить окно сайта в кадре на ноутбуках. Закреплено за окном. Стопы — от
+       студии, проверены над кадром сайта на 1920/1536/1366/1024. */
+    .auth__scrim {
+        position: fixed;
+        inset: 4rem 0 0 0;
+        width: 100%;
+        height: calc(100vh - 4rem);
         z-index: 1;
         pointer-events: none;
+        --f: min(8rem, 6vw);
         background: linear-gradient(
-            to top,
-            rgba(5, 8, 12, 0.97) 0%,
-            rgba(5, 8, 12, 0.92) 20%,
-            rgba(5, 8, 12, 0.6) 40%,
-            rgba(5, 8, 12, 0) 70%
+            to right,
+            rgba(5, 8, 12, 0) calc(50% - 14rem - var(--f)),
+            rgba(5, 8, 12, 0.12) calc(50% - 14rem - var(--f) * 0.81),
+            rgba(5, 8, 12, 0.42) calc(50% - 14rem - var(--f) * 0.5),
+            rgba(5, 8, 12, 0.68) calc(50% - 14rem - var(--f) * 0.19),
+            rgba(5, 8, 12, 0.8) calc(50% - 13rem),
+            rgba(5, 8, 12, 0.84) 50%,
+            rgba(5, 8, 12, 0.8) calc(50% + 13rem),
+            rgba(5, 8, 12, 0.68) calc(50% + 14rem + var(--f) * 0.19),
+            rgba(5, 8, 12, 0.42) calc(50% + 14rem + var(--f) * 0.5),
+            rgba(5, 8, 12, 0.12) calc(50% + 14rem + var(--f) * 0.81),
+            rgba(5, 8, 12, 0) calc(50% + 14rem + var(--f))
         );
     }
 
-    .showcase__content {
+    /* Форма — узкая колонка по центру, без фона и рамок: поля лежат прямо на
+       затемнённом видео. Мягкая тень-гало за колонкой держит читаемость, не
+       образуя коробки. */
+    .auth__content {
         position: relative;
         z-index: 2;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        padding: 3rem;
+        width: 100%;
+        max-width: 28rem;
+        /* Плавное появление: после затемнения фильма форма мягко всплывает. */
+        animation: authContentIn 0.6s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    @keyframes authContentIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .auth__content {
+            animation: none;
+        }
     }
 
-    .showcase__kicker {
-        font-size: 0.75rem;
-        letter-spacing: 0.28em;
-        color: rgba(0, 243, 255, 0.65);
-        margin: 0 0 1.5rem;
+    .auth__head {
+        margin-bottom: 2rem;
+        text-align: center;
     }
 
-    .showcase__count {
-        font-size: 5rem;
-        line-height: 1;
-        color: #fff;
+    .auth__title {
         margin: 0;
-        text-shadow: 0 0 24px rgba(0, 243, 255, 0.45);
+        font-size: 2.2rem;
+        letter-spacing: 0.04em;
+        color: var(--cyber-yellow, #ffd500);
+        text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
+        overflow-wrap: break-word;
     }
 
-    .showcase__caption {
+    .auth__subtitle {
+        margin: 0.6rem 0 0;
         font-size: 0.95rem;
-        color: #7e93a5;
-        margin: 0.5rem 0 0;
+        color: #cbd5e1;
+        text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
     }
 
-    .showcase__caption--solo {
-        font-size: 1.4rem;
-        color: #9fb3c8;
+    @media (max-width: 520px) {
+        .auth__title {
+            font-size: 1.7rem;
+            letter-spacing: 0.02em;
+        }
     }
 
-    .showcase__corner {
-        position: absolute;
-        width: 40px;
-        height: 40px;
-        border-color: rgba(0, 243, 255, 0.5);
-        z-index: 2;
-    }
-    .showcase__corner--tl {
-        top: 1.25rem; left: 1.25rem;
-        border-top: 1px solid; border-left: 1px solid;
-    }
-    .showcase__corner--br {
-        bottom: 1.25rem; right: 1.25rem;
-        border-bottom: 1px solid; border-right: 1px solid;
+    .auth__noise {
+        position: fixed;
+        inset: 4rem 0 0 0;
+        z-index: 3;
+        pointer-events: none;
+        opacity: 0.05;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        background-size: 140px 140px;
     }
 
-    /* Подпись карты поверх видео — статично, мелко, в свободном верхнем
-       правом углу (там нет уголка-рамки). Тень держит читаемость над
-       светлыми кадрами. */
-    .showcase__attribution {
-        position: absolute;
-        top: 0.6rem;
+    .auth__attribution {
+        position: fixed;
+        bottom: 0.7rem;
         right: 0.85rem;
-        z-index: 2;
+        z-index: 4;
         margin: 0;
         max-width: 60%;
         text-align: right;
@@ -286,38 +254,5 @@
         color: rgba(159, 179, 200, 0.72);
         text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
         pointer-events: none;
-    }
-
-    /* ─── Панель формы ────────────────────────────────────────────────────── */
-
-    .panel {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2.5rem 1.25rem 4rem;
-    }
-
-    .panel__inner {
-        width: 100%;
-        /* Шире прежних 512: длинному тексту согласий нужна нормальная колонка,
-           а не узкая полоса, в которой строка ломается на каждом слове. */
-        max-width: 34rem;
-    }
-
-    .panel__head {
-        margin-bottom: 2rem;
-    }
-
-    .panel__title {
-        font-size: 2rem;
-        color: var(--cyber-yellow, #ffd500);
-        margin: 0;
-        letter-spacing: 0.04em;
-    }
-
-    .panel__subtitle {
-        margin: 0.6rem 0 0;
-        font-size: 0.9rem;
-        color: #7e93a5;
     }
 </style>

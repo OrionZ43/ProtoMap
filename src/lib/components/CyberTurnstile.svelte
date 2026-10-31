@@ -77,30 +77,11 @@
 
 <style>
     .turnstile-container {
-        /* Киберпанк-обёртка */
+        /* Без рамки/фона-коробки: на экранах входа капча стоит прямо на видео,
+           безрамочно. Сам виджет Cloudflare — сторонний iframe со своим тёмным
+           оформлением, его убрать нельзя. */
         position: relative;
         display: inline-block;
-        padding: 10px;
-        background: rgba(10, 10, 10, 0.5);
-        border: 1px solid rgb(var(--cyber-yellow-rgb) / 0.3);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-
-        /* Срезанные углы */
-        clip-path: polygon(
-            0 10px,
-            10px 0,
-            100% 0,
-            100% calc(100% - 10px),
-            calc(100% - 10px) 100%,
-            0 100%
-        );
-
-        transition: border-color 0.3s ease;
-    }
-
-    .turnstile-container:hover {
-        border-color: rgb(var(--cyber-yellow-rgb) / 0.6);
     }
 
     .cf-turnstile-placeholder {
