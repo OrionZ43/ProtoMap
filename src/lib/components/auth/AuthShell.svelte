@@ -43,8 +43,19 @@
     let wideEnough = true;
     let reducedMotion = false;
 
+    /**
+     * Файлы фильма раздаёт Firebase Storage (public/film/v1/), а не репозиторий:
+     * так тяжёлые ролики (~114 МБ на сайт) не висят в git и не идут через Vercel.
+     * Ссылка прямая, без токена — правило Storage `allow get: if true` на
+     * public/film/**; эндпоинт ?alt=media поддерживает Range для <video>. Новая
+     * версия фильма — новая папка (v2, …), чтобы адрес не менялся.
+     */
+    const FILM_BASE =
+        'https://firebasestorage.googleapis.com/v0/b/protomap-1e1db.firebasestorage.app/o/public%2Ffilm%2Fv1%2F';
+    const filmUrl = (file: string) => `${FILM_BASE}${file}?alt=media`;
+
     $: videoSuffix = $locale?.startsWith('en') ? '-en' : '';
-    $: posterSrc = `/auth/login-1x1${videoSuffix}.webp`;
+    $: posterSrc = filmUrl(`login-1x1${videoSuffix}.webp`);
     $: showVideo = mounted && wideEnough && !reducedMotion;
 
     onMount(() => {
@@ -63,6 +74,22 @@
             motion.removeEventListener('change', onMotion);
         };
     });
+
+    /**
+     * Запуск фонового видео. Не полагаемся на один атрибут `autoplay`:
+     *   - Svelte не всегда отражает атрибут `muted` в одноимённое свойство, а
+     *     автоплей без звука браузер пускает только по свойству `muted` — иначе
+     *     блокирует. Ставим явно.
+     *   - видео вставляется динамически (после onMount) и грузится с сети, поэтому
+     *     стартуем сами по canplay, а не ждём canplaythrough.
+     * Если браузер всё равно отклонил play() — остаётся постер/первый кадр, в
+     * консоль не шумим.
+     */
+    function startPlayback(e: Event) {
+        const v = e.currentTarget as HTMLVideoElement;
+        v.muted = true;
+        void v.play().catch(() => {});
+    }
 </script>
 
 <div class="auth">
@@ -73,9 +100,18 @@
              языка, иначе смена src у <source> сама по себе не перегружает ролик. -->
         {#if showVideo}
             {#key videoSuffix}
-                <video class="showcase__media" autoplay muted loop playsinline poster={posterSrc}>
-                    <source src={`/auth/login-1x1${videoSuffix}.webm`} type="video/webm" />
-                    <source src={`/auth/login-1x1${videoSuffix}.mp4`} type="video/mp4" />
+                <video
+                    class="showcase__media"
+                    autoplay
+                    muted
+                    loop
+                    playsinline
+                    poster={posterSrc}
+                    on:loadeddata={startPlayback}
+                    on:canplay={startPlayback}
+                >
+                    <source src={filmUrl(`login-1x1${videoSuffix}.webm`)} type="video/webm" />
+                    <source src={filmUrl(`login-1x1${videoSuffix}.mp4`)} type="video/mp4" />
                 </video>
             {/key}
         {:else}
