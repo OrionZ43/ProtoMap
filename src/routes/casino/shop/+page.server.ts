@@ -33,7 +33,10 @@ export const load: PageServerLoad = async ({ locals, setHeaders }) => {
         // Витрина — только то, что продаётся прямо сейчас: без скрытых, призовых
         // и сезонных вне их окна. Те же правила проверяет purchaseShopItem.
         const now = seasonNow().getTime();
-        const items: ShopItem[] = docs.filter(doc => isOnSale(doc.id, doc.data, now)).map(({ id, data }) => {
+        // app_icon — иконки приложения; на сайте значок не поставить, не показываем.
+        const items: ShopItem[] = docs
+            .filter(doc => doc.data.type !== 'app_icon' && isOnSale(doc.id, doc.data, now))
+            .map(({ id, data }) => {
             const until = toMillis(data.available_until);
             return {
                 id,

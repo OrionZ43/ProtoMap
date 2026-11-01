@@ -32,6 +32,8 @@ export const load: PageServerLoad = async ({ locals }) => {
         const allItems: { [id: string]: ShopItem } = {};
         itemsSnapshot.forEach(doc => {
             const data = doc.data();
+            // app_icon — иконки приложения; на сайте не применить, в инвентаре не показываем.
+            if (data.type === 'app_icon') return;
             allItems[doc.id] = {
                 id: doc.id,
                 name: data.name,
