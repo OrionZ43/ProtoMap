@@ -32,6 +32,17 @@
 		field?.focus();
 	}
 
+	// Панель форматирования — position:fixed, но GlobalChat живёт внутри
+	// .chat-widget, у которого transform (выезд), overflow:hidden и clip-path.
+	// transform создаёт содержащий блок для fixed-потомков → панель считала
+	// координаты от виджета и улетала за экран («её вообще нет»), а overflow/
+	// clip-path её бы обрезали. Выносим узел в body: fixed считается от вьюпорта
+	// и ничем не режется. Скоуп-классы Svelte остаются на узле, стиль не теряется.
+	function portal(node: HTMLElement) {
+		document.body.appendChild(node);
+		return { destroy() { if (node.parentNode) node.parentNode.removeChild(node); } };
+	}
+
 	function sync() {
 		const md = serializeToMarkdown(field);
 		last = md;
@@ -187,7 +198,7 @@
 </div>
 
 {#if showBar}
-	<div class="sel-bar" class:below bind:this={bar} style="left:{barLeft}px; top:{barTop}px;" role="toolbar" aria-label={$t('editor.toolbar')}>
+	<div class="sel-bar" class:below use:portal bind:this={bar} style="left:{barLeft}px; top:{barTop}px;" role="toolbar" aria-label={$t('editor.toolbar')}>
 		<button type="button" class="tb" class:active={active.b} title={$t('editor.bold')} aria-label={$t('editor.bold')} on:mousedown|preventDefault on:click={() => exec('bold')}><b>B</b></button>
 		<button type="button" class="tb" class:active={active.i} title={$t('editor.italic')} aria-label={$t('editor.italic')} on:mousedown|preventDefault on:click={() => exec('italic')}><i>I</i></button>
 		<button type="button" class="tb" class:active={active.s} title={$t('editor.strike')} aria-label={$t('editor.strike')} on:mousedown|preventDefault on:click={() => exec('strikeThrough')}><span class="st">S</span></button>
