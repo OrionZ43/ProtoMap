@@ -92,8 +92,13 @@
 
                 userStore.update(store => {
                     if (store.user) {
-                        store.user.casino_credits -= itemPrice;
-                        store.user.owned_items = [...(store.user.owned_items || []), itemId];
+                        // Баланс НЕ трогаем локально — его обновит onSnapshot из БД
+                        // (userStore живой, единственный источник правды). Относительное
+                        // `casino_credits -= itemPrice` задваивалось с онснапшотом (гонка:
+                        // снимок из БД приходил раньше и уже вычитал цену), клиентский
+                        // баланс уезжал ниже БД вплоть до минуса — игры гейтились, грант
+                        // выглядел x2. Игры ставят абсолютный newBalance и этого лишены.
+                        store.user.owned_items = [...new Set([...(store.user.owned_items || []), itemId])];
                     }
                     return store;
                 });
