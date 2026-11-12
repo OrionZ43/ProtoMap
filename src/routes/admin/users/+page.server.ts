@@ -13,6 +13,7 @@ import { ADMIN_UIDS } from '$env/static/private';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { econOp, logAdminAction } from '$lib/server/activity';
+import { applyCreditDelta } from '$lib/admin/credits';
 
 const adminList = ADMIN_UIDS ? ADMIN_UIDS.split(',') : [];
 
@@ -248,7 +249,7 @@ export const actions: Actions = {
         // человек успел сыграть, обнуление промахивалось.
         const zero      = data.get('zero') === '1';
         let amount      = parseInt(data.get('amount') as string);
-        if (!targetUid || (!zero && isNaN(amount))) return failed(400, 'bad_input');
+        if (!targetUid || (!zero && (isNaN(amount) || amount === 0))) return failed(400, 'bad_input');
         // Защита: нельзя начислять себе
         if (targetUid === locals.user!.uid) return failed(403, 'self_balance');
         try {
@@ -260,9 +261,16 @@ export const actions: Actions = {
                     return -balance;
                 });
             } else {
-                await ref.update({
-                    casino_credits: FieldValue.increment(amount),
-                    econ_op: econOp('admin_credits', amount)
+                // Начислить/списать — в транзакции, баланс не ниже нуля. Раньше было
+                // FieldValue.increment(amount) без проверки: списание больше баланса
+                // уводило его в минус уже в БД. В журнал идёт фактическое изменение.
+                const requested = amount;
+                amount = await firestoreAdmin.runTransaction(async (t) => {
+                    const snap = await t.get(ref);
+                    if (!snap.exists) throw new Error('user_not_found');
+                    const { newBalance, applied } = applyCreditDelta(Number(snap.get('casino_credits') ?? 0), requested);
+                    t.update(ref, { casino_credits: newBalance, econ_op: econOp('admin_credits', applied) });
+                    return applied;
                 });
             }
             await logAdminAction({
