@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;700;900&family=Inter:wght@400;700&display=swap');
+/* Шрифты (Inter, Russo One, Chakra Petch, Creepster, Onest, Unbounded) подключены
+   в app.html из /fonts.css — со своего сайта, не с Google Fonts. */
 
 @tailwind base;
 @tailwind components;

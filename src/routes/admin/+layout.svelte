@@ -27,11 +27,8 @@
     $: avatar = data.user?.avatarUrl || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(username)}`;
 </script>
 
-<svelte:head>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@300;400;500;600&display=swap" rel="stylesheet" />
-</svelte:head>
+<!-- Onest и Unbounded объявлены в /fonts.css (подключён в app.html): файлы
+     со своего сайта, качаются браузером только там, где шрифт реально используется. -->
 
 <div class="adm">
     <div class="adm-wrap">
